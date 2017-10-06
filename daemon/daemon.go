@@ -25,8 +25,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/tonyespy/go-core-clients/metadataclients"
-	"github.com/tonyespy/go-core-domain/models"
+	"bitbucket.org/clientcto/go-core-clients/metadataclients"
+	"bitbucket.org/clientcto/go-core-domain/models"
+	"github.com/tonyespy/go-xds/controller"
+	"github.com/tonyespy/go-xds/data"
 )
 
 type configFile struct {
@@ -52,6 +54,7 @@ type configFile struct {
 //  * add consul registration support
 //  * design REST API framework
 //  * design Protocol framework
+//  * re-name?  daemon --> baseservice
 
 // A Daemon listens for requests and routes them to the right command
 type Daemon struct {
@@ -59,26 +62,30 @@ type Daemon struct {
 	config        configFile
 	initAttempts  int
 	initialized   bool
-	addrClient    metadataclients.AddressableClient
-	serviceClient metadataclients.ServiceClient
+	ac            metadataclients.AddressableClient
+	sc            metadataclients.ServiceClient
+	ds            models.DeviceService
+	mux           *controller.Mux
+	dst           *data.DeviceStore
 }
 
 func (d *Daemon) attemptInit(done chan<- struct{}) {
 	defer func() { done <- struct{}{} }()
 
 	fmt.Fprintf(os.Stderr, "Trying to find ds: %s\n", d.config.Name)
-	ds, err := d.serviceClient.DeviceServiceForName(d.config.Name)
+	ds, err := d.sc.DeviceServiceForName(d.config.Name)
 
-//	ds, err := d.serviceClient.DeviceServiceForName("edgex-device-virtual")
+//	ds, err := d.sc.DeviceServiceForName("edgex-device-virtual")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "DeviceServicForName failed: %v\n", err)
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "DeviceServiceForName returned: %s\n", ds.Name)
+	fmt.Fprintf(os.Stderr, "DeviceServiceForName returned: %s\n", ds.Service.Name)
+	fmt.Fprintf(os.Stderr, "DeviceServiceId is: %s\n", ds.Service.Id)
 	
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Name != d.config.Name {
+	if ds.Service.Name != d.config.Name {
 		fmt.Fprintf(os.Stderr, "Failed to find ds: %s; attempts: %d\n", d.config.Name, d.initAttempts)
 
 		// get time for Origin timestamps
@@ -88,7 +95,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 		// check for addressable
 		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", d.config.Name)
-		addr, err := d.addrClient.AddressableForName(d.config.Name)
+		addr, err := d.ac.AddressableForName(d.config.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "AddressableForName: %s; failed: %v\n", d.config.Name, err)
 
@@ -114,7 +121,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			fmt.Fprintf(os.Stderr, "New addressable created: %v\n", addr)
 
 			// use d.clientService to register Addressable
-			err = d.addrClient.Add(addr)
+			err = d.ac.Add(addr)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Add Addressable: %s; failed: %v\n", d.config.Name, err)
 				return
@@ -132,21 +139,22 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			AdminState:     "unlocked",				
 		}
 
-		ds.Origin = millis
+		ds.Service.Origin = millis
 
-		fmt.Fprintf(os.Stderr, "Adding new deviceservice: %s\n", ds.Name)
+		fmt.Fprintf(os.Stderr, "Adding new deviceservice: %s\n", ds.Service.Name)
 		fmt.Fprintf(os.Stderr, "New deviceservice created: %v\n", ds)
 		
 		// use d.clientService to register the deviceservice
-		err = d.serviceClient.Add(ds)
+		err = d.sc.Add(ds)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Add Deviceservice: %s; failed: %v\n", d.config.Name, err)
 			return
 		}
 
 	} else {
-		fmt.Fprintf(os.Stderr, "Found ds.Name: %s, d.config.Name: %s\n", ds.Name, d.config.Name)
+		fmt.Fprintf(os.Stderr, "Found ds.Name: %s, d.config.Name: %s\n", ds.Service.Name, d.config.Name)
 		d.initialized = true
+		d.ds = ds
 	}
 }
 
@@ -174,19 +182,31 @@ func (d *Daemon) loadConfig(configPath *string) error {
 
 // Initialize the Daemon
 func (d *Daemon) Init(configFile *string) error {
-	fmt.Fprintf(os.Stdout, "conifguration file is: %s\n", *configFile)
+	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
 
 	err := d.loadConfig(configFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
 		return err
 	}
 
 	done := make(chan struct{})
 
+	d.mux, err = controller.New()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error loading starting controller: %v\n", err)
+		return err
+	}
+
+	d.dst, err = data.NewDeviceStore()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error creating DeviceStore: %v\n", err)
+		return err
+	}
+
 	// TODO: host, ports & urls are hard-coded in metadataclients
-	d.addrClient = metadataclients.NewAddressableClient()
-	d.serviceClient = metadataclients.NewServiceClient()
+	d.ac = metadataclients.NewAddressableClient()
+	d.sc = metadataclients.NewServiceClient()
 
 	for d.initAttempts < d.config.ConnectRetries && !d.initialized {
 		d.initAttempts++
@@ -201,7 +221,11 @@ func (d *Daemon) Init(configFile *string) error {
 
 	if !d.initialized {
 		err = fmt.Errorf("Couldn't register to metadata service; MaxLimit reached.")
+		return err
 	}
+
+	// TODO: add method to Service to return this...
+	d.dst.Init(d.ds.Service.Id.Hex())
 
 	return err
 }
