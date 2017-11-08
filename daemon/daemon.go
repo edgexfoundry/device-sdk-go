@@ -27,8 +27,9 @@ import (
 
 	"bitbucket.org/clientcto/go-core-clients/metadataclients"
 	"bitbucket.org/clientcto/go-core-domain/models"
-	"github.com/tonyespy/go-xds/controller"
-	"github.com/tonyespy/go-xds/data"
+	"bitbucket.org/tonyespy/gxds/controller"
+	"bitbucket.org/tonyespy/gxds/data"
+	"bitbucket.org/tonyespy/gxds"
 )
 
 type configFile struct {
@@ -67,6 +68,7 @@ type Daemon struct {
 	ds            models.DeviceService
 	mux           *controller.Mux
 	dst           *data.DeviceStore
+	proto         *gxds.ProtocolHandler
 }
 
 func (d *Daemon) attemptInit(done chan<- struct{}) {
@@ -88,11 +90,6 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 	if ds.Service.Name != d.config.Name {
 		fmt.Fprintf(os.Stderr, "Failed to find ds: %s; attempts: %d\n", d.config.Name, d.initAttempts)
 
-		// get time for Origin timestamps
-		now := time.Now()
-		nanos := now.UnixNano()
-		millis := nanos / 1000000
-
 		// check for addressable
 		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", d.config.Name)
 		addr, err := d.ac.AddressableForName(d.config.Name)
@@ -101,6 +98,8 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 			// don't quit, but instead try to create addressable & service
 		}
+
+		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 
 		// TODO: same as above
 		if addr.Name != d.config.Name {
@@ -118,14 +117,14 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			}
 			addr.Origin = millis
 
-			fmt.Fprintf(os.Stderr, "New addressable created: %v\n", addr)
-
 			// use d.clientService to register Addressable
-			err = d.ac.Add(addr)
+			err = d.ac.Add(&addr)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Add Addressable: %s; failed: %v\n", d.config.Name, err)
 				return
 			}
+
+			fmt.Fprintf(os.Stderr, "New addressable created: %v\n", addr)
 		}
 
 		// setup the service
@@ -142,15 +141,18 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		ds.Service.Origin = millis
 
 		fmt.Fprintf(os.Stderr, "Adding new deviceservice: %s\n", ds.Service.Name)
-		fmt.Fprintf(os.Stderr, "New deviceservice created: %v\n", ds)
+		fmt.Fprintf(os.Stderr, "New deviceservice: %v\n", ds)
 		
 		// use d.clientService to register the deviceservice
-		err = d.sc.Add(ds)
+		err = d.sc.Add(&ds)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Add Deviceservice: %s; failed: %v\n", d.config.Name, err)
 			return
 		}
 
+		fmt.Fprintf(os.Stderr, "New deviceservice created: %v\n", ds)
+		d.initialized = true
+		d.ds = ds
 	} else {
 		fmt.Fprintf(os.Stderr, "Found ds.Name: %s, d.config.Name: %s\n", ds.Service.Name, d.config.Name)
 		d.initialized = true
@@ -181,7 +183,7 @@ func (d *Daemon) loadConfig(configPath *string) error {
 }
 
 // Initialize the Daemon
-func (d *Daemon) Init(configFile *string) error {
+func (d *Daemon) Init(configFile *string, proto *gxds.ProtocolHandler) error {
 	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
 
 	err := d.loadConfig(configFile)
@@ -198,7 +200,8 @@ func (d *Daemon) Init(configFile *string) error {
 		return err
 	}
 
-	d.dst, err = data.NewDeviceStore()
+	d.proto = proto
+	d.dst, err = data.NewDeviceStore(proto)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error creating DeviceStore: %v\n", err)
 		return err
@@ -224,8 +227,12 @@ func (d *Daemon) Init(configFile *string) error {
 		return err
 	}
 
+	// initialize devicestore
 	// TODO: add method to Service to return this...
 	d.dst.Init(d.ds.Service.Id.Hex())
+
+	// TODO: initialize scheduler
+	// TODO: configure gorillamux
 
 	return err
 }
