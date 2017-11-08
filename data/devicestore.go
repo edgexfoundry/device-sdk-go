@@ -31,11 +31,11 @@ import (
 )
 
 type DeviceStore struct {
-	proto       *gxds.ProtocolHandler
-	devices     map[string]models.Device
-	profiles    *profileStore
-	ac          metadataclients.AddressableClient
-	dc          metadataclients.DeviceClient
+	proto    *gxds.ProtocolHandler
+	devices  map[string]models.Device
+	profiles *profileStore
+	ac       metadataclients.AddressableClient
+	dc       metadataclients.DeviceClient
 }
 
 // TODO: used by Init() to populate the local cache
@@ -147,7 +147,7 @@ func (ds *DeviceStore) IsDeviceLocked(deviceId string) bool {
 // TODO: re-factor to make this a singleton
 func NewDeviceStore(proto *gxds.ProtocolHandler) (*DeviceStore, error) {
 	return &DeviceStore{
-	        proto: proto,
+		proto: proto,
 	}, nil
 }
 
@@ -239,8 +239,8 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 					fmt.Fprintf(os.Stderr, "DeviceClient.UpdateOpState: %s; failed: %v\n", device.Name, err)
 				}
 			}
-		// TODO: Java service doesn't check result, if UpdateOpState fails,
-		// should device add fail too?
+			// TODO: Java service doesn't check result, if UpdateOpState fails,
+			// should device add fail too?
 		}
 	}
 
