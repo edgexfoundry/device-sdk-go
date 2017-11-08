@@ -16,18 +16,18 @@
  * limitations under the License.
  *
  */
-package "go-xds"
+package gxds
 
 import "bitbucket.org/clientcto/go-core-domain/models"
 
 // A ProtocolHandler implements low-level protocol functions
-type interface ProtocolHandler {
+type ProtocolHandler interface {
 	Initialize()
 	DisconnectDevice(device models.Device)
 	InitializeDevice(device models.Device)
 	Scan()
 	CommandExists(device models.Device, command string) map[string]string
 	ExecuteCommand(device models.Device, command string, args string)
-	SendTransaction(deviceName string, readings []model.Reading>)
-	CompleteTransaction(String transactionId, String opId, readings []model.Reading)
+	SendTransaction(deviceName string, readings []models.Reading)
+	CompleteTransaction(transactionId string, opId string, readings []models.Reading)
 }
