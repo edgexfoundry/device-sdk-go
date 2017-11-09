@@ -258,3 +258,168 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 
 	return nil
 }
+
+// FIXME: !threadsafe - none of the compare methods are threadsafe
+// as other code can access the struct instances and potentially
+// modify them while they're being compared.
+func compareCommands(a []models.Command, b []models.Command) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, _ := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareDevices(a models.Device, b models.Device) bool {
+	labelsOk := compareStrings(a.Labels, b.Labels)
+	profileOk := compareDeviceProfiles(a.Profile, b.Profile)
+	serviceOk := compareDeviceServices(a.Service, b.Service)
+
+	return a.Addressable == b.Addressable &&
+		a.AdminState == b.AdminState &&
+		a.Description == b.Description &&
+		a.Id == b.Id &&
+		a.Location == b.Location &&
+		a.Name == b.Name &&
+		a.OperatingState == b.OperatingState &&
+		labelsOk &&
+		profileOk &&
+		serviceOk
+}
+
+func compareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool {
+	labelsOk := compareStrings(a.Labels, b.Labels)
+	cmdsOk := compareCommands(a.Commands, b.Commands)
+	devResourcesOk := compareDeviceResources(a.DeviceResources, b.DeviceResources)
+	resourcesOk := compareResources(a.Resources, b.Resources)
+
+	// TODO: Objects fields aren't compared
+
+	return a.DescribedObject == b.DescribedObject &&
+		a.Id == b.Id &&
+		a.Name == b.Name &&
+		a.Manufacturer == b.Manufacturer &&
+		a.Model == b.Model &&
+		labelsOk &&
+		cmdsOk &&
+		devResourcesOk &&
+		resourcesOk
+
+	return true
+}
+
+func compareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, _ := range a {
+		attributesOk := compareStrStrMap(a[i].Attributes, b[i].Attributes)
+
+		if a[i].Description != b[i].Description ||
+			a[i].Name != b[i].Name ||
+			a[i].Tag != b[i].Tag ||
+			a[i].Properties != b[i].Properties &&
+			!attributesOk {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareDeviceServices(a models.DeviceService, b models.DeviceService) bool {
+
+	serviceOk := compareServices(a.Service, b.Service)
+
+	return a.AdminState == b.AdminState && serviceOk
+}
+
+func compareResources(a []models.ProfileResource, b []models.ProfileResource) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, _ := range a {
+		getOk := compareResourceOperations(a[i].Get, b[i].Set)
+		setOk := compareResourceOperations(a[i].Get, b[i].Set)
+
+		if a[i].Name != b[i].Name && !getOk && !setOk {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareResourceOperations(a []models.ResourceOperation, b []models.ResourceOperation) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, _ := range a {
+		secondaryOk := compareStrings(a[i].Secondary, b[i].Secondary)
+		mappingsOk := compareStrStrMap(a[i].Mappings, b[i].Mappings)
+
+		if a[i].Index != b[i].Index ||
+			a[i].Operation != b[i].Operation ||
+			a[i].Object != b[i].Object ||
+			a[i].Property != b[i].Property ||
+			a[i].Parameter != b[i].Parameter ||
+			a[i].Resource != b[i].Resource ||
+			!secondaryOk ||
+			!mappingsOk {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareServices(a models.Service, b models.Service) bool {
+
+	labelsOk := compareStrings(a.Labels, b.Labels)
+
+	return a.DescribedObject == b.DescribedObject &&
+		a.Id == b.Id &&
+		a.Name == b.Name &&
+		a.LastConnected == b.LastConnected &&
+		a.LastReported == b.LastReported &&
+		a.OperatingState == b.OperatingState &&
+		a.Addressable == b.Addressable &&
+		labelsOk
+}
+
+func compareStrings(a []string, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, _ := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func compareStrStrMap(a map[string]string, b map[string]string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for k, av := range a {
+		if bv, ok := b[k]; !ok || av != bv {
+			return false
+		}
+	}
+
+	return true
+}
