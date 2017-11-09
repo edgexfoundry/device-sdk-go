@@ -201,11 +201,7 @@ func (d *Daemon) Init(configFile *string, proto *gxds.ProtocolHandler) error {
 	}
 
 	d.proto = proto
-	d.dst, err = data.NewDeviceStore(proto)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error creating DeviceStore: %v\n", err)
-		return err
-	}
+	d.dst = data.NewDeviceStore(proto)
 
 	// TODO: host, ports & urls are hard-coded in metadataclients
 	d.ac = metadataclients.NewAddressableClient()

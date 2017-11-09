@@ -23,6 +23,7 @@ package data
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"bitbucket.org/clientcto/go-core-clients/metadataclients"
@@ -37,6 +38,11 @@ type DeviceStore struct {
 	ac       metadataclients.AddressableClient
 	dc       metadataclients.DeviceClient
 }
+
+var (
+	dsOnce sync.Once
+	deviceStore *DeviceStore
+)
 
 // TODO: used by Init() to populate the local cache
 // with devices pre-existing in metadata service, and
@@ -144,11 +150,14 @@ func (ds *DeviceStore) IsDeviceLocked(deviceId string) bool {
 }
 
 // New DeviceStore
-// TODO: re-factor to make this a singleton
-func NewDeviceStore(proto *gxds.ProtocolHandler) (*DeviceStore, error) {
-	return &DeviceStore{
-		proto: proto,
-	}, nil
+func NewDeviceStore(proto *gxds.ProtocolHandler) (*DeviceStore) {
+
+	// config.once.Do(func() { config.init(filename) })
+	dsOnce.Do(func() {
+		deviceStore = &DeviceStore{proto: proto}
+	})
+
+	return deviceStore
 }
 
 func (ds *DeviceStore) Remove(device models.Device) error {
@@ -248,8 +257,4 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 	ds.devices[device.Name] = device
 
 	return nil
-}
-
-func (ds *DeviceStore) compare(a models.Device, b models.Device) bool {
-	return false
 }
