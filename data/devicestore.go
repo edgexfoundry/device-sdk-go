@@ -40,7 +40,7 @@ type DeviceStore struct {
 }
 
 var (
-	dsOnce sync.Once
+	dsOnce      sync.Once
 	deviceStore *DeviceStore
 )
 
@@ -150,7 +150,7 @@ func (ds *DeviceStore) IsDeviceLocked(deviceId string) bool {
 }
 
 // New DeviceStore
-func NewDeviceStore(proto *gxds.ProtocolHandler) (*DeviceStore) {
+func NewDeviceStore(proto *gxds.ProtocolHandler) *DeviceStore {
 
 	// config.once.Do(func() { config.init(filename) })
 	dsOnce.Do(func() {
@@ -326,7 +326,7 @@ func compareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bo
 			a[i].Name != b[i].Name ||
 			a[i].Tag != b[i].Tag ||
 			a[i].Properties != b[i].Properties &&
-			!attributesOk {
+				!attributesOk {
 			return false
 		}
 	}

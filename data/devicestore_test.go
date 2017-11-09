@@ -60,18 +60,18 @@ func TestCompareStrings(t *testing.T) {
 
 func TestCompareStrStrMap(t *testing.T) {
 	map1 := map[string]string{
-		"album": "electric ladyland",
+		"album":  "electric ladyland",
 		"artist": "jimi hendrix",
 		"guitar": "white strat",
 	}
 
 	map2 := map[string]string{
-		"album": "electric ladyland",
+		"album":  "electric ladyland",
 		"artist": "jimi hendrix",
 	}
 
 	map3 := map[string]string{
-		"album": "iv",
+		"album":  "iv",
 		"artist": "led zeppelin",
 		"guitar": "les paul",
 	}
