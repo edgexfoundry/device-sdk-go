@@ -25,11 +25,20 @@ import (
 	"os"
 	"time"
 
-	"bitbucket.org/clientcto/go-core-clients/metadataclients"
-	"bitbucket.org/clientcto/go-core-domain/models"
 	"bitbucket.org/tonyespy/gxds/controller"
 	"bitbucket.org/tonyespy/gxds/data"
 	"bitbucket.org/tonyespy/gxds"
+	"github.com/edgexfoundry/core-clients-go/metadataclients"
+	"github.com/edgexfoundry/core-domain-go/models"
+	"gopkg.in/mgo.v2/bson"
+)
+
+var (
+	// TODO: grab settings from daemon-config.json OR Consul
+	metaPort            string = ":48081"
+	metaHost            string = "localhost"
+	metaAddressableUrl  string = "http://" + metaHost + metaPort + "/api/v1/addressable"
+	metaServiceUrl      string = "http://" + metaHost + metaPort + "/api/v1/service"
 )
 
 type configFile struct {
@@ -118,13 +127,23 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			addr.Origin = millis
 
 			// use d.clientService to register Addressable
-			err = d.ac.Add(&addr)
+			id, err := d.ac.Add(&addr)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Add Addressable: %s; failed: %v\n", d.config.Name, err)
 				return
 			}
 
-			fmt.Fprintf(os.Stderr, "New addressable created: %v\n", addr)
+			// TODO: add back length check in from non-public metadata-clients logic
+			//
+			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
+			//
+			if !bson.IsObjectIdHex(id) {
+				fmt.Println("Add addressable returned invalid Id: %s\n", id)
+				return
+			}
+
+			addr.Id = bson.ObjectIdHex(id)
+			fmt.Println("New addressable Id: %s\n", addr.Id.Hex())
 		}
 
 		// setup the service
@@ -144,13 +163,26 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		fmt.Fprintf(os.Stderr, "New deviceservice: %v\n", ds)
 		
 		// use d.clientService to register the deviceservice
-		err = d.sc.Add(&ds)
+		id, err := d.sc.Add(&ds)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Add Deviceservice: %s; failed: %v\n", d.config.Name, err)
 			return
 		}
 
-		fmt.Fprintf(os.Stderr, "New deviceservice created: %v\n", ds)
+		// TODO: add back length check in from non-public metadata-clients logic
+		//
+		// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
+		//
+		if !bson.IsObjectIdHex(id) {
+			fmt.Println("Add deviceservice returned invalid Id: %s\n", id)
+			return
+		}
+
+		// NOTE - this differs from Addressable and Device objects,
+		// neither of which require the '.Service'prefix
+		ds.Service.Id = bson.ObjectIdHex(id)
+		fmt.Println("New deviceservice Id: %s\n", ds.Service.Id.Hex())
+
 		d.initialized = true
 		d.ds = ds
 	} else {
@@ -204,8 +236,8 @@ func (d *Daemon) Init(configFile *string, proto *gxds.ProtocolHandler) error {
 	d.dst = data.NewDeviceStore(proto)
 
 	// TODO: host, ports & urls are hard-coded in metadataclients
-	d.ac = metadataclients.NewAddressableClient()
-	d.sc = metadataclients.NewServiceClient()
+	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
+	d.sc = metadataclients.NewServiceClient(metaServiceUrl)
 
 	for d.initAttempts < d.config.ConnectRetries && !d.initialized {
 		d.initAttempts++

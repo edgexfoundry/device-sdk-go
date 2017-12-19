@@ -18,7 +18,7 @@
  */
 package gxds
 
-import "bitbucket.org/clientcto/go-core-domain/models"
+import "github.com/edgexfoundry/core-domain-go/models"
 
 // A ProtocolHandler implements low-level protocol functions
 type ProtocolHandler interface {

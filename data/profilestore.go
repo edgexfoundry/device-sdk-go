@@ -19,17 +19,25 @@
 package data
 
 import (
-	"bitbucket.org/clientcto/go-core-clients/coredata"
-	"bitbucket.org/clientcto/go-core-domain/models"
+	"github.com/edgexfoundry/core-clients-go/coredataclients"
+	"github.com/edgexfoundry/core-domain-go/models"
 )
+
+var (
+	// TODO: grab settings from daemon-config.json OR Consul
+	dataPort            string = ":48080"
+	dataHost            string = "localhost"
+	dataValueDescUrl    string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
+)
+
 
 type profileStore struct {
 	profiles    map[string]models.Device
-	vdc         coredata.ValueDescriptorClient
+	vdc         coredataclients.ValueDescriptorClient
 }
 
 func (ps *profileStore) Init() {
-	ps.vdc = coredata.NewValueDescriptorClient()
+	ps.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
 }
 
 // TODO: re-factor to make this a singleton

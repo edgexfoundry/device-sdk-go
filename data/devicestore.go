@@ -26,9 +26,10 @@ import (
 	"sync"
 	"time"
 
-	"bitbucket.org/clientcto/go-core-clients/metadataclients"
-	"bitbucket.org/clientcto/go-core-domain/models"
 	"bitbucket.org/tonyespy/gxds"
+	"github.com/edgexfoundry/core-clients-go/metadataclients"
+	"github.com/edgexfoundry/core-domain-go/models"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type DeviceStore struct {
@@ -42,6 +43,12 @@ type DeviceStore struct {
 var (
 	dsOnce      sync.Once
 	deviceStore *DeviceStore
+
+	// TODO: grab settings from daemon-config.json OR Consul
+	metaPort            string = ":48081"
+	metaHost            string = "localhost"
+	metaAddressableUrl  string = "http://" + metaHost + metaPort + "/api/v1/addressable"
+	metaDeviceUrl       string = "http://" + metaHost + metaPort + "/api/v1/device"
 )
 
 // TODO: used by Init() to populate the local cache
@@ -109,8 +116,8 @@ func (ds *DeviceStore) GetMetaDevices() []models.Device {
 }
 
 func (ds *DeviceStore) Init(serviceId string) error {
-	ds.ac = metadataclients.NewAddressableClient()
-	ds.dc = metadataclients.NewDeviceClient()
+	ds.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
+	ds.dc = metadataclients.NewDeviceClient(metaDeviceUrl)
 
 	metaDevices, err := ds.dc.DevicesForService(serviceId)
 	if err != nil {
@@ -215,10 +222,21 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 		addr.BaseObject.Origin = time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 		fmt.Fprintf(os.Stdout, "Creating new Addressable Object with name: %v", addr)
 
-		err := ds.ac.Add(&addr)
+		id, err := ds.ac.Add(&addr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "AddressClient.Add: %s; failed: %v\n", device.Addressable.Name, err)
 			return err
+		}
+
+		// TODO: add back length check in from non-public metadata-clients logic
+		//
+		// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
+		//
+		if !bson.IsObjectIdHex(id) {
+			return fmt.Errorf("Add addressable returned invalid Id: %s\n", id)
+		} else {
+			addr.Id = bson.ObjectIdHex(id)
+			fmt.Println("New addressable Id: %s\n", addr.Id.Hex())
 		}
 	}
 
@@ -234,10 +252,21 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 		if metaDevice.Name != device.Name {
 			fmt.Fprintf(os.Stdout, "Adding Device to Metadata: %s\n", device.Name)
 
-			err := ds.dc.Add(&device)
+			id, err := ds.dc.Add(&device)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "DeviceClient.Add for %s failed: %v", device.Name, err)
 				return err
+			}
+
+			// TODO: add back length check in from non-public metadata-clients logic
+			//
+			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
+			//
+			if !bson.IsObjectIdHex(id) {
+				return fmt.Errorf("Add device returned invalid Id: %s\n", id)
+			} else {
+				device.Id = bson.ObjectIdHex(id)
+				fmt.Println("New device Id: %s\n", device.Id.Hex())
 			}
 		} else {
 			device.Id = metaDevice.Id
