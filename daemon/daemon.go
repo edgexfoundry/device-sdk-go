@@ -35,10 +35,10 @@ import (
 
 var (
 	// TODO: grab settings from daemon-config.json OR Consul
-	metaPort            string = ":48081"
-	metaHost            string = "localhost"
-	metaAddressableUrl  string = "http://" + metaHost + metaPort + "/api/v1/addressable"
-	metaServiceUrl      string = "http://" + metaHost + metaPort + "/api/v1/service"
+	metaPort           string = ":48081"
+	metaHost           string = "localhost"
+	metaAddressableUrl string = "http://" + metaHost + metaPort + "/api/v1/addressable"
+	metaServiceUrl     string = "http://" + metaHost + metaPort + "/api/v1/deviceservice"
 )
 
 type configFile struct {
@@ -85,11 +85,14 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 	fmt.Fprintf(os.Stderr, "Trying to find ds: %s\n", d.config.Name)
 	ds, err := d.sc.DeviceServiceForName(d.config.Name)
-
-//	ds, err := d.sc.DeviceServiceForName("edgex-device-virtual")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "DeviceServicForName failed: %v\n", err)
-		return
+
+		// TODO: restore if/when the issue with detecting 'not-found'
+	        // is resolved.  Otherwise, just log errors and move on.
+		//
+	        // https://github.com/edgexfoundry/core-clients-go/issues/5
+		// return
 	}
 
 	fmt.Fprintf(os.Stderr, "DeviceServiceForName returned: %s\n", ds.Service.Name)
@@ -138,12 +141,12 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 			//
 			if !bson.IsObjectIdHex(id) {
-				fmt.Println("Add addressable returned invalid Id: %s\n", id)
+				fmt.Fprintf(os.Stderr, "Add addressable returned invalid Id: %s\n", id)
 				return
 			}
 
 			addr.Id = bson.ObjectIdHex(id)
-			fmt.Println("New addressable Id: %s\n", addr.Id.Hex())
+			fmt.Fprintf(os.Stdout, "New addressable Id: %s\n", addr.Id.Hex())
 		}
 
 		// setup the service
@@ -159,8 +162,8 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 		ds.Service.Origin = millis
 
-		fmt.Fprintf(os.Stderr, "Adding new deviceservice: %s\n", ds.Service.Name)
-		fmt.Fprintf(os.Stderr, "New deviceservice: %v\n", ds)
+		fmt.Fprintf(os.Stdout, "Adding new deviceservice: %s\n", ds.Service.Name)
+		fmt.Fprintf(os.Stdout, "New deviceservice: %v\n", ds)
 		
 		// use d.clientService to register the deviceservice
 		id, err := d.sc.Add(&ds)
@@ -174,14 +177,14 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 		//
 		if !bson.IsObjectIdHex(id) {
-			fmt.Println("Add deviceservice returned invalid Id: %s\n", id)
+			fmt.Fprintf(os.Stderr, "Add deviceservice returned invalid Id: %s\n", id)
 			return
 		}
 
 		// NOTE - this differs from Addressable and Device objects,
 		// neither of which require the '.Service'prefix
 		ds.Service.Id = bson.ObjectIdHex(id)
-		fmt.Println("New deviceservice Id: %s\n", ds.Service.Id.Hex())
+		fmt.Fprintf(os.Stdout, "New deviceservice Id: %s\n", ds.Service.Id.Hex())
 
 		d.initialized = true
 		d.ds = ds
