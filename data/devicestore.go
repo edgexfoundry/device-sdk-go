@@ -33,9 +33,9 @@ import (
 )
 
 type DeviceStore struct {
+	pst      *ProfileStore
 	proto    *gxds.ProtocolHandler
 	devices  map[string]models.Device
-	profiles *profileStore
 	ac       metadataclients.AddressableClient
 	dc       metadataclients.DeviceClient
 }
@@ -54,6 +54,9 @@ var (
 // TODO: used by Init() to populate the local cache
 // with devices pre-existing in metadata service, and
 // also by ScanList, to add newly detected devices.
+
+
+// Add a new device to the local cache.
 func (ds *DeviceStore) Add(device models.Device) error {
 
 	// if device already exists in devices, delete & re-add
@@ -73,7 +76,7 @@ func (ds *DeviceStore) Add(device models.Device) error {
 	// This is only the case for brand new devices
 	if device.OperatingState == models.OperatingState("enabled") {
 		fmt.Fprintf(os.Stdout, "Initializing device: : %v\n", device)
-		// ${Protocol name}.initializeDevice(metaDevice);
+		// TODO: ${Protocol name}.initializeDevice(metaDevice);
 	}
 
 	return nil
@@ -132,8 +135,7 @@ func (ds *DeviceStore) Init(serviceId string) error {
 	// TODO: initialize watchers
 	// TODO: call Protocol.initialize
 
-	ds.profiles, err = newProfileStore()
-	ds.profiles.Init()
+	ds.pst.Init()
 
 	// TODO: consider removing this logic, as the use case for
 	// re-adding devices that exist in the core-metadata service
@@ -157,11 +159,10 @@ func (ds *DeviceStore) IsDeviceLocked(deviceId string) bool {
 }
 
 // New DeviceStore
-func NewDeviceStore(proto *gxds.ProtocolHandler) *DeviceStore {
+func NewDeviceStore(pst *ProfileStore, proto *gxds.ProtocolHandler) *DeviceStore {
 
-	// config.once.Do(func() { config.init(filename) })
 	dsOnce.Do(func() {
-		deviceStore = &DeviceStore{proto: proto}
+		deviceStore = &DeviceStore{pst: pst, proto: proto}
 	})
 
 	return deviceStore
