@@ -16,6 +16,10 @@
  * limitations under the License.
  *
  */
+
+// Package gxds defines an interface named ProtocolHandler, which is
+// used to provide the low-level device-specific functions necessary
+// to implement an EdgeX Foundry device service.
 package gxds
 
 import "github.com/edgexfoundry/core-domain-go/models"
