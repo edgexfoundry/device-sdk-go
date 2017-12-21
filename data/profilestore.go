@@ -19,35 +19,43 @@
 package data
 
 import (
+	"sync"
+
 	"github.com/edgexfoundry/core-clients-go/coredataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
 )
 
 var (
+	psOnce      sync.Once
+	profileStore *ProfileStore
+
 	// TODO: grab settings from daemon-config.json OR Consul
 	dataPort            string = ":48080"
 	dataHost            string = "localhost"
 	dataValueDescUrl    string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
 )
 
-
-type profileStore struct {
+type ProfileStore struct {
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 }
 
-func (ps *profileStore) Init() {
-	ps.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
+func NewProfileStore() *ProfileStore {
+
+	psOnce.Do(func() {
+		profileStore = &ProfileStore{}
+	})
+
+	return profileStore
 }
 
-// TODO: re-factor to make this a singleton
-func newProfileStore() (*profileStore, error) {
-	return &profileStore{}, nil
+func (ps *ProfileStore) Init() {
+	ps.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
 }
 
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
-func (ps *profileStore) addDevice(device models.Device) error {
+func (ps *ProfileStore) addDevice(device models.Device) error {
         var vdNames = new(map[string]string)
 
 	// use ValueDescriptionClient to grab a list of descriptors
