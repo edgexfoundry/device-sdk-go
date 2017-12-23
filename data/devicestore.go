@@ -74,7 +74,7 @@ func (ds *DeviceStore) Add(device models.Device) error {
 	}
 
 	// This is only the case for brand new devices
-	if device.OperatingState == models.OperatingState("enabled") {
+	if device.OperatingState == models.OperatingState("ENABLED") {
 		fmt.Fprintf(os.Stdout, "Initializing device: : %v\n", device)
 		// TODO: ${Protocol name}.initializeDevice(metaDevice);
 	}
@@ -135,19 +135,17 @@ func (ds *DeviceStore) Init(serviceId string) error {
 	// TODO: initialize watchers
 	// TODO: call Protocol.initialize
 
-	ds.pst.Init()
-
 	// TODO: consider removing this logic, as the use case for
 	// re-adding devices that exist in the core-metadata service
 	// isn't clear (crash recovery)?
 	for _, device := range metaDevices {
-		err = ds.dc.UpdateOpState(device.Id.Hex(), "disabled")
+		err = ds.dc.UpdateOpState(device.Id.Hex(), "DISABLED")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Update metadata DeviceOpState failed: %s; error: %v",
 				device.Name, err)
 		}
 
-		device.OperatingState = models.OperatingState("disabled")
+		device.OperatingState = models.OperatingState("DISABLED")
 		ds.Add(device)
 	}
 
@@ -283,7 +281,12 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 		}
 	}
 
-	// profiles.addDevice(device)
+	// TODO: need to check for error, and abort
+	err = ds.pst.addDevice(device)
+	if err != nil {
+		return err
+	}
+
 	ds.devices[device.Name] = device
 
 	return nil
