@@ -120,11 +120,19 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 		// NOTE - Java uses ArrayList.addAll, which gets rid of duplicates!
 
 		for _, ro := range resource.Get {
+
+			// TODO: note, Resource.Index isn't being set to 1 here...
+			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
+			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
 			fmt.Fprintf(os.Stderr, "pstore: adding Get ro: %v to ops\n", ro)
 			ops = append(ops, ro)
 		}
 
 		for _, ro := range resource.Set {
+
+			// TODO: note, Resource.Index isn't being set to 1 here...
+			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
+			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
 			fmt.Fprintf(os.Stderr, "pstore: adding Set ro: %v to ops\n", ro)
 			ops = append(ops, ro)
 		}
@@ -141,31 +149,8 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 
 	fmt.Fprintf(os.Stderr, "pstore: start-->DeviceResources\n")
 
-	// DeviceResources are not being handled correctly, entries in ops
-	// should be like this:
-        //  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
-	//  [operation=get, object=HoldingRegister_8454, property=value, parameter=HoldingRegister_8454, mappings={}, index=1],
-	//  [operation=get, object=HoldingRegister_2331, property=value, parameter=HoldingRegister_2331, mappings={}, index=1],
-	//  [operation=set, object=enableRandomization, property=value, parameter=enableRandomization, mappings={}, index=1],
-        //  [operation=set, object=collectionFrequency, property=value, parameter=collectionFrequency, mappings={}, index=1]]
-	//
-	// but instead looks like this:
-	//
-        //  ["index":null,"operation":"get","object":"HoldingRegister_8455","property":null,"parameter":null,"resource":null,"secondary":null,"mappings":null]
-        //  ["index":null,"operation":"get","object":"HoldingRegister_8454","property":null,"parameter":null,"resource":null,"secondary":null,"mappings":null]
-        //  ["index":null,"operation":"get","object":"HoldingRegister_2331","property":null,"parameter":null,"resource":null,"secondary":null,"mappings":null]
-	//  ["index":null,"operation":"set","object":"enableRandomization","property":null,"parameter":null,"resource":null,"secondary":null,"mappings":null]
-	//  ["index":null,"operation":"set","object":"collectionFrequency","property":null,"parameter":null,"resource":null,"secondary":null,"mappings":null]
-	//
-	// NOTE - parameter for each is "null"
-	//
-	// also note, that for DeviceResources at op(#1) have an empty slice for secondary, whereas these above are null:
-	//
-	// ["index":null,"operation":"set","object":"collectionFrequency","property":"value","parameter":"collectionFrequency","resource":null,"secondary":[],
-	//  "mappings":{}]
-
 	for _, object := range device.Profile.DeviceResources {
-		value := object.Properties
+		value := object.Properties.Value
 		fmt.Fprintf(os.Stderr, "pstore: deviceobject: %v\n", object)
 
 		deviceObjects[object.Name] = object
@@ -176,13 +161,20 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 		name := strings.ToLower(object.Name)
 
 		if _, ok := deviceOps[name]; !ok {
-			readWrite := strings.ToLower(value.Value.ReadWrite)
+			readWrite := strings.ToLower(value.ReadWrite)
 
 			fmt.Fprintf(os.Stderr, "pstore: couldn't find %s in deviceOps; readWrite: %s\n", name, readWrite)
 			operations := make(map[string][]models.ResourceOperation)
 
 			if strings.Contains(readWrite, "r") {
-				resource := &models.ResourceOperation{Operation: "get", Object: object.Name}
+				resource := &models.ResourceOperation{
+					Index: "1",
+					Object: object.Name,
+					Operation: "get",
+					Parameter: object.Name,
+					Property: "value",
+					Secondary: []string{},
+				}
 				getOp := []models.ResourceOperation{*resource}
 				key := strings.ToLower(resource.Operation)
 
@@ -191,7 +183,15 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 			}
 
 			if strings.Contains(readWrite, "w") {
-				resource := &models.ResourceOperation{Operation: "set", Object: object.Name}
+				resource := &models.ResourceOperation{
+					Index: "1",
+					Object: object.Name,
+					Operation: "set",
+					Parameter: object.Name,
+					Property: "value",
+					Secondary: []string{},
+				}
+
 				setOp := []models.ResourceOperation{*resource}
 				key := strings.ToLower(resource.Operation)
 
@@ -209,16 +209,7 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 	ps.objects[device.Name] = deviceObjects
 	ps.commands[device.Name] = deviceOps
 
-	// Create a value descriptor for each parameter using its underlying object
-//	for (ResourceOperation op: ops) {
-//		ValueDescriptor descriptor = descriptors.stream().filter(d -> d.getName()
-//			.equals(op.getParameter())).findAny().orElse(null);
-
-//		if (descriptor == null) {
-//			if (!usedDescriptors.contains(op.getParameter())) {
-//				continue;
-//			}
-
+outerLoop:
 	// Create a value descriptor for each parameter using its underlying object
 	for _, op := range ops {
 		var desc *models.ValueDescriptor
@@ -236,9 +227,12 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 		}
 
 		if desc == nil {
-			// TODO: fix this
-			//if (!usedDescriptors.contains(op.getParameter())) {
-			//continue;
+			for _, used := range usedDescriptors {
+				if op.Parameter == used {
+					continue outerLoop
+				}
+			}
+
 			for _, v := range device.Profile.DeviceResources {
 				fmt.Fprintf(os.Stdout, "ps: addDevice: op.Object: %s v.Name: %s\n", op.Object, v.Name)
 				if op.Object == v.Name {
