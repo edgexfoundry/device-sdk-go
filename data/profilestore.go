@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 
 /*
- * Copyright (C) 2017 Canonical Ltd
+ * Copyright (C) 2017-2018 Canonical Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,7 @@ func NewProfileStore() *ProfileStore {
 func (ps *ProfileStore) addDevice(device models.Device) error {
 	fmt.Fprintf(os.Stdout, "pstore: device: %s\n", device.Name)
 
+	// map[resource name]map[get|set][]models.ResourceOperation
 	var deviceOps = make(map[string]map[string][]models.ResourceOperation)
 
 	// TODO: need to vet size & capacity for both...
@@ -72,9 +73,11 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 	var usedDescriptors = make([]string, 0, 512)
 
 	// TODO: this should be done once, and changes watched...
+	// get current value descriptors from core-data
 	// ignore err, zero-value slice returned by default
 	descriptors, _ := ps.vdc.ValueDescriptors()
 	fmt.Fprintf(os.Stderr, "pstore: %d valuedescriptors returned\n", len(descriptors))
+	fmt.Fprintf(os.Stderr, "pstore: valuedescriptors: %v\n", descriptors)
 
 	// TODO: if profile is not complete, update it
 	if len(device.Profile.DeviceResources) == 0 {
@@ -99,9 +102,10 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 
 	for name, _ := range vdNames {
 		usedDescriptors = append(usedDescriptors, name)
+
 	}
 
-	//fmt.Fprintf(os.Stderr, "pstore: usedDescriptors: %v\n", usedDescriptors)
+	fmt.Fprintf(os.Stderr, "pstore: usedDescriptors: %v\n", usedDescriptors)
 
 	// ** Resources **
 
@@ -138,7 +142,8 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 		}
 	}
 
-	//fmt.Fprintf(os.Stderr, "\n\npstore: ops: %v\n\n", ops)
+	fmt.Fprintf(os.Stderr, "\n\npstore: ops: %v\n\n", ops)
+	fmt.Fprintf(os.Stderr, "\n\npstore: deviceOps: %v\n\n", deviceOps)
 
 	// put the device's profile objects in the objects map
 	// put the device's profile objects in the commands map if no resource exists
@@ -147,7 +152,7 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 	//Map<String, ${Protocol name}Object> deviceObjects = new HashMap<>();
 	deviceObjects := make(map[string]models.DeviceObject)
 
-	fmt.Fprintf(os.Stderr, "pstore: start-->DeviceResources\n")
+	fmt.Fprintf(os.Stderr, "\npstore: start-->DeviceResources\n\n")
 
 	for _, object := range device.Profile.DeviceResources {
 		value := object.Properties.Value
@@ -178,6 +183,8 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 				getOp := []models.ResourceOperation{*resource}
 				key := strings.ToLower(resource.Operation)
 
+				fmt.Fprintf(os.Stderr, "pstore: created new get operation %s: %v\n", key, getOp)
+
 				operations[key] = getOp
 				ops = append(ops, *resource)
 			}
@@ -195,21 +202,24 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 				setOp := []models.ResourceOperation{*resource}
 				key := strings.ToLower(resource.Operation)
 
+				fmt.Fprintf(os.Stderr, "pstore: created new get operation %s: %v\n", key, setOp)
+
 				operations[key] = setOp
 				ops = append(ops, *resource)
 			}
 
+			// TODO: can a deviceresource have no operations?
 			deviceOps[name] = operations
 		}
 	}
 
-	fmt.Fprintf(os.Stdout, "pstore: done w/deviceresources\n")
-	fmt.Fprintf(os.Stdout, "pstore: ops: %v\n", ops)
+	fmt.Fprintf(os.Stdout, "\npstore: done w/deviceresources\n\n")
+	fmt.Fprintf(os.Stdout, "pstore: ops: %v\n\n", ops)
+	fmt.Fprintf(os.Stderr, "\n\npstore: deviceOps: %v\n\n", deviceOps)
 
 	ps.objects[device.Name] = deviceObjects
 	ps.commands[device.Name] = deviceOps
 
-outerLoop:
 	// Create a value descriptor for each parameter using its underlying object
 	for _, op := range ops {
 		var desc *models.ValueDescriptor
@@ -227,10 +237,17 @@ outerLoop:
 		}
 
 		if desc == nil {
+			var found bool
+
+			// TODO: ask Tyler or Jim why this check is needed...
 			for _, used := range usedDescriptors {
 				if op.Parameter == used {
-					continue outerLoop
+					found = true
 				}
+			}
+
+			if !found {
+				continue
 			}
 
 			for _, v := range device.Profile.DeviceResources {
