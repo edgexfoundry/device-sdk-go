@@ -132,8 +132,7 @@ func (ds *DeviceStore) Init(serviceId string) error {
 
 	ds.devices = make(map[string]models.Device)
 
-	// TODO: initialize watchers
-	// TODO: call Protocol.initialize
+	// TODO: initialize watchers.initialize
 
 	// TODO: consider removing this logic, as the use case for
 	// re-adding devices that exist in the core-metadata service
@@ -148,6 +147,9 @@ func (ds *DeviceStore) Init(serviceId string) error {
 		device.OperatingState = models.OperatingState("DISABLED")
 		ds.Add(device)
 	}
+
+	// TODO: call Protocol.initialize
+	fmt.Fprintf(os.Stdout, "dstore: INITIALIZATION DONE! err=%v\n", err)
 
 	return err
 }
