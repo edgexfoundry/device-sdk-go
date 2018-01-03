@@ -30,17 +30,16 @@ var (
 )
 
 type ObjectStore struct {
-	pst           *ProfileStore
 	objects       map[string]map[string][]string
 	responses     map[string]map[string][]models.Reading
 	cacheSize     int
 	transformData bool
 }
 
-func NewObjectStore(pst *ProfileStore) *ObjectStore {
+func NewObjectStore() *ObjectStore {
 
 	osOnce.Do(func() {
-		objectStore = &ObjectStore{pst: pst}
+		objectStore = &ObjectStore{}
 	})
 
 	return objectStore
