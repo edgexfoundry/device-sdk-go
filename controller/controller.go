@@ -21,8 +21,6 @@ package controller
 
 import (
 	"github.com/gorilla/mux"
-	"io"
-	"net/http"	
 )
 
 // A Daemon listens for requests and routes them to the right command
@@ -31,19 +29,11 @@ type Mux struct {
 	router        *mux.Router
 }
 
-func StatusHandler(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, "pong");
-}
-
 func (m *Mux) Init() {
 	m.router = mux.NewRouter()
 	s := m.router.PathPrefix("/api/").Subrouter()
 
-	// TODO: move to status.go
-	s.HandleFunc("/v1/ping", StatusHandler)
-}
-
-func (m *Mux) Start() {
+	initStatus(s)
 }
 
 // New Mux
