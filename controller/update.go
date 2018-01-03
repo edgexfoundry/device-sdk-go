@@ -20,27 +20,36 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
+	"github.com/edgexfoundry/core-domain-go/models"
 	"github.com/gorilla/mux"
 )
 
-// TODO: need to add support for graceful shutdown
+func callbackHandler(w http.ResponseWriter, req *http.Request) {
+	// use req.Method vs. method
 
-// A Daemon listens for requests and routes them to the right command
-type Mux struct {
-	initialized   bool
-	router        *mux.Router
+	dec := json.NewDecoder(req.Body)
+	cbAlert := models.CallbackAlert{}
+
+	err := dec.Decode(&cbAlert)
+	if err != nil {
+		// TODO: handle error properly
+		fmt.Fprintf(os.Stderr, "service: callbackHandler invalid request: %v\n", err)
+	}
+
+	action := cbAlert.ActionType
+	id := cbAlert.Id
+
+	fmt.Fprintf(os.Stderr, "service: callbackHandler action: %v id: %s\n", action, id)
+
+	io.WriteString(w, "OK")
 }
 
-func (m *Mux) Init() {
-	m.router = mux.NewRouter()
-	initCommand(m.router)
-	initStatus(m.router)
-	initService(m.router)
-	initUpdate(m.router)
-}
-
-// New Mux
-// TODO: re-factor to make this a singleton
-func New() (*Mux, error) {
-	return &Mux{}, nil
+func initUpdate(r *mux.Router) {
+	r.HandleFunc("/api/v1/callback", callbackHandler)
 }

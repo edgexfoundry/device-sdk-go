@@ -20,27 +20,30 @@
 package controller
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/gorilla/mux"
 )
 
-// TODO: need to add support for graceful shutdown
+func commandHandler(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
 
-// A Daemon listens for requests and routes them to the right command
-type Mux struct {
-	initialized   bool
-	router        *mux.Router
+	fmt.Fprintf(os.Stdout, "command: device request: devid: %s cmd: %s", vars["deviceId"], vars["cmd"])
+	io.WriteString(w, "OK")
 }
 
-func (m *Mux) Init() {
-	m.router = mux.NewRouter()
-	initCommand(m.router)
-	initStatus(m.router)
-	initService(m.router)
-	initUpdate(m.router)
+func commandsHandler(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+
+	fmt.Fprintf(os.Stdout, "command: all devices request: cmd: %s", vars["cmd"])
+	io.WriteString(w, "OK")
 }
 
-// New Mux
-// TODO: re-factor to make this a singleton
-func New() (*Mux, error) {
-	return &Mux{}, nil
+func initCommand(r *mux.Router) {
+	s := r.PathPrefix("/api/v1/device").Subrouter()
+	s.HandleFunc("/{deviceId}/{cmd}", commandHandler)
+	s.HandleFunc("/all/{cmd}", commandsHandler)
 }
