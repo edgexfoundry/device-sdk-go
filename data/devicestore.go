@@ -16,8 +16,10 @@
  * limitations under the License.
  *
  */
-// TODO: one file in each package should contain a doc comment for the package.
-// Alternatively, this doc can go in a file called doc.go.
+
+// This package provides management of device service related
+// objects that may be distributed across one or more EdgeX
+// core microservices.
 package data
 
 import (
@@ -33,7 +35,6 @@ import (
 )
 
 type DeviceStore struct {
-	pst      *ProfileStore
 	proto    *gxds.ProtocolHandler
 	devices  map[string]models.Device
 	ac       metadataclients.AddressableClient
@@ -51,11 +52,20 @@ var (
 	metaDeviceUrl       string = "http://" + metaHost + metaPort + "/api/v1/device"
 )
 
+// Creates a singleton DeviceStore
+func NewDeviceStore(proto *gxds.ProtocolHandler) *DeviceStore {
+
+	dsOnce.Do(func() {
+		deviceStore = &DeviceStore{proto: proto}
+	})
+
+	return deviceStore
+}
+
 // TODO: used by Init() to populate the local cache
 // with devices pre-existing in metadata service, and
 // also by ScanList, to add newly detected devices.
-
-
+//
 // Add a new device to the local cache.
 func (ds *DeviceStore) Add(device models.Device) error {
 
@@ -156,16 +166,6 @@ func (ds *DeviceStore) Init(serviceId string) error {
 
 func (ds *DeviceStore) IsDeviceLocked(deviceId string) bool {
 	return false
-}
-
-// New DeviceStore
-func NewDeviceStore(pst *ProfileStore, proto *gxds.ProtocolHandler) *DeviceStore {
-
-	dsOnce.Do(func() {
-		deviceStore = &DeviceStore{pst: pst, proto: proto}
-	})
-
-	return deviceStore
 }
 
 func (ds *DeviceStore) Remove(device models.Device) error {
@@ -284,7 +284,7 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 	}
 
 	// TODO: need to check for error, and abort
-	err = ds.pst.addDevice(device)
+	err = profileStore.addDevice(device)
 	if err != nil {
 		return err
 	}

@@ -79,6 +79,7 @@ type Daemon struct {
 	dst           *data.DeviceStore
 	ost           *data.ObjectStore
 	pst           *data.ProfileStore
+	wst           *data.WatcherStore
 	proto         *gxds.ProtocolHandler
 }
 
@@ -239,8 +240,9 @@ func (d *Daemon) Init(configFile *string, proto *gxds.ProtocolHandler) error {
 
 	d.proto = proto
 	d.pst = data.NewProfileStore()
-	d.ost = data.NewObjectStore(d.pst)
-	d.dst = data.NewDeviceStore(d.pst, proto)
+	d.wst = data.NewWatcherStore()
+	d.ost = data.NewObjectStore()
+	d.dst = data.NewDeviceStore(proto)
 
 	// TODO: host, ports & urls are hard-coded in metadataclients
 	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
