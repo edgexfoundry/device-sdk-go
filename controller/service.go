@@ -20,27 +20,27 @@
 package controller
 
 import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/gorilla/mux"
 )
 
-// TODO: need to add support for graceful shutdown
-
-// A Daemon listens for requests and routes them to the right command
-type Mux struct {
-	initialized   bool
-	router        *mux.Router
+func discoveryHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Fprintf(os.Stdout, "service: discovery request")
+	io.WriteString(w, "OK")
 }
 
-func (m *Mux) Init() {
-	m.router = mux.NewRouter()
-	initCommand(m.router)
-	initStatus(m.router)
-	initService(m.router)
-	initUpdate(m.router)
+func transformHandler(w http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	fmt.Fprintf(os.Stdout, "service: transform request: transformData: %s", vars["transformData"])
+	io.WriteString(w, "OK")
 }
 
-// New Mux
-// TODO: re-factor to make this a singleton
-func New() (*Mux, error) {
-	return &Mux{}, nil
+func initService(r *mux.Router) {
+	s := r.PathPrefix("/api/v1").Subrouter()
+	s.HandleFunc("/discovery", discoveryHandler).Methods("POST")
+	s.HandleFunc("/debug/transformData/{transformData}", transformHandler).Methods("GET")
 }
