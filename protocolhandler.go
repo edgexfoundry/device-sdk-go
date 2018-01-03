@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 
 /*
- * Copyright (C) 2017 Canonical Ltd
+ * Copyright (C) 2017-2018 Canonical Ltd
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,21 @@
  *
  */
 
-// Package gxds defines an interface named ProtocolHandler, which is
-// used to provide the low-level device-specific functions necessary
-// to implement an EdgeX Foundry device service.
 package gxds
 
 import "github.com/edgexfoundry/core-domain-go/models"
 
-// A ProtocolHandler implements low-level protocol functions
+// ProtocolHandler is a high-level device-specific interface used by
+// by other components of an EdgeX device service to interact with
+// a specific class of devices.
 type ProtocolHandler interface {
 	Initialize()
 	DisconnectDevice(device models.Device)
 	InitializeDevice(device models.Device)
 	Scan()
-	CommandExists(device models.Device, command string) map[string]string
-	ExecuteCommand(device models.Device, command string, args string)
-	SendTransaction(deviceName string, readings []models.Reading)
+
+	// TODO: can CommandExists be handled by the devicestore?
+	CommandExists(device models.Device, command string) bool
+	ExecuteCommand(device models.Device, command string, args string) map[string]string
 	CompleteTransaction(transactionId string, opId string, readings []models.Reading)
 }
