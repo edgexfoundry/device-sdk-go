@@ -35,7 +35,7 @@ import (
 )
 
 type DeviceStore struct {
-	proto    *gxds.ProtocolHandler
+	proto    gxds.ProtocolHandler
 	devices  map[string]models.Device
 	ac       metadataclients.AddressableClient
 	dc       metadataclients.DeviceClient
@@ -53,7 +53,7 @@ var (
 )
 
 // Creates a singleton DeviceStore
-func NewDeviceStore(proto *gxds.ProtocolHandler) *DeviceStore {
+func NewDeviceStore(proto gxds.ProtocolHandler) *DeviceStore {
 
 	dsOnce.Do(func() {
 		deviceStore = &DeviceStore{proto: proto}

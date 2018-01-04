@@ -80,7 +80,7 @@ type Daemon struct {
 	ost           *data.ObjectStore
 	pst           *data.ProfileStore
 	wst           *data.WatcherStore
-	proto         *gxds.ProtocolHandler
+	proto         gxds.ProtocolHandler
 }
 
 func (d *Daemon) attemptInit(done chan<- struct{}) {
@@ -221,8 +221,11 @@ func (d *Daemon) loadConfig(configPath *string) error {
 }
 
 // Initialize the Daemon
-func (d *Daemon) Init(configFile *string, proto *gxds.ProtocolHandler) error {
+func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
+	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
+
+	// TODO: check if proto is nil, and fail...
 
 	err := d.loadConfig(configFile)
 	if err != nil {
