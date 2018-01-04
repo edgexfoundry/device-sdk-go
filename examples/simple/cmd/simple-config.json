@@ -1,0 +1,18 @@
+{
+    "name": "device-simple",
+    "host": "localhost",
+    "port": 49999,
+    "labels": [ "SDK", "scheduler" ],
+    "timeout": 5000,
+    "openMessage": "device-simple started",
+    "connectRetries": 3,
+    "connectWait": 5000,
+    "connectInterval": 10000,
+    "maxLimit": 100,
+    "heartBeatTime": 30000,
+    "dataTransform": true,
+    "metaHost": "localhost",
+    "metaPort": 48081,
+    "coreHost": "localhost",
+    "corePort": 48080
+}
