@@ -20,7 +20,7 @@
 // This package provides management of device service related
 // objects that may be distributed across one or more EdgeX
 // core microservices.
-package data
+package cache
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type DeviceStore struct {
+type DeviceCache struct {
 	proto    gxds.ProtocolHandler
 	devices  map[string]models.Device
 	ac       metadataclients.AddressableClient
@@ -42,8 +42,8 @@ type DeviceStore struct {
 }
 
 var (
-	dsOnce      sync.Once
-	deviceStore *DeviceStore
+	dcOnce      sync.Once
+	deviceCache *DeviceCache
 
 	// TODO: grab settings from daemon-config.json OR Consul
 	metaPort            string = ":48081"
@@ -53,13 +53,13 @@ var (
 )
 
 // Creates a singleton DeviceStore
-func NewDeviceStore(proto gxds.ProtocolHandler) *DeviceStore {
+func NewDeviceCache(proto gxds.ProtocolHandler) *DeviceCache {
 
-	dsOnce.Do(func() {
-		deviceStore = &DeviceStore{proto: proto}
+	dcOnce.Do(func() {
+		deviceCache = &DeviceCache{proto: proto}
 	})
 
-	return deviceStore
+	return deviceCache
 }
 
 // TODO: used by Init() to populate the local cache
@@ -67,18 +67,18 @@ func NewDeviceStore(proto gxds.ProtocolHandler) *DeviceStore {
 // also by ScanList, to add newly detected devices.
 //
 // Add a new device to the local cache.
-func (ds *DeviceStore) Add(device models.Device) error {
+func (d *DeviceCache) Add(device models.Device) error {
 
 	// if device already exists in devices, delete & re-add
-	if _, ok := ds.devices[device.Name]; ok {
-		delete(ds.devices, device.Name)
+	if _, ok := d.devices[device.Name]; ok {
+		delete(d.devices, device.Name)
 
 		// TODO: remove from profiles
 	}
 
 	fmt.Fprintf(os.Stdout, "Adding managed device: : %v\n", device)
 
-	err := ds.addDeviceToMetadata(device)
+	err := d.addDeviceToMetadata(device)
 	if err != nil {
 		return err
 	}
@@ -96,15 +96,15 @@ func (ds *DeviceStore) Add(device models.Device) error {
 // it's used by updatehandler to add a device with a known
 // Id, which was added to metadata by an external service
 // while the deviceservice is running.
-func (ds *DeviceStore) AddById(deviceId string) error {
+func (d *DeviceCache) AddById(deviceId string) error {
 	return nil
 }
 
-func (ds *DeviceStore) GetDevice(deviceName string) *models.Device {
+func (d *DeviceCache) GetDevice(deviceName string) *models.Device {
 	return nil
 }
 
-func (ds *DeviceStore) GetDeviceById(deviceId string) *models.Device {
+func (d *DeviceCache) GetDeviceById(deviceId string) *models.Device {
 	return nil
 }
 
@@ -112,27 +112,27 @@ func (ds *DeviceStore) GetDeviceById(deviceId string) *models.Device {
 // is used, as it's bad form to return an internal data struct to
 // callers, especially when the result is a map, which can then be
 // modified externally to this package.
-func (ds *DeviceStore) GetDevices() map[string]models.Device {
-	return ds.devices
+func (d *DeviceCache) GetDevices() map[string]models.Device {
+	return d.devices
 }
 
-func (ds *DeviceStore) GetMetaDevice(deviceName string) *models.Device {
+func (d *DeviceCache) GetMetaDevice(deviceName string) *models.Device {
 	return nil
 }
 
-func (ds *DeviceStore) GetMetaDeviceById(deviceId string) *models.Device {
+func (d *DeviceCache) GetMetaDeviceById(deviceId string) *models.Device {
 	return nil
 }
 
-func (ds *DeviceStore) GetMetaDevices() []models.Device {
+func (d *DeviceCache) GetMetaDevices() []models.Device {
 	return []models.Device{}
 }
 
-func (ds *DeviceStore) Init(serviceId string) error {
-	ds.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
-	ds.dc = metadataclients.NewDeviceClient(metaDeviceUrl)
+func (d *DeviceCache) Init(serviceId string) error {
+	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
+	d.dc = metadataclients.NewDeviceClient(metaDeviceUrl)
 
-	metaDevices, err := ds.dc.DevicesForService(serviceId)
+	metaDevices, err := d.dc.DevicesForService(serviceId)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "DevicesForService error: %v\n", err)
 		return err
@@ -140,7 +140,7 @@ func (ds *DeviceStore) Init(serviceId string) error {
 
 	fmt.Fprintf(os.Stderr, "returned devices %v\n", metaDevices)
 
-	ds.devices = make(map[string]models.Device)
+	d.devices = make(map[string]models.Device)
 
 	// TODO: initialize watchers.initialize
 
@@ -148,14 +148,14 @@ func (ds *DeviceStore) Init(serviceId string) error {
 	// re-adding devices that exist in the core-metadata service
 	// isn't clear (crash recovery)?
 	for _, device := range metaDevices {
-		err = ds.dc.UpdateOpState(device.Id.Hex(), "DISABLED")
+		err = d.dc.UpdateOpState(device.Id.Hex(), "DISABLED")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Update metadata DeviceOpState failed: %s; error: %v",
 				device.Name, err)
 		}
 
 		device.OperatingState = models.OperatingState("DISABLED")
-		ds.Add(device)
+		d.Add(device)
 	}
 
 	// TODO: call Protocol.initialize
@@ -164,11 +164,11 @@ func (ds *DeviceStore) Init(serviceId string) error {
 	return err
 }
 
-func (ds *DeviceStore) IsDeviceLocked(deviceId string) bool {
+func (d *DeviceCache) IsDeviceLocked(deviceId string) bool {
 	return false
 }
 
-func (ds *DeviceStore) Remove(device models.Device) error {
+func (d *DeviceCache) Remove(device models.Device) error {
 	// remove(device):
 	//  - if devices(device):
 	//    - remove from map
@@ -179,23 +179,23 @@ func (ds *DeviceStore) Remove(device models.Device) error {
 	return nil
 }
 
-func (ds *DeviceStore) RemoveById(deviceId string) error {
+func (d *DeviceCache) RemoveById(deviceId string) error {
 	return nil
 }
 
-func (ds *DeviceStore) SetDeviceOpState(deviceName string, state models.OperatingState) error {
+func (d *DeviceCache) SetDeviceOpState(deviceName string, state models.OperatingState) error {
 	return nil
 }
 
-func (ds *DeviceStore) SetDeviceByIdOpState(deviceId string, state models.OperatingState) error {
+func (d *DeviceCache) SetDeviceByIdOpState(deviceId string, state models.OperatingState) error {
 	return nil
 }
 
-func (ds *DeviceStore) Update(deviceId string) error {
+func (d *DeviceCache) Update(deviceId string) error {
 	return nil
 }
 
-func (ds *DeviceStore) UpdateProfile(profileId string) error {
+func (d *DeviceCache) UpdateProfile(profileId string) error {
 	return nil
 }
 
@@ -204,10 +204,10 @@ func (ds *DeviceStore) UpdateProfile(profileId string) error {
 // adds it to the local cache, and one that adds a brand
 // new device.
 
-func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
+func (d *DeviceCache) addDeviceToMetadata(device models.Device) error {
 	// TODO: fix metadataclients to indicate !found, vs. returned zeroed struct!
 	fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", device.Addressable.Name)
-	addr, err := ds.ac.AddressableForName(device.Addressable.Name)
+	addr, err := d.ac.AddressableForName(device.Addressable.Name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "AddressClient.AddressableForName: %s; failed: %v\n", device.Addressable.Name, err)
 
@@ -223,7 +223,7 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 		addr.BaseObject.Origin = time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 		fmt.Fprintf(os.Stdout, "Creating new Addressable Object with name: %v", addr)
 
-		id, err := ds.ac.Add(&addr)
+		id, err := d.ac.Add(&addr)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "AddressClient.Add: %s; failed: %v\n", device.Addressable.Name, err)
 			return err
@@ -244,7 +244,7 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 	// A device without a valid Id is new
 	if device.Id.Valid() == false {
 		fmt.Fprintf(os.Stdout, "Trying to find device for: %s\n", device.Name)
-		metaDevice, err := ds.dc.DeviceForName(device.Name)
+		metaDevice, err := d.dc.DeviceForName(device.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "DeviceClient.DeviceForName: %s; failed: %v\n", device.Name, err)
 		}
@@ -253,7 +253,7 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 		if metaDevice.Name != device.Name {
 			fmt.Fprintf(os.Stdout, "Adding Device to Metadata: %s\n", device.Name)
 
-			id, err := ds.dc.Add(&device)
+			id, err := d.dc.Add(&device)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "DeviceClient.Add for %s failed: %v", device.Name, err)
 				return err
@@ -273,7 +273,7 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 			device.Id = metaDevice.Id
 
 			if device.OperatingState != metaDevice.OperatingState {
-				err := ds.dc.UpdateOpState(device.Id.Hex(), string(device.OperatingState))
+				err := d.dc.UpdateOpState(device.Id.Hex(), string(device.OperatingState))
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "DeviceClient.UpdateOpState: %s; failed: %v\n", device.Name, err)
 				}
@@ -284,12 +284,12 @@ func (ds *DeviceStore) addDeviceToMetadata(device models.Device) error {
 	}
 
 	// TODO: need to check for error, and abort
-	err = profileStore.addDevice(device)
+	err = profileCache.addDevice(device)
 	if err != nil {
 		return err
 	}
 
-	ds.devices[device.Name] = device
+	d.devices[device.Name] = device
 
 	return nil
 }

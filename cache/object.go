@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package data
+package cache
 
 import (
 	"sync"
@@ -25,41 +25,41 @@ import (
 )
 
 var (
-	osOnce      sync.Once
-	objectStore *ObjectStore
+	ocOnce      sync.Once
+	objectCache *ObjectCache
 )
 
-type ObjectStore struct {
+type ObjectCache struct {
 	objects       map[string]map[string][]string
 	responses     map[string]map[string][]models.Reading
 	cacheSize     int
 	transformData bool
 }
 
-func NewObjectStore() *ObjectStore {
+func NewObjectCache() *ObjectCache {
 
-	osOnce.Do(func() {
-		objectStore = &ObjectStore{}
+	ocOnce.Do(func() {
+		objectCache = &ObjectCache{}
 	})
 
-	return objectStore
+	return objectCache
 }
 
 //   public String get(String deviceId, String object) JsonObject (java) {
-func (os *ObjectStore) Get(device models.Device, op models.ResourceOperation) string {
+func (oc *ObjectCache) Get(device models.Device, op models.ResourceOperation) string {
 	return ""
 }
 
-func (os *ObjectStore) Put(device models.Device, op models.ResourceOperation, value string) {
+func (oc *ObjectCache) Put(device models.Device, op models.ResourceOperation, value string) {
 }
 
-func (os *ObjectStore) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
+func (oc *ObjectCache) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
 	return nil
 }
 
-func (os *ObjectStore) GetTransformData() bool {
+func (oc *ObjectCache) GetTransformData() bool {
 	return false
 }
 
-func (os *ObjectStore) SetTransformData(transform bool) {
+func (oc *ObjectCache) SetTransformData(transform bool) {
 }

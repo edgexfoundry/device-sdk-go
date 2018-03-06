@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package data
+package cache
 
 import (
 	"fmt"
@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	psOnce      sync.Once
-	profileStore *ProfileStore
+	pcOnce       sync.Once
+	profileCache *ProfileCache
 
 	// TODO: grab settings from daemon-config.json OR Consul
 	dataPort            string = ":48080"
@@ -39,7 +39,7 @@ var (
 	dataValueDescUrl    string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
 )
 
-type ProfileStore struct {
+type ProfileCache struct {
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
@@ -48,21 +48,21 @@ type ProfileStore struct {
 }
 
 // Create a singleton ProfileStore instance
-func NewProfileStore() *ProfileStore {
+func NewProfileCache() *ProfileCache {
 
-	psOnce.Do(func() {
-		profileStore = &ProfileStore{}
-		profileStore.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
-		profileStore.objects = make(map[string]map[string]models.DeviceObject)
-		profileStore.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
+	pcOnce.Do(func() {
+		profileCache = &ProfileCache{}
+		profileCache.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
+		profileCache.objects = make(map[string]map[string]models.DeviceObject)
+		profileCache.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
 	})
 
-	return profileStore
+	return profileCache
 }
 
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
-func (ps *ProfileStore) addDevice(device models.Device) error {
+func (p *ProfileCache) addDevice(device models.Device) error {
 	fmt.Fprintf(os.Stdout, "pstore: device: %s\n", device.Name)
 
 	// map[resource name]map[get|set][]models.ResourceOperation
@@ -75,7 +75,7 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 	// TODO: this should be done once, and changes watched...
 	// get current value descriptors from core-data
 	// ignore err, zero-value slice returned by default
-	descriptors, _ := ps.vdc.ValueDescriptors()
+	descriptors, _ := p.vdc.ValueDescriptors()
 	fmt.Fprintf(os.Stderr, "pstore: %d valuedescriptors returned\n", len(descriptors))
 	fmt.Fprintf(os.Stderr, "pstore: valuedescriptors: %v\n", descriptors)
 
@@ -217,8 +217,8 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 	fmt.Fprintf(os.Stdout, "pstore: ops: %v\n\n", ops)
 	fmt.Fprintf(os.Stderr, "\n\npstore: deviceOps: %v\n\n", deviceOps)
 
-	ps.objects[device.Name] = deviceObjects
-	ps.commands[device.Name] = deviceOps
+	p.objects[device.Name] = deviceObjects
+	p.commands[device.Name] = deviceOps
 
 	// Create a value descriptor for each parameter using its underlying object
 	for _, op := range ops {
@@ -258,31 +258,31 @@ func (ps *ProfileStore) addDevice(device models.Device) error {
 				}
 			}
 
-			desc = ps.createDescriptor(op.Parameter, *object)
+			desc = p.createDescriptor(op.Parameter, *object)
 			if desc == nil {
 				// TODO: should the whole thing unwind due to this failure?
 
 			}
 		}
 
-		ps.descriptors = append(ps.descriptors, *desc)
+		p.descriptors = append(p.descriptors, *desc)
 		descriptors = append(descriptors, *desc)
 	}
 
 	return nil
 }
 
-func (ps *ProfileStore) updateDevice(device models.Device) {
-	ps.removeDevice(device)
-	ps.addDevice(device)
+func (p *ProfileCache) updateDevice(device models.Device) {
+	p.removeDevice(device)
+	p.addDevice(device)
 }
 
-func (ps *ProfileStore) removeDevice(device models.Device) {
-    delete(ps.objects, device.Name)
-    delete(ps.commands, device.Name)
+func (p *ProfileCache) removeDevice(device models.Device) {
+    delete(p.objects, device.Name)
+    delete(p.commands, device.Name)
 }
 
-func (ps *ProfileStore) createDescriptor(name string, object models.DeviceObject) *models.ValueDescriptor {
+func (p *ProfileCache) createDescriptor(name string, object models.DeviceObject) *models.ValueDescriptor {
 	value := object.Properties.Value
 	units := object.Properties.Units
 
@@ -300,7 +300,7 @@ func (ps *ProfileStore) createDescriptor(name string, object models.DeviceObject
 		Description: object.Description,
 	}
 
-	id, err := ps.vdc.Add(descriptor)
+	id, err := p.vdc.Add(descriptor)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Add ValueDescriptor failed: %v\n", err)
 		return nil
