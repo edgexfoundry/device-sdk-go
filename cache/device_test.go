@@ -18,7 +18,7 @@
  */
 // TODO: one file in each package should contain a doc comment for the package.
 // Alternatively, this doc can go in a file called doc.go.
-package data
+package cache
 
 import "testing"
 
