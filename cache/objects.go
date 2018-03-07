@@ -26,40 +26,40 @@ import (
 
 var (
 	ocOnce      sync.Once
-	objectCache *ObjectCache
+	cache       *Objects
 )
 
-type ObjectCache struct {
+type Objects struct {
 	objects       map[string]map[string][]string
 	responses     map[string]map[string][]models.Reading
 	cacheSize     int
 	transformData bool
 }
 
-func NewObjectCache() *ObjectCache {
+func NewObjects() *Objects {
 
 	ocOnce.Do(func() {
-		objectCache = &ObjectCache{}
+		cache = &Objects{}
 	})
 
-	return objectCache
+	return cache
 }
 
 //   public String get(String deviceId, String object) JsonObject (java) {
-func (oc *ObjectCache) Get(device models.Device, op models.ResourceOperation) string {
+func (oc *Objects) Get(device models.Device, op models.ResourceOperation) string {
 	return ""
 }
 
-func (oc *ObjectCache) Put(device models.Device, op models.ResourceOperation, value string) {
+func (oc *Objects) Put(device models.Device, op models.ResourceOperation, value string) {
 }
 
-func (oc *ObjectCache) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
+func (oc *Objects) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
 	return nil
 }
 
-func (oc *ObjectCache) GetTransformData() bool {
+func (oc *Objects) GetTransformData() bool {
 	return false
 }
 
-func (oc *ObjectCache) SetTransformData(transform bool) {
+func (oc *Objects) SetTransformData(transform bool) {
 }
