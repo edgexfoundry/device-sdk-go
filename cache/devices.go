@@ -34,7 +34,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type DeviceCache struct {
+type Device struct {
 	proto    gxds.ProtocolHandler
 	devices  map[string]models.Device
 	ac       metadataclients.AddressableClient
@@ -43,7 +43,7 @@ type DeviceCache struct {
 
 var (
 	dcOnce      sync.Once
-	deviceCache *DeviceCache
+	cache       *Device
 
 	// TODO: grab settings from daemon-config.json OR Consul
 	metaPort            string = ":48081"
@@ -53,13 +53,13 @@ var (
 )
 
 // Creates a singleton DeviceStore
-func NewDeviceCache(proto gxds.ProtocolHandler) *DeviceCache {
+func NewCache(proto gxds.ProtocolHandler) *Device {
 
 	dcOnce.Do(func() {
-		deviceCache = &DeviceCache{proto: proto}
+		cache = &Device{proto: proto}
 	})
 
-	return deviceCache
+	return cache
 }
 
 // TODO: used by Init() to populate the local cache
@@ -67,7 +67,7 @@ func NewDeviceCache(proto gxds.ProtocolHandler) *DeviceCache {
 // also by ScanList, to add newly detected devices.
 //
 // Add a new device to the local cache.
-func (d *DeviceCache) Add(device models.Device) error {
+func (d *Device) Add(device models.Device) error {
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[device.Name]; ok {
@@ -96,15 +96,15 @@ func (d *DeviceCache) Add(device models.Device) error {
 // it's used by updatehandler to add a device with a known
 // Id, which was added to metadata by an external service
 // while the deviceservice is running.
-func (d *DeviceCache) AddById(deviceId string) error {
+func (d *Device) AddById(deviceId string) error {
 	return nil
 }
 
-func (d *DeviceCache) GetDevice(deviceName string) *models.Device {
+func (d *Device) GetDevice(deviceName string) *models.Device {
 	return nil
 }
 
-func (d *DeviceCache) GetDeviceById(deviceId string) *models.Device {
+func (d *Device) GetDeviceById(deviceId string) *models.Device {
 	return nil
 }
 
@@ -112,23 +112,23 @@ func (d *DeviceCache) GetDeviceById(deviceId string) *models.Device {
 // is used, as it's bad form to return an internal data struct to
 // callers, especially when the result is a map, which can then be
 // modified externally to this package.
-func (d *DeviceCache) GetDevices() map[string]models.Device {
+func (d *Device) GetDevices() map[string]models.Device {
 	return d.devices
 }
 
-func (d *DeviceCache) GetMetaDevice(deviceName string) *models.Device {
+func (d *Device) GetMetaDevice(deviceName string) *models.Device {
 	return nil
 }
 
-func (d *DeviceCache) GetMetaDeviceById(deviceId string) *models.Device {
+func (d *Device) GetMetaDeviceById(deviceId string) *models.Device {
 	return nil
 }
 
-func (d *DeviceCache) GetMetaDevices() []models.Device {
+func (d *Device) GetMetaDevices() []models.Device {
 	return []models.Device{}
 }
 
-func (d *DeviceCache) Init(serviceId string) error {
+func (d *Device) Init(serviceId string) error {
 	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
 	d.dc = metadataclients.NewDeviceClient(metaDeviceUrl)
 
@@ -164,11 +164,11 @@ func (d *DeviceCache) Init(serviceId string) error {
 	return err
 }
 
-func (d *DeviceCache) IsDeviceLocked(deviceId string) bool {
+func (d *Device) IsDeviceLocked(deviceId string) bool {
 	return false
 }
 
-func (d *DeviceCache) Remove(device models.Device) error {
+func (d *Device) Remove(device models.Device) error {
 	// remove(device):
 	//  - if devices(device):
 	//    - remove from map
@@ -179,23 +179,23 @@ func (d *DeviceCache) Remove(device models.Device) error {
 	return nil
 }
 
-func (d *DeviceCache) RemoveById(deviceId string) error {
+func (d *Device) RemoveById(deviceId string) error {
 	return nil
 }
 
-func (d *DeviceCache) SetDeviceOpState(deviceName string, state models.OperatingState) error {
+func (d *Device) SetDeviceOpState(deviceName string, state models.OperatingState) error {
 	return nil
 }
 
-func (d *DeviceCache) SetDeviceByIdOpState(deviceId string, state models.OperatingState) error {
+func (d *Device) SetDeviceByIdOpState(deviceId string, state models.OperatingState) error {
 	return nil
 }
 
-func (d *DeviceCache) Update(deviceId string) error {
+func (d *Device) Update(deviceId string) error {
 	return nil
 }
 
-func (d *DeviceCache) UpdateProfile(profileId string) error {
+func (d *Device) UpdateProfile(profileId string) error {
 	return nil
 }
 
@@ -204,7 +204,7 @@ func (d *DeviceCache) UpdateProfile(profileId string) error {
 // adds it to the local cache, and one that adds a brand
 // new device.
 
-func (d *DeviceCache) addDeviceToMetadata(device models.Device) error {
+func (d *Device) addDeviceToMetadata(device models.Device) error {
 	// TODO: fix metadataclients to indicate !found, vs. returned zeroed struct!
 	fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", device.Addressable.Name)
 	addr, err := d.ac.AddressableForName(device.Addressable.Name)
