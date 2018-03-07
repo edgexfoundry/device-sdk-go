@@ -31,7 +31,7 @@ import (
 
 var (
 	pcOnce       sync.Once
-	cache        *Profiles
+	profiles     *Profiles
 
 	// TODO: grab settings from daemon-config.json OR Consul
 	dataPort            string = ":48080"
@@ -51,13 +51,13 @@ type Profiles struct {
 func NewProfiles() *Profiles {
 
 	pcOnce.Do(func() {
-		cache = &Profiles{}
-		cache.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
-		cache.objects = make(map[string]map[string]models.DeviceObject)
-		cache.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
+		profiles = &Profiles{}
+		profiles.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
+		profiles.objects = make(map[string]map[string]models.DeviceObject)
+		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
 	})
 
-	return cache
+	return profiles
 }
 
 // TODO: this function is based on the original Java device-sdk-tools,

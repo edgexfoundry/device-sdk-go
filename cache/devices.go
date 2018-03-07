@@ -43,7 +43,7 @@ type Devices struct {
 
 var (
 	dcOnce      sync.Once
-	cache       *Devices
+	devices     *Devices
 
 	// TODO: grab settings from daemon-config.json OR Consul
 	metaPort            string = ":48081"
@@ -56,10 +56,10 @@ var (
 func NewDevices(proto gxds.ProtocolHandler) *Devices {
 
 	dcOnce.Do(func() {
-		cache = &Devices{proto: proto}
+		devices = &Devices{proto: proto}
 	})
 
-	return cache
+	return devices
 }
 
 // TODO: used by Init() to populate the local cache
@@ -284,7 +284,7 @@ func (d *Devices) addDeviceToMetadata(device models.Device) error {
 	}
 
 	// TODO: need to check for error, and abort
-	err = profileCache.addDevice(device)
+	err = profiles.addDevice(device)
 	if err != nil {
 		return err
 	}
