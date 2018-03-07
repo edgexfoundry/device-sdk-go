@@ -42,22 +42,24 @@ var (
 )
 
 type configFile struct {
-	ServiceName     string
-	ServiceHost     string
-	ServicePort     int
-	Labels          []string
-	Timeout         int
-	OpenMessage     string
-	ConnectRetries  int
-	ConnectWait     int
-	ConnectInterval int
-	MaxLimit        int
-	HeartBeatTime   int
-	DataTransform   bool
-	MetaHost        string
-	MetaPort        int
-	CoreHost        string
-	CorePort        int
+	ServiceName      string
+	ServiceHost      string
+	ServicePort      int
+	Labels           []string
+	Timeout          int
+	OpenMessage      string
+	ConnectRetries   int
+	ConnectWait      int
+	ConnectInterval  int
+	MaxLimit         int
+	HeartBeatTime    int
+	DataTransform    bool
+	MetaHost         string
+	MetaPort         int
+	CoreHost         string
+	CorePort         int
+	LoggingFile      string
+	LoggingRemoteURL string
 }
 
 // TODO:
@@ -159,7 +161,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			Service: models.Service{
 				Name:           d.config.ServiceName,
 				Labels:         d.config.Labels,
-				OperatingState: "enabled",
+				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
 			AdminState:     "unlocked",				
@@ -235,6 +237,9 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 		return err
 	}
 
+	fmt.Fprintf(os.Stdout, "LoggingFile is: %v\n", d.config.LoggingFile)
+	fmt.Fprintf(os.Stdout, "LoggingRemoteURL is: %v\n", d.config.LoggingRemoteURL)
+	
 	done := make(chan struct{})
 
 	d.mux, err = controller.New()
