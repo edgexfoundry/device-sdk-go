@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"bitbucket.org/tonyespy/gxds/controller"
-	"bitbucket.org/tonyespy/gxds/data"
+	"bitbucket.org/tonyespy/gxds/cache"
 	"bitbucket.org/tonyespy/gxds"
 	"github.com/edgexfoundry/core-clients-go/metadataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
@@ -76,10 +76,10 @@ type Daemon struct {
 	sc            metadataclients.ServiceClient
 	ds            models.DeviceService
 	mux           *controller.Mux
-	dst           *data.DeviceStore
-	ost           *data.ObjectStore
-	pst           *data.ProfileStore
-	wst           *data.WatcherStore
+	dc            *data.DeviceCache
+	oc            *data.ObjectCache
+	pc            *data.ProfileCache
+	wc            *data.WatcherCache
 	proto         gxds.ProtocolHandler
 }
 
@@ -242,10 +242,10 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	}
 
 	d.proto = proto
-	d.pst = data.NewProfileStore()
-	d.wst = data.NewWatcherStore()
-	d.ost = data.NewObjectStore()
-	d.dst = data.NewDeviceStore(proto)
+	d.pc = data.NewProfileCache()
+	d.wc = data.NewWatcherCache()
+	d.oc = data.NewObjectCache()
+	d.dc = data.NewDeviceCache(proto)
 
 	// TODO: host, ports & urls are hard-coded in metadataclients
 	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
