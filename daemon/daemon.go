@@ -76,10 +76,10 @@ type Daemon struct {
 	sc            metadataclients.ServiceClient
 	ds            models.DeviceService
 	mux           *controller.Mux
-	dc            *data.DeviceCache
-	oc            *data.ObjectCache
-	pc            *data.ProfileCache
-	wc            *data.WatcherCache
+	dc            *cache.Devices
+	oc            *cache.Objects
+	pc            *cache.Profiles
+	wc            *cache.Watchers
 	proto         gxds.ProtocolHandler
 }
 
@@ -242,10 +242,10 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	}
 
 	d.proto = proto
-	d.pc = data.NewProfileCache()
-	d.wc = data.NewWatcherCache()
-	d.oc = data.NewObjectCache()
-	d.dc = data.NewDeviceCache(proto)
+	d.pc = cache.NewProfiles()
+	d.wc = cache.NewWatchers()
+	d.oc = cache.NewObjects()
+	d.dc = cache.NewDevices(proto)
 
 	// TODO: host, ports & urls are hard-coded in metadataclients
 	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
