@@ -33,17 +33,17 @@ type Watchers struct {
 
 var (
 	wcOnce       sync.Once
-	cache        *Watchers
+	watchers     *Watchers
 )
 
 // Create a singleton WatcherCache instance
 func NewWatchers() *Watchers {
 
 	wcOnce.Do(func() {
-		cache = &Watchers{}
+		watchers = &Watchers{}
 	})
 
-	return cache
+	return watchers
 }
 
 

@@ -26,7 +26,7 @@ import (
 
 var (
 	ocOnce      sync.Once
-	cache       *Objects
+	objects     *Objects
 )
 
 type Objects struct {
@@ -39,27 +39,27 @@ type Objects struct {
 func NewObjects() *Objects {
 
 	ocOnce.Do(func() {
-		cache = &Objects{}
+		objects = &Objects{}
 	})
 
-	return cache
+	return objects
 }
 
 //   public String get(String deviceId, String object) JsonObject (java) {
-func (oc *Objects) Get(device models.Device, op models.ResourceOperation) string {
+func (o *Objects) Get(device models.Device, op models.ResourceOperation) string {
 	return ""
 }
 
-func (oc *Objects) Put(device models.Device, op models.ResourceOperation, value string) {
+func (o *Objects) Put(device models.Device, op models.ResourceOperation, value string) {
 }
 
-func (oc *Objects) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
+func (o *Objects) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
 	return nil
 }
 
-func (oc *Objects) GetTransformData() bool {
+func (o *Objects) GetTransformData() bool {
 	return false
 }
 
-func (oc *Objects) SetTransformData(transform bool) {
+func (o *Objects) SetTransformData(transform bool) {
 }
