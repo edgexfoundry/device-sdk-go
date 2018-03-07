@@ -37,7 +37,7 @@ var flags struct {
 func init() {
 	fmt.Fprintf(os.Stdout, "Init called\n")
 
-	flags.configPath = flag.String("config", "./simple-config.json", "simple configuration file")
+	flags.configPath = flag.String("config", "./configuration.json", "simple configuration file")
 }
 
 func main() {
