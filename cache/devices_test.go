@@ -22,11 +22,11 @@ package cache
 
 import "testing"
 
-func TestNewDeviceStore(t *testing.T) {
+func TestNewDevices(t *testing.T) {
 
-	ds1 := NewDeviceStore(nil)
-	ds2 := NewDeviceStore(nil)
-	if ds1 != ds2 {
+	d1 := NewDevices(nil)
+	d2 := NewDevices(nil)
+	if d1 != d2 {
 		t.Error("Broken singleton")
 	}
 }
