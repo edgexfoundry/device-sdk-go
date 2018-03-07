@@ -15,4 +15,6 @@
     "MetadbPort": 48081,
     "CoreDataHost": "localhost",
     "CoreDataPort": 48080
+    "LoggingFile": "./device-simple.log"
+    "LoggingRemoteURL": ""
 }
