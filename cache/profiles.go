@@ -31,7 +31,7 @@ import (
 
 var (
 	pcOnce       sync.Once
-	profileCache *Profile
+	cache        *Profiles
 
 	// TODO: grab settings from daemon-config.json OR Consul
 	dataPort            string = ":48080"
@@ -39,7 +39,7 @@ var (
 	dataValueDescUrl    string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
 )
 
-type Profile struct {
+type Profiles struct {
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
@@ -48,21 +48,21 @@ type Profile struct {
 }
 
 // Create a singleton ProfileStore instance
-func NewProfile() *Profile {
+func NewProfiles() *Profiles {
 
 	pcOnce.Do(func() {
-		profileCache = &Profile{}
-		profileCache.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
-		profileCache.objects = make(map[string]map[string]models.DeviceObject)
-		profileCache.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
+		cache = &Profiles{}
+		cache.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
+		cache.objects = make(map[string]map[string]models.DeviceObject)
+		cache.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
 	})
 
-	return profileCache
+	return cache
 }
 
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
-func (p *Profile) addDevice(device models.Device) error {
+func (p *Profiles) addDevice(device models.Device) error {
 	fmt.Fprintf(os.Stdout, "pstore: device: %s\n", device.Name)
 
 	// map[resource name]map[get|set][]models.ResourceOperation
@@ -272,17 +272,17 @@ func (p *Profile) addDevice(device models.Device) error {
 	return nil
 }
 
-func (p *Profile) updateDevice(device models.Device) {
+func (p *Profiles) updateDevice(device models.Device) {
 	p.removeDevice(device)
 	p.addDevice(device)
 }
 
-func (p *Profile) removeDevice(device models.Device) {
+func (p *Profiles) removeDevice(device models.Device) {
     delete(p.objects, device.Name)
     delete(p.commands, device.Name)
 }
 
-func (p *Profile) createDescriptor(name string, object models.DeviceObject) *models.ValueDescriptor {
+func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *models.ValueDescriptor {
 	value := object.Properties.Value
 	units := object.Properties.Units
 
