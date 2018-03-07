@@ -42,9 +42,9 @@ var (
 )
 
 type configFile struct {
-	Name            string
-	Host            string
-	Port            int
+	ServiceName     string
+	ServiceHost     string
+	ServicePort     int
 	Labels          []string
 	Timeout         int
 	OpenMessage     string
@@ -76,18 +76,20 @@ type Daemon struct {
 	sc            metadataclients.ServiceClient
 	ds            models.DeviceService
 	mux           *controller.Mux
-	dc            *cache.Devices
-	oc            *cache.Objects
-	pc            *cache.Profiles
-	wc            *cache.Watchers
+	cd            *cache.Devices
+	co            *cache.Objects
+	cp            *cache.Profiles
+	cw            *cache.Watchers
 	proto         gxds.ProtocolHandler
 }
 
 func (d *Daemon) attemptInit(done chan<- struct{}) {
 	defer func() { done <- struct{}{} }()
 
-	fmt.Fprintf(os.Stderr, "Trying to find ds: %s\n", d.config.Name)
-	ds, err := d.sc.DeviceServiceForName(d.config.Name)
+	// TODO: service name should NOT be a configuration paramter
+	// but instead must be hard-coded in the DS
+	fmt.Fprintf(os.Stderr, "Trying to find ds: %s\n", d.config.ServiceName)
+	ds, err := d.sc.DeviceServiceForName(d.config.ServiceName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "DeviceServicForName failed: %v\n", err)
 
@@ -102,14 +104,14 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 	fmt.Fprintf(os.Stderr, "DeviceServiceId is: %s\n", ds.Service.Id)
 	
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Service.Name != d.config.Name {
-		fmt.Fprintf(os.Stderr, "Failed to find ds: %s; attempts: %d\n", d.config.Name, d.initAttempts)
+	if ds.Service.Name != d.config.ServiceName {
+		fmt.Fprintf(os.Stderr, "Failed to find ds: %s; attempts: %d\n", d.config.ServiceName, d.initAttempts)
 
 		// check for addressable
-		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", d.config.Name)
-		addr, err := d.ac.AddressableForName(d.config.Name)
+		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", d.config.ServiceName)
+		addr, err := d.ac.AddressableForName(d.config.ServiceName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "AddressableForName: %s; failed: %v\n", d.config.Name, err)
+			fmt.Fprintf(os.Stderr, "AddressableForName: %s; failed: %v\n", d.config.ServiceName, err)
 
 			// don't quit, but instead try to create addressable & service
 		}
@@ -117,17 +119,17 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 
 		// TODO: same as above
-		if addr.Name != d.config.Name {
+		if addr.Name != d.config.ServiceName {
 			// TODO: does HTTPMethod need to be specified?
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin:     millis,
 				},
-				Name:       d.config.Name,
+				Name:       d.config.ServiceName,
 				HTTPMethod: "POST",
 				Protocol:   "HTTP",
-				Address:    d.config.Host,
-				Port:       d.config.Port,
+				Address:    d.config.ServiceHost,
+				Port:       d.config.ServicePort,
 				Path:       "/api/v1/callback",
 			}
 			addr.Origin = millis
@@ -135,7 +137,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			// use d.clientService to register Addressable
 			id, err := d.ac.Add(&addr)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Add Addressable: %s; failed: %v\n", d.config.Name, err)
+				fmt.Fprintf(os.Stderr, "Add Addressable: %s; failed: %v\n", d.config.ServiceName, err)
 				return
 			}
 
@@ -155,7 +157,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// setup the service
 		ds = models.DeviceService{
 			Service: models.Service{
-				Name:           d.config.Name,
+				Name:           d.config.ServiceName,
 				Labels:         d.config.Labels,
 				OperatingState: "enabled",
 				Addressable:    addr,
@@ -171,7 +173,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// use d.clientService to register the deviceservice
 		id, err := d.sc.Add(&ds)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Add Deviceservice: %s; failed: %v\n", d.config.Name, err)
+			fmt.Fprintf(os.Stderr, "Add Deviceservice: %s; failed: %v\n", d.config.ServiceName, err)
 			return
 		}
 
@@ -192,7 +194,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		d.initialized = true
 		d.ds = ds
 	} else {
-		fmt.Fprintf(os.Stderr, "Found ds.Name: %s, d.config.Name: %s\n", ds.Service.Name, d.config.Name)
+		fmt.Fprintf(os.Stderr, "Found ds.Name: %s, d.config.ServiceName: %s\n", ds.Service.Name, d.config.ServiceName)
 		d.initialized = true
 		d.ds = ds
 	}
@@ -242,10 +244,10 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	}
 
 	d.proto = proto
-	d.pc = cache.NewProfiles()
-	d.wc = cache.NewWatchers()
-	d.oc = cache.NewObjects()
-	d.dc = cache.NewDevices(proto)
+	d.cp = cache.NewProfiles()
+	d.cw = cache.NewWatchers()
+	d.co = cache.NewObjects()
+	d.cd = cache.NewDevices(proto)
 
 	// TODO: host, ports & urls are hard-coded in metadataclients
 	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
@@ -269,7 +271,7 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 
 	// initialize devicestore
 	// TODO: add method to Service to return this...
-	d.dst.Init(d.ds.Service.Id.Hex())
+	d.cd.Init(d.ds.Service.Id.Hex())
 
 	// TODO: initialize scheduler
 	// TODO: configure gorillamux
