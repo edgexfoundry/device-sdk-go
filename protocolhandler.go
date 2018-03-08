@@ -17,6 +17,9 @@
  *
  */
 
+// Package gxds defines interfaces used to build an EdgeX Foundry device
+// service.  These interaces provide and asbstraction layer for the device
+// or protocol specific logic of a device service.
 package gxds
 
 import "github.com/edgexfoundry/core-domain-go/models"
