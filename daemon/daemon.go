@@ -17,6 +17,11 @@
  *
  */
 
+// Package daemon(service?) implements the core logic of a device service,
+// which include loading configuration, handling service registration,
+// creation of object caches, REST APIs, and basic daemon functionality.
+// Clients of this package must provide concrete implementations of the
+// device-specific interfaces (e.g. ProtocolHandler).
 package daemon
 
 import (
