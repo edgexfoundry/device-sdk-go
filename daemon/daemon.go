@@ -164,7 +164,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
-			AdminState:     "unlocked",				
+			AdminState:     "UNLOCKED",
 		}
 
 		ds.Service.Origin = millis
