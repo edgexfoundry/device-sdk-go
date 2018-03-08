@@ -1,0 +1,10 @@
+package: bitbucket.org/tonyespy/gxds
+import:
+- package: github.com/gorilla/mux
+- package: github.com/hashicorp/consul
+  subpackages:
+  - api
+- package: gopkg.in/mgo.v2
+  subpackages:
+  - bson
+- package: gopkg.in/yaml.v2
