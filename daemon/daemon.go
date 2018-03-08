@@ -35,6 +35,7 @@ import (
 	"bitbucket.org/tonyespy/gxds"
 	"github.com/edgexfoundry/core-clients-go/metadataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -80,6 +81,7 @@ type Daemon struct {
 	initAttempts  int
 	initialized   bool
 	ac            metadataclients.AddressableClient
+	lc            logger.LoggingClient
 	sc            metadataclients.ServiceClient
 	ds            models.DeviceService
 	mux           *controller.Mux
@@ -95,10 +97,11 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 	// TODO: service name should NOT be a configuration paramter
 	// but instead must be hard-coded in the DS
-	fmt.Fprintf(os.Stderr, "Trying to find ds: %s\n", d.config.ServiceName)
+	d.lc.Debug("Trying to find ds: " + d.config.ServiceName)
+
 	ds, err := d.sc.DeviceServiceForName(d.config.ServiceName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "DeviceServicForName failed: %v\n", err)
+		d.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 
 		// TODO: restore if/when the issue with detecting 'not-found'
 	        // is resolved.  Otherwise, just log errors and move on.
@@ -107,18 +110,19 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// return
 	}
 
-	fmt.Fprintf(os.Stderr, "DeviceServiceForName returned: %s\n", ds.Service.Name)
-	fmt.Fprintf(os.Stderr, "DeviceServiceId is: %s\n", ds.Service.Id)
-	
+	d.lc.Debug("DeviceServiceForName returned: " + ds.Service.Name)
+	d.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
+
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
 	if ds.Service.Name != d.config.ServiceName {
-		fmt.Fprintf(os.Stderr, "Failed to find ds: %s; attempts: %d\n", d.config.ServiceName, d.initAttempts)
+		d.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d",
+			d.config.ServiceName, d.initAttempts))
 
 		// check for addressable
-		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", d.config.ServiceName)
+		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", d.config.ServiceName)
 		addr, err := d.ac.AddressableForName(d.config.ServiceName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "AddressableForName: %s; failed: %v\n", d.config.ServiceName, err)
+			d.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", d.config.ServiceName, err))
 
 			// don't quit, but instead try to create addressable & service
 		}
@@ -144,7 +148,8 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			// use d.clientService to register Addressable
 			id, err := d.ac.Add(&addr)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Add Addressable: %s; failed: %v\n", d.config.ServiceName, err)
+				d.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v",
+					d.config.ServiceName, err))
 				return
 			}
 
@@ -153,12 +158,12 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 			//
 			if !bson.IsObjectIdHex(id) {
-				fmt.Fprintf(os.Stderr, "Add addressable returned invalid Id: %s\n", id)
+				d.lc.Error("Add addressable returned invalid Id: " + id)
 				return
 			}
 
 			addr.Id = bson.ObjectIdHex(id)
-			fmt.Fprintf(os.Stdout, "New addressable Id: %s\n", addr.Id.Hex())
+			d.lc.Error("New addressable Id: " + addr.Id.Hex())
 		}
 
 		// setup the service
@@ -174,13 +179,13 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 		ds.Service.Origin = millis
 
-		fmt.Fprintf(os.Stdout, "Adding new deviceservice: %s\n", ds.Service.Name)
-		fmt.Fprintf(os.Stdout, "New deviceservice: %v\n", ds)
+		d.lc.Debug("Adding new deviceservice: " + ds.Service.Name)
+		d.lc.Debug(fmt.Sprintf("New deviceservice: %v", ds))
 		
 		// use d.clientService to register the deviceservice
 		id, err := d.sc.Add(&ds)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Add Deviceservice: %s; failed: %v\n", d.config.ServiceName, err)
+			d.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", d.config.ServiceName, err))
 			return
 		}
 
@@ -189,19 +194,20 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 		//
 		if !bson.IsObjectIdHex(id) {
-			fmt.Fprintf(os.Stderr, "Add deviceservice returned invalid Id: %s\n", id)
+			d.lc.Error("Add deviceservice returned invalid Id: %s", id)
 			return
 		}
 
 		// NOTE - this differs from Addressable and Device objects,
 		// neither of which require the '.Service'prefix
 		ds.Service.Id = bson.ObjectIdHex(id)
-		fmt.Fprintf(os.Stdout, "New deviceservice Id: %s\n", ds.Service.Id.Hex())
+		d.lc.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
 
 		d.initialized = true
 		d.ds = ds
 	} else {
-		fmt.Fprintf(os.Stderr, "Found ds.Name: %s, d.config.ServiceName: %s\n", ds.Service.Name, d.config.ServiceName)
+		d.lc.Debug(fmt.Sprintf("Found ds.Name: %s, d.config.ServiceName: %s",
+			ds.Service.Name, d.config.ServiceName))
 		d.initialized = true
 		d.ds = ds
 	}
@@ -242,14 +248,23 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "LoggingFile is: %v\n", d.config.LoggingFile)
-	fmt.Fprintf(os.Stdout, "LoggingRemoteURL is: %v\n", d.config.LoggingRemoteURL)
-	
+	var remoteLog bool = false
+	var logTarget string
+
+	if d.config.LoggingRemoteURL == "" {
+	        logTarget = d.config.LoggingFile
+	} else {
+		remoteLog = true
+		logTarget = d.config.LoggingRemoteURL
+	}
+
+	d.lc = logger.NewClient(d.config.ServiceName, remoteLog, logTarget)
+
 	done := make(chan struct{})
 
 	d.mux, err = controller.New()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error loading starting controller: %v\n", err)
+		d.lc.Error(fmt.Sprintf("error loading starting controller: %v", err))
 		return err
 	}
 
