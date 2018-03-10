@@ -45,21 +45,30 @@ func NewObjects() *Objects {
 	return objects
 }
 
-//   public String get(String deviceId, String object) JsonObject (java) {
-func (o *Objects) Get(device models.Device, op models.ResourceOperation) string {
+// Object returns a string containing the result of a ResourceOperation
+// performed on a specific device.  It's used by the ProtocolHandler to
+// ... (TODO: complete this)
+func (o *Objects) Object(device models.Device, op models.ResourceOperation) string {
 	return ""
 }
 
-func (o *Objects) Put(device models.Device, op models.ResourceOperation, value string) {
+// add a ResourceOperation result to the cache.
+func (o *Objects) add(device models.Device, op models.ResourceOperation, value string) {
 }
 
-func (o *Objects) GetResponses(device models.Device, op models.ResourceOperation) []models.Reading {
+// Responses returns a list of readings from the cache for the specified
+// device and ResourceOperation.
+func (o *Objects) Responses(device models.Device, op models.ResourceOperation) []models.Reading {
 	return nil
 }
 
-func (o *Objects) GetTransformData() bool {
+// TransformData returns a bool which indicates if data read from a device
+// or sensor should be tranformed before using it to create a reading.
+func (o *Objects) TransformData() bool {
 	return false
 }
 
+// SetTransformData returns a bool which indicates if data read from a device
+// or sensor should be tranformed before using it to create a reading.
 func (o *Objects) SetTransformData(transform bool) {
 }
