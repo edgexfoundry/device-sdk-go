@@ -52,7 +52,7 @@ type Profiles struct {
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-NewProfiles() *Profiles {
+func NewProfiles() *Profiles {
 
 	pcOnce.Do(func() {
 		profiles = &Profiles{}
