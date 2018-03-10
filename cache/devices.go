@@ -34,6 +34,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Devices is a local cache of devices seeded from Core Metadata.
 type Devices struct {
 	proto    gxds.ProtocolHandler
 	devices  map[string]models.Device
@@ -52,7 +53,7 @@ var (
 	metaDeviceUrl       string = "http://" + metaHost + metaPort + "/api/v1/device"
 )
 
-// Creates a singleton DeviceStore
+// Creates a singleton Devices cache instance.
 func NewDevices(proto gxds.ProtocolHandler) *Devices {
 
 	dcOnce.Do(func() {
@@ -62,12 +63,12 @@ func NewDevices(proto gxds.ProtocolHandler) *Devices {
 	return devices
 }
 
-// TODO: used by Init() to populate the local cache
-// with devices pre-existing in metadata service, and
-// also by ScanList, to add newly detected devices.
-//
-// Add a new device to the local cache.
+// Add a new device to the cache.
 func (d *Devices) Add(device models.Device) error {
+
+	// Note: used by Init() to populate the local cache
+	// with devices pre-existing in metadata service, and
+	// also by ScanList, to add newly detected devices.
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[device.Name]; ok {
@@ -92,42 +93,33 @@ func (d *Devices) Add(device models.Device) error {
 	return nil
 }
 
-// TODO: revisit the use case for this function.  Currently
-// it's used by updatehandler to add a device with a known
-// Id, which was added to metadata by an external service
-// while the deviceservice is running.
+// AddById adds a new device to the cache using a deviceId. This
+// method is used by the UpdateHandler to trigger addition of a
+// device that's been added directly to Core Metadata.
 func (d *Devices) AddById(deviceId string) error {
 	return nil
 }
 
-func (d *Devices) GetDevice(deviceName string) *models.Device {
+// Device returns a device with the given name.
+func (d *Devices) Device(deviceName string) *models.Device {
 	return nil
 }
 
-func (d *Devices) GetDeviceById(deviceId string) *models.Device {
+// DeviceById returns a device with the given device id.
+func (d *Devices) DeviceById(deviceId string) *models.Device {
 	return nil
 }
 
+// Devices returns the current list of devices in the cache.
 // TODO: based on the java code; we need to check how this function
 // is used, as it's bad form to return an internal data struct to
 // callers, especially when the result is a map, which can then be
 // modified externally to this package.
-func (d *Devices) GetDevices() map[string]models.Device {
+func (d *Devices) Devices() map[string]models.Device {
 	return d.devices
 }
 
-func (d *Devices) GetMetaDevice(deviceName string) *models.Device {
-	return nil
-}
-
-func (d *Devices) GetMetaDeviceById(deviceId string) *models.Device {
-	return nil
-}
-
-func (d *Devices) GetMetaDevices() []models.Device {
-	return []models.Device{}
-}
-
+// Init initializes the device cache.
 func (d *Devices) Init(serviceId string) error {
 	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
 	d.dc = metadataclients.NewDeviceClient(metaDeviceUrl)
@@ -164,46 +156,38 @@ func (d *Devices) Init(serviceId string) error {
 	return err
 }
 
+// IsDeviceLocked returns a bool which indicates if the specified
+// device is locked.
 func (d *Devices) IsDeviceLocked(deviceId string) bool {
 	return false
 }
 
-func (d *Devices) Remove(device models.Device) error {
-	// remove(device):
-	//  - if devices(device):
-	//    - remove from map
-	//    - call protocol.disconnect
-	//    - dc.updateOpState(deviceId, OperatingState.disabled)
-	//    - profiles.remove
-
-	return nil
-}
-
+// RemoveById removes the specified (by Id) device from the cache.
 func (d *Devices) RemoveById(deviceId string) error {
 	return nil
 }
 
+// SetDeviceOpState sets the operatingState of the device specified by name.
 func (d *Devices) SetDeviceOpState(deviceName string, state models.OperatingState) error {
 	return nil
 }
 
+// SetDeviceByIdOpState sets the operatingState of the device specified by name.
 func (d *Devices) SetDeviceByIdOpState(deviceId string, state models.OperatingState) error {
 	return nil
 }
 
+// Update updates the device in the cache and ensures that the
+// copy in Core Metadata is also updated.
 func (d *Devices) Update(deviceId string) error {
 	return nil
 }
 
-func (d *Devices) UpdateProfile(profileId string) error {
-	return nil
-}
-
-// TODO: this should probably be broken into two separate
-// functions, one which validates an existing device and
-// adds it to the local cache, and one that adds a brand
-// new device.
-
+// TODO: this should method should  be broken into two separate
+// functions, one which validates an existing device and adds
+// it to the local cache, and one that adds a brand new device.
+// The current method is an almost direct translation of the Java
+// DeviceStore implementation.
 func (d *Devices) addDeviceToMetadata(device models.Device) error {
 	// TODO: fix metadataclients to indicate !found, vs. returned zeroed struct!
 	fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", device.Addressable.Name)
