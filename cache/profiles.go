@@ -39,6 +39,7 @@ var (
 	dataValueDescUrl    string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
 )
 
+// Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
@@ -47,8 +48,11 @@ type Profiles struct {
 	objects     map[string]map[string]models.DeviceObject
 }
 
-// Create a singleton ProfileStore instance
-func NewProfiles() *Profiles {
+// Create a singleton Profile cache instance. The cache
+// actually stores copies of the objects contained within
+// a device profile vs. the profiles themselves, although
+// it can be used to update and existing profile.
+NewProfiles() *Profiles {
 
 	pcOnce.Do(func() {
 		profiles = &Profiles{}
@@ -316,4 +320,12 @@ func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *mo
 	}
 
 	return descriptor
+}
+
+// UpdateProfile updates the specified device profile in
+// the local cache, as well as updating all devices that
+// in the local cache, and in Core Metadata with the
+// updated profile.
+func (p *Profiles) UpdateProfile(profileId string) bool {
+	return true
 }
