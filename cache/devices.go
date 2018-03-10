@@ -35,6 +35,8 @@ import (
 )
 
 // Devices is a local cache of devices seeded from Core Metadata.
+// TODO: review Go review comments, to see if this (and other code
+// in this package) should use singular names (e.g. Device).
 type Devices struct {
 	proto    gxds.ProtocolHandler
 	devices  map[string]models.Device
@@ -79,6 +81,8 @@ func (d *Devices) Add(device models.Device) error {
 
 	fmt.Fprintf(os.Stdout, "Adding managed device: : %v\n", device)
 
+	// TODO: per effective go, should these two stmts be collapsed?
+	// check if this is commonly used in Go src & snapd.
 	err := d.addDeviceToMetadata(device)
 	if err != nil {
 		return err
@@ -286,7 +290,7 @@ func compareCommands(a []models.Command, b []models.Command) bool {
 		return false
 	}
 
-	for i, _ := range a {
+	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
@@ -338,7 +342,7 @@ func compareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bo
 		return false
 	}
 
-	for i, _ := range a {
+	for i := range a {
 		attributesOk := compareStrStrMap(a[i].Attributes, b[i].Attributes)
 
 		if a[i].Description != b[i].Description ||
@@ -365,7 +369,7 @@ func compareResources(a []models.ProfileResource, b []models.ProfileResource) bo
 		return false
 	}
 
-	for i, _ := range a {
+	for i := range a {
 		getOk := compareResourceOperations(a[i].Get, b[i].Set)
 		setOk := compareResourceOperations(a[i].Get, b[i].Set)
 
@@ -382,7 +386,7 @@ func compareResourceOperations(a []models.ResourceOperation, b []models.Resource
 		return false
 	}
 
-	for i, _ := range a {
+	for i  := range a {
 		secondaryOk := compareStrings(a[i].Secondary, b[i].Secondary)
 		mappingsOk := compareStrStrMap(a[i].Mappings, b[i].Mappings)
 
@@ -420,7 +424,7 @@ func compareStrings(a []string, b []string) bool {
 		return false
 	}
 
-	for i, _ := range a {
+	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}
