@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	pcOnce       sync.Once
-	profiles     *Profiles
+	pcOnce   sync.Once
+	profiles *Profiles
 
 	// TODO: grab settings from daemon-config.json OR Consul
-	dataPort            string = ":48080"
-	dataHost            string = "localhost"
-	dataValueDescUrl    string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
+	dataPort         string = ":48080"
+	dataHost         string = "localhost"
+	dataValueDescUrl string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
 )
 
 // Profiles is a local cache of devices seeded from Core Metadata.
@@ -32,7 +32,7 @@ type Profiles struct {
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
-        commands    map[string]map[string]map[string][]models.ResourceOperation
+	commands    map[string]map[string]map[string][]models.ResourceOperation
 	objects     map[string]map[string]models.DeviceObject
 }
 
@@ -165,11 +165,11 @@ func (p *Profiles) addDevice(device models.Device) error {
 
 			if strings.Contains(readWrite, "r") {
 				resource := &models.ResourceOperation{
-					Index: "1",
-					Object: object.Name,
+					Index:     "1",
+					Object:    object.Name,
 					Operation: "get",
 					Parameter: object.Name,
-					Property: "value",
+					Property:  "value",
 					Secondary: []string{},
 				}
 				getOp := []models.ResourceOperation{*resource}
@@ -183,11 +183,11 @@ func (p *Profiles) addDevice(device models.Device) error {
 
 			if strings.Contains(readWrite, "w") {
 				resource := &models.ResourceOperation{
-					Index: "1",
-					Object: object.Name,
+					Index:     "1",
+					Object:    object.Name,
 					Operation: "set",
 					Parameter: object.Name,
-					Property: "value",
+					Property:  "value",
 					Secondary: []string{},
 				}
 
@@ -270,8 +270,8 @@ func (p *Profiles) updateDevice(device models.Device) {
 }
 
 func (p *Profiles) removeDevice(device models.Device) {
-    delete(p.objects, device.Name)
-    delete(p.commands, device.Name)
+	delete(p.objects, device.Name)
+	delete(p.commands, device.Name)
 }
 
 func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *models.ValueDescriptor {
@@ -282,14 +282,14 @@ func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *mo
 
 	descriptor := &models.ValueDescriptor{
 		Name: name,
-		Min: value.Minimum,
-		Max: value.Maximum,
+		Min:  value.Minimum,
+		Max:  value.Maximum,
 		// TODO: fix this --> IoTType.valueOf(value.getType().substring(0,1))
-		Type: "0",
-		UomLabel: units.DefaultValue,
+		Type:         "0",
+		UomLabel:     units.DefaultValue,
 		DefaultValue: value.DefaultValue,
-		Formatting: "%s",
-		Description: object.Description,
+		Formatting:   "%s",
+		Description:  object.Description,
 	}
 
 	id, err := p.vdc.Add(descriptor)
