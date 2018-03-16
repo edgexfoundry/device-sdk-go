@@ -110,11 +110,11 @@ func (d *Devices) Devices() map[string]models.Device {
 // Init initializes the device cache.
 func (d *Devices) Init(serviceId string) error {
 
-	metaPort := strconv.Itoa(d.config.MetadbPort)
-	d.ac = metadataclients.NewAddressableClient("http://" + d.config.MetadbHost +
+	metaPort := strconv.Itoa(d.config.MetadataPort)
+	d.ac = metadataclients.NewAddressableClient("http://" + d.config.MetadataHost +
 		metaPort + "/api/v1/addressable")
 
-	d.dc = metadataclients.NewDeviceClient("http://" + d.config.MetadbHost +
+	d.dc = metadataclients.NewDeviceClient("http://" + d.config.MetadataHost +
 		metaPort + "/api/v1/device")
 
 	metaDevices, err := d.dc.DevicesForService(serviceId)
