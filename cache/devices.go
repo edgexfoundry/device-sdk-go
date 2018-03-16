@@ -13,6 +13,7 @@ package cache
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -36,12 +37,6 @@ type Devices struct {
 var (
 	dcOnce  sync.Once
 	devices *Devices
-
-	// TODO: grab settings from daemon-config.json OR Consul
-	metaPort           string = ":48081"
-	metaHost           string = "localhost"
-	metaAddressableUrl string = "http://" + metaHost + metaPort + "/api/v1/addressable"
-	metaDeviceUrl      string = "http://" + metaHost + metaPort + "/api/v1/device"
 )
 
 // Creates a singleton Devices cache instance.
@@ -114,8 +109,13 @@ func (d *Devices) Devices() map[string]models.Device {
 
 // Init initializes the device cache.
 func (d *Devices) Init(serviceId string) error {
-	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
-	d.dc = metadataclients.NewDeviceClient(metaDeviceUrl)
+
+	metaPort := strconv.Itoa(d.config.MetadbPort)
+	d.ac = metadataclients.NewAddressableClient("http://" + d.config.MetadbHost +
+		metaPort + "/api/v1/addressable")
+
+	d.dc = metadataclients.NewDeviceClient("http://" + d.config.MetadbHost +
+		metaPort + "/api/v1/device")
 
 	metaDevices, err := d.dc.DevicesForService(serviceId)
 	if err != nil {
