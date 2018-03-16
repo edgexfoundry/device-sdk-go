@@ -26,6 +26,7 @@ import (
 // TODO: review Go review comments, to see if this (and other code
 // in this package) should use singular names (e.g. Device).
 type Devices struct {
+	config  gxds.ConfigFile
 	proto   gxds.ProtocolHandler
 	devices map[string]models.Device
 	ac      metadataclients.AddressableClient
@@ -44,10 +45,10 @@ var (
 )
 
 // Creates a singleton Devices cache instance.
-func NewDevices(proto gxds.ProtocolHandler) *Devices {
+func NewDevices(config gxds.ConfigFile, proto gxds.ProtocolHandler) *Devices {
 
 	dcOnce.Do(func() {
-		devices = &Devices{proto: proto}
+		devices = &Devices{config: config, proto: proto}
 	})
 
 	return devices
