@@ -12,6 +12,7 @@ import (
 	"os"
 )
 
+// TODO: re-name 'Config'?
 type ConfigFile struct {
 	ServiceName                  string
 	ServiceHost                  string
@@ -25,10 +26,10 @@ type ConfigFile struct {
 	MaxLimit                     int
 	HeartBeatTime                int
 	DataTransform                bool
-	MetadbHost                   string
-	MetadbPort                   int
-	CoreHost                     string
-	CorePort                     int
+	MetadataHost                 string
+	MetadataPort                 int
+	DataHost                     string
+	DataPort                     int
 	LoggingFile                  string
 	LoggingRemoteURL             string
 	DefaultScheduleName          string
