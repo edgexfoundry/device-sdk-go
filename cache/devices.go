@@ -7,6 +7,7 @@
 // This package provides management of device service related
 // objects that may be distributed across one or more EdgeX
 // core microservices.
+//
 package cache
 
 import (
@@ -25,21 +26,21 @@ import (
 // TODO: review Go review comments, to see if this (and other code
 // in this package) should use singular names (e.g. Device).
 type Devices struct {
-	proto    gxds.ProtocolHandler
-	devices  map[string]models.Device
-	ac       metadataclients.AddressableClient
-	dc       metadataclients.DeviceClient
+	proto   gxds.ProtocolHandler
+	devices map[string]models.Device
+	ac      metadataclients.AddressableClient
+	dc      metadataclients.DeviceClient
 }
 
 var (
-	dcOnce      sync.Once
-	devices     *Devices
+	dcOnce  sync.Once
+	devices *Devices
 
 	// TODO: grab settings from daemon-config.json OR Consul
-	metaPort            string = ":48081"
-	metaHost            string = "localhost"
-	metaAddressableUrl  string = "http://" + metaHost + metaPort + "/api/v1/addressable"
-	metaDeviceUrl       string = "http://" + metaHost + metaPort + "/api/v1/device"
+	metaPort           string = ":48081"
+	metaHost           string = "localhost"
+	metaAddressableUrl string = "http://" + metaHost + metaPort + "/api/v1/addressable"
+	metaDeviceUrl      string = "http://" + metaHost + metaPort + "/api/v1/device"
 )
 
 // Creates a singleton Devices cache instance.
@@ -373,7 +374,7 @@ func compareResourceOperations(a []models.ResourceOperation, b []models.Resource
 		return false
 	}
 
-	for i  := range a {
+	for i := range a {
 		secondaryOk := compareStrings(a[i].Secondary, b[i].Secondary)
 		mappingsOk := compareStrStrMap(a[i].Mappings, b[i].Mappings)
 
