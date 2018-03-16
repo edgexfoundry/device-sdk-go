@@ -7,23 +7,25 @@
 package cache
 
 import (
-	"bitbucket.org/tonyespy/gxds/daemon"
+	"bitbucket.org/tonyespy/gxds"
+
+	"sync"
 )
 
 // Schedules is a local cache of schedules and scheduleevents,
 // usually loaded into Core Metadata, however existing schedules
 // scheduleevents can be used to seed this cache.
 type Schedules struct {
-	config daemon.ConfigFile
+	config gxds.ConfigFile
 }
 
 var (
-	scOnce      sync.Once
-	schedules     *Schedules
+	scOnce    sync.Once
+	schedules *Schedules
 )
 
 // Creates a singleton Schedules cache instance.
-func NewSchedules(config daemon.ConfigFile) *Schedules {
+func NewSchedules(config gxds.ConfigFile) *Schedules {
 
 	scOnce.Do(func() {
 		schedules = &Schedules{config: config}
