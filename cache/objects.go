@@ -8,13 +8,13 @@ package cache
 
 import (
 	"sync"
-	
+
 	"github.com/edgexfoundry/core-domain-go/models"
 )
 
 var (
-	ocOnce      sync.Once
-	objects     *Objects
+	ocOnce  sync.Once
+	objects *Objects
 )
 
 type Objects struct {
