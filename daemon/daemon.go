@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"bitbucket.org/tonyespy/gxds/controller"
@@ -37,14 +38,6 @@ import (
 	"github.com/edgexfoundry/core-domain-go/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"gopkg.in/mgo.v2/bson"
-)
-
-var (
-	// TODO: grab settings from daemon-config.json OR Consul
-	metaPort           string = ":48081"
-	metaHost           string = "localhost"
-	metaAddressableUrl string = "http://" + metaHost + metaPort + "/api/v1/addressable"
-	metaServiceUrl     string = "http://" + metaHost + metaPort + "/api/v1/deviceservice"
 )
 
 type configFile struct {
@@ -60,8 +53,8 @@ type configFile struct {
 	MaxLimit         int
 	HeartBeatTime    int
 	DataTransform    bool
-	MetaHost         string
-	MetaPort         int
+	MetadbHost       string
+	MetadbPort       int
 	CoreHost         string
 	CorePort         int
 	LoggingFile      string
@@ -215,11 +208,11 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 func (d *Daemon) loadConfig(configPath *string) error {
 	f, err := os.Open(*configPath)
-	defer f.Close()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config file: %s; open failed: %v\n", *configPath, err)
 		return err
 	}
+	defer f.Close()
 
 	fmt.Fprintf(os.Stdout, "config file opened: %s\n", *configPath)
 
@@ -274,9 +267,10 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	d.co = cache.NewObjects()
 	d.cd = cache.NewDevices(proto)
 
-	// TODO: host, ports & urls are hard-coded in metadataclients
-	d.ac = metadataclients.NewAddressableClient(metaAddressableUrl)
-	d.sc = metadataclients.NewServiceClient(metaServiceUrl)
+	// set up clients
+	metaPort := strconv.Itoa(d.config.MetadbPort)
+	d.ac = metadataclients.NewAddressableClient("http://" + d.config.MetadbHost + metaPort + "/api/v1/addressable")
+	d.sc = metadataclients.NewServiceClient("http://" + d.config.MetadbHost + metaPort + "/api/v1/deviceservice")
 
 	for d.initAttempts < d.config.ConnectRetries && !d.initialized {
 		d.initAttempts++
