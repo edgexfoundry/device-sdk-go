@@ -19,9 +19,9 @@ import (
 	"strconv"
 	"time"
 
-	"bitbucket.org/tonyespy/gxds/controller"
-	"bitbucket.org/tonyespy/gxds/cache"
 	"bitbucket.org/tonyespy/gxds"
+	"bitbucket.org/tonyespy/gxds/cache"
+	"bitbucket.org/tonyespy/gxds/controller"
 	"github.com/edgexfoundry/core-clients-go/metadataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
@@ -29,24 +29,30 @@ import (
 )
 
 type configFile struct {
-	ServiceName      string
-	ServiceHost      string
-	ServicePort      int
-	Labels           []string
-	Timeout          int
-	OpenMessage      string
-	ConnectRetries   int
-	ConnectWait      int
-	ConnectInterval  int
-	MaxLimit         int
-	HeartBeatTime    int
-	DataTransform    bool
-	MetadbHost       string
-	MetadbPort       int
-	CoreHost         string
-	CorePort         int
-	LoggingFile      string
-	LoggingRemoteURL string
+	ServiceName                  string
+	ServiceHost                  string
+	ServicePort                  int
+	Labels                       []string
+	Timeout                      int
+	OpenMessage                  string
+	ConnectRetries               int
+	ConnectWait                  int
+	ConnectInterval              int
+	MaxLimit                     int
+	HeartBeatTime                int
+	DataTransform                bool
+	MetadbHost                   string
+	MetadbPort                   int
+	CoreHost                     string
+	CorePort                     int
+	LoggingFile                  string
+	LoggingRemoteURL             string
+	DefaultScheduleName          string
+	DefaultScheduleFrequency     string
+	DefaultScheduleEventName     string
+	DefaultScheduleEventPath     string
+	DefaultScheduleEventService  string
+	DefaultScheduleEventSchedule string
 }
 
 // TODO:
@@ -57,20 +63,20 @@ type configFile struct {
 
 // A Daemon listens for requests and routes them to the right command
 type Daemon struct {
-	Version       string
-	config        configFile
-	initAttempts  int
-	initialized   bool
-	ac            metadataclients.AddressableClient
-	lc            logger.LoggingClient
-	sc            metadataclients.ServiceClient
-	ds            models.DeviceService
-	mux           *controller.Mux
-	cd            *cache.Devices
-	co            *cache.Objects
-	cp            *cache.Profiles
-	cw            *cache.Watchers
-	proto         gxds.ProtocolHandler
+	Version      string
+	config       configFile
+	initAttempts int
+	initialized  bool
+	ac           metadataclients.AddressableClient
+	lc           logger.LoggingClient
+	sc           metadataclients.ServiceClient
+	ds           models.DeviceService
+	mux          *controller.Mux
+	cd           *cache.Devices
+	co           *cache.Objects
+	cp           *cache.Profiles
+	cw           *cache.Watchers
+	proto        gxds.ProtocolHandler
 }
 
 func (d *Daemon) attemptInit(done chan<- struct{}) {
@@ -85,9 +91,9 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		d.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 
 		// TODO: restore if/when the issue with detecting 'not-found'
-	        // is resolved.  Otherwise, just log errors and move on.
+		// is resolved.  Otherwise, just log errors and move on.
 		//
-	        // https://github.com/edgexfoundry/core-clients-go/issues/5
+		// https://github.com/edgexfoundry/core-clients-go/issues/5
 		// return
 	}
 
@@ -115,7 +121,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			// TODO: does HTTPMethod need to be specified?
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
-					Origin:     millis,
+					Origin: millis,
 				},
 				Name:       d.config.ServiceName,
 				HTTPMethod: "POST",
@@ -155,14 +161,14 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
-			AdminState:     "UNLOCKED",
+			AdminState: "UNLOCKED",
 		}
 
 		ds.Service.Origin = millis
 
 		d.lc.Debug("Adding new deviceservice: " + ds.Service.Name)
 		d.lc.Debug(fmt.Sprintf("New deviceservice: %v", ds))
-		
+
 		// use d.clientService to register the deviceservice
 		id, err := d.sc.Add(&ds)
 		if err != nil {
@@ -233,7 +239,7 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	var logTarget string
 
 	if d.config.LoggingRemoteURL == "" {
-	        logTarget = d.config.LoggingFile
+		logTarget = d.config.LoggingFile
 	} else {
 		remoteLog = true
 		logTarget = d.config.LoggingRemoteURL
