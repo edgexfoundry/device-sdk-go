@@ -8,20 +8,20 @@ package cache
 
 import (
 	"sync"
-	
+
 	"github.com/edgexfoundry/core-clients-go/metadataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
 )
 
 type Watchers struct {
-	devices  map[string]models.Device
-	ac       metadataclients.AddressableClient
-	dc       metadataclients.DeviceClient
+	devices map[string]models.Device
+	ac      metadataclients.AddressableClient
+	dc      metadataclients.DeviceClient
 }
 
 var (
-	wcOnce       sync.Once
-	watchers     *Watchers
+	wcOnce   sync.Once
+	watchers *Watchers
 )
 
 // Create a singleton WatcherCache instance
@@ -33,5 +33,3 @@ func NewWatchers() *Watchers {
 
 	return watchers
 }
-
-
