@@ -16,5 +16,11 @@
     "CoreDataHost": "localhost",
     "CoreDataPort": 48080,
     "LoggingFile": "./device-simple.log",
-    "LoggingRemoteURL": ""
+    "LoggingRemoteURL": "",
+    "DefaultScheduleName": "Interval-30s",
+    "DefaultScheduleFrequency": "PT30S",
+    "DefaultScheduleEventName": "device-simple-QueryAll",
+    "DefaultScheduleEventPath": "/api/v1/device/all/Query"
+    "DefaultScheduleEventService": "device-simple"
+    "DefaultScheduleEventSchedule": "Interval-30s"
 }
