@@ -13,7 +13,6 @@
 package daemon
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -28,33 +27,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type configFile struct {
-	ServiceName                  string
-	ServiceHost                  string
-	ServicePort                  int
-	Labels                       []string
-	Timeout                      int
-	OpenMessage                  string
-	ConnectRetries               int
-	ConnectWait                  int
-	ConnectInterval              int
-	MaxLimit                     int
-	HeartBeatTime                int
-	DataTransform                bool
-	MetadbHost                   string
-	MetadbPort                   int
-	CoreHost                     string
-	CorePort                     int
-	LoggingFile                  string
-	LoggingRemoteURL             string
-	DefaultScheduleName          string
-	DefaultScheduleFrequency     string
-	DefaultScheduleEventName     string
-	DefaultScheduleEventPath     string
-	DefaultScheduleEventService  string
-	DefaultScheduleEventSchedule string
-}
-
 // TODO:
 //  * add consul registration support
 //  * design REST API framework
@@ -64,7 +36,7 @@ type configFile struct {
 // A Daemon listens for requests and routes them to the right command
 type Daemon struct {
 	Version      string
-	config       configFile
+	Config       gxds.ConfigFile
 	initAttempts int
 	initialized  bool
 	ac           metadataclients.AddressableClient
@@ -75,6 +47,7 @@ type Daemon struct {
 	cd           *cache.Devices
 	co           *cache.Objects
 	cp           *cache.Profiles
+	cs           *cache.Schedules
 	cw           *cache.Watchers
 	proto        gxds.ProtocolHandler
 }
@@ -84,9 +57,9 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 	// TODO: service name should NOT be a configuration paramter
 	// but instead must be hard-coded in the DS
-	d.lc.Debug("Trying to find ds: " + d.config.ServiceName)
+	d.lc.Debug("Trying to find ds: " + d.Config.ServiceName)
 
-	ds, err := d.sc.DeviceServiceForName(d.config.ServiceName)
+	ds, err := d.sc.DeviceServiceForName(d.Config.ServiceName)
 	if err != nil {
 		d.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 
@@ -101,15 +74,15 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 	d.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
 
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Service.Name != d.config.ServiceName {
+	if ds.Service.Name != d.Config.ServiceName {
 		d.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d",
-			d.config.ServiceName, d.initAttempts))
+			d.Config.ServiceName, d.initAttempts))
 
 		// check for addressable
-		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", d.config.ServiceName)
-		addr, err := d.ac.AddressableForName(d.config.ServiceName)
+		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", d.Config.ServiceName)
+		addr, err := d.ac.AddressableForName(d.Config.ServiceName)
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", d.config.ServiceName, err))
+			d.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", d.Config.ServiceName, err))
 
 			// don't quit, but instead try to create addressable & service
 		}
@@ -117,17 +90,17 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 
 		// TODO: same as above
-		if addr.Name != d.config.ServiceName {
+		if addr.Name != d.Config.ServiceName {
 			// TODO: does HTTPMethod need to be specified?
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin: millis,
 				},
-				Name:       d.config.ServiceName,
+				Name:       d.Config.ServiceName,
 				HTTPMethod: "POST",
 				Protocol:   "HTTP",
-				Address:    d.config.ServiceHost,
-				Port:       d.config.ServicePort,
+				Address:    d.Config.ServiceHost,
+				Port:       d.Config.ServicePort,
 				Path:       "/api/v1/callback",
 			}
 			addr.Origin = millis
@@ -136,7 +109,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			id, err := d.ac.Add(&addr)
 			if err != nil {
 				d.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v",
-					d.config.ServiceName, err))
+					d.Config.ServiceName, err))
 				return
 			}
 
@@ -156,8 +129,8 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// setup the service
 		ds = models.DeviceService{
 			Service: models.Service{
-				Name:           d.config.ServiceName,
-				Labels:         d.config.Labels,
+				Name:           d.Config.ServiceName,
+				Labels:         d.Config.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
@@ -172,7 +145,7 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// use d.clientService to register the deviceservice
 		id, err := d.sc.Add(&ds)
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", d.config.ServiceName, err))
+			d.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", d.Config.ServiceName, err))
 			return
 		}
 
@@ -193,43 +166,21 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		d.initialized = true
 		d.ds = ds
 	} else {
-		d.lc.Debug(fmt.Sprintf("Found ds.Name: %s, d.config.ServiceName: %s",
-			ds.Service.Name, d.config.ServiceName))
+		d.lc.Debug(fmt.Sprintf("Found ds.Name: %s, d.Config.ServiceName: %s",
+			ds.Service.Name, d.Config.ServiceName))
 		d.initialized = true
 		d.ds = ds
 	}
 }
 
-func (d *Daemon) loadConfig(configPath *string) error {
-	f, err := os.Open(*configPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "config file: %s; open failed: %v\n", *configPath, err)
-		return err
-	}
-	defer f.Close()
-
-	fmt.Fprintf(os.Stdout, "config file opened: %s\n", *configPath)
-
-	jsonParser := json.NewDecoder(f)
-	err = jsonParser.Decode(&(d.config))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return err
-	}
-
-	fmt.Fprintf(os.Stdout, "name: %v\n", d.config)
-
-	return nil
-}
-
 // Initialize the Daemon
-func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
+func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) (err error) {
 	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
 	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
 
 	// TODO: check if proto is nil, and fail...
 
-	err := d.loadConfig(configFile)
+	d.Config, err = gxds.LoadConfig(configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
 		return err
@@ -238,14 +189,14 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	var remoteLog bool = false
 	var logTarget string
 
-	if d.config.LoggingRemoteURL == "" {
-		logTarget = d.config.LoggingFile
+	if d.Config.LoggingRemoteURL == "" {
+		logTarget = d.Config.LoggingFile
 	} else {
 		remoteLog = true
-		logTarget = d.config.LoggingRemoteURL
+		logTarget = d.Config.LoggingRemoteURL
 	}
 
-	d.lc = logger.NewClient(d.config.ServiceName, remoteLog, logTarget)
+	d.lc = logger.NewClient(d.Config.ServiceName, remoteLog, logTarget)
 
 	done := make(chan struct{})
 
@@ -259,14 +210,15 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) error {
 	d.cp = cache.NewProfiles()
 	d.cw = cache.NewWatchers()
 	d.co = cache.NewObjects()
-	d.cd = cache.NewDevices(proto)
+	d.cd = cache.NewDevices(d.Config, proto)
+	d.cs = cache.NewSchedules(d.Config)
 
 	// set up clients
-	metaPort := strconv.Itoa(d.config.MetadbPort)
-	d.ac = metadataclients.NewAddressableClient("http://" + d.config.MetadbHost + metaPort + "/api/v1/addressable")
-	d.sc = metadataclients.NewServiceClient("http://" + d.config.MetadbHost + metaPort + "/api/v1/deviceservice")
+	metaPort := strconv.Itoa(d.Config.MetadbPort)
+	d.ac = metadataclients.NewAddressableClient("http://" + d.Config.MetadbHost + metaPort + "/api/v1/addressable")
+	d.sc = metadataclients.NewServiceClient("http://" + d.Config.MetadbHost + metaPort + "/api/v1/deviceservice")
 
-	for d.initAttempts < d.config.ConnectRetries && !d.initialized {
+	for d.initAttempts < d.Config.ConnectRetries && !d.initialized {
 		d.initAttempts++
 
 		if d.initAttempts > 1 {
