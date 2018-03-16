@@ -9,26 +9,19 @@ package cache
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 
+	"bitbucket.org/tonyespy/gxds"
 	"github.com/edgexfoundry/core-clients-go/coredataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
 	"gopkg.in/mgo.v2/bson"
 )
 
-var (
-	pcOnce   sync.Once
-	profiles *Profiles
-
-	// TODO: grab settings from daemon-config.json OR Consul
-	dataPort         string = ":48080"
-	dataHost         string = "localhost"
-	dataValueDescUrl string = "http://" + dataHost + dataPort + "/api/v1/valuedescriptor"
-)
-
 // Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
+	config gxds.ConfigFile
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
@@ -36,15 +29,24 @@ type Profiles struct {
 	objects     map[string]map[string]models.DeviceObject
 }
 
+var (
+	pcOnce   sync.Once
+	profiles *Profiles
+)
+
 // Create a singleton Profile cache instance. The cache
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-func NewProfiles() *Profiles {
+func NewProfiles(config gxds.ConfigFile) *Profiles {
 
 	pcOnce.Do(func() {
-		profiles = &Profiles{}
-		profiles.vdc = coredataclients.NewValueDescriptorClient(dataValueDescUrl)
+		profiles = &Profiles{config: config}
+
+		dataPort := strconv.Itoa(config.DataPort)
+		profiles.vdc = coredataclients.NewValueDescriptorClient("http://" +
+			     config.DataHost + dataPort + "/api/v1/valuedescriptor")
+
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
 		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
 	})
