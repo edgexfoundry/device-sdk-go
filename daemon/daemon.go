@@ -214,9 +214,9 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) (err error
 	d.cs = cache.NewSchedules(d.Config)
 
 	// set up clients
-	metaPort := strconv.Itoa(d.Config.MetadbPort)
-	d.ac = metadataclients.NewAddressableClient("http://" + d.Config.MetadbHost + metaPort + "/api/v1/addressable")
-	d.sc = metadataclients.NewServiceClient("http://" + d.Config.MetadbHost + metaPort + "/api/v1/deviceservice")
+	metaPort := strconv.Itoa(d.Config.MetadataPort)
+	d.ac = metadataclients.NewAddressableClient("http://" + d.Config.MetadataHost + metaPort + "/api/v1/addressable")
+	d.sc = metadataclients.NewServiceClient("http://" + d.Config.MetadataHost + metaPort + "/api/v1/deviceservice")
 
 	for d.initAttempts < d.Config.ConnectRetries && !d.initialized {
 		d.initAttempts++
