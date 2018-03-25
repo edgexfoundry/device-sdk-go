@@ -4,13 +4,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Package daemon(service?) implements the core logic of a device service,
+// Package service(service?) implements the core logic of a device service,
 // which include loading configuration, handling service registration,
-// creation of object caches, REST APIs, and basic daemon functionality.
+// creation of object caches, REST APIs, and basic service functionality.
 // Clients of this package must provide concrete implementations of the
 // device-specific interfaces (e.g. ProtocolHandler).
 //
-package daemon
+package service
 
 import (
 	"fmt"
@@ -31,10 +31,10 @@ import (
 //  * add consul registration support
 //  * design REST API framework
 //  * design Protocol framework
-//  * re-name?  daemon --> baseservice
+//  * re-name?  service --> baseservice
 
-// A Daemon listens for requests and routes them to the right command
-type Daemon struct {
+// A Service listens for requests and routes them to the right command
+type Service struct {
 	Version      string
 	Config       gxds.ConfigFile
 	initAttempts int
@@ -52,37 +52,37 @@ type Daemon struct {
 	proto        gxds.ProtocolHandler
 }
 
-func (d *Daemon) attemptInit(done chan<- struct{}) {
+func (s *Service) attemptInit(done chan<- struct{}) {
 	defer func() { done <- struct{}{} }()
 
 	// TODO: service name should NOT be a configuration paramter
 	// but instead must be hard-coded in the DS
-	d.lc.Debug("Trying to find ds: " + d.Config.ServiceName)
+	s.lc.Debug("Trying to find ds: " + s.Config.ServiceName)
 
-	ds, err := d.sc.DeviceServiceForName(d.Config.ServiceName)
+	ds, err := s.sc.DeviceServiceForName(s.Config.ServiceName)
 	if err != nil {
-		d.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
+		s.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 
 		// TODO: restore if/when the issue with detecting 'not-found'
-		// is resolved.  Otherwise, just log errors and move on.
+		// is resolves.  Otherwise, just log errors and move on.
 		//
 		// https://github.com/edgexfoundry/core-clients-go/issues/5
 		// return
 	}
 
-	d.lc.Debug("DeviceServiceForName returned: " + ds.Service.Name)
-	d.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
+	s.lc.Debug("DeviceServiceForName returned: " + ds.Service.Name)
+	s.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
 
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Service.Name != d.Config.ServiceName {
-		d.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d",
-			d.Config.ServiceName, d.initAttempts))
+	if ds.Service.Name != s.Config.ServiceName {
+		s.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d",
+			s.Config.ServiceName, s.initAttempts))
 
 		// check for addressable
-		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", d.Config.ServiceName)
-		addr, err := d.ac.AddressableForName(d.Config.ServiceName)
+		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", s.Config.ServiceName)
+		addr, err := s.ac.AddressableForName(s.Config.ServiceName)
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", d.Config.ServiceName, err))
+			s.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", s.Config.ServiceName, err))
 
 			// don't quit, but instead try to create addressable & service
 		}
@@ -90,26 +90,26 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 
 		// TODO: same as above
-		if addr.Name != d.Config.ServiceName {
+		if addr.Name != s.Config.ServiceName {
 			// TODO: does HTTPMethod need to be specified?
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin: millis,
 				},
-				Name:       d.Config.ServiceName,
+				Name:       s.Config.ServiceName,
 				HTTPMethod: "POST",
 				Protocol:   "HTTP",
-				Address:    d.Config.ServiceHost,
-				Port:       d.Config.ServicePort,
+				Address:    s.Config.ServiceHost,
+				Port:       s.Config.ServicePort,
 				Path:       "/api/v1/callback",
 			}
 			addr.Origin = millis
 
-			// use d.clientService to register Addressable
-			id, err := d.ac.Add(&addr)
+			// use s.clientService to register Addressable
+			id, err := s.ac.Add(&addr)
 			if err != nil {
-				d.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v",
-					d.Config.ServiceName, err))
+				s.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v",
+					s.Config.ServiceName, err))
 				return
 			}
 
@@ -118,19 +118,19 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 			//
 			if !bson.IsObjectIdHex(id) {
-				d.lc.Error("Add addressable returned invalid Id: " + id)
+				s.lc.Error("Add addressable returned invalid Id: " + id)
 				return
 			}
 
 			addr.Id = bson.ObjectIdHex(id)
-			d.lc.Error("New addressable Id: " + addr.Id.Hex())
+			s.lc.Error("New addressable Id: " + addr.Id.Hex())
 		}
 
 		// setup the service
 		ds = models.DeviceService{
 			Service: models.Service{
-				Name:           d.Config.ServiceName,
-				Labels:         d.Config.Labels,
+				Name:           s.Config.ServiceName,
+				Labels:         s.Config.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
@@ -139,13 +139,13 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 
 		ds.Service.Origin = millis
 
-		d.lc.Debug("Adding new deviceservice: " + ds.Service.Name)
-		d.lc.Debug(fmt.Sprintf("New deviceservice: %v", ds))
+		s.lc.Debug("Adding new deviceservice: " + ds.Service.Name)
+		s.lc.Debug(fmt.Sprintf("New deviceservice: %v", ds))
 
-		// use d.clientService to register the deviceservice
-		id, err := d.sc.Add(&ds)
+		// use s.clientService to register the deviceservice
+		id, err := s.sc.Add(&ds)
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", d.Config.ServiceName, err))
+			s.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.Config.ServiceName, err))
 			return
 		}
 
@@ -154,33 +154,33 @@ func (d *Daemon) attemptInit(done chan<- struct{}) {
 		// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 		//
 		if !bson.IsObjectIdHex(id) {
-			d.lc.Error("Add deviceservice returned invalid Id: %s", id)
+			s.lc.Error("Add deviceservice returned invalid Id: %s", id)
 			return
 		}
 
 		// NOTE - this differs from Addressable and Device objects,
 		// neither of which require the '.Service'prefix
 		ds.Service.Id = bson.ObjectIdHex(id)
-		d.lc.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
+		s.lc.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
 
-		d.initialized = true
-		d.ds = ds
+		s.initialized = true
+		s.ds = ds
 	} else {
-		d.lc.Debug(fmt.Sprintf("Found ds.Name: %s, d.Config.ServiceName: %s",
-			ds.Service.Name, d.Config.ServiceName))
-		d.initialized = true
-		d.ds = ds
+		s.lc.Debug(fmt.Sprintf("Found ds.Name: %s, s.Config.ServiceName: %s",
+			ds.Service.Name, s.Config.ServiceName))
+		s.initialized = true
+		s.ds = ds
 	}
 }
 
-// Initialize the Daemon
-func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) (err error) {
+// Initialize the Service
+func (s *Service) Init(configFile *string, proto gxds.ProtocolHandler) (err error) {
 	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
 	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
 
 	// TODO: check if proto is nil, and fail...
 
-	d.Config, err = gxds.LoadConfig(configFile)
+	s.Config, err = gxds.LoadConfig(configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
 		return err
@@ -189,54 +189,54 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) (err error
 	var remoteLog bool = false
 	var logTarget string
 
-	if d.Config.LoggingRemoteURL == "" {
-		logTarget = d.Config.LoggingFile
+	if s.Config.LoggingRemoteURL == "" {
+		logTarget = s.Config.LoggingFile
 	} else {
 		remoteLog = true
-		logTarget = d.Config.LoggingRemoteURL
+		logTarget = s.Config.LoggingRemoteURL
 	}
 
-	d.lc = logger.NewClient(d.Config.ServiceName, remoteLog, logTarget)
+	s.lc = logger.NewClient(s.Config.ServiceName, remoteLog, logTarget)
 
 	done := make(chan struct{})
 
-	d.mux, err = controller.New()
+	s.mux, err = controller.New()
 	if err != nil {
-		d.lc.Error(fmt.Sprintf("error loading starting controller: %v", err))
+		s.lc.Error(fmt.Sprintf("error loading starting controller: %v", err))
 		return err
 	}
 
-	d.proto = proto
-	d.cp = cache.NewProfiles()
-	d.cw = cache.NewWatchers()
-	d.co = cache.NewObjects()
-	d.cd = cache.NewDevices(d.Config, proto)
-	d.cs = cache.NewSchedules(d.Config)
+	s.proto = proto
+	s.cp = cache.NewProfiles(s.Config)
+	s.cw = cache.NewWatchers()
+	s.co = cache.NewObjects()
+	s.cd = cache.NewDevices(s.Config, proto)
+	s.cs = cache.NewSchedules(s.Config)
 
 	// set up clients
-	metaPort := strconv.Itoa(d.Config.MetadataPort)
-	d.ac = metadataclients.NewAddressableClient("http://" + d.Config.MetadataHost + metaPort + "/api/v1/addressable")
-	d.sc = metadataclients.NewServiceClient("http://" + d.Config.MetadataHost + metaPort + "/api/v1/deviceservice")
+	metaPort := strconv.Itoa(s.Config.MetadataPort)
+	s.ac = metadataclients.NewAddressableClient("http://" + s.Config.MetadataHost + metaPort + "/api/v1/addressable")
+	s.sc = metadataclients.NewServiceClient("http://" + s.Config.MetadataHost + metaPort + "/api/v1/deviceservice")
 
-	for d.initAttempts < d.Config.ConnectRetries && !d.initialized {
-		d.initAttempts++
+	for s.initAttempts < s.Config.ConnectRetries && !s.initialized {
+		s.initAttempts++
 
-		if d.initAttempts > 1 {
+		if s.initAttempts > 1 {
 			time.Sleep(30 * time.Second)
 		}
 
-		go d.attemptInit(done)
+		go s.attemptInit(done)
 		<-done // wait for background attempt to finish
 	}
 
-	if !d.initialized {
-		err = fmt.Errorf("Couldn't register to metadata service; MaxLimit reached.")
+	if !s.initialized {
+		err = fmt.Errorf("Couldn't register to metadata service; MaxLimit reaches.")
 		return err
 	}
 
 	// initialize devicestore
 	// TODO: add method to Service to return this...
-	d.cd.Init(d.ds.Service.Id.Hex())
+	s.cd.Init(s.ds.Service.Id.Hex())
 
 	// TODO: initialize scheduler
 	// TODO: configure gorillamux
@@ -244,17 +244,17 @@ func (d *Daemon) Init(configFile *string, proto gxds.ProtocolHandler) (err error
 	return err
 }
 
-// Start the Daemon
-func (d *Daemon) Start() {
+// Start the Service
+func (s *Service) Start() {
 }
 
-// Stop shuts down the Daemon
-func (d *Daemon) Stop() error {
+// Stop shuts down the Service
+func (s *Service) Stop() error {
 	return nil
 }
 
-// New Daemon
+// New Service
 // TODO: re-factor to make this a singleton
-func New() (*Daemon, error) {
-	return &Daemon{}, nil
+func New() (*Service, error) {
+	return &Service{}, nil
 }

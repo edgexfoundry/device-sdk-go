@@ -15,7 +15,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"bitbucket.org/tonyespy/gxds/daemon"
+	"bitbucket.org/tonyespy/gxds/service"
 	"bitbucket.org/tonyespy/gxds/examples/simple"
 )
 
@@ -33,16 +33,16 @@ func main() {
 
 	flag.Parse()
 
-	if err := startDaemon(); err != nil {
+	if err := startService(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func startDaemon() error {
+func startService() error {
 	s := simple.SimpleHandler{}
 
-	d, err := daemon.New()
+	d, err := service.New()
 	if err != nil {
 		return err
 	}
