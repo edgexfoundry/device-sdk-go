@@ -17,13 +17,14 @@ import (
 	"os"
 	"strconv"
 	"time"
-
 	"bitbucket.org/tonyespy/gxds"
 	"bitbucket.org/tonyespy/gxds/cache"
-	"bitbucket.org/tonyespy/gxds/controller"
+
 	"github.com/edgexfoundry/core-clients-go/metadataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/gorilla/mux"
+
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -43,7 +44,7 @@ type Service struct {
 	lc           logger.LoggingClient
 	sc           metadataclients.ServiceClient
 	ds           models.DeviceService
-	mux          *controller.Mux
+	router       *mux.Router
 	cd           *cache.Devices
 	co           *cache.Objects
 	cp           *cache.Profiles
@@ -200,11 +201,12 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolHandler) (err erro
 
 	done := make(chan struct{})
 
-	s.mux, err = controller.New()
-	if err != nil {
-		s.lc.Error(fmt.Sprintf("error loading starting controller: %v", err))
-		return err
-	}
+
+	s.router = mux.NewRouter()
+	initCommand(s.router)
+	initStatus(s.router)
+	initService(s.router)
+	initUpdate(s.router)
 
 	s.proto = proto
 	s.cp = cache.NewProfiles(s.Config)
