@@ -26,7 +26,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"bitbucket.org/tonyespy/gxds/daemon"
+	"bitbucket.org/tonyespy/gxds/service"
 )
 
 var flags struct {
@@ -36,22 +36,22 @@ var flags struct {
 func init() {
 	fmt.Fprintf(os.Stdout, "Init called\n")
 
-	flags.configPath = flag.String("config", "./daemon-config.json", "daemon configuration file")
+	flags.configPath = flag.String("config", "./service-config.json", "service configuration file")
 }
 
 func main() {
 
 	flag.Parse()
 
-	if err := startDaemon(); err != nil {
+	if err := startService(); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func startDaemon() error {
+func startService() error {
 
-	d, err := daemon.New()
+	d, err := service.New()
 	if err != nil {
 		return err
 	}
