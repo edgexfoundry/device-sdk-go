@@ -25,18 +25,17 @@ func (s *SimpleHandler) Initialize() {
 func (s *SimpleHandler) DisconnectDevice(device models.Device) {
 }
 
-func (s *SimpleHandler)	InitializeDevice(device models.Device) {
+func (s *SimpleHandler) InitializeDevice(device models.Device) {
 }
-
 
 func (s *SimpleHandler) Scan() {
 }
 
-func (s *SimpleHandler)	CommandExists(device models.Device, command string) bool {
+func (s *SimpleHandler) CommandExists(device models.Device, command string) bool {
 	return false
 }
 
-func (s *SimpleHandler)	ExecuteCommand(device models.Device, command string, args string) map[string]string {
+func (s *SimpleHandler) ExecuteCommand(device models.Device, command string, args string) map[string]string {
 	return nil
 }
 
