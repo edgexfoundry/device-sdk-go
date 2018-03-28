@@ -21,7 +21,7 @@ import (
 
 // Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
-	config      gxds.ConfigFile
+	config      *gxds.Config
 	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
@@ -38,7 +38,7 @@ var (
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-func NewProfiles(config gxds.ConfigFile) *Profiles {
+func NewProfiles(config *gxds.Config) *Profiles {
 
 	pcOnce.Do(func() {
 		profiles = &Profiles{config: config}

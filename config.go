@@ -12,8 +12,7 @@ import (
 	"os"
 )
 
-// TODO: re-name 'Config'?
-type ConfigFile struct {
+type Config struct {
 	ServiceName                  string
 	ServiceHost                  string
 	ServicePort                  int
@@ -40,8 +39,8 @@ type ConfigFile struct {
 	DefaultScheduleEventSchedule string
 }
 
-func LoadConfig(configPath *string) (config ConfigFile, err error) {
-	config = ConfigFile{}
+func LoadConfig(configPath *string) (config *Config, err error) {
+	config = &Config{}
 	f, err := os.Open(*configPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "config file: %s; open failed: %v\n", *configPath, err)
@@ -52,7 +51,7 @@ func LoadConfig(configPath *string) (config ConfigFile, err error) {
 	fmt.Fprintf(os.Stdout, "config file opened: %s\n", *configPath)
 
 	jsonParser := json.NewDecoder(f)
-	err = jsonParser.Decode(&config)
+	err = jsonParser.Decode(config)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return config, err
