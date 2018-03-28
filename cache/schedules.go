@@ -16,7 +16,7 @@ import (
 // usually loaded into Core Metadata, however existing schedules
 // scheduleevents can be used to seed this cache.
 type Schedules struct {
-	config gxds.ConfigFile
+	config *gxds.Config
 }
 
 var (
@@ -25,7 +25,7 @@ var (
 )
 
 // Creates a singleton Schedules cache instance.
-func NewSchedules(config gxds.ConfigFile) *Schedules {
+func NewSchedules(config *gxds.Config) *Schedules {
 
 	scOnce.Do(func() {
 		schedules = &Schedules{config: config}
