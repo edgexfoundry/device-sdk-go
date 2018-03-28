@@ -150,9 +150,9 @@ func (d *Devices) Init(serviceId string) error {
 }
 
 // IsDeviceLocked returns a bool which indicates if the specified
-// device is locked.
-func (d *Devices) IsDeviceLocked(deviceId string) bool {
-	return false
+// device exists, and a book which indicates whether the device is locked
+func (d *Devices) IsDeviceLocked(deviceId string) (exists, locked bool) {
+	return false, false
 }
 
 // RemoveById removes the specified (by Id) device from the cache.
