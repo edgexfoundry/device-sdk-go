@@ -37,14 +37,15 @@ import (
 // A Service listens for requests and routes them to the right command
 type Service struct {
 	Version      string
-	Config       gxds.ConfigFile
+	Config       *gxds.Config
 	initAttempts int
 	initialized  bool
+	locked       bool
 	ac           metadataclients.AddressableClient
 	lc           logger.LoggingClient
 	sc           metadataclients.ServiceClient
 	ds           models.DeviceService
-	router       *mux.Router
+	r            *mux.Router
 	cd           *cache.Devices
 	co           *cache.Objects
 	cp           *cache.Profiles
@@ -201,12 +202,11 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolHandler) (err erro
 
 	done := make(chan struct{})
 
-
-	s.router = mux.NewRouter()
-	initCommand(s.router)
-	initStatus(s.router)
-	initService(s.router)
-	initUpdate(s.router)
+	s.r = mux.NewRouter()
+	initCommand(s)
+	initStatus(s.r)
+	initService(s.r)
+	initUpdate(s.r)
 
 	s.proto = proto
 	s.cp = cache.NewProfiles(s.Config)
