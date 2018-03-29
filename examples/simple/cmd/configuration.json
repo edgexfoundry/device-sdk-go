@@ -11,16 +11,16 @@
     "ReadMaxLimit": 100,
     "HeartBeatTime": 30000,
     "DataTransform": true,
-    "MetadbHost": "localhost",
-    "MetadbPort": 48081,
-    "CoreDataHost": "localhost",
-    "CoreDataPort": 48080,
+    "MetadataHost": "localhost",
+    "MetadataPort": 48081,
+    "DataHost": "localhost",
+    "DataPort": 48080,
     "LoggingFile": "./device-simple.log",
     "LoggingRemoteURL": "",
     "DefaultScheduleName": "Interval-30s",
     "DefaultScheduleFrequency": "PT30S",
     "DefaultScheduleEventName": "device-simple-QueryAll",
-    "DefaultScheduleEventPath": "/api/v1/device/all/Query"
-    "DefaultScheduleEventService": "device-simple"
+    "DefaultScheduleEventPath": "/api/v1/device/all/Query",
+    "DefaultScheduleEventService": "device-simple",
     "DefaultScheduleEventSchedule": "Interval-30s"
 }
