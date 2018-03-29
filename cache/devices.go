@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"bitbucket.org/tonyespy/gxds"
-	"github.com/edgexfoundry/core-clients-go/metadataclients"
-	"github.com/edgexfoundry/core-domain-go/models"
+	"github.com/edgexfoundry/edgex-go/core/clients/metadataclients"
+	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -50,6 +50,7 @@ func NewDevices(config *gxds.Config, proto gxds.ProtocolHandler) *Devices {
 }
 
 // Add a new device to the cache.
+// TODO: device should be a *models.Device
 func (d *Devices) Add(device models.Device) error {
 
 	// Note: used by Init() to populate the local cache

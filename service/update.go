@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/edgexfoundry/core-domain-go/models"
+	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"github.com/gorilla/mux"
 )
 

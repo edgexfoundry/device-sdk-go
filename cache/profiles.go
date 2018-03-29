@@ -14,8 +14,8 @@ import (
 	"sync"
 
 	"bitbucket.org/tonyespy/gxds"
-	"github.com/edgexfoundry/core-clients-go/coredataclients"
-	"github.com/edgexfoundry/core-domain-go/models"
+	"github.com/edgexfoundry/edgex-go/core/clients/coredataclients"
+	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"gopkg.in/mgo.v2/bson"
 )
 

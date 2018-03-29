@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgexfoundry/core-clients-go/metadataclients"
-	"github.com/edgexfoundry/core-domain-go/models"
+	"github.com/edgexfoundry/edgex-go/core/clients/metadataclients"
+	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/gorilla/mux"
 
