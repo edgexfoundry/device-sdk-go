@@ -17,7 +17,7 @@
 //
 package gxds
 
-import "github.com/edgexfoundry/core-domain-go/models"
+import "github.com/edgexfoundry/edgex-go/core/domain/models"
 
 // ProtocolHandler is a high-level device-specific interface used by
 // by other components of an EdgeX device service to interact with

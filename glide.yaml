@@ -1,5 +1,11 @@
 package: bitbucket.org/tonyespy/gxds
 import:
+- package: github.com/edgexfoundry/edgex-go
+  subpackages:
+  - /core/domain/models
+  - /core/clients/coredataclients
+  - /core/clients/metadataclients
+  - /support/logging-client
 - package: github.com/gorilla/mux
 - package: github.com/hashicorp/consul
   subpackages:

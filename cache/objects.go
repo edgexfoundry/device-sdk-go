@@ -9,7 +9,7 @@ package cache
 import (
 	"sync"
 
-	"github.com/edgexfoundry/core-domain-go/models"
+	"github.com/edgexfoundry/edgex-go/core/domain/models"
 )
 
 var (
