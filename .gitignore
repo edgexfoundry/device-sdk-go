@@ -1,0 +1,8 @@
+*~
+*.log
+examples/simple/cmd/cmd
+glide.lock
+vendor
+
+
+
