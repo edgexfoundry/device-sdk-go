@@ -29,7 +29,7 @@ import (
 type Devices struct {
 	config  *gxds.Config
 	proto   gxds.ProtocolHandler
-	devices map[string]models.Device
+	devices map[string]*models.Device
 	ac      metadataclients.AddressableClient
 	dc      metadataclients.DeviceClient
 }
@@ -50,8 +50,7 @@ func NewDevices(config *gxds.Config, proto gxds.ProtocolHandler) *Devices {
 }
 
 // Add a new device to the cache.
-// TODO: device should be a *models.Device
-func (d *Devices) Add(device models.Device) error {
+func (d *Devices) Add(device *models.Device) error {
 
 	// Note: used by Init() to populate the local cache
 	// with devices pre-existing in metadata service, and
@@ -104,7 +103,7 @@ func (d *Devices) DeviceById(deviceId string) *models.Device {
 // is used, as it's bad form to return an internal data struct to
 // callers, especially when the result is a map, which can then be
 // modified externally to this package.
-func (d *Devices) Devices() map[string]models.Device {
+func (d *Devices) Devices() map[string]*models.Device {
 	return d.devices
 }
 
@@ -113,10 +112,10 @@ func (d *Devices) Init(serviceId string) error {
 
 	metaPort := strconv.Itoa(d.config.MetadataPort)
 	d.ac = metadataclients.NewAddressableClient("http://" + d.config.MetadataHost +
-		metaPort + "/api/v1/addressable")
+		":" + metaPort + "/api/v1/addressable")
 
 	d.dc = metadataclients.NewDeviceClient("http://" + d.config.MetadataHost +
-		metaPort + "/api/v1/device")
+		":" + metaPort + "/api/v1/device")
 
 	metaDevices, err := d.dc.DevicesForService(serviceId)
 	if err != nil {
@@ -126,7 +125,7 @@ func (d *Devices) Init(serviceId string) error {
 
 	fmt.Fprintf(os.Stderr, "returned devices %v\n", metaDevices)
 
-	d.devices = make(map[string]models.Device)
+	d.devices = make(map[string]*models.Device)
 
 	// TODO: initialize watchers.initialize
 
@@ -141,7 +140,7 @@ func (d *Devices) Init(serviceId string) error {
 		}
 
 		device.OperatingState = models.OperatingState("DISABLED")
-		d.Add(device)
+		d.Add(&device)
 	}
 
 	// TODO: call Protocol.initialize
@@ -182,7 +181,7 @@ func (d *Devices) Update(deviceId string) error {
 // it to the local cache, and one that adds a brand new device.
 // The current method is an almost direct translation of the Java
 // DeviceStore implementation.
-func (d *Devices) addDeviceToMetadata(device models.Device) error {
+func (d *Devices) addDeviceToMetadata(device *models.Device) error {
 	// TODO: fix metadataclients to indicate !found, vs. returned zeroed struct!
 	fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s\n", device.Addressable.Name)
 	addr, err := d.ac.AddressableForName(device.Addressable.Name)
@@ -231,7 +230,7 @@ func (d *Devices) addDeviceToMetadata(device models.Device) error {
 		if metaDevice.Name != device.Name {
 			fmt.Fprintf(os.Stdout, "Adding Device to Metadata: %s\n", device.Name)
 
-			id, err := d.dc.Add(&device)
+			id, err := d.dc.Add(device)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "DeviceClient.Add for %s failed: %v", device.Name, err)
 				return err

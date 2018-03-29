@@ -45,7 +45,7 @@ func NewProfiles(config *gxds.Config) *Profiles {
 
 		dataPort := strconv.Itoa(config.DataPort)
 		profiles.vdc = coredataclients.NewValueDescriptorClient("http://" +
-			config.DataHost + dataPort + "/api/v1/valuedescriptor")
+			config.DataHost + ":" + dataPort + "/api/v1/valuedescriptor")
 
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
 		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
@@ -56,7 +56,7 @@ func NewProfiles(config *gxds.Config) *Profiles {
 
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
-func (p *Profiles) addDevice(device models.Device) error {
+func (p *Profiles) addDevice(device *models.Device) error {
 	fmt.Fprintf(os.Stdout, "pstore: device: %s\n", device.Name)
 
 	// map[resource name]map[get|set][]models.ResourceOperation
@@ -266,12 +266,12 @@ func (p *Profiles) addDevice(device models.Device) error {
 	return nil
 }
 
-func (p *Profiles) updateDevice(device models.Device) {
+func (p *Profiles) updateDevice(device *models.Device) {
 	p.removeDevice(device)
 	p.addDevice(device)
 }
 
-func (p *Profiles) removeDevice(device models.Device) {
+func (p *Profiles) removeDevice(device *models.Device) {
 	delete(p.objects, device.Name)
 	delete(p.commands, device.Name)
 }
