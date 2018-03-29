@@ -217,8 +217,8 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolHandler) (err erro
 
 	// set up clients
 	metaPort := strconv.Itoa(s.Config.MetadataPort)
-	s.ac = metadataclients.NewAddressableClient("http://" + s.Config.MetadataHost + metaPort + "/api/v1/addressable")
-	s.sc = metadataclients.NewServiceClient("http://" + s.Config.MetadataHost + metaPort + "/api/v1/deviceservice")
+	s.ac = metadataclients.NewAddressableClient("http://" + s.Config.MetadataHost + ":" + metaPort + "/api/v1/addressable")
+	s.sc = metadataclients.NewServiceClient("http://" + s.Config.MetadataHost + ":" + metaPort + "/api/v1/deviceservice")
 
 	for s.initAttempts < s.Config.ConnectRetries && !s.initialized {
 		s.initAttempts++
