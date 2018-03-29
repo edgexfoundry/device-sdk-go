@@ -13,12 +13,12 @@
 package service
 
 import (
+	"bitbucket.org/tonyespy/gxds"
+	"bitbucket.org/tonyespy/gxds/cache"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
-	"bitbucket.org/tonyespy/gxds"
-	"bitbucket.org/tonyespy/gxds/cache"
 
 	"github.com/edgexfoundry/core-clients-go/metadataclients"
 	"github.com/edgexfoundry/core-domain-go/models"
