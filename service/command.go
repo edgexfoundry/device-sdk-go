@@ -68,7 +68,6 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "OK")
 }
 
-
 func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
@@ -112,10 +111,10 @@ func initCommand(s *Service) *mux.Router {
 	sr := s.r.PathPrefix(deviceV1).Subrouter()
 
 	ch := &commandHandler{fn: commandFunc, s: s}
-	sr.Handle(deviceV1 + commandPath, ch)
+	sr.Handle(deviceV1+commandPath, ch)
 
 	ch = &commandHandler{fn: commandAllFunc, s: s}
-	sr.Handle(deviceV1 + commandAllPath, ch)
+	sr.Handle(deviceV1+commandAllPath, ch)
 
 	return sr
 }

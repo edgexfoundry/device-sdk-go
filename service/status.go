@@ -14,7 +14,7 @@ import (
 )
 
 func statusHandler(w http.ResponseWriter, req *http.Request) {
-	io.WriteString(w, "pong");
+	io.WriteString(w, "pong")
 }
 
 func initStatus(r *mux.Router) {
