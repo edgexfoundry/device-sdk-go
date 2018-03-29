@@ -6,12 +6,17 @@
 //
 package cache
 
-import "testing"
+import (
+	"testing"
+
+	"bitbucket.org/tonyespy/gxds"
+)
 
 func TestNewDevices(t *testing.T) {
+	config := &gxds.Config{ServiceName: "dummy-service"}
 
-	d1 := NewDevices(nil)
-	d2 := NewDevices(nil)
+	d1 := NewDevices(config, nil)
+	d2 := NewDevices(config, nil)
 	if d1 != d2 {
 		t.Error("Broken singleton")
 	}
