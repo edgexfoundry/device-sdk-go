@@ -40,7 +40,7 @@ func main() {
 }
 
 func startService() error {
-	s := simple.SimpleHandler{}
+	s := simple.SimpleDriver{}
 
 	d, err := service.New()
 	if err != nil {
