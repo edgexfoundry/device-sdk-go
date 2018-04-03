@@ -8,7 +8,7 @@
 // which include loading configuration, handling service registration,
 // creation of object caches, REST APIs, and basic service functionality.
 // Clients of this package must provide concrete implementations of the
-// device-specific interfaces (e.g. ProtocolHandler).
+// device-specific interfaces (e.g. ProtocolDriver).
 //
 package service
 
@@ -51,7 +51,7 @@ type Service struct {
 	cp           *cache.Profiles
 	cs           *cache.Schedules
 	cw           *cache.Watchers
-	proto        gxds.ProtocolHandler
+	proto        gxds.ProtocolDriver
 }
 
 func (s *Service) attemptInit(done chan<- struct{}) {
@@ -176,7 +176,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 }
 
 // Initialize the Service
-func (s *Service) Init(configFile *string, proto gxds.ProtocolHandler) (err error) {
+func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error) {
 	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
 	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
 

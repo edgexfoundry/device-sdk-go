@@ -9,8 +9,8 @@
 // or protocol specific logic of a device service.
 //
 // TODO:
-// * Determine if gxds should define separate 'Handler' and 'Driver'
-//   protocol interfaces?  Can they be combined?
+// * Determine if gxds still needs a ProtocolHandler, after implementing
+//   basic command handling.
 //
 // * Investigate changing calling signatures to leverage std Go
 //   interfaces, such as Reader/Writer, ...
