@@ -7,7 +7,7 @@
 package cache
 
 import (
-	"bitbucket.org/tonyespy/gxds"
+	"github.com/tonyespy/gxds"
 
 	"sync"
 )

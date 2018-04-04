@@ -16,8 +16,8 @@ import (
 // TODO: imports commented out till cache objects become interfaces
 //	"time"
 
-	"bitbucket.org/tonyespy/gxds"
-	"bitbucket.org/tonyespy/gxds/cache"
+	"github.com/tonyespy/gxds"
+	"github.com/tonyespy/gxds/cache"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 //	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"github.com/gorilla/mux"

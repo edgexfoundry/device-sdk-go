@@ -15,8 +15,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"bitbucket.org/tonyespy/gxds/examples/simple"
-	"bitbucket.org/tonyespy/gxds/service"
+	"github.com/tonyespy/gxds/examples/simple"
+	"github.com/tonyespy/gxds/service"
 )
 
 var flags struct {

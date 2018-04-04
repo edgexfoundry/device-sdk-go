@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"bitbucket.org/tonyespy/gxds"
+	"github.com/tonyespy/gxds"
 	"github.com/edgexfoundry/edgex-go/core/clients/coredataclients"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"gopkg.in/mgo.v2/bson"
