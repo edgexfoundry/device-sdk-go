@@ -30,6 +30,7 @@ type Devices struct {
 	config  *gxds.Config
 	proto   gxds.ProtocolDriver
 	devices map[string]*models.Device
+	names   map[string]string
 	ac      metadataclients.AddressableClient
 	dc      metadataclients.DeviceClient
 }
@@ -95,7 +96,13 @@ func (d *Devices) Device(deviceName string) *models.Device {
 
 // DeviceById returns a device with the given device id.
 func (d *Devices) DeviceById(deviceId string) *models.Device {
-	return nil
+	name, ok := d.names[deviceId]
+	if !ok {
+		return nil
+	}
+
+	dev := d.devices[name]
+	return dev
 }
 
 // Devices returns the current list of devices in the cache.
@@ -126,6 +133,7 @@ func (d *Devices) Init(serviceId string) error {
 	fmt.Fprintf(os.Stderr, "returned devices %v\n", metaDevices)
 
 	d.devices = make(map[string]*models.Device)
+	d.names = make(map[string]string)
 
 	// TODO: initialize watchers.initialize
 
@@ -266,7 +274,9 @@ func (d *Devices) addDeviceToMetadata(device *models.Device) error {
 		return err
 	}
 
+	// TODO: consider alternate approaches...
 	d.devices[device.Name] = device
+	d.names[device.Id.Hex()] = device.Name
 
 	return nil
 }
