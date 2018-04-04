@@ -83,7 +83,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 			s.Config.ServiceName, s.initAttempts))
 
 		// check for addressable
-		fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", s.Config.ServiceName)
+		s.lc.Error(fmt.Fprintf(os.Stderr, "Trying to find addressable for: %s", s.Config.ServiceName))
 		addr, err := s.ac.AddressableForName(s.Config.ServiceName)
 		if err != nil {
 			s.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", s.Config.ServiceName, err))
@@ -179,14 +179,14 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 // Initialize the Service
 func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error) {
-	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
-	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
+	s.lc.Debug(fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile))
+	s.lc.Debug(fmt.Fprintf(os.Stdout, "proto is: %v\n", proto))
 
 	// TODO: check if proto is nil, and fail...
 
 	s.Config, err = gxds.LoadConfig(configFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
+		s.lc.Error(fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err))
 		return err
 	}
 
