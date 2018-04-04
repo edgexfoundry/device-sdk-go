@@ -15,7 +15,9 @@ package service
 import (
 	"bitbucket.org/tonyespy/gxds"
 	"bitbucket.org/tonyespy/gxds/cache"
+
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -202,12 +204,6 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 
 	done := make(chan struct{})
 
-	s.r = mux.NewRouter()
-	initCommand(s)
-	initStatus(s.r)
-	initService(s.r)
-	initUpdate(s.r)
-
 	s.proto = proto
 	s.cp = cache.NewProfiles(s.Config)
 	s.cw = cache.NewWatchers()
@@ -241,13 +237,24 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 	s.cd.Init(s.ds.Service.Id.Hex())
 
 	// TODO: initialize scheduler
-	// TODO: configure gorillamux
+
+	// Setup REST API
+	s.r = mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	initStatus(s)
+	initCommand(s)
+	initService(s)
+	initUpdate(s)
+
+	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.Config.Timeout), "Request timed out")
 
 	return err
 }
 
 // Start the Service
 func (s *Service) Start() {
+	s.lc.Info("*Service Start() called")
+	s.lc.Error(http.ListenAndServe(":"+strconv.Itoa(s.Config.ServicePort), s.r).Error())
+	s.lc.Debug("*Service Start() exit")
 }
 
 // Stop shuts down the Service

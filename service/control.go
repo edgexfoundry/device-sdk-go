@@ -26,8 +26,7 @@ func transformHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "OK")
 }
 
-func initService(r *mux.Router) {
-	s := r.PathPrefix("/api/v1").Subrouter()
-	s.HandleFunc("/discovery", discoveryHandler).Methods("POST")
-	s.HandleFunc("/debug/transformData/{transformData}", transformHandler).Methods("GET")
+func initService(s *Service) {
+	s.r.HandleFunc("/discovery", discoveryHandler).Methods("POST")
+	s.r.HandleFunc("/debug/transformData/{transformData}", transformHandler).Methods("GET")
 }

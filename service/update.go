@@ -14,7 +14,6 @@ import (
 	"os"
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	"github.com/gorilla/mux"
 )
 
 func callbackHandler(w http.ResponseWriter, req *http.Request) {
@@ -37,6 +36,6 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "OK")
 }
 
-func initUpdate(r *mux.Router) {
-	r.HandleFunc("/api/v1/callback", callbackHandler)
+func initUpdate(s *Service) {
+	s.r.HandleFunc("callback", callbackHandler)
 }

@@ -9,15 +9,12 @@ package service
 import (
 	"io"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 func statusHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "pong")
 }
 
-func initStatus(r *mux.Router) {
-	s := r.PathPrefix("/api/v1").Subrouter()
-	s.HandleFunc("/ping", statusHandler)
+func initStatus(s *Service) {
+	s.r.HandleFunc("/ping", statusHandler)
 }
