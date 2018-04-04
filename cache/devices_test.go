@@ -9,7 +9,7 @@ package cache
 import (
 	"testing"
 
-	"bitbucket.org/tonyespy/gxds"
+	"github.com/tonyespy/gxds"
 )
 
 func TestNewDevices(t *testing.T) {

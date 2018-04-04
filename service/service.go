@@ -13,8 +13,8 @@
 package service
 
 import (
-	"bitbucket.org/tonyespy/gxds"
-	"bitbucket.org/tonyespy/gxds/cache"
+	"github.com/tonyespy/gxds"
+	"github.com/tonyespy/gxds/cache"
 
 	"fmt"
 	"net/http"

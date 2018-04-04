@@ -1,4 +1,4 @@
-package: bitbucket.org/tonyespy/gxds
+package: github.com/tonyespy/gxds
 import:
 - package: github.com/edgexfoundry/edgex-go
   subpackages:
