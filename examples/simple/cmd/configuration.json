@@ -1,7 +1,7 @@
 {
     "ServiceName": "device-simple",
-    "ServerHost": "localhost",
-    "ServerPort": 49999,
+    "ServiceHost": "localhost",
+    "ServicePort": 49990,
     "Labels": [ "SDK", "scheduler" ],
     "ServerTimeout": 5000,
     "OpenMessage": "device-simple started",
