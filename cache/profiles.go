@@ -54,6 +54,12 @@ func NewProfiles(config *gxds.Config) *Profiles {
 	return profiles
 }
 
+// CommandExists returns a bool indicating whether the specified command exists for the
+// specified (by name) device. If the specified device doesn't exist, an error is returned.
+func (p *Profiles) CommandExists(deviceName string, command string) (exists bool, err error) {
+	return false, nil
+}
+
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
 func (p *Profiles) addDevice(device *models.Device) error {
