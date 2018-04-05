@@ -58,7 +58,19 @@ func NewProfiles(config *gxds.Config, lc logger.LoggingClient) *Profiles {
 // CommandExists returns a bool indicating whether the specified command exists for the
 // specified (by name) device. If the specified device doesn't exist, an error is returned.
 func (p *Profiles) CommandExists(deviceName string, command string) (exists bool, err error) {
-	return false, nil
+	devOps, ok := p.commands[deviceName]
+
+	if !ok {
+		err = fmt.Errorf("profiles: CommandExists: specified deviceName: %s not found", deviceName)
+		return
+	}
+
+	if _, ok := devOps[command]; !ok {
+		return
+	}
+
+	exists = true
+	return
 }
 
 // TODO: this function is based on the original Java device-sdk-tools,
