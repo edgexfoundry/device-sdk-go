@@ -18,6 +18,7 @@ import (
 
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -178,8 +179,8 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 // Initialize the Service
 func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error) {
-	s.lc.Debug(fmt.Sprintf("configuration file is: %s\n", *configFile))
-	s.lc.Debug(fmt.Sprintf("proto is: %v\n", proto))
+	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
+	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
 
 	// TODO: check if proto is nil, and fail...
 
