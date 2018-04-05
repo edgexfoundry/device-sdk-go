@@ -8,14 +8,14 @@ package cache
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/tonyespy/gxds"
 	"github.com/edgexfoundry/edgex-go/core/clients/coredataclients"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/tonyespy/gxds"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -27,6 +27,7 @@ type Profiles struct {
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
 	objects     map[string]map[string]models.DeviceObject
+	lc          logger.LoggingClient
 }
 
 var (
@@ -38,10 +39,10 @@ var (
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-func NewProfiles(config *gxds.Config) *Profiles {
+func NewProfiles(config *gxds.Config, lc logger.LoggingClient) *Profiles {
 
 	pcOnce.Do(func() {
-		profiles = &Profiles{config: config}
+		profiles = &Profiles{config: config, lc: lc}
 
 		dataPort := strconv.Itoa(config.DataPort)
 		profiles.vdc = coredataclients.NewValueDescriptorClient("http://" +
@@ -63,7 +64,7 @@ func (p *Profiles) CommandExists(deviceName string, command string) (exists bool
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
 func (p *Profiles) addDevice(device *models.Device) error {
-	fmt.Fprintf(os.Stdout, "pstore: device: %s\n", device.Name)
+	p.lc.Debug(fmt.Sprintf("profiles: device: %s\n", device.Name))
 
 	// map[resource name]map[get|set][]models.ResourceOperation
 	var deviceOps = make(map[string]map[string][]models.ResourceOperation)
@@ -76,8 +77,8 @@ func (p *Profiles) addDevice(device *models.Device) error {
 	// get current value descriptors from core-data
 	// ignore err, zero-value slice returned by default
 	descriptors, _ := p.vdc.ValueDescriptors()
-	fmt.Fprintf(os.Stderr, "pstore: %d valuedescriptors returned\n", len(descriptors))
-	fmt.Fprintf(os.Stderr, "pstore: valuedescriptors: %v\n", descriptors)
+	p.lc.Debug(fmt.Sprintf("profiles: %d valuedescriptors returned\n", len(descriptors)))
+	p.lc.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descriptors))
 
 	// TODO: if profile is not complete, update it
 	if len(device.Profile.DeviceResources) == 0 {
@@ -87,7 +88,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 		// call addDevice(device)
 		// all done
 
-		fmt.Fprintf(os.Stderr, "pstore: NO DeviceResources; failed state!!!\n")
+		p.lc.Error(fmt.Sprintf("profiles: NO DeviceResources; failed state!!!\n"))
 	}
 
 	// ** Commands **
@@ -96,7 +97,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 	// descriptors of each command to a single list of used descriptors
 	vdNames := make(map[string]string)
 	for _, command := range device.Profile.Commands {
-		fmt.Fprintf(os.Stderr, "pstore: command: %s\n", command.Name)
+		p.lc.Debug(fmt.Sprintf("profiles: command: %s\n", command.Name))
 		command.AllAssociatedValueDescriptors(&vdNames)
 	}
 
@@ -105,13 +106,13 @@ func (p *Profiles) addDevice(device *models.Device) error {
 
 	}
 
-	fmt.Fprintf(os.Stderr, "pstore: usedDescriptors: %v\n", usedDescriptors)
+	p.lc.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescriptors))
 
 	// ** Resources **
 
 	for _, resource := range device.Profile.Resources {
 		profileOps := make(map[string][]models.ResourceOperation)
-		fmt.Fprintf(os.Stderr, "\npstore: resource: %s\n", resource.Name)
+		p.lc.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", resource.Name))
 
 		profileOps["get"] = resource.Get
 		profileOps["set"] = resource.Set
@@ -119,7 +120,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 		name := strings.ToLower(resource.Name)
 
 		deviceOps[name] = profileOps
-		fmt.Fprintf(os.Stderr, "pstore: profileOps: %v\n\n", profileOps)
+		p.lc.Debug(fmt.Sprintf("profiles: profileOps: %v\n\n", profileOps))
 
 		// NOTE - Java uses ArrayList.addAll, which gets rid of duplicates!
 
@@ -128,7 +129,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
-			fmt.Fprintf(os.Stderr, "pstore: adding Get ro: %v to ops\n", ro)
+			p.lc.Debug(fmt.Sprintf("profiles: adding Get ro: %v to ops\n", ro))
 			ops = append(ops, ro)
 		}
 
@@ -137,13 +138,13 @@ func (p *Profiles) addDevice(device *models.Device) error {
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
-			fmt.Fprintf(os.Stderr, "pstore: adding Set ro: %v to ops\n", ro)
+			p.lc.Debug(fmt.Sprintf("profiles: adding Set ro: %v to ops\n", ro))
 			ops = append(ops, ro)
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "\n\npstore: ops: %v\n\n", ops)
-	fmt.Fprintf(os.Stderr, "\n\npstore: deviceOps: %v\n\n", deviceOps)
+	p.lc.Debug(fmt.Sprintf("\n\nprofiles: ops: %v\n\n", ops))
+	p.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", deviceOps))
 
 	// put the device's profile objects in the objects map
 	// put the device's profile objects in the commands map if no resource exists
@@ -152,11 +153,11 @@ func (p *Profiles) addDevice(device *models.Device) error {
 	//Map<String, ${Protocol name}Object> deviceObjects = new HashMap<>();
 	deviceObjects := make(map[string]models.DeviceObject)
 
-	fmt.Fprintf(os.Stderr, "\npstore: start-->DeviceResources\n\n")
+	p.lc.Debug(fmt.Sprintf("\nprofiles: start-->DeviceResources\n\n"))
 
 	for _, object := range device.Profile.DeviceResources {
 		value := object.Properties.Value
-		fmt.Fprintf(os.Stderr, "pstore: deviceobject: %v\n", object)
+		p.lc.Debug(fmt.Sprintf("profiles: deviceobject: %v\n", object))
 
 		deviceObjects[object.Name] = object
 
@@ -168,7 +169,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 		if _, ok := deviceOps[name]; !ok {
 			readWrite := strings.ToLower(value.ReadWrite)
 
-			fmt.Fprintf(os.Stderr, "pstore: couldn't find %s in deviceOps; readWrite: %s\n", name, readWrite)
+			p.lc.Debug(fmt.Sprintf("profiles: couldn't find %s in deviceOps; readWrite: %s\n", name, readWrite))
 			operations := make(map[string][]models.ResourceOperation)
 
 			if strings.Contains(readWrite, "r") {
@@ -183,7 +184,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 				getOp := []models.ResourceOperation{*resource}
 				key := strings.ToLower(resource.Operation)
 
-				fmt.Fprintf(os.Stderr, "pstore: created new get operation %s: %v\n", key, getOp)
+				p.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, getOp))
 
 				operations[key] = getOp
 				ops = append(ops, *resource)
@@ -202,7 +203,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 				setOp := []models.ResourceOperation{*resource}
 				key := strings.ToLower(resource.Operation)
 
-				fmt.Fprintf(os.Stderr, "pstore: created new get operation %s: %v\n", key, setOp)
+				p.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
 
 				operations[key] = setOp
 				ops = append(ops, *resource)
@@ -213,9 +214,9 @@ func (p *Profiles) addDevice(device *models.Device) error {
 		}
 	}
 
-	fmt.Fprintf(os.Stdout, "\npstore: done w/deviceresources\n\n")
-	fmt.Fprintf(os.Stdout, "pstore: ops: %v\n\n", ops)
-	fmt.Fprintf(os.Stderr, "\n\npstore: deviceOps: %v\n\n", deviceOps)
+	p.lc.Debug(fmt.Sprintf("\nprofiles: done w/deviceresources\n\n"))
+	p.lc.Debug(fmt.Sprintf("profiles: ops: %v\n\n", ops))
+	p.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", deviceOps))
 
 	p.objects[device.Name] = deviceObjects
 	p.commands[device.Name] = deviceOps
@@ -225,11 +226,11 @@ func (p *Profiles) addDevice(device *models.Device) error {
 		var desc *models.ValueDescriptor
 		var object *models.DeviceObject
 
-		fmt.Fprintf(os.Stdout, "pstore: op: %v\n", op)
+		p.lc.Debug(fmt.Sprintf("profiles: op: %v\n", op))
 
 		// descriptors is []models.ValueDescriptor
 		for _, v := range descriptors {
-			fmt.Fprintf(os.Stdout, "pstore: addDevice: op.Parameter: %s v.Name: %s\n", op.Parameter, v.Name)
+			p.lc.Debug(fmt.Sprintf("profiles: addDevice: op.Parameter: %s v.Name: %s\n", op.Parameter, v.Name))
 			if op.Parameter == v.Name {
 				desc = &v
 				break
@@ -251,7 +252,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 			}
 
 			for _, v := range device.Profile.DeviceResources {
-				fmt.Fprintf(os.Stdout, "ps: addDevice: op.Object: %s v.Name: %s\n", op.Object, v.Name)
+				p.lc.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s v.Name: %s\n", op.Object, v.Name))
 				if op.Object == v.Name {
 					object = &v
 					break
@@ -286,7 +287,7 @@ func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *mo
 	value := object.Properties.Value
 	units := object.Properties.Units
 
-	fmt.Fprintf(os.Stdout, "ps: createDescriptor: %v value: %v units: %s\n", name, value, units)
+	p.lc.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
 
 	descriptor := &models.ValueDescriptor{
 		Name: name,
@@ -302,17 +303,17 @@ func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *mo
 
 	id, err := p.vdc.Add(descriptor)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Add ValueDescriptor failed: %v\n", err)
+		p.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor failed: %v\n", err))
 		return nil
 	}
 
 	if !bson.IsObjectIdHex(id) {
 		// TODO: should probably be an assertion?
-		fmt.Fprintf(os.Stderr, "Add ValueDescriptor returned invalid Id: %s\n", id)
+		p.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor returned invalid Id: %s\n", id))
 		return nil
 	} else {
 		descriptor.Id = bson.ObjectIdHex(id)
-		fmt.Fprintf(os.Stdout, "createDescriptor id: %s\n", id)
+		p.lc.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
 	}
 
 	return descriptor

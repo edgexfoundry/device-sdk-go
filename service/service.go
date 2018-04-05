@@ -204,7 +204,7 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 	done := make(chan struct{})
 
 	s.proto = proto
-	s.cp = cache.NewProfiles(s.Config)
+	s.cp = cache.NewProfiles(s.Config, s.lc)
 	s.cw = cache.NewWatchers()
 	s.co = cache.NewObjects()
 	s.cd = cache.NewDevices(s.Config, s.lc, proto)
