@@ -57,6 +57,9 @@ func NewProfiles(config *gxds.Config, lc logger.LoggingClient) *Profiles {
 
 // CommandExists returns a bool indicating whether the specified command exists for the
 // specified (by name) device. If the specified device doesn't exist, an error is returned.
+// Note - this command currently checks that a deviceprofile *resource* with the given name
+// exists, it's not actually checking that a deviceprofile *command* with this name exists.
+// See addDevice() for more details.
 func (p *Profiles) CommandExists(deviceName string, command string) (exists bool, err error) {
 	devOps, ok := p.commands[deviceName]
 
@@ -65,7 +68,7 @@ func (p *Profiles) CommandExists(deviceName string, command string) (exists bool
 		return
 	}
 
-	if _, ok := devOps[command]; !ok {
+	if _, ok := devOps[strings.ToLower(command)]; !ok {
 		return
 	}
 
@@ -92,15 +95,16 @@ func (p *Profiles) addDevice(device *models.Device) error {
 	p.lc.Debug(fmt.Sprintf("profiles: %d valuedescriptors returned\n", len(descriptors)))
 	p.lc.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descriptors))
 
-	// TODO: if profile is not complete, update it
+	// TODO: deviceprofiles with no device resources aren't supported, unlike
+	// the Java SDK-based DSs.
 	if len(device.Profile.DeviceResources) == 0 {
 		// try to find existing profile by name
 		// set the profile into the device
 		// recursive call:
 		// call addDevice(device)
-		// all done
 
-		p.lc.Error(fmt.Sprintf("profiles: NO DeviceResources; failed state!!!\n"))
+		err := fmt.Errorf("profiles: device %s has no device resources", device.Name)
+		return err
 	}
 
 	// ** Commands **
