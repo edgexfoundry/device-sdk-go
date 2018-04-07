@@ -55,9 +55,10 @@ func NewProfiles(c *gxds.Config, lc logger.LoggingClient) *Profiles {
 	return profiles
 }
 
-// GetDeviceObjects returns a...
+// GetDeviceObjects returns a map of object names to DeviceObject instances.
 func (p *Profiles) GetDeviceObjects(devName string) map[string]models.DeviceObject {
-	return nil
+	devObjs := p.objects[devName]
+	return devObjs
 }
 
 // CommandExists returns a bool indicating whether the specified command exists for the
@@ -65,20 +66,18 @@ func (p *Profiles) GetDeviceObjects(devName string) map[string]models.DeviceObje
 // Note - this command currently checks that a deviceprofile *resource* with the given name
 // exists, it's not actually checking that a deviceprofile *command* with this name exists.
 // See addDevice() for more details.
-func (p *Profiles) CommandExists(devName string, cmd string) (exists bool, err error) {
+func (p *Profiles) CommandExists(devName string, cmd string) (bool, error) {
 	devOps, ok := p.commands[devName]
-
 	if !ok {
-		err = fmt.Errorf("profiles: CommandExists: specified dev: %s not found", devName)
-		return
+		err := fmt.Errorf("profiles: CommandExists: specified dev: %s not found", devName)
+		return false, err
 	}
 
 	if _, ok := devOps[strings.ToLower(cmd)]; !ok {
-		return
+		return false, nil
 	}
 
-	exists = true
-	return
+	return true, nil
 }
 
 // GetResourceOperation...
