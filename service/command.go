@@ -29,36 +29,45 @@ type commandHandler struct {
 
 func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	deviceId := vars["deviceId"]
-	cmd := vars["cmd"]
+	id := vars["id"]
+	cmd := vars["command"]
 
-	s.lc.Debug(fmt.Sprintf("commandFunc: deviceId: %s cmd: %s", deviceId, cmd))
+	s.lc.Debug(fmt.Sprintf("commandFunc: dev: %s cmd: %s", id, cmd))
 
 	// TODO - models.Device isn't thread safe currently
-	device := s.cd.DeviceById(deviceId)
-	if device == nil {
-		msg := fmt.Sprintf("device: %s not found; %s %s", deviceId, r.Method, r.URL)
+	d := s.cd.DeviceById(id)
+	if d == nil {
+		// TODO: standardize error message format (use of prefix)
+		msg := fmt.Sprintf("dev: %s not found; %s %s", id, r.Method, r.URL)
 		s.lc.Error(msg)
 		http.Error(w, msg, http.StatusNotFound)
 		return
 	}
 
-	if device.AdminState == "LOCKED" {
-		msg := fmt.Sprintf("device: %s locked; %s %s", deviceId, r.Method, r.URL)
+	if d.AdminState == "LOCKED" {
+		msg := fmt.Sprintf("dev: %s locked; %s %s", id, r.Method, r.URL)
 		s.lc.Error(msg)
 		http.Error(w, msg, http.StatusLocked)
 		return
 	}
 
-	// TODO: need to mark device when operation in progress, so it can't be removed till completed...
+	// TODO: need to mark device when operation in progress, so it can't be removed till completed
 
-	// TODO: implement CommandExists; current failure point as it alwys returns exists=false
-	exists, err := s.cp.CommandExists(device.Name, cmd)
+	// NOTE: as currently implemented, CommandExists checks the existence of a deviceprofile
+	// *resource* name, not a *command* name! A deviceprofile's command section is only used
+	// to trigger valuedescriptor creation.
+	exists, err := s.cp.CommandExists(d.Name, cmd)
 
-	// TODO: ASSERT if err != nil
+	// TODO: once cache locking has been implemented, this should never happen
+	if err != nil {
+		msg := fmt.Sprintf("command: internal error; dev: %s not found in cache; %s %s", id, r.Method, r.URL)
+		s.lc.Error(msg)
+		http.Error(w, msg, http.StatusExpectationFailed)
+		return
+	}
 
 	if !exists {
-		msg := fmt.Sprintf("command: %s for device: %s not found; %s %s", cmd, deviceId, r.Method, r.URL)
+		msg := fmt.Sprintf("command: %s for dev: %s not found; %s %s", cmd, id, r.Method, r.URL)
 		s.lc.Error(msg)
 		http.Error(w, msg, http.StatusNotFound)
 		return
@@ -79,19 +88,19 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	executeCommand(s, w, device, cmd, string(body))
+	executeCommand(s, w, d, cmd, r.Method, string(body))
 }
 
 func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	s.lc.Debug(fmt.Sprintf("command: device: all cmd: %s", vars["cmd"]))
+	s.lc.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
 	w.WriteHeader(200)
 	io.WriteString(w, "OK")
 
 	// pseudo-logic
 	// loop thru all existing devices:
-	// if devices.deviceBy(deviceId).locked --> return http.StatusLocked; cache access needs to be sync'd
+	// if devices.deviceBy(id).locked --> return http.StatusLocked; cache access needs to be sync'd
 	// TODO: add check for device-not-found; Java code doesn't check this
 	// TODO: need to mark device when operation in progress, so it can't be removed till completed...
 	// if commandExists == false --> return http.StatusNotFound (404);
@@ -104,7 +113,70 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	//      - formats reading(s) into an event, sends to core-data, return result
 }
 
-func executeCommand(s *Service, w http.ResponseWriter, device *models.Device, cmd string, args string) {
+func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
+	var count int
+	var responses = make([]string, 16, 64)
+
+	// TODO: add support for PUT/SET commands
+	var value = ""
+
+	// make ResourceOperations
+	ops, err := s.cp.GetResourceOperations(d.Name, cmd, method)
+	if err != nil {
+		s.lc.Error(err.Error())
+
+		// TODO: review as this doesn't match the RAML
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// TODO: this should be documented in "Device Profile Guide"; might be too generous?
+	if len(ops) > 64 {
+		msg := fmt.Sprintf("resourceoperation limit (64) execeeded for dev: %s cmd: %s method: %s", d.Name, cmd, method)
+		s.lc.Error(msg)
+
+		// TODO: review as this doesn't match the RAML
+		http.Error(w, msg, http.StatusExpectationFailed)
+		return
+	}
+
+	rChan := make(chan string)
+	devObjs := s.cp.GetDeviceObjects(d.Name)
+	if devObjs == nil {
+		msg := fmt.Sprintf("command: internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
+		s.lc.Error(msg)
+		http.Error(w, msg, http.StatusExpectationFailed)
+		return
+	}
+
+	for _, op := range ops {
+
+		// TODO: figure out how to get real deviceObject from profiles...
+		objName := op.Object
+		s.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
+
+		devObj, ok := devObjs[objName]
+		if !ok {
+			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
+			// TODO: review as this doesn't match the RAML
+			http.Error(w, msg, http.StatusExpectationFailed)
+			return
+		}
+
+		go s.proto.ProcessAsync(&op, d, &devObj, value, rChan)
+		count++
+	}
+
+	// wait for responses
+	for count != 0 {
+		rsp := <-rChan
+		responses = append(responses, rsp)
+		count--
+	}
+
+	// TODO:
+	s.lc.Debug(fmt.Sprintf("protocoldriver results for dev: %s cmd: %s method: %s", d.Name, cmd, method))
+
 	w.WriteHeader(200)
 	io.WriteString(w, "OK")
 }
@@ -129,12 +201,12 @@ func initCommand(s *Service) {
 
 	sr := s.r.PathPrefix("/device").Subrouter()
 	ch := &commandHandler{fn: commandFunc, s: s}
-	sr.Handle("/{deviceId}/{cmd}", ch).Methods(http.MethodGet, http.MethodPut)
+	sr.Handle("/{id}/{command}", ch).Methods(http.MethodGet, http.MethodPut)
 
 	// TODO: RAML specifies GET, PUT, and POST, with no apparent difference between
 	// PUT and POST! This code limits to just GET/PUT. Discuss and update in device
 	// services requirements document.
 
 	ch = &commandHandler{fn: commandAllFunc, s: s}
-	sr.Handle("/all/{cmd}", ch).Methods(http.MethodGet, http.MethodPut)
+	sr.Handle("/all/{command}", ch).Methods(http.MethodGet, http.MethodPut)
 }
