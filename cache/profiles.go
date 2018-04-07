@@ -26,7 +26,7 @@ type Profiles struct {
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
-	objects     map[string]map[string]models.DeviceObject
+	objects     map[string]map[string]models.DeviceObject // TODO: make *models.DeviceObject?
 	lc          logger.LoggingClient
 }
 
@@ -39,14 +39,14 @@ var (
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-func NewProfiles(config *gxds.Config, lc logger.LoggingClient) *Profiles {
+func NewProfiles(c *gxds.Config, lc logger.LoggingClient) *Profiles {
 
 	pcOnce.Do(func() {
-		profiles = &Profiles{config: config, lc: lc}
+		profiles = &Profiles{config: c, lc: lc}
 
-		dataPort := strconv.Itoa(config.DataPort)
+		port := strconv.Itoa(c.DataPort)
 		profiles.vdc = coredataclients.NewValueDescriptorClient("http://" +
-			config.DataHost + ":" + dataPort + "/api/v1/valuedescriptor")
+			c.DataHost + ":" + port + "/api/v1/valuedescriptor")
 
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
 		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
@@ -55,20 +55,25 @@ func NewProfiles(config *gxds.Config, lc logger.LoggingClient) *Profiles {
 	return profiles
 }
 
+// GetDeviceObjects returns a...
+func (p *Profiles) GetDeviceObjects(devName string) map[string]models.DeviceObject {
+	return nil
+}
+
 // CommandExists returns a bool indicating whether the specified command exists for the
 // specified (by name) device. If the specified device doesn't exist, an error is returned.
 // Note - this command currently checks that a deviceprofile *resource* with the given name
 // exists, it's not actually checking that a deviceprofile *command* with this name exists.
 // See addDevice() for more details.
-func (p *Profiles) CommandExists(deviceName string, command string) (exists bool, err error) {
-	devOps, ok := p.commands[deviceName]
+func (p *Profiles) CommandExists(devName string, cmd string) (exists bool, err error) {
+	devOps, ok := p.commands[devName]
 
 	if !ok {
-		err = fmt.Errorf("profiles: CommandExists: specified deviceName: %s not found", deviceName)
+		err = fmt.Errorf("profiles: CommandExists: specified dev: %s not found", devName)
 		return
 	}
 
-	if _, ok := devOps[strings.ToLower(command)]; !ok {
+	if _, ok := devOps[strings.ToLower(cmd)]; !ok {
 		return
 	}
 
@@ -76,34 +81,57 @@ func (p *Profiles) CommandExists(deviceName string, command string) (exists bool
 	return
 }
 
+// GetResourceOperation...
+func (p *Profiles) GetResourceOperations(devName string, cmd string, method string) ([]models.ResourceOperation, error) {
+	var err error
+
+	devOps, ok := p.commands[devName]
+	if !ok {
+		err = fmt.Errorf("profiles: GetResourceOperations: specified dev: %s not found", devName)
+		return nil, err
+	}
+
+	cmdOps, ok := devOps[strings.ToLower(cmd)]
+	if !ok {
+		err = fmt.Errorf("profiles: GetResourceOperations: specified cmd: %s not found", cmd)
+		return nil, err
+	}
+
+	resOps, ok := cmdOps[strings.ToLower(method)]
+	if !ok {
+		err = fmt.Errorf("profiles: GetResourceOperations: specified cmd method: %s not found", method)
+		return nil, err
+	}
+
+	return resOps, nil
+}
+
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
-func (p *Profiles) addDevice(device *models.Device) error {
-	p.lc.Debug(fmt.Sprintf("profiles: device: %s\n", device.Name))
+func (p *Profiles) addDevice(d *models.Device) error {
+	p.lc.Debug(fmt.Sprintf("profiles: dev: %s\n", d.Name))
 
-	// map[resource name]map[get|set][]models.ResourceOperation
-	var deviceOps = make(map[string]map[string][]models.ResourceOperation)
+	var devOps = make(map[string]map[string][]models.ResourceOperation)
 
 	// TODO: need to vet size & capacity for both...
 	var ops = make([]models.ResourceOperation, 0, 1024)
-	var usedDescriptors = make([]string, 0, 512)
+	var usedDescs = make([]string, 0, 512)
 
 	// TODO: this should be done once, and changes watched...
 	// get current value descriptors from core-data
 	// ignore err, zero-value slice returned by default
-	descriptors, _ := p.vdc.ValueDescriptors()
-	p.lc.Debug(fmt.Sprintf("profiles: %d valuedescriptors returned\n", len(descriptors)))
-	p.lc.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descriptors))
+	descs, _ := p.vdc.ValueDescriptors()
+	p.lc.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descs))
 
 	// TODO: deviceprofiles with no device resources aren't supported, unlike
 	// the Java SDK-based DSs.
-	if len(device.Profile.DeviceResources) == 0 {
+	if len(d.Profile.DeviceResources) == 0 {
 		// try to find existing profile by name
 		// set the profile into the device
 		// recursive call:
-		// call addDevice(device)
+		// call addDevice(dev)
 
-		err := fmt.Errorf("profiles: device %s has no device resources", device.Name)
+		err := fmt.Errorf("profiles: dev: %s has no device resources", d.Name)
 		return err
 	}
 
@@ -112,35 +140,35 @@ func (p *Profiles) addDevice(device *models.Device) error {
 	// for each command in the profile, append the associated value
 	// descriptors of each command to a single list of used descriptors
 	vdNames := make(map[string]string)
-	for _, command := range device.Profile.Commands {
-		p.lc.Debug(fmt.Sprintf("profiles: command: %s\n", command.Name))
-		command.AllAssociatedValueDescriptors(&vdNames)
+	for _, cmd := range d.Profile.Commands {
+		p.lc.Debug(fmt.Sprintf("profiles: cmd: %s\n", cmd.Name))
+		cmd.AllAssociatedValueDescriptors(&vdNames)
 	}
 
 	for name, _ := range vdNames {
-		usedDescriptors = append(usedDescriptors, name)
+		usedDescs = append(usedDescs, name)
 
 	}
 
-	p.lc.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescriptors))
+	p.lc.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescs))
 
 	// ** Resources **
 
-	for _, resource := range device.Profile.Resources {
-		profileOps := make(map[string][]models.ResourceOperation)
-		p.lc.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", resource.Name))
+	for _, r := range d.Profile.Resources {
+		profOps := make(map[string][]models.ResourceOperation)
+		p.lc.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", r.Name))
 
-		profileOps["get"] = resource.Get
-		profileOps["set"] = resource.Set
+		profOps["get"] = r.Get
+		profOps["set"] = r.Set
 
-		name := strings.ToLower(resource.Name)
+		name := strings.ToLower(r.Name)
 
-		deviceOps[name] = profileOps
-		p.lc.Debug(fmt.Sprintf("profiles: profileOps: %v\n\n", profileOps))
+		devOps[name] = profOps
+		p.lc.Debug(fmt.Sprintf("profiles: profOps: %v\n\n", profOps))
 
 		// NOTE - Java uses ArrayList.addAll, which gets rid of duplicates!
 
-		for _, ro := range resource.Get {
+		for _, ro := range r.Get {
 
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
@@ -149,7 +177,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 			ops = append(ops, ro)
 		}
 
-		for _, ro := range resource.Set {
+		for _, ro := range r.Set {
 
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
@@ -160,92 +188,91 @@ func (p *Profiles) addDevice(device *models.Device) error {
 	}
 
 	p.lc.Debug(fmt.Sprintf("\n\nprofiles: ops: %v\n\n", ops))
-	p.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", deviceOps))
+	p.lc.Debug(fmt.Sprintf("\n\nprofiles: devOps: %v\n\n", devOps))
 
 	// put the device's profile objects in the objects map
 	// put the device's profile objects in the commands map if no resource exists
 	// TODO: for now, just store DeviceObject; protocol code can extract the
 	// attributes from DeviceObject.Attributes map directly
-	//Map<String, ${Protocol name}Object> deviceObjects = new HashMap<>();
-	deviceObjects := make(map[string]models.DeviceObject)
+	devObjs := make(map[string]models.DeviceObject)
 
 	p.lc.Debug(fmt.Sprintf("\nprofiles: start-->DeviceResources\n\n"))
 
-	for _, object := range device.Profile.DeviceResources {
-		value := object.Properties.Value
-		p.lc.Debug(fmt.Sprintf("profiles: deviceobject: %v\n", object))
+	for _, dr := range d.Profile.DeviceResources {
+		value := dr.Properties.Value
+		p.lc.Debug(fmt.Sprintf("profiles: devobject: %v\n", dr))
 
-		deviceObjects[object.Name] = object
+		devObjs[dr.Name] = dr
 
 		// if there is no resource defined for an object, create one based on the
 		// RW parameters
 
-		name := strings.ToLower(object.Name)
+		name := strings.ToLower(dr.Name)
 
-		if _, ok := deviceOps[name]; !ok {
-			readWrite := strings.ToLower(value.ReadWrite)
+		if _, ok := devOps[name]; !ok {
+			rw := strings.ToLower(value.ReadWrite)
 
-			p.lc.Debug(fmt.Sprintf("profiles: couldn't find %s in deviceOps; readWrite: %s\n", name, readWrite))
-			operations := make(map[string][]models.ResourceOperation)
+			p.lc.Debug(fmt.Sprintf("profiles: couldn't find %s in devOps; rw: %s\n", name, rw))
+			resOps := make(map[string][]models.ResourceOperation)
 
-			if strings.Contains(readWrite, "r") {
-				resource := &models.ResourceOperation{
+			if strings.Contains(rw, "r") {
+				res := &models.ResourceOperation{
 					Index:     "1",
-					Object:    object.Name,
+					Object:    dr.Name,
 					Operation: "get",
-					Parameter: object.Name,
+					Parameter: dr.Name,
 					Property:  "value",
 					Secondary: []string{},
 				}
-				getOp := []models.ResourceOperation{*resource}
-				key := strings.ToLower(resource.Operation)
+				getOp := []models.ResourceOperation{*res}
+				key := strings.ToLower(res.Operation)
 
 				p.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, getOp))
 
-				operations[key] = getOp
-				ops = append(ops, *resource)
+				resOps[key] = getOp
+				ops = append(ops, *res)
 			}
 
-			if strings.Contains(readWrite, "w") {
-				resource := &models.ResourceOperation{
+			if strings.Contains(rw, "w") {
+				res := &models.ResourceOperation{
 					Index:     "1",
-					Object:    object.Name,
+					Object:    dr.Name,
 					Operation: "set",
-					Parameter: object.Name,
+					Parameter: dr.Name,
 					Property:  "value",
 					Secondary: []string{},
 				}
 
-				setOp := []models.ResourceOperation{*resource}
-				key := strings.ToLower(resource.Operation)
+				setOp := []models.ResourceOperation{*res}
+				key := strings.ToLower(res.Operation)
 
 				p.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
 
-				operations[key] = setOp
-				ops = append(ops, *resource)
+				resOps[key] = setOp
+				ops = append(ops, *res)
 			}
 
 			// TODO: can a deviceresource have no operations?
-			deviceOps[name] = operations
+			devOps[name] = resOps
 		}
 	}
 
-	p.lc.Debug(fmt.Sprintf("\nprofiles: done w/deviceresources\n\n"))
+	p.lc.Debug(fmt.Sprintf("\nprofiles: done w/devresources\n\n"))
 	p.lc.Debug(fmt.Sprintf("profiles: ops: %v\n\n", ops))
-	p.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", deviceOps))
+	p.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", devOps))
 
-	p.objects[device.Name] = deviceObjects
-	p.commands[device.Name] = deviceOps
+	p.objects[d.Name] = devObjs
+	p.commands[d.Name] = devOps
 
 	// Create a value descriptor for each parameter using its underlying object
 	for _, op := range ops {
 		var desc *models.ValueDescriptor
-		var object *models.DeviceObject
+		var devObj *models.DeviceObject
 
 		p.lc.Debug(fmt.Sprintf("profiles: op: %v\n", op))
 
-		// descriptors is []models.ValueDescriptor
-		for _, v := range descriptors {
+		// descs is []models.ValueDescriptor
+		for _, v := range descs {
 			p.lc.Debug(fmt.Sprintf("profiles: addDevice: op.Parameter: %s v.Name: %s\n", op.Parameter, v.Name))
 			if op.Parameter == v.Name {
 				desc = &v
@@ -257,7 +284,7 @@ func (p *Profiles) addDevice(device *models.Device) error {
 			var found bool
 
 			// TODO: ask Tyler or Jim why this check is needed...
-			for _, used := range usedDescriptors {
+			for _, used := range usedDescs {
 				if op.Parameter == used {
 					found = true
 				}
@@ -267,15 +294,15 @@ func (p *Profiles) addDevice(device *models.Device) error {
 				continue
 			}
 
-			for _, v := range device.Profile.DeviceResources {
-				p.lc.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s v.Name: %s\n", op.Object, v.Name))
-				if op.Object == v.Name {
-					object = &v
+			for _, dr := range d.Profile.DeviceResources {
+				p.lc.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s dr.Name: %s\n", op.Object, dr.Name))
+				if op.Object == dr.Name {
+					devObj = &dr
 					break
 				}
 			}
 
-			desc = p.createDescriptor(op.Parameter, *object)
+			desc = p.createDescriptor(op.Parameter, *devObj)
 			if desc == nil {
 				// TODO: should the whole thing unwind due to this failure?
 
@@ -283,29 +310,29 @@ func (p *Profiles) addDevice(device *models.Device) error {
 		}
 
 		p.descriptors = append(p.descriptors, *desc)
-		descriptors = append(descriptors, *desc)
+		descs = append(descs, *desc)
 	}
 
 	return nil
 }
 
-func (p *Profiles) updateDevice(device *models.Device) {
-	p.removeDevice(device)
-	p.addDevice(device)
+func (p *Profiles) updateDevice(d *models.Device) {
+	p.removeDevice(d)
+	p.addDevice(d)
 }
 
-func (p *Profiles) removeDevice(device *models.Device) {
-	delete(p.objects, device.Name)
-	delete(p.commands, device.Name)
+func (p *Profiles) removeDevice(d *models.Device) {
+	delete(p.objects, d.Name)
+	delete(p.commands, d.Name)
 }
 
-func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *models.ValueDescriptor {
-	value := object.Properties.Value
-	units := object.Properties.Units
+func (p *Profiles) createDescriptor(name string, devObj models.DeviceObject) *models.ValueDescriptor {
+	value := devObj.Properties.Value
+	units := devObj.Properties.Units
 
 	p.lc.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
 
-	descriptor := &models.ValueDescriptor{
+	desc := &models.ValueDescriptor{
 		Name: name,
 		Min:  value.Minimum,
 		Max:  value.Maximum,
@@ -314,10 +341,10 @@ func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *mo
 		UomLabel:     units.DefaultValue,
 		DefaultValue: value.DefaultValue,
 		Formatting:   "%s",
-		Description:  object.Description,
+		Description:  devObj.Description,
 	}
 
-	id, err := p.vdc.Add(descriptor)
+	id, err := p.vdc.Add(desc)
 	if err != nil {
 		p.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor failed: %v\n", err))
 		return nil
@@ -328,17 +355,17 @@ func (p *Profiles) createDescriptor(name string, object models.DeviceObject) *mo
 		p.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor returned invalid Id: %s\n", id))
 		return nil
 	} else {
-		descriptor.Id = bson.ObjectIdHex(id)
+		desc.Id = bson.ObjectIdHex(id)
 		p.lc.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
 	}
 
-	return descriptor
+	return desc
 }
 
 // UpdateProfile updates the specified device profile in
 // the local cache, as well as updating all devices that
 // in the local cache, and in Core Metadata with the
 // updated profile.
-func (p *Profiles) UpdateProfile(profileId string) bool {
+func (p *Profiles) UpdateProfile(id string) bool {
 	return true
 }
