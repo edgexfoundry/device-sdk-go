@@ -1,0 +1,91 @@
+Background
+==========
+
+Format of this file borrowed from the bluez project.
+
+General
+=======
+
+- add consul support: add command-line args, registration
+  and configuration logic
+
+  Priority: High
+
+- load device profiles: load any pre-defined device profiles
+
+  Priority: Medium
+
+- validate device profiles: use a schema to validate device profile YAML
+
+  Priority: Medium
+
+REST
+====
+
+- understand all callbacks (updates & schedule*)
+
+- implement response formatting logic
+
+- implement update endpoints (/callback):
+
+- implement service endpoints:
+  - /discover
+
+  - /debug/*
+
+- implemenent schedule endpoints:
+
+- implement command 'All':
+
+Readings
+========
+
+- push readings: implement logic to push events & readings
+  to core data
+
+- implement transforms: implement transforms for both get & puts
+
+Driver
+======
+
+- merge process* methods: the current doesn't make much sense
+
+Caching
+=======
+
+- review exported functions; what should be exposed to DS implementations?
+
+  Priority:
+
+- Thread safety (current code is far from thread safe)
+
+  Priority: high
+ 
+- reading caching: implement an actual cache scheme
+
+  Priority: Medium
+
+Discovery
+=========
+
+- implement discovery logic: if discovery endpoint hit, call
+  protocoldriver.scan(), process ScanList, and add new devices
+  that match any provisionwatchers.
+
+- provisionwatcher init: create default provisionwatchers startup
+
+  Priority: medium
+
+Scheduling
+==========
+
+- default schecule init: create default schedules & schedule events
+  on startup.
+
+  Priority: High
+
+
+
+
+
+
