@@ -13,15 +13,15 @@ import (
 	"strings"
 	"testing"
 
-// TODO: imports commented out till cache objects become interfaces
-//	"time"
+	// TODO: imports commented out till cache objects become interfaces
+	//	"time"
 
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/tonyespy/gxds"
 	"github.com/tonyespy/gxds/cache"
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
-//	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	//	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"github.com/gorilla/mux"
-//	"gopkg.in/mgo.v2/bson"
+	//	"gopkg.in/mgo.v2/bson"
 )
 
 const deviceCommandTest = "device-command-test"
@@ -91,7 +91,7 @@ func TestCommandNoDevice(t *testing.T) {
 // TestCommandNoDevice tests the command REST call when the device specified
 // by deviceId is locked.
 func TestCommandDeviceLocked(t *testing.T) {
-//	testDeviceId := "5abae51de23bf81c9ef0f390"
+	//	testDeviceId := "5abae51de23bf81c9ef0f390"
 
 	lc := logger.NewClient("command_test", false, "./command_test.log")
 
