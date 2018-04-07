@@ -9,14 +9,18 @@ package cache
 import (
 	"testing"
 
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/tonyespy/gxds"
 )
 
 func TestNewDevices(t *testing.T) {
 	config := &gxds.Config{ServiceName: "dummy-service"}
 
-	d1 := NewDevices(config, nil)
-	d2 := NewDevices(config, nil)
+	// TODO: add dummy Config
+	lc := logger.NewClient("devices_test", false, "./devices_test.log")
+
+	d1 := NewDevices(config, lc, nil)
+	d2 := NewDevices(config, lc, nil)
 	if d1 != d2 {
 		t.Error("Broken singleton")
 	}
