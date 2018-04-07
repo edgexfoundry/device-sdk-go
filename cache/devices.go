@@ -42,62 +42,60 @@ var (
 )
 
 // Creates a singleton Devices cache instance.
-func NewDevices(config *gxds.Config, lc logger.LoggingClient, proto gxds.ProtocolDriver) *Devices {
+func NewDevices(c *gxds.Config, lc logger.LoggingClient, proto gxds.ProtocolDriver) *Devices {
 
 	dcOnce.Do(func() {
-		devices = &Devices{config: config, proto: proto, lc: lc}
+		devices = &Devices{config: c, proto: proto, lc: lc}
 	})
 
 	return devices
 }
 
-// Add a new device to the cache.
-func (d *Devices) Add(device *models.Device) error {
-
-	// Note: used by Init() to populate the local cache
-	// with devices pre-existing in metadata service, and
-	// also by ScanList, to add newly detected devices.
+// Add a new device to the cache. This method is used to populate the
+// devices cache with pre-existing devices from Core Metadata, as well
+// as create new devices returned in a ScanList during discovery.
+func (d *Devices) Add(dev *models.Device) error {
 
 	// if device already exists in devices, delete & re-add
-	if _, ok := d.devices[device.Name]; ok {
-		delete(d.devices, device.Name)
+	if _, ok := d.devices[dev.Name]; ok {
+		delete(d.devices, dev.Name)
 
 		// TODO: remove from profiles
 	}
 
-	d.lc.Debug(fmt.Sprintf("Adding managed device: : %v\n", device))
+	d.lc.Debug(fmt.Sprintf("Adding managed device: : %v\n", dev))
 
 	// TODO: per effective go, should these two stmts be collapsed?
 	// check if this is commonly used in Go src & snapd.
-	err := d.addDeviceToMetadata(device)
+	err := d.addDeviceToMetadata(dev)
 	if err != nil {
 		return err
 	}
 
 	// This is only the case for brand new devices
-	if device.OperatingState == models.OperatingState("ENABLED") {
-		d.lc.Debug(fmt.Sprintf("Initializing device: : %v\n", device))
+	if dev.OperatingState == models.OperatingState("ENABLED") {
+		d.lc.Debug(fmt.Sprintf("Initializing device: : %v\n", dev))
 		// TODO: ${Protocol name}.initializeDevice(metaDevice);
 	}
 
 	return nil
 }
 
-// AddById adds a new device to the cache using a deviceId. This
+// AddById adds a new device to the cache by id. This
 // method is used by the UpdateHandler to trigger addition of a
 // device that's been added directly to Core Metadata.
-func (d *Devices) AddById(deviceId string) error {
+func (d *Devices) AddById(id string) error {
 	return nil
 }
 
 // Device returns a device with the given name.
-func (d *Devices) Device(deviceName string) *models.Device {
+func (d *Devices) Device(name string) *models.Device {
 	return nil
 }
 
 // DeviceById returns a device with the given device id.
-func (d *Devices) DeviceById(deviceId string) *models.Device {
-	name, ok := d.names[deviceId]
+func (d *Devices) DeviceById(id string) *models.Device {
+	name, ok := d.names[id]
 	if !ok {
 		return nil
 	}
@@ -125,13 +123,13 @@ func (d *Devices) Init(serviceId string) error {
 	d.dc = metadataclients.NewDeviceClient("http://" + d.config.MetadataHost +
 		":" + metaPort + "/api/v1/device")
 
-	metaDevices, err := d.dc.DevicesForService(serviceId)
+	mDevs, err := d.dc.DevicesForService(serviceId)
 	if err != nil {
 		d.lc.Error(fmt.Sprintf("DevicesForService error: %v\n", err))
 		return err
 	}
 
-	d.lc.Debug(fmt.Sprintf("returned devices %v\n", metaDevices))
+	d.lc.Debug(fmt.Sprintf("returned devices %v\n", mDevs))
 
 	d.devices = make(map[string]*models.Device)
 	d.names = make(map[string]string)
@@ -141,14 +139,14 @@ func (d *Devices) Init(serviceId string) error {
 	// TODO: consider removing this logic, as the use case for
 	// re-adding devices that exist in the core-metadata service
 	// isn't clear (crash recovery)?
-	for _, device := range metaDevices {
-		err = d.dc.UpdateOpState(device.Id.Hex(), "DISABLED")
+	for _, md := range mDevs {
+		err = d.dc.UpdateOpState(md.Id.Hex(), "DISABLED")
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", device.Name, err))
+			d.lc.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", md.Name, err))
 		}
 
-		device.OperatingState = models.OperatingState("DISABLED")
-		d.Add(&device)
+		md.OperatingState = models.OperatingState("DISABLED")
+		d.Add(&md)
 	}
 
 	// TODO: call Protocol.initialize
@@ -159,28 +157,28 @@ func (d *Devices) Init(serviceId string) error {
 
 // IsDeviceLocked returns a bool which indicates if the specified
 // device exists, and a book which indicates whether the device is locked
-func (d *Devices) IsDeviceLocked(deviceId string) (exists, locked bool) {
+func (d *Devices) IsDeviceLocked(id string) (exists, locked bool) {
 	return false, false
 }
 
-// RemoveById removes the specified (by Id) device from the cache.
-func (d *Devices) RemoveById(deviceId string) error {
+// RemoveById removes the specified (by id) device from the cache.
+func (d *Devices) RemoveById(id string) error {
 	return nil
 }
 
 // SetDeviceOpState sets the operatingState of the device specified by name.
-func (d *Devices) SetDeviceOpState(deviceName string, state models.OperatingState) error {
+func (d *Devices) SetDeviceOpState(name string, os models.OperatingState) error {
 	return nil
 }
 
 // SetDeviceByIdOpState sets the operatingState of the device specified by name.
-func (d *Devices) SetDeviceByIdOpState(deviceId string, state models.OperatingState) error {
+func (d *Devices) SetDeviceByIdOpState(id string, os models.OperatingState) error {
 	return nil
 }
 
 // Update updates the device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (d *Devices) Update(deviceId string) error {
+func (d *Devices) Update(id string) error {
 	return nil
 }
 
@@ -189,28 +187,28 @@ func (d *Devices) Update(deviceId string) error {
 // it to the local cache, and one that adds a brand new device.
 // The current method is an almost direct translation of the Java
 // DeviceStore implementation.
-func (d *Devices) addDeviceToMetadata(device *models.Device) error {
+func (d *Devices) addDeviceToMetadata(dev *models.Device) error {
 	// TODO: fix metadataclients to indicate !found, vs. returned zeroed struct!
-	d.lc.Debug(fmt.Sprintf("Trying to find addressable for: %s\n", device.Addressable.Name))
-	addr, err := d.ac.AddressableForName(device.Addressable.Name)
+	d.lc.Debug(fmt.Sprintf("Trying to find addressable for: %s\n", dev.Addressable.Name))
+	addr, err := d.ac.AddressableForName(dev.Addressable.Name)
 	if err != nil {
-		d.lc.Error(fmt.Sprintf("AddressClient.AddressableForName: %s; failed: %v\n", device.Addressable.Name, err))
+		d.lc.Error(fmt.Sprintf("AddressClient.AddressableForName: %s; failed: %v\n", dev.Addressable.Name, err))
 
 		// If device exists in metadata, and lacks an Addressable, don't try to fix; skip instead
-		if device.Id.Valid() {
-			return fmt.Errorf("Existing metadata device has no addressable: %s", device.Addressable.Name)
+		if dev.Id.Valid() {
+			return fmt.Errorf("Existing metadata dev has no addressable: %s", dev.Addressable.Name)
 		}
 	}
 
 	// TODO: this is the best test for not-found for now...
-	if addr.Name != device.Addressable.Name {
-		addr = device.Addressable
+	if addr.Name != dev.Addressable.Name {
+		addr = dev.Addressable
 		addr.BaseObject.Origin = time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 		d.lc.Debug(fmt.Sprintf("Creating new Addressable Object with name: %v", addr))
 
 		id, err := d.ac.Add(&addr)
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("AddressClient.Add: %s; failed: %v\n", device.Addressable.Name, err))
+			d.lc.Error(fmt.Sprintf("AddressClient.Add: %s; failed: %v\n", dev.Addressable.Name, err))
 			return err
 		}
 
@@ -227,20 +225,20 @@ func (d *Devices) addDeviceToMetadata(device *models.Device) error {
 	}
 
 	// A device without a valid Id is new
-	if device.Id.Valid() == false {
-		d.lc.Debug(fmt.Sprintf("Trying to find device for: %s\n", device.Name))
-		metaDevice, err := d.dc.DeviceForName(device.Name)
+	if dev.Id.Valid() == false {
+		d.lc.Debug(fmt.Sprintf("Trying to find device for: %s\n", dev.Name))
+		mDev, err := d.dc.DeviceForName(dev.Name)
 		if err != nil {
-			d.lc.Error(fmt.Sprintf("DeviceClient.DeviceForName: %s; failed: %v\n", device.Name, err))
+			d.lc.Error(fmt.Sprintf("DeviceClient.DeviceForName: %s; failed: %v\n", dev.Name, err))
 		}
 
 		// TODO: this is the best test for not-found for now...
-		if metaDevice.Name != device.Name {
-			d.lc.Debug(fmt.Sprintf("Adding Device to Metadata: %s\n", device.Name))
+		if mDev.Name != dev.Name {
+			d.lc.Debug(fmt.Sprintf("Adding Device to Metadata: %s\n", dev.Name))
 
-			id, err := d.dc.Add(device)
+			id, err := d.dc.Add(dev)
 			if err != nil {
-				d.lc.Error(fmt.Sprintf("DeviceClient.Add for %s failed: %v", device.Name, err))
+				d.lc.Error(fmt.Sprintf("DeviceClient.Add for %s failed: %v", dev.Name, err))
 				return err
 			}
 
@@ -249,18 +247,18 @@ func (d *Devices) addDeviceToMetadata(device *models.Device) error {
 			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
 			//
 			if !bson.IsObjectIdHex(id) {
-				return fmt.Errorf("Add device returned invalid Id: %s\n", id)
+				return fmt.Errorf("DeviceClient Add returned invalid id: %s\n", id)
 			} else {
-				device.Id = bson.ObjectIdHex(id)
-				d.lc.Debug(fmt.Sprintf("New device Id: %s\n", device.Id.Hex()))
+				dev.Id = bson.ObjectIdHex(id)
+				d.lc.Debug(fmt.Sprintf("New dev id: %s\n", dev.Id.Hex()))
 			}
 		} else {
-			device.Id = metaDevice.Id
+			dev.Id = mDev.Id
 
-			if device.OperatingState != metaDevice.OperatingState {
-				err := d.dc.UpdateOpState(device.Id.Hex(), string(device.OperatingState))
+			if dev.OperatingState != mDev.OperatingState {
+				err := d.dc.UpdateOpState(dev.Id.Hex(), string(dev.OperatingState))
 				if err != nil {
-					d.lc.Error(fmt.Sprintf("DeviceClient.UpdateOpState: %s; failed: %v\n", device.Name, err))
+					d.lc.Error(fmt.Sprintf("DeviceClient.UpdateOpState: %s; failed: %v\n", dev.Name, err))
 				}
 			}
 			// TODO: Java service doesn't check result, if UpdateOpState fails,
@@ -268,15 +266,13 @@ func (d *Devices) addDeviceToMetadata(device *models.Device) error {
 		}
 	}
 
-	// TODO: need to check for error, and abort
-	err = profiles.addDevice(device)
+	err = profiles.addDevice(dev)
 	if err != nil {
 		return err
 	}
 
-	// TODO: consider alternate approaches...
-	d.devices[device.Name] = device
-	d.names[device.Id.Hex()] = device.Name
+	d.devices[dev.Name] = dev
+	d.names[dev.Id.Hex()] = dev.Name
 
 	return nil
 }
