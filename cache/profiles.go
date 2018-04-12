@@ -55,6 +55,20 @@ func NewProfiles(c *gxds.Config, lc logger.LoggingClient) *Profiles {
 	return profiles
 }
 
+func (p *Profiles) descriptorExists(name string) bool {
+	var exists bool
+
+	// TODO: make this a map?
+	for _, desc := range p.descriptors {
+		if desc.Name == name {
+			exists = true
+			break
+		}
+	}
+
+	return exists
+}
+
 // GetDeviceObjects returns a map of object names to DeviceObject instances.
 func (p *Profiles) GetDeviceObjects(devName string) map[string]models.DeviceObject {
 	devObjs := p.objects[devName]
