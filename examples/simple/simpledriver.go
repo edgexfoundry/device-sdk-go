@@ -39,7 +39,7 @@ func (s *SimpleDriver) ProcessAsync(o *models.ResourceOperation, d *models.Devic
 
 	s.lc.Debug(fmt.Sprintf("ProcessAsync: dev: %s op: %v attrs: %v", d.Name, o.Operation, do.Attributes))
 
-	var fakeRsp = "This is a fake response"
+	var fakeRsp = "0005"
 
 	send <- fakeRsp
 }
