@@ -35,12 +35,13 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient) (<-chan struct{}, err
 	return nil, nil
 }
 
-func (s *SimpleDriver) ProcessAsync(operation *models.ResourceOperation,
-	device *models.Device,
-	object *models.DeviceObject,
-	value string,
-	send chan<- string) {
-	return nil
+func (s *SimpleDriver) ProcessAsync(o *models.ResourceOperation, d *models.Device, do *models.DeviceObject, v string, send chan<- string) {
+
+	s.lc.Debug(fmt.Sprintf("ProcessAsync: dev: %s op: %v attrs: %v", d.Name, o.Operation, do.Attributes))
+
+	var fakeRsp = "This is a fake response"
+
+	send <- fakeRsp
 }
 
 func (s *SimpleDriver) ProcessCommand(operation string,
