@@ -39,7 +39,7 @@ func (s *SimpleDriver) ProcessAsync(operation *models.ResourceOperation,
 	device *models.Device,
 	object *models.DeviceObject,
 	value string,
-	send chan<- string) error {
+	send chan<- string) {
 	return nil
 }
 

@@ -77,7 +77,7 @@ type ProtocolDriver interface {
 		device *models.Device,
 		object *models.DeviceObject,
 		value string,
-		send chan<- string) error
+		send chan<- string)
 
 	// ProcessCommand processes a command synchronously, and returns the result
 	// instead of writing it to a send channel. This function is used when a SET
