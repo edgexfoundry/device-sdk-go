@@ -11,12 +11,14 @@ package simple
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 )
 
-type SimpleDriver struct{}
+type SimpleDriver struct {
+	lc logger.LoggingClient
+}
 
 func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 	return nil
@@ -26,8 +28,10 @@ func (s *SimpleDriver) Discover() (devices *interface{}, err error) {
 	return nil, nil
 }
 
-func (s *SimpleDriver) Initialize() (out <-chan struct{}, err error) {
-	fmt.Println(os.Stdout, "SimpleHandler.Initialize called!")
+// TODO: pass a logger to ProtocolDriver!
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient) (<-chan struct{}, error) {
+	s.lc = lc
+	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
 	return nil, nil
 }
 

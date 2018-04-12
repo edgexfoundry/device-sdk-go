@@ -17,7 +17,10 @@
 //
 package gxds
 
-import "github.com/edgexfoundry/edgex-go/core/domain/models"
+import (
+	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+)
 
 // ProtocolDriver is a low-level device-specific interface used by
 // by other components of an EdgeX device service to interact with
@@ -54,7 +57,7 @@ type ProtocolDriver interface {
 	// service.  If the DS supports asynchronous data pushed from devices/sensors,
 	// then a valid receive' channel must be created and returned, otherwise nil
 	// is returned.
-	Initialize() (out <-chan struct{}, err error)
+	Initialize(lc logger.LoggingClient) (out <-chan struct{}, err error)
 
 	// Process triggers an asynchronous protocol specific GET or SET operation
 	// for the specified device. Device profile attributes are passed as part
@@ -63,6 +66,9 @@ type ProtocolDriver interface {
 	//
 	// This function is always called in a new goroutine. The driver is responsible
 	// for writing the command result to the send channel.
+	//
+	// TODO: once channel return values are working, re-factor so that a the value
+	// written back is a struct with an error and string.
 	//
 	// NOTE - the Java-based device-virtual includes an additional parameter called
 	// operations which is used to optimize how virtual resources are saved for SETs.
