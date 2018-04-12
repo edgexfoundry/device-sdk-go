@@ -238,6 +238,9 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 
 	// TODO: initialize scheduler
 
+	// initialize driver
+	s.proto.Initialize(s.lc)
+
 	// Setup REST API
 	s.r = mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	initStatus(s)
