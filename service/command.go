@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"github.com/gorilla/mux"
+	"github.com/tonyespy/gxds"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
@@ -115,7 +116,6 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 
 func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
 	var count int
-	var responses = make([]string, 16, 64)
 
 	// TODO: add support for PUT/SET commands
 	var value = ""
@@ -132,7 +132,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 	// TODO: this should be documented in "Device Profile Guide"; might be too generous?
 	if len(ops) > 64 {
-		msg := fmt.Sprintf("resourceoperation limit (64) execeeded for dev: %s cmd: %s method: %s", d.Name, cmd, method)
+		msg := fmt.Sprintf("command: resourceop limit (64) execeeded for dev: %s cmd: %s method: %s", d.Name, cmd, method)
 		s.lc.Error(msg)
 
 		// TODO: review as this doesn't match the RAML
@@ -140,7 +140,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		return
 	}
 
-	rChan := make(chan string)
+	rChan := make(chan *gxds.CommandResult)
 	devObjs := s.cp.GetDeviceObjects(d.Name)
 	if devObjs == nil {
 		msg := fmt.Sprintf("command: internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
@@ -151,7 +151,6 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 	for _, op := range ops {
 
-		// TODO: figure out how to get real deviceObject from profiles...
 		objName := op.Object
 		s.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
@@ -169,13 +168,14 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 	// wait for responses
 	for count != 0 {
+		s.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
 		rsp := <-rChan
-		responses = append(responses, rsp)
+
+		s.lc.Debug(fmt.Sprintf("command: result: %s", rsp.Result))
+		// add response to object cache
+		s.co.AddReading(d, rsp.RO, rsp.Result)
 		count--
 	}
-
-	// TODO:
-	s.lc.Debug(fmt.Sprintf("protocoldriver results for dev: %s cmd: %s method: %s", d.Name, cmd, method))
 
 	w.WriteHeader(200)
 	io.WriteString(w, "OK")

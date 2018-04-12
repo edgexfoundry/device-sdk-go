@@ -73,11 +73,11 @@ type ProtocolDriver interface {
 	// NOTE - the Java-based device-virtual includes an additional parameter called
 	// operations which is used to optimize how virtual resources are saved for SETs.
 	//
-	ProcessAsync(operation *models.ResourceOperation,
+	ProcessAsync(ro *models.ResourceOperation,
 		device *models.Device,
 		object *models.DeviceObject,
 		value string,
-		send chan<- string)
+		send chan<- *CommandResult)
 
 	// ProcessCommand processes a command synchronously, and returns the result
 	// instead of writing it to a send channel. This function is used when a SET

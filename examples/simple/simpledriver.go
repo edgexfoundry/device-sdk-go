@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/tonyespy/gxds"
 )
 
 type SimpleDriver struct {
@@ -35,13 +36,16 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient) (<-chan struct{}, err
 	return nil, nil
 }
 
-func (s *SimpleDriver) ProcessAsync(o *models.ResourceOperation, d *models.Device, do *models.DeviceObject, v string, send chan<- string) {
+func (s *SimpleDriver) ProcessAsync(ro *models.ResourceOperation,
+		d *models.Device, do *models.DeviceObject, v string, send chan<- *gxds.CommandResult) {
 
-	s.lc.Debug(fmt.Sprintf("ProcessAsync: dev: %s op: %v attrs: %v", d.Name, o.Operation, do.Attributes))
+	s.lc.Debug(fmt.Sprintf("ProcessAsync: dev: %s op: %v attrs: %v", d.Name, ro.Operation, do.Attributes))
 
 	var fakeRsp = "0005"
 
-	send <- fakeRsp
+	cr := &gxds.CommandResult{RO: ro, Result: fakeRsp}
+
+	send <- cr
 }
 
 func (s *SimpleDriver) ProcessCommand(operation string,
