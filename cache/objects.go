@@ -99,7 +99,10 @@ func buildOpId(objs []models.DeviceObject) string {
 }
 
 // AddReading adds a result from the specified ResourceOperation result to the cache.
-func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val string) {
+func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val string) []*models.Reading {
+	if val == "" || val == "{}" {
+		return nil
+	}
 
 	objs := o.createObjectList(d, op)
 	id := d.Id.Hex()
@@ -148,6 +151,8 @@ func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val
 	o.responses[id][opId] = readings
 
 	o.mu.RUnlock()
+
+	return readings
 }
 
 // Responses returns a list of readings from the cache for the specified
