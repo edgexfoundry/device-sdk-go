@@ -3,26 +3,104 @@ Background
 
 Format of this file borrowed from the bluez project.
 
-General
-=======
+Global
+======
 
-- add consul support: add command-line args, registration
-  and configuration logic
+- review package structure; compare to edgex-go
 
   Priority: High
 
-- load device profiles: load any pre-defined device profiles
+- decide on top-level package name; choices include deviceservice[-go] or device[-go]
+
+  Priority: High
+
+- All operations which create new dynamic structures (e.g. pre-allocated slices)
+  should read configuration settings to determine capacity. See cache objects.go
+  AddReading for an example (creations of readings).
+
+  Priority: High
+
+- review consistent usage of i[I]nit v.s. i[I]nitialize in methods funcs
 
   Priority: Medium
+
+Service Operation
+=================
+
+- add profile name, consul-enabled bool to service Init method
+
+  Priority: High
+
+- add local configuration (TOML) support
+
+  Priority: High
+
+- [consul] if enabled, read config settings from consul
+
+  Priority: High
+
+- [consul] after all dependencies have been verified, and
+  initialization finished, register as a service with consul
+
+  Priority: High
+
+- [consul] ensure health mechanism is properly configured/implemented
+
+  Priority: High
+
+- load any pre-defined device profiles (YAML). This requires re-work
+  of the existing profiles cache API and associated internal re-factor.
+
+  Priority: High
 
 - validate device profiles: use a schema to validate device profile YAML
 
   Priority: Medium
 
+Cache
+=======
+
+- Review exported code for all cache objects, and if possible, make them
+  use a consistent approach.
+
+  Priority: High
+
+- Implement interfaces for each cache type to allow unit testing.
+
+  Priority: High
+
+- Review for thread safety
+
+  Priority: High
+
+- Review composition of complex data types. Should arrays/maps/slices
+  use structs or pointers to structs? If latter, re-factor.
+
+  Priority: High
+
+- [profiles] re-factor to use a map of deviceprofile instances,
+  instead of creating derived sub-objects. The existing code creates
+  these derived objects as a result of the addDevice call (made by
+  devices cache), there's no AddProfile method which is needed to
+  support auto-import of deviceprofiles from YAML files.
+
+  Priority: High
+
+- [objects] re-factor to break apart readings creations from storage
+  of readings results, and actually implement a real caching scheme.
+
+  Priority: Medium
+
+- [devices] add support for generic init and disconnect functions
+  when devices are added or removed from the cache. The code checks
+  for presence of device commands specified by the configuration
+  settings DeviceInitCmd and DeviceRemoveCmd. There also are settings
+  for both which specify the args to pass with the command.
+
+  Priority: Medium
+
 REST
 ====
-
-- understand all callbacks (updates & schedule*)
 
 - implement response formatting logic
 
@@ -37,6 +115,10 @@ REST
 
 - implement command 'All':
 
+- understand all callbacks (updates & schedule*)
+
+  Priority: Low
+
 Readings
 ========
 
@@ -50,23 +132,21 @@ Driver
 
 - merge process* methods: the current doesn't make much sense
 
-Caching
-=======
-
-- review exported functions; what should be exposed to DS implementations?
-
-  Priority:
-
-- Thread safety (current code is far from thread safe)
-
-  Priority: high
- 
-- reading caching: implement an actual cache scheme
-
-  Priority: Medium
 
 Discovery
 =========
+
+- dynamically create provisionwatcher instances based on
+  configuration settings.
+
+  Priority: Medium
+
+- Re-think whether Scan() should remain part of the ProtocolDriver
+  interface or be split into it's own interface. If we do the latter,
+  then we either need to add a new parameter to service.Init, or we
+  add a function like AddScanHandler.
+
+  Priority: Medium
 
 - implement discovery logic: if discovery endpoint hit, call
   protocoldriver.scan(), process ScanList, and add new devices
@@ -74,7 +154,7 @@ Discovery
 
 - provisionwatcher init: create default provisionwatchers startup
 
-  Priority: medium
+  Priority: Medium
 
 Scheduling
 ==========
