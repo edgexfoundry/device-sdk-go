@@ -44,7 +44,7 @@ func NewObjects(lc logger.LoggingClient) *Objects {
 
 func (o *Objects) createObjectList(d *models.Device, op *models.ResourceOperation) []models.DeviceObject {
 	devObjs := profiles.GetDeviceObjects(d.Name)
-	objs := make([]models.DeviceObject, 16, 64)
+	objs := make([]models.DeviceObject, 0, 64)
 
 	if op != nil && devObjs != nil {
 		do := devObjs[op.Object]
@@ -100,11 +100,12 @@ func buildOpId(objs []models.DeviceObject) string {
 
 // AddReading adds a result from the specified ResourceOperation result to the cache.
 func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val string) {
+
 	objs := o.createObjectList(d, op)
 	id := d.Id.Hex()
 
 	// TODO: add bounds checking; is 64 sufficient?
-	readings := make([]*models.Reading, 8, 64)
+	readings := make([]*models.Reading, 0, 64)
 
 	for _, do := range objs {
 		result := o.transformResult(d, op, &do, val)
@@ -120,7 +121,7 @@ func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val
 		}
 
 		if o.objects[id][do.Name] == nil {
-			o.objects[id][do.Name] = make([]string, 8, 64)
+			o.objects[id][do.Name] = make([]string, 0, 64)
 		}
 
 		o.objects[id][do.Name] = append(o.objects[id][do.Name], result)
