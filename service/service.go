@@ -207,8 +207,8 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 	s.proto = proto
 	s.cp = cache.NewProfiles(s.Config, s.lc)
 	s.cw = cache.NewWatchers()
-	s.co = cache.NewObjects()
-	s.cd = cache.NewDevices(s.Config, s.lc, proto)
+	s.co = cache.NewObjects(s.lc)
+	s.cd = cache.NewDevices(s.Config, s.lc)
 	s.cs = cache.NewSchedules(s.Config)
 
 	// set up clients
