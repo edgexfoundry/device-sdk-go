@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 )
 
 var (
@@ -26,12 +27,13 @@ type Objects struct {
 	cacheSize     int
 	transformData bool
 	mu            sync.RWMutex
+	lc            logger.LoggingClient
 }
 
-func NewObjects() *Objects {
+func NewObjects(lc logger.LoggingClient) *Objects {
 
 	ocOnce.Do(func() {
-		objects = &Objects{}
+		objects = &Objects{lc: lc}
 
 		objects.objects = make(map[string]map[string][]string)
 		objects.responses = make(map[string]map[string][]*models.Reading)
