@@ -28,7 +28,6 @@ import (
 // in this package) should use singular names (e.g. Device).
 type Devices struct {
 	config  *gxds.Config
-	proto   gxds.ProtocolDriver
 	devices map[string]*models.Device
 	names   map[string]string
 	ac      metadataclients.AddressableClient
@@ -42,10 +41,10 @@ var (
 )
 
 // Creates a singleton Devices cache instance.
-func NewDevices(c *gxds.Config, lc logger.LoggingClient, proto gxds.ProtocolDriver) *Devices {
+func NewDevices(c *gxds.Config, lc logger.LoggingClient) *Devices {
 
 	dcOnce.Do(func() {
-		devices = &Devices{config: c, proto: proto, lc: lc}
+		devices = &Devices{config: c, lc: lc}
 	})
 
 	return devices
