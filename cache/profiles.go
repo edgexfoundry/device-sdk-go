@@ -22,7 +22,6 @@ import (
 // Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
 	config      *gxds.Config
-	profiles    map[string]models.Device
 	vdc         coredataclients.ValueDescriptorClient
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
