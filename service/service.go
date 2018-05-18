@@ -38,6 +38,7 @@ import (
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
+	Name         string
 	Version      string
 	Config       *gxds.Config
 	initAttempts int
@@ -61,9 +62,9 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 	// TODO: service name should NOT be a configuration paramter
 	// but instead must be hard-coded in the DS
-	s.lc.Debug("Trying to find ds: " + s.Config.ServiceName)
+	s.lc.Debug("Trying to find ds: " + s.Name)
 
-	ds, err := s.sc.DeviceServiceForName(s.Config.ServiceName)
+	ds, err := s.sc.DeviceServiceForName(s.Name)
 	if err != nil {
 		s.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 
@@ -78,15 +79,14 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 	s.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
 
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Service.Name != s.Config.ServiceName {
-		s.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d",
-			s.Config.ServiceName, s.initAttempts))
+	if ds.Service.Name != s.Name {
+		s.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d", s.Name, s.initAttempts))
 
 		// check for addressable
-		s.lc.Error(fmt.Sprintf("Trying to find addressable for: %s", s.Config.ServiceName))
-		addr, err := s.ac.AddressableForName(s.Config.ServiceName)
+		s.lc.Error(fmt.Sprintf("Trying to find addressable for: %s", s.Name))
+		addr, err := s.ac.AddressableForName(s.Name)
 		if err != nil {
-			s.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", s.Config.ServiceName, err))
+			s.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", s.Name, err))
 
 			// don't quit, but instead try to create addressable & service
 		}
@@ -94,13 +94,13 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 
 		// TODO: same as above
-		if addr.Name != s.Config.ServiceName {
+		if addr.Name != s.Name {
 			// TODO: does HTTPMethod need to be specified?
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin: millis,
 				},
-				Name:       s.Config.ServiceName,
+				Name:       s.Name,
 				HTTPMethod: "POST",
 				Protocol:   "HTTP",
 				Address:    s.Config.ServiceHost,
@@ -112,8 +112,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 			// use s.clientService to register Addressable
 			id, err := s.ac.Add(&addr)
 			if err != nil {
-				s.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v",
-					s.Config.ServiceName, err))
+				s.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v", s.Name, err))
 				return
 			}
 
@@ -133,7 +132,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		// setup the service
 		ds = models.DeviceService{
 			Service: models.Service{
-				Name:           s.Config.ServiceName,
+				Name:           s.Name,
 				Labels:         s.Config.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
@@ -149,7 +148,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		// use s.clientService to register the deviceservice
 		id, err := s.sc.Add(&ds)
 		if err != nil {
-			s.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.Config.ServiceName, err))
+			s.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.Name, err))
 			return
 		}
 
@@ -170,8 +169,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		s.initialized = true
 		s.ds = ds
 	} else {
-		s.lc.Debug(fmt.Sprintf("Found ds.Name: %s, s.Config.ServiceName: %s",
-			ds.Service.Name, s.Config.ServiceName))
+		s.lc.Debug(fmt.Sprintf("Found ds.Name: %s, s.Name: %s", ds.Service.Name, s.Name))
 		s.initialized = true
 		s.ds = ds
 	}
@@ -200,7 +198,7 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 		logTarget = s.Config.LoggingRemoteURL
 	}
 
-	s.lc = logger.NewClient(s.Config.ServiceName, remoteLog, logTarget)
+	s.lc = logger.NewClient(s.Name, remoteLog, logTarget)
 
 	done := make(chan struct{})
 
@@ -267,6 +265,6 @@ func (s *Service) Stop() error {
 
 // New Service
 // TODO: re-factor to make this a singleton
-func New() (*Service, error) {
-	return &Service{}, nil
+func New(name string) (*Service, error) {
+	return &Service{Name: name}, nil
 }
