@@ -116,6 +116,7 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 
 func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
 	var count int
+	readings := make([]*models.Reading, 0, 128)
 
 	// TODO: add support for PUT/SET commands
 	var value = ""
@@ -150,11 +151,12 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	}
 
 	for _, op := range ops {
-
 		objName := op.Object
 		s.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
 		devObj, ok := devObjs[objName]
+
+		s.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
 		if !ok {
 			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
 			// TODO: review as this doesn't match the RAML
@@ -173,9 +175,23 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		s.lc.Debug(fmt.Sprintf("command: result: %s", rsp.Result))
 		// add response to object cache
-		s.co.AddReading(d, rsp.RO, rsp.Result)
+		opReadings := s.co.AddReading(d, rsp.RO, rsp.Result)
+
+		// TODO: need to check for max, and error out...
+		for _, rd := range opReadings {
+			readings = append(readings, rd)
+		}
+
 		count--
 	}
+
+	// TODO: send readings to Core Data
+
+	// TODO: format readings & return to REST call
+	s.lc.Debug(fmt.Sprintf("command: readings: %v", readings))
+
+	// Here's what a single reading result looks like:
+	// CurrentHumidity is: {"AnalogValue_22":"57.040000915527344"}
 
 	w.WriteHeader(200)
 	io.WriteString(w, "OK")
