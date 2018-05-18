@@ -42,7 +42,7 @@ func main() {
 func startService() error {
 	s := simple.SimpleDriver{}
 
-	d, err := service.New()
+	d, err := service.New("device-simple")
 	if err != nil {
 		return err
 	}
