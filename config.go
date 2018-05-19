@@ -9,7 +9,6 @@ package gxds
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	"github.com/BurntSushi/toml"
 )
