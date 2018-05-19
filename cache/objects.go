@@ -107,8 +107,7 @@ func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val
 	objs := o.createObjectList(d, op)
 	id := d.Id.Hex()
 
-	// TODO: add bounds checking; is 64 sufficient?
-	readings := make([]*models.Reading, 0, 64)
+	readings := make([]*models.Reading, 0, o.Config.Device.MaxCmdOps)
 
 	for _, do := range objs {
 		result := o.transformResult(d, op, &do, val)
