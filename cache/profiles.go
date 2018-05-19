@@ -43,9 +43,11 @@ func NewProfiles(c *gxds.Config, lc logger.LoggingClient) *Profiles {
 	pcOnce.Do(func() {
 		profiles = &Profiles{config: c, lc: lc}
 
-		port := strconv.Itoa(c.DataPort)
+		dataHost := c.Clients["Data"].Host
+		dataPort := strconv.Itoa(c.Clients["Data"].Port)
+
 		profiles.vdc = coredataclients.NewValueDescriptorClient("http://" +
-			c.DataHost + ":" + port + "/api/v1/valuedescriptor")
+			dataHost + ":" + dataPort + "/api/v1/valuedescriptor")
 
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
 		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
