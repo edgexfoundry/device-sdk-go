@@ -116,7 +116,7 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 
 func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
 	var count int
-	readings := make([]*models.Reading, 0, 128)
+	readings := make([]*models.Reading, 0, s.Config.Device.MaxCmdOps)
 
 	// TODO: add support for PUT/SET commands
 	var value = ""
@@ -159,8 +159,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		s.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
 		if !ok {
 			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
-			// TODO: review as this doesn't match the RAML
-			http.Error(w, msg, http.StatusExpectationFailed)
+			http.Error(w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -173,11 +172,19 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		s.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
 		rsp := <-rChan
 
+		rspLen := len(rsp.Result)
+
+		if rspLen > s.Config.Device.MaxCmdResultLen {
+			msg := fmt.Sprintf("command result: %s exceeded max len: %u for dev: %s cmd: %s method: %s",
+				rsp.Result[0:32], rspLen, d.Name, cmd, method)
+			http.Error(w, msg, http.StatusInternalServerError)
+			return
+		}
+
 		s.lc.Debug(fmt.Sprintf("command: result: %s", rsp.Result))
 		// add response to object cache
 		opReadings := s.co.AddReading(d, rsp.RO, rsp.Result)
 
-		// TODO: need to check for max, and error out...
 		for _, rd := range opReadings {
 			readings = append(readings, rd)
 		}
