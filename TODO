@@ -14,26 +14,12 @@ Global
 
   Priority: High
 
-- All operations which create new dynamic structures (e.g. pre-allocated slices)
-  should read configuration settings to determine capacity. See cache objects.go
-  AddReading for an example (creations of readings).
-
-  Priority: High
-
 - review consistent usage of i[I]nit v.s. i[I]nitialize in methods funcs
 
   Priority: Medium
 
 Service Operation
 =================
-
-- add profile name, consul-enabled bool to service Init method
-
-  Priority: High
-
-- add local configuration (TOML) support
-
-  Priority: High
 
 - [consul] if enabled, read config settings from consul
 
@@ -53,7 +39,9 @@ Service Operation
 
   Priority: High
 
-- validate device profiles: use a schema to validate device profile YAML
+- Validate device profiles during auto-import using a schema with
+  constraints (e.g. limits on maximum number of device resources,
+  commands, ...).
 
   Priority: Medium
 
@@ -85,6 +73,11 @@ Cache
   support auto-import of deviceprofiles from YAML files.
 
   Priority: High
+
+- [profiles] implement size constraints based on settings for both
+  local vars and members of the Profile struct.
+
+  Priority: Medium
 
 - [objects] re-factor to break apart readings creations from storage
   of readings results, and actually implement a real caching scheme.
