@@ -10,6 +10,7 @@ import:
 - package: github.com/hashicorp/consul
   subpackages:
   - api
+- package: github.com/BurntSushi/toml
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
