@@ -203,7 +203,7 @@ func (c *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c.s.lc.Debug(fmt.Sprintf("*commandHandler: ServeHTTP %s url: %v vars: %v", r.Method, r.URL, vars))
 	// TODO: use for all endpoints vs. having a StatusHandler, UpdateHandler, ...
 	if c.s.locked {
-		msg := fmt.Sprintf("%s is locked; %s %s", c.s.Config.ServiceName, r.Method, r.URL)
+		msg := fmt.Sprintf("%s is locked; %s %s", c.s.Name, r.Method, r.URL)
 		c.s.lc.Error(msg)
 		http.Error(w, msg, http.StatusLocked)
 		return
