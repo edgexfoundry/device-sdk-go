@@ -116,7 +116,7 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 
 func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
 	var count int
-	readings := make([]*models.Reading, 0, s.Config.Device.MaxCmdOps)
+	readings := make([]*models.Reading, 0, s.c.Device.MaxCmdOps)
 
 	// TODO: add support for PUT/SET commands
 	var value = ""
@@ -174,7 +174,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		rspLen := len(rsp.Result)
 
-		if rspLen > s.Config.Device.MaxCmdResultLen {
+		if rspLen > s.c.Device.MaxCmdResultLen {
 			msg := fmt.Sprintf("command result: %s exceeded max len: %u for dev: %s cmd: %s method: %s",
 				rsp.Result[0:32], rspLen, d.Name, cmd, method)
 			http.Error(w, msg, http.StatusInternalServerError)
