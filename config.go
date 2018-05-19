@@ -17,9 +17,9 @@ import (
 // settings.
 type ServiceInfo struct {
 	// Host is the hostname or IP address of the service.
-	Host           string
+	Host string
 	// Port is the HTTP port of the service.
-	Port           int
+	Port int
 	// ConnectRetries is the number of times the DS will try
 	// to connect to Core Metadata to either register itself
 	// and provision it's objects, or use existing data. If
@@ -28,17 +28,17 @@ type ServiceInfo struct {
 	// HealthCheck is a URL specifying a healthcheck REST
 	// endpoint used by the Registry to determine if the
 	// service is available.
-	HealthCheck    string
+	HealthCheck string
 	// Labels are...
-	Labels         []string
+	Labels []string
 	// OpenMsg specifies a string logged on DS startup.
-	OpenMsg        string
+	OpenMsg string
 	// ReadMaxLimit specifies the maximum size list supported
 	// in response to REST calls to other services.
-	ReadMaxLimit   int
+	ReadMaxLimit int
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
-	Timeout        int
+	Timeout int
 }
 
 type service struct {
@@ -52,26 +52,26 @@ type service struct {
 type DeviceInfo struct {
 	// DataTransform specifies whether or not the DS perform transformations
 	// specified by valuedescriptor on a actuation or query command.
-	DataTransform         bool
+	DataTransform bool
 	// InitCmd specifies a device resource command which is automatically
 	// generated whenever a new device is added to the DS.
-	InitCmd               string
+	InitCmd string
 	// InitCmdArgs specify arguments to be used when building the InitCmd.
-	InitCmdArgs           string
+	InitCmdArgs string
 	// MaxCmdOps defines the maximum number of resource operations that
 	// can be sent to a ProtocolDriver in a single command.
-	MaxCmdOps             int
+	MaxCmdOps int
 	// MaxCmdResultLen is the maximum string length of a result (including
 	// the valuedescriptor name) that can be returned by a ProtocolDriver.
-	MaxCmdResultLen       int
+	MaxCmdResultLen int
 	// InitCmd specifies a device resource command which is automatically
 	// generated whenever a new device is removed from the DS.
-	RemoveCmd             string
+	RemoveCmd string
 	// RemoveCmdArgs specify arguments to be used when building the RemoveCmd.
-	RemoveCmdArgs         string
+	RemoveCmdArgs string
 	// ProfilesDir specifies a directory which contains deviceprofile
 	// files which should be imported on startup.
-	ProfilesDir           string
+	ProfilesDir string
 	// SendReaingsOnChanged can be used to cause a DS to only send readings
 	// to Core Data when the reading has changed (based on comparison to an
 	// existing reading in the cache, if present).
@@ -81,7 +81,7 @@ type DeviceInfo struct {
 // LoggingInfo is a struct which contains logging specific configuration settings.
 type LoggingInfo struct {
 	// File is the pathname of a local log file to be created.
-	File      string
+	File string
 	// RemoteURL is the URL of the support logging service.
 	// TODO: make this just another client!
 	RemoteURL string
@@ -94,36 +94,36 @@ type ScheduleEventInfo struct {
 	Schedule string
 	// Path is the endpoint of the DS to be called when the
 	// ScheduleEvent is triggered.
-	Path     string
+	Path string
 	// Service is the DS service name.
-	Service  string
+	Service string
 }
 
 // WatcherInfo is a struct which contains provisionwatcher configuration settings.
 type WatcherInfo struct {
 	Profile     string
 	Key         string
-        MatchString string
+	MatchString string
 }
 
 // Config is a struct which contains all of a DS's configuration settings.
 type Config struct {
 	// Service contains service-specific settings.
-	Service        ServiceInfo
+	Service ServiceInfo
 	// Registry contains registry-specific settings.
-	Registry       service
+	Registry service
 	// Clients is a map of services used by a DS.
-	Clients        map[string]service
+	Clients map[string]service
 	// Device contains device-specific coniguration settings.
-	Device         DeviceInfo
+	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
-	Logging        LoggingInfo
+	Logging LoggingInfo
 	// Schedules is a map schedules to be created on startup.
-	Schedules      map[string]string
+	Schedules map[string]string
 	// SchedulesEvents is a map scheduleevents to be created on startup.
 	ScheduleEvents map[string]ScheduleEventInfo
 	// Watchers is a map provisionwatchers to be created on startup.
-	Watchers       map[string]WatcherInfo
+	Watchers map[string]WatcherInfo
 }
 
 // LoadConfig loads the local configuration file based upon the
