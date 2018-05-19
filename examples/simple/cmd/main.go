@@ -23,23 +23,26 @@ var flags struct {
 	configPath *string
 }
 
-func init() {
-	fmt.Fprintf(os.Stdout, "Init called\n")
-
-	flags.configPath = flag.String("config", "./configuration.json", "simple configuration file")
-}
-
 func main() {
+	var useRegistry bool
+	var profile string
+	var confDir string
 
+	flag.BoolVar(&useRegistry, "registry", false, "Indicates the service should use the registry.")
+	flag.BoolVar(&useRegistry, "r", false, "Indicates the service should use registry.")
+	flag.StringVar(&profile, "profile", "", "Specify a profile other than default.")
+	flag.StringVar(&profile, "p", "", "Specify a profile other than default.")
+	flag.StringVar(&confDir, "confdir", "", "Specify an alternate configuration directory.")
+	flag.StringVar(&confDir, "c", "", "Specify an alternate configuration directory.")
 	flag.Parse()
 
-	if err := startService(); err != nil {
+	if err := startService(useRegistry, profile, confDir); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func startService() error {
+func startService(useRegistry bool, profile string, confDir string) error {
 	s := simple.SimpleDriver{}
 
 	d, err := service.New("device-simple")
@@ -47,9 +50,7 @@ func startService() error {
 		return err
 	}
 
-	// TODO: create a ProtocolHandler implementation
-	// and pass to d.Init()
-	if err := d.Init(flags.configPath, &s); err != nil {
+	if err := d.Init(useRegistry, profile, confDir, &s); err != nil {
 		return err
 	}
 
