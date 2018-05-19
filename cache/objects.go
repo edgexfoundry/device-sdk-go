@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/tonyespy/gxds"
 )
 
 var (
@@ -20,8 +21,9 @@ var (
 	objects *Objects
 )
 
+// TODO: re-name to 'values'?
 type Objects struct {
-	// TODO: re-name to 'values'?
+	c             *gxds.Config
 	objects       map[string]map[string][]string
 	responses     map[string]map[string][]*models.Reading
 	cacheSize     int
@@ -30,10 +32,10 @@ type Objects struct {
 	lc            logger.LoggingClient
 }
 
-func NewObjects(lc logger.LoggingClient) *Objects {
+func NewObjects(c *gxds.Config, lc logger.LoggingClient) *Objects {
 
 	ocOnce.Do(func() {
-		objects = &Objects{lc: lc}
+		objects = &Objects{c: c, lc: lc}
 
 		objects.objects = make(map[string]map[string][]string)
 		objects.responses = make(map[string]map[string][]*models.Reading)
@@ -107,7 +109,7 @@ func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val
 	objs := o.createObjectList(d, op)
 	id := d.Id.Hex()
 
-	readings := make([]*models.Reading, 0, o.Config.Device.MaxCmdOps)
+	readings := make([]*models.Reading, 0, o.c.Device.MaxCmdOps)
 
 	for _, do := range objs {
 		result := o.transformResult(d, op, &do, val)
