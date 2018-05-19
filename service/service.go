@@ -44,6 +44,7 @@ type Service struct {
 	initAttempts int
 	initialized  bool
 	locked       bool
+	useRegistry  bool
 	ac           metadataclients.AddressableClient
 	lc           logger.LoggingClient
 	sc           metadataclients.ServiceClient
@@ -60,8 +61,6 @@ type Service struct {
 func (s *Service) attemptInit(done chan<- struct{}) {
 	defer func() { done <- struct{}{} }()
 
-	// TODO: service name should NOT be a configuration paramter
-	// but instead must be hard-coded in the DS
 	s.lc.Debug("Trying to find ds: " + s.Name)
 
 	ds, err := s.sc.DeviceServiceForName(s.Name)
@@ -103,8 +102,8 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 				Name:       s.Name,
 				HTTPMethod: "POST",
 				Protocol:   "HTTP",
-				Address:    s.Config.ServiceHost,
-				Port:       s.Config.ServicePort,
+				Address:    s.Config.Service.Host,
+				Port:       s.Config.Service.Port,
 				Path:       "/api/v1/callback",
 			}
 			addr.Origin = millis
@@ -133,7 +132,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		ds = models.DeviceService{
 			Service: models.Service{
 				Name:           s.Name,
-				Labels:         s.Config.Labels,
+				Labels:         s.Config.Service.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
@@ -175,27 +174,56 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 	}
 }
 
+func (s *Service) validateClientConfig() error {
+
+	if len(s.Config.Clients["Metadata"].Host) == 0 {
+		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
+	}
+
+	if s.Config.Clients["Metadata"].Port == 0 {
+		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
+	}
+
+	if len(s.Config.Clients["Data"].Host) == 0 {
+		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
+	}
+
+	if s.Config.Clients["Data"].Port == 0 {
+		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
+	}
+
+	return nil
+}
+
 // Initialize the Service
-func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error) {
-	fmt.Fprintf(os.Stdout, "configuration file is: %s\n", *configFile)
-	fmt.Fprintf(os.Stdout, "proto is: %v\n", proto)
+func (s *Service) Init(useRegistry bool, profile string, confDir string, proto gxds.ProtocolDriver) (err error) {
+	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s proto is: %v\n",
+		useRegistry, profile, confDir, proto)
 
 	// TODO: check if proto is nil, and fail...
 
-	s.Config, err = gxds.LoadConfig(configFile)
+	s.Config, err = gxds.LoadConfig(profile, confDir)
 	if err != nil {
 		s.lc.Error(fmt.Sprintf("error loading config file: %v\n", err))
+		return err
+	}
+
+	// TODO: add useRegistry logic
+
+	// TODO: validate that metadata and core config settings are set
+	err = s.validateClientConfig()
+	if err != nil {
 		return err
 	}
 
 	var remoteLog bool = false
 	var logTarget string
 
-	if s.Config.LoggingRemoteURL == "" {
-		logTarget = s.Config.LoggingFile
+	if s.Config.Logging.RemoteURL == "" {
+		logTarget = s.Config.Logging.File
 	} else {
 		remoteLog = true
-		logTarget = s.Config.LoggingRemoteURL
+		logTarget = s.Config.Logging.RemoteURL
 	}
 
 	s.lc = logger.NewClient(s.Name, remoteLog, logTarget)
@@ -210,11 +238,14 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 	s.cs = cache.NewSchedules(s.Config)
 
 	// set up clients
-	metaPort := strconv.Itoa(s.Config.MetadataPort)
-	s.ac = metadataclients.NewAddressableClient("http://" + s.Config.MetadataHost + ":" + metaPort + "/api/v1/addressable")
-	s.sc = metadataclients.NewServiceClient("http://" + s.Config.MetadataHost + ":" + metaPort + "/api/v1/deviceservice")
+	metaPort := strconv.Itoa(s.Config.Clients["Metadata"].Port)
+	metaHost := s.Config.Clients["Metadata"].Host
+	metaAddr := "http://" + metaHost + ":" + metaPort
 
-	for s.initAttempts < s.Config.ConnectRetries && !s.initialized {
+	s.ac = metadataclients.NewAddressableClient(metaAddr + "/api/v1/addressable")
+	s.sc = metadataclients.NewServiceClient(metaAddr + "/api/v1/deviceservice")
+
+	for s.initAttempts < s.Config.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
 
 		if s.initAttempts > 1 {
@@ -246,7 +277,7 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 	initService(s)
 	initUpdate(s)
 
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.Config.Timeout), "Request timed out")
+	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.Config.Service.Timeout), "Request timed out")
 
 	return err
 }
@@ -254,7 +285,7 @@ func (s *Service) Init(configFile *string, proto gxds.ProtocolDriver) (err error
 // Start the Service
 func (s *Service) Start() {
 	s.lc.Info("*Service Start() called")
-	s.lc.Error(http.ListenAndServe(":"+strconv.Itoa(s.Config.ServicePort), s.r).Error())
+	s.lc.Error(http.ListenAndServe(":"+strconv.Itoa(s.Config.Service.Port), s.r).Error())
 	s.lc.Debug("*Service Start() exit")
 }
 
