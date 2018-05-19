@@ -40,7 +40,7 @@ import (
 type Service struct {
 	Name         string
 	Version      string
-	Config       *gxds.Config
+	c            *gxds.Config
 	initAttempts int
 	initialized  bool
 	locked       bool
@@ -102,8 +102,8 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 				Name:       s.Name,
 				HTTPMethod: "POST",
 				Protocol:   "HTTP",
-				Address:    s.Config.Service.Host,
-				Port:       s.Config.Service.Port,
+				Address:    s.c.Service.Host,
+				Port:       s.c.Service.Port,
 				Path:       "/api/v1/callback",
 			}
 			addr.Origin = millis
@@ -132,7 +132,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		ds = models.DeviceService{
 			Service: models.Service{
 				Name:           s.Name,
-				Labels:         s.Config.Service.Labels,
+				Labels:         s.c.Service.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
@@ -176,21 +176,23 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 func (s *Service) validateClientConfig() error {
 
-	if len(s.Config.Clients["Metadata"].Host) == 0 {
+	if len(s.c.Clients["Metadata"].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
 	}
 
-	if s.Config.Clients["Metadata"].Port == 0 {
+	if s.c.Clients["Metadata"].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
 	}
 
-	if len(s.Config.Clients["Data"].Host) == 0 {
+	if len(s.c.Clients["Data"].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
 	}
 
-	if s.Config.Clients["Data"].Port == 0 {
+	if s.c.Clients["Data"].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
 	}
+
+	// TODO: validate other settings for sanity: maxcmdops, ...
 
 	return nil
 }
@@ -202,7 +204,7 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 
 	// TODO: check if proto is nil, and fail...
 
-	s.Config, err = gxds.LoadConfig(profile, confDir)
+	s.c, err = gxds.LoadConfig(profile, confDir)
 	if err != nil {
 		s.lc.Error(fmt.Sprintf("error loading config file: %v\n", err))
 		return err
@@ -219,11 +221,11 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 	var remoteLog bool = false
 	var logTarget string
 
-	if s.Config.Logging.RemoteURL == "" {
-		logTarget = s.Config.Logging.File
+	if s.c.Logging.RemoteURL == "" {
+		logTarget = s.c.Logging.File
 	} else {
 		remoteLog = true
-		logTarget = s.Config.Logging.RemoteURL
+		logTarget = s.c.Logging.RemoteURL
 	}
 
 	s.lc = logger.NewClient(s.Name, remoteLog, logTarget)
@@ -231,21 +233,21 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 	done := make(chan struct{})
 
 	s.proto = proto
-	s.cp = cache.NewProfiles(s.Config, s.lc)
+	s.cp = cache.NewProfiles(s.c, s.lc)
 	s.cw = cache.NewWatchers()
-	s.co = cache.NewObjects(s.lc)
-	s.cd = cache.NewDevices(s.Config, s.lc)
-	s.cs = cache.NewSchedules(s.Config)
+	s.co = cache.NewObjects(s.c, s.lc)
+	s.cd = cache.NewDevices(s.c, s.lc)
+	s.cs = cache.NewSchedules(s.c)
 
 	// set up clients
-	metaPort := strconv.Itoa(s.Config.Clients["Metadata"].Port)
-	metaHost := s.Config.Clients["Metadata"].Host
+	metaPort := strconv.Itoa(s.c.Clients["Metadata"].Port)
+	metaHost := s.c.Clients["Metadata"].Host
 	metaAddr := "http://" + metaHost + ":" + metaPort
 
 	s.ac = metadataclients.NewAddressableClient(metaAddr + "/api/v1/addressable")
 	s.sc = metadataclients.NewServiceClient(metaAddr + "/api/v1/deviceservice")
 
-	for s.initAttempts < s.Config.Service.ConnectRetries && !s.initialized {
+	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
 
 		if s.initAttempts > 1 {
@@ -277,7 +279,7 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 	initService(s)
 	initUpdate(s)
 
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.Config.Service.Timeout), "Request timed out")
+	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.c.Service.Timeout), "Request timed out")
 
 	return err
 }
@@ -285,7 +287,7 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 // Start the Service
 func (s *Service) Start() {
 	s.lc.Info("*Service Start() called")
-	s.lc.Error(http.ListenAndServe(":"+strconv.Itoa(s.Config.Service.Port), s.r).Error())
+	s.lc.Error(http.ListenAndServe(":"+strconv.Itoa(s.c.Service.Port), s.r).Error())
 	s.lc.Debug("*Service Start() exit")
 }
 
