@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // This package provides a simple example implementation of
-// a ProtocolHandler interface.
+// a ProtocolDriver interface.
 //
 package simple
 
