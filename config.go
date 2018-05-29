@@ -61,9 +61,10 @@ type DeviceInfo struct {
 	// MaxCmdOps defines the maximum number of resource operations that
 	// can be sent to a ProtocolDriver in a single command.
 	MaxCmdOps int
-	// MaxCmdResultLen is the maximum string length of a result (including
-	// the valuedescriptor name) that can be returned by a ProtocolDriver.
-	MaxCmdResultLen int
+	// MaxCmdValueLen is the maximum string length of a command parameter or
+	// result (including the valuedescriptor name) that can be returned
+	// by a ProtocolDriver.
+	MaxCmdValueLen int
 	// InitCmd specifies a device resource command which is automatically
 	// generated whenever a new device is removed from the DS.
 	RemoveCmd string
