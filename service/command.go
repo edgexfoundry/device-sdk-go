@@ -7,6 +7,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -116,7 +117,7 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 
 func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
 	var count int
-	readings := make([]*models.Reading, 0, s.c.Device.MaxCmdOps)
+	readings := make([]models.Reading, 0, s.c.Device.MaxCmdOps)
 
 	// TODO: add support for PUT/SET commands
 	var value = ""
@@ -152,6 +153,10 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		objName := op.Object
 		s.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
+		// TODO: add recursive support for resource command chaining. This occurs when a
+		// deviceprofile resource command operation references another resource command
+		// instead of a device resource (see BoschXDK for reference).
+
 		devObj, ok := devObjs[objName]
 
 		s.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
@@ -161,45 +166,55 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 			return
 		}
 
-		go s.proto.ProcessAsync(&op, d, &devObj, value, rChan)
+		// TODO: lookup valuedescriptor & pass to HandleOperation
+
+		go s.proto.HandleOperation(&op, d, &devObj, nil, value, rChan)
 		count++
 	}
 
-	// wait for responses
+	// wait for fixed number of results
 	for count != 0 {
 		s.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
-		rsp := <-rChan
+		cr := <-rChan
 
-		rspLen := len(rsp.Result)
+		// TODO: call Transform & pass valuedescriptor; handle overflows...
 
-		if rspLen > s.c.Device.MaxCmdResultLen {
-			msg := fmt.Sprintf("command result: %s exceeded max len: %u for dev: %s cmd: %s method: %s",
-				rsp.Result[0:32], rspLen, d.Name, cmd, method)
-			http.Error(w, msg, http.StatusInternalServerError)
-			return
-		}
+		// get the device resource associated with the rsp.RO
+		do := s.co.GetDeviceObject(d, cr.RO)
 
-		s.lc.Debug(fmt.Sprintf("command: result: %s", rsp.Result))
-		// add response to object cache
-		opReadings := s.co.AddReading(d, rsp.RO, rsp.Result)
+		// TODO: the Java SDK supports a RO secondary device resource(object).
+		// If defined, then a RO result will generate a reading for the
+		// secondary object. As this use case isn't defined and/or used in
+		// any of the existing Java device services, this concept hasn't
+		// been implemened in gxds. TBD at the devices f2f whether this
+		// be killed completely.
 
-		for _, rd := range opReadings {
-			readings = append(readings, rd)
-		}
+		reading := cr.Reading(d.Name, do.Name)
+		readings = append(readings, *reading)
+
+		// TODO: add caching logic
+
+		s.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
 
 		count--
 	}
 
-	// TODO: send readings to Core Data
+	// TODO: create event
+	event := &models.Event{Device: d.Name, Readings: readings}
 
-	// TODO: format readings & return to REST call
+	// TODO: send to core data
+
 	s.lc.Debug(fmt.Sprintf("command: readings: %v", readings))
 
 	// Here's what a single reading result looks like:
 	// CurrentHumidity is: {"AnalogValue_22":"57.040000915527344"}
 
-	w.WriteHeader(200)
-	io.WriteString(w, "OK")
+	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
+	// the rest of the Reading JSON + Event JSON length?  Should there be
+	// a separate JSON body max limit for retvals & command parameters?
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(event)
 }
 
 func (c *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -223,10 +238,6 @@ func initCommand(s *Service) {
 	sr := s.r.PathPrefix("/device").Subrouter()
 	ch := &commandHandler{fn: commandFunc, s: s}
 	sr.Handle("/{id}/{command}", ch).Methods(http.MethodGet, http.MethodPut)
-
-	// TODO: RAML specifies GET, PUT, and POST, with no apparent difference between
-	// PUT and POST! This code limits to just GET/PUT. Discuss and update in device
-	// services requirements document.
 
 	ch = &commandHandler{fn: commandAllFunc, s: s}
 	sr.Handle("/all/{command}", ch).Methods(http.MethodGet, http.MethodPut)
