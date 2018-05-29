@@ -46,21 +46,22 @@ func NewObjects(c *gxds.Config, lc logger.LoggingClient) *Objects {
 
 // GetDeviceObject...
 func (o *Objects) GetDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
-	var devObj *models.DeviceObject
+	var devObj models.DeviceObject
 	devObjs := profiles.GetDeviceObjects(d.Name)
 
 	if op != nil && devObjs != nil {
-		do := devObjs[op.Object]
+		devObj, ok := devObjs[op.Object]
+
+		if !ok {
+			return nil
+		}
 
 		if profiles.descriptorExists(op.Parameter) {
-			do.Name = op.Parameter
-			objs = append(objs, do)
-		} else if profiles.descriptorExists(do.Name) {
-			objs = append(objs, do)
+			devObj.Name = op.Parameter
 		}
 	}
 
-	return &do
+	return &devObj
 }
 
 func (o *Objects) createObjectList(d *models.Device, op *models.ResourceOperation) []models.DeviceObject {
