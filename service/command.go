@@ -131,13 +131,11 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		return
 	}
 
-	// TODO: this should be documented in "Device Profile Guide"; might be too generous?
-	if len(ops) > 64 {
-		msg := fmt.Sprintf("command: resourceop limit (64) execeeded for dev: %s cmd: %s method: %s", d.Name, cmd, method)
+	if len(ops) > s.c.Device.MaxCmdOps {
+		msg := fmt.Sprintf("command: MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
+			s.c.Device.MaxCmdOps, d.Name, cmd, method)
 		s.lc.Error(msg)
-
-		// TODO: review as this doesn't match the RAML
-		http.Error(w, msg, http.StatusExpectationFailed)
+		http.Error(w, msg, http.StatusInternalServerError)
 		return
 	}
 
