@@ -44,6 +44,25 @@ func NewObjects(c *gxds.Config, lc logger.LoggingClient) *Objects {
 	return objects
 }
 
+// GetDeviceObject...
+func (o *Objects) GetDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
+	var devObj *models.DeviceObject
+	devObjs := profiles.GetDeviceObjects(d.Name)
+
+	if op != nil && devObjs != nil {
+		do := devObjs[op.Object]
+
+		if profiles.descriptorExists(op.Parameter) {
+			do.Name = op.Parameter
+			objs = append(objs, do)
+		} else if profiles.descriptorExists(do.Name) {
+			objs = append(objs, do)
+		}
+	}
+
+	return &do
+}
+
 func (o *Objects) createObjectList(d *models.Device, op *models.ResourceOperation) []models.DeviceObject {
 	devObjs := profiles.GetDeviceObjects(d.Name)
 	objs := make([]models.DeviceObject, 0, 64)
@@ -57,9 +76,6 @@ func (o *Objects) createObjectList(d *models.Device, op *models.ResourceOperatio
 		} else if profiles.descriptorExists(do.Name) {
 			objs = append(objs, do)
 		}
-
-		// TODO: if one or more Secondary operation
-		// exists, add them here...
 	}
 
 	return objs
