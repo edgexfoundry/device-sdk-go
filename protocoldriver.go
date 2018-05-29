@@ -45,12 +45,7 @@ type ProtocolDriver interface {
 	// configuration. This function may also optionally trigger sensor
 	// discovery, which could result in dynamic device profile creation.
 	//
-	// TODO:
-	//   * add models.ScanList (or define locally) for devices
-	//   * add support for asynchronous discovery operation (i.e.
-	//     support new devices added directly from driver code and/or
-	//     new device(s) notification to DiscoveryLogic, which then adds
-	//     the new devices).
+	// TODO: add models.ScanList (or define locally) for devices
 	Discover() (devices *interface{}, err error)
 
 	// Initialize performs protocol-specific initialization for the device
@@ -59,7 +54,7 @@ type ProtocolDriver interface {
 	// is returned.
 	Initialize(lc logger.LoggingClient) (out <-chan struct{}, err error)
 
-	// Process triggers an asynchronous protocol specific GET or SET operation
+	// HandleOperation triggers an asynchronous protocol specific GET or SET operation
 	// for the specified device. Device profile attributes are passed as part
 	// of the *models.DeviceObject. The parameter 'value' must be provided for
 	// a SET operation, otherwise it should be 'nil'.
@@ -67,31 +62,13 @@ type ProtocolDriver interface {
 	// This function is always called in a new goroutine. The driver is responsible
 	// for writing the command result to the send channel.
 	//
-	// TODO: once channel return values are working, re-factor so that a the value
-	// written back is a struct with an error and string.
-	//
 	// NOTE - the Java-based device-virtual includes an additional parameter called
 	// operations which is used to optimize how virtual resources are saved for SETs.
 	//
-	ProcessAsync(ro *models.ResourceOperation,
+	HandleOperation(ro *models.ResourceOperation,
 		device *models.Device,
 		object *models.DeviceObject,
+		desc *models.ValueDescriptor,
 		value string,
 		send chan<- *CommandResult)
-
-	// ProcessCommand processes a command synchronously, and returns the result
-	// instead of writing it to a send channel. This function is used when a SET
-	// command is used on a valuedescriptor which specifes a mask, which requires
-	// a read of the current value before the mask can be applied.
-	//
-	// NOTE - the Java-based device-virtual includes an additional parameter called
-	// getOperations which is used to optimize how virtual resources are saved for SETs.
-	//
-	// TODO:
-	//  * with a bit of re-work, it should be possible to get rid of this function
-	//    and just use ProcessAsync (which could be re-named ProcessCommand()).
-	ProcessCommand(operation string,
-		device *models.Device,
-		object *models.DeviceObject,
-		value string) (result string, err error)
 }
