@@ -148,8 +148,17 @@ func LoadConfig(profile string, configDir string) (config *Config, err error) {
 
 	path := configDir + name
 
-	config = &Config{}
+	// As the toml package can panic if TOML is invalid,
+	// or elements are found that don't match members of
+	// the given struct, use a defered func to recover
+	// from the panic and output a useful error.
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("could not load configuration file; invalid TOML (%s)", path)
+		}
+	}()
 
+	config = &Config{}
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not load configuration file (%s): %v", path, err.Error())
