@@ -23,6 +23,7 @@ import (
 type Profiles struct {
 	config      *gxds.Config
 	vdc         coredataclients.ValueDescriptorClient
+	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
 	objects     map[string]map[string]models.DeviceObject // TODO: make *models.DeviceObject?
