@@ -332,7 +332,8 @@ func compareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool 
 	devResourcesOk := compareDeviceResources(a.DeviceResources, b.DeviceResources)
 	resourcesOk := compareResources(a.Resources, b.Resources)
 
-	// TODO: Objects fields aren't compared
+	// TODO: Objects fields aren't compared as to do properly
+	// requires introspection as Obects is a slice of interface{}
 
 	return a.DescribedObject == b.DescribedObject &&
 		a.Id == b.Id &&
@@ -353,13 +354,13 @@ func compareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bo
 	}
 
 	for i := range a {
-		attributesOk := compareStrStrMap(a[i].Attributes, b[i].Attributes)
+		// TODO: Attributes aren't compared, as to do properly
+		// requires introspection as Attributes is an interface{}
 
 		if a[i].Description != b[i].Description ||
 			a[i].Name != b[i].Name ||
 			a[i].Tag != b[i].Tag ||
-			a[i].Properties != b[i].Properties &&
-				!attributesOk {
+			a[i].Properties != b[i].Properties {
 			return false
 		}
 	}
