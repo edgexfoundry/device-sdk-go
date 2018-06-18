@@ -9,14 +9,14 @@ package cache
 import (
 	"sync"
 
-	"github.com/edgexfoundry/edgex-go/core/clients/metadataclients"
+	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 )
 
 type Watchers struct {
 	devices map[string]models.Device
-	ac      metadataclients.AddressableClient
-	dc      metadataclients.DeviceClient
+	ac      metadata.AddressableClient
+	dc      metadata.DeviceClient
 }
 
 var (

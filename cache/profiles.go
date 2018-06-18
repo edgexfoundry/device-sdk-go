@@ -12,7 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/edgexfoundry/edgex-go/core/clients/coredataclients"
+	"github.com/edgexfoundry/edgex-go/core/clients/coredata"
+	"github.com/edgexfoundry/edgex-go/core/clients/types"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/tonyespy/gxds"
@@ -21,8 +22,8 @@ import (
 
 // Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
-	config      *gxds.Config
-	vdc         coredataclients.ValueDescriptorClient
+	config *gxds.Config
+	vdc    coredata.ValueDescriptorClient
 	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
@@ -39,16 +40,27 @@ var (
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-func NewProfiles(c *gxds.Config, lc logger.LoggingClient) *Profiles {
+func NewProfiles(c *gxds.Config, lc logger.LoggingClient, useRegistry bool) *Profiles {
 
 	pcOnce.Do(func() {
 		profiles = &Profiles{config: c, lc: lc}
 
 		dataHost := c.Clients["Data"].Host
 		dataPort := strconv.Itoa(c.Clients["Data"].Port)
+		dataAddr := "http://" + dataHost + ":" + dataPort
+		dataPath := "/api/v1/valuedescriptor"
+		dataURL := dataAddr + dataPath
 
-		profiles.vdc = coredataclients.NewValueDescriptorClient("http://" +
-			dataHost + ":" + dataPort + "/api/v1/valuedescriptor")
+		params := types.EndpointParams{
+			// TODO: Can't use edgex-go internal constants!
+			//ServiceKey:internal.CoreDataServiceKey,
+			ServiceKey:  "edgex-core-data",
+			Path:        dataPath,
+			UseRegistry: useRegistry,
+			Url:         dataURL}
+
+		// TODO: share clients with service!
+		profiles.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
 
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
 		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)

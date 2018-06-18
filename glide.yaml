@@ -3,8 +3,8 @@ import:
 - package: github.com/edgexfoundry/edgex-go
   subpackages:
   - /core/domain/models
-  - /core/clients/coredataclients
-  - /core/clients/metadataclients
+  - /core/clients/coredata
+  - /core/clients/metadata
   - /support/logging-client
 - package: github.com/gorilla/mux
 - package: github.com/hashicorp/consul

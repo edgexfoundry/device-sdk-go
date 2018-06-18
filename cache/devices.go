@@ -16,7 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/edgex-go/core/clients/metadataclients"
+	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
+	"github.com/edgexfoundry/edgex-go/core/clients/types"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/tonyespy/gxds"
@@ -27,12 +28,13 @@ import (
 // TODO: review Go review comments, to see if this (and other code
 // in this package) should use singular names (e.g. Device).
 type Devices struct {
-	config  *gxds.Config
-	devices map[string]*models.Device
-	names   map[string]string
-	ac      metadataclients.AddressableClient
-	dc      metadataclients.DeviceClient
-	lc      logger.LoggingClient
+	config      *gxds.Config
+	devices     map[string]*models.Device
+	names       map[string]string
+	ac          metadata.AddressableClient
+	dc          metadata.DeviceClient
+	lc          logger.LoggingClient
+	useRegistry bool
 }
 
 var (
@@ -41,10 +43,10 @@ var (
 )
 
 // Creates a singleton Devices cache instance.
-func NewDevices(c *gxds.Config, lc logger.LoggingClient) *Devices {
+func NewDevices(c *gxds.Config, lc logger.LoggingClient, useRegistry bool) *Devices {
 
 	dcOnce.Do(func() {
-		devices = &Devices{config: c, lc: lc}
+		devices = &Devices{config: c, lc: lc, useRegistry: useRegistry}
 	})
 
 	return devices
@@ -113,15 +115,28 @@ func (d *Devices) Devices() map[string]*models.Device {
 }
 
 // Init initializes the device cache.
-func (d *Devices) Init(serviceId string) error {
+func (d *Devices) Init(serviceId string) (err error) {
 	metaHost := d.config.Clients["Metadata"].Host
 	metaPort := strconv.Itoa(d.config.Clients["Metadata"].Port)
+	metaAddr := "http://" + metaHost + ":" + metaPort
+	metaPath := "/api/v1/addressable"
+	metaURL := metaAddr + metaPath
 
-	d.ac = metadataclients.NewAddressableClient("http://" + metaHost +
-		":" + metaPort + "/api/v1/addressable")
+	// Create metadata clients
+	params := types.EndpointParams{
+		// TODO: Can't use edgex-go internal constants!
+		//ServiceKey:internal.CoreMetaDataServiceKey,
+		ServiceKey:  "edgex-core-metadata",
+		Path:        metaPath,
+		UseRegistry: d.useRegistry,
+		Url:         metaURL}
 
-	d.dc = metadataclients.NewDeviceClient("http://" + metaHost +
-		":" + metaPort + "/api/v1/device")
+	// TODO: share clients with service!
+	d.ac = metadata.NewAddressableClient(params, types.Endpoint{})
+
+	params.Path = "/api/v1/device"
+	params.Url = metaAddr + params.Path
+	d.dc = metadata.NewDeviceClient(params, types.Endpoint{})
 
 	mDevs, err := d.dc.DevicesForService(serviceId)
 	if err != nil {
@@ -188,7 +203,7 @@ func (d *Devices) Update(id string) error {
 // The current method is an almost direct translation of the Java
 // DeviceStore implementation.
 func (d *Devices) addDeviceToMetadata(dev *models.Device) error {
-	// TODO: fix metadataclients to indicate !found, vs. returned zeroed struct!
+	// TODO: fix metadata to indicate !found, vs. returned zeroed struct!
 	d.lc.Debug(fmt.Sprintf("Trying to find addressable for: %s\n", dev.Addressable.Name))
 	addr, err := d.ac.AddressableForName(dev.Addressable.Name)
 	if err != nil {

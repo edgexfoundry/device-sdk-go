@@ -22,7 +22,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgexfoundry/edgex-go/core/clients/metadataclients"
+	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
+	"github.com/edgexfoundry/edgex-go/core/clients/types"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/gorilla/mux"
@@ -45,9 +46,9 @@ type Service struct {
 	initialized  bool
 	locked       bool
 	useRegistry  bool
-	ac           metadataclients.AddressableClient
+	ac           metadata.AddressableClient
 	lc           logger.LoggingClient
-	sc           metadataclients.ServiceClient
+	sc           metadata.DeviceServiceClient
 	ds           models.DeviceService
 	r            *mux.Router
 	cd           *cache.Devices
@@ -233,19 +234,35 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 	done := make(chan struct{})
 
 	s.proto = proto
-	s.cp = cache.NewProfiles(s.c, s.lc)
+	s.cp = cache.NewProfiles(s.c, s.lc, s.useRegistry)
 	s.cw = cache.NewWatchers()
 	s.co = cache.NewObjects(s.c, s.lc)
-	s.cd = cache.NewDevices(s.c, s.lc)
+	s.cd = cache.NewDevices(s.c, s.lc, s.useRegistry)
 	s.cs = cache.NewSchedules(s.c)
 
 	// set up clients
 	metaPort := strconv.Itoa(s.c.Clients["Metadata"].Port)
 	metaHost := s.c.Clients["Metadata"].Host
 	metaAddr := "http://" + metaHost + ":" + metaPort
+	metaPath := "/api/v1/addressable"
+	metaURL := metaAddr + metaPath
 
-	s.ac = metadataclients.NewAddressableClient(metaAddr + "/api/v1/addressable")
-	s.sc = metadataclients.NewServiceClient(metaAddr + "/api/v1/deviceservice")
+	// TODO: edgex-go - endpoint paths shouldn't be in config files!!!
+
+	// Create metadata clients
+	params := types.EndpointParams{
+		// TODO: Can't use edgex-go internal constants!
+		//ServiceKey:internal.CoreMetaDataServiceKey,
+		ServiceKey:  "edgex-core-metadata",
+		Path:        metaPath,
+		UseRegistry: d.useRegistry,
+		Url:         metaURL}
+
+	s.ac = metadata.NewAddressableClient(params, types.Endpoint{})
+
+	params.Path = "/api/v1/deviceservice"
+	params.URL = metaAddr + params.Path
+	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
