@@ -21,7 +21,7 @@ Port = 8500
   Host = "localhost"
   Port = 48081
 
-[Devices]
+[Device]
   DataTransform = true
   InitCmd = ""
   InitCmdArgs = ""
