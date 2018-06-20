@@ -255,13 +255,13 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 		//ServiceKey:internal.CoreMetaDataServiceKey,
 		ServiceKey:  "edgex-core-metadata",
 		Path:        metaPath,
-		UseRegistry: d.useRegistry,
+		UseRegistry: s.useRegistry,
 		Url:         metaURL}
 
 	s.ac = metadata.NewAddressableClient(params, types.Endpoint{})
 
 	params.Path = "/api/v1/deviceservice"
-	params.URL = metaAddr + params.Path
+	params.Url = metaAddr + params.Path
 	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
