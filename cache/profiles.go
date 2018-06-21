@@ -8,32 +8,41 @@ package cache
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/edgexfoundry/edgex-go/core/clients/coredata"
+	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/core/clients/types"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/tonyespy/gxds"
 	"gopkg.in/mgo.v2/bson"
+	"gopkg.in/yaml.v2"
 )
 
 const (
-	colon      = ":"
-	httpScheme = "http://"
+	colon             = ":"
+	httpScheme        = "http://"
+	v1Deviceprofile   = "/api/v1/deviceprofile"
 	v1Valuedescriptor = "/api/v1/valuedescriptor"
+	yamlExt           = ".yaml"
+	yamlExtUpper      = ".YAML"
 )
 
 // Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
 	config *gxds.Config
+	dpc    metadata.DeviceProfileClient
 	vdc    coredata.ValueDescriptorClient
 	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
 	objects     map[string]map[string]models.DeviceObject // TODO: make *models.DeviceObject?
+	profiles    map[string]models.DeviceProfile
 	lc          logger.LoggingClient
 }
 
@@ -41,6 +50,66 @@ var (
 	pcOnce   sync.Once
 	profiles *Profiles
 )
+
+func loadProfiles(path string) {
+	if path == "" {
+		path = "./res"
+	}
+
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		profiles.lc.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v\n", path, err))
+		return
+	}
+
+	fileInfo, err := ioutil.ReadDir(absPath)
+	if err != nil {
+		profiles.lc.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v\n", path, err))
+		return
+	}
+
+	for _, file := range fileInfo {
+		var profile models.DeviceProfile
+
+		name := file.Name()
+		if strings.HasSuffix(name, yamlExt) || strings.HasSuffix(name, yamlExtUpper) {
+			path := absPath + "/" + name
+			yamlFile, err := ioutil.ReadFile(path)
+
+			if err != nil {
+				profiles.lc.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", name, err))
+			}
+
+			err = yaml.Unmarshal(yamlFile, &profile)
+			if err != nil {
+				profiles.lc.Error(fmt.Sprintf("profiles: invalid deviceprofile: %s; %v\n", name, err))
+			}
+
+			// add profile to metadata
+			id, err := profiles.dpc.Add(&profile)
+			if err != nil {
+				profiles.lc.Error(fmt.Sprintf("profiles: Add device profile: %s to Core Metadata failed: %v\n", name, err))
+				continue
+			}
+
+			if len(id) != 24 || !bson.IsObjectIdHex(id) {
+				profiles.lc.Error("Add deviceprofile returned invalid Id: " + id)
+				return
+			}
+
+			profile.Id = bson.ObjectIdHex(id)
+
+			// TODO:
+			// - don't add to map here; query metadata for entire list
+			//   first, then only add profile if it doesn't already exist.
+			//   This requires new code to be added to DeviceProfileClient
+			//   to return the list of existing deviceprofiles.
+			// - re-work the rest of the code to use profiles
+
+			profiles.profiles[profile.Name] = profile
+		}
+	}
+}
 
 // Create a singleton Profile cache instance. The cache
 // actually stores copies of the objects contained within
@@ -68,8 +137,23 @@ func NewProfiles(c *gxds.Config, lc logger.LoggingClient, useRegistry bool) *Pro
 
 		profiles.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
 
+		metaHost := c.Clients[gxds.ClientMetadata].Host
+		metaPort := strconv.Itoa(c.Clients[gxds.ClientMetadata].Port)
+		metaAddr := httpScheme + metaHost + colon + metaPort
+		metaPath := v1Deviceprofile
+		metaURL := metaAddr + metaPath
+
+		params.ServiceKey = "edgex-core-metadata"
+		params.Path = metaPath
+		params.Url = metaURL
+
+		profiles.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
+
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
 		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
+		profiles.profiles = make(map[string]models.DeviceProfile)
+
+		loadProfiles(c.Device.ProfilesDir)
 	})
 
 	return profiles
