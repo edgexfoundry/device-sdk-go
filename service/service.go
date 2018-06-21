@@ -16,12 +16,14 @@ import (
 	"github.com/tonyespy/gxds"
 	"github.com/tonyespy/gxds/cache"
 
+	"bytes"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/edgex-go/core/clients/coredata"
 	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/core/clients/types"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
@@ -31,11 +33,19 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// TODO:
-//  * add consul registration support
-//  * design REST API framework
-//  * design Protocol framework
-//  * re-name?  service --> baseservice
+const (
+	colon      = ":"
+	httpScheme = "http://"
+	httpProto  = "HTTP"
+
+	coreDataServiceKey     = "edgex-core-data"
+	coreMetadataServiceKey = "edgex-core-metadata"
+
+	v1Addressable = "/api/v1/addressable"
+	v1Callback    = "/api/v1/callback"
+	v1DevService  = "/api/v1/deviceservice"
+	v1Event       = "/api/v1/event"
+)
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
@@ -49,6 +59,7 @@ type Service struct {
 	ac           metadata.AddressableClient
 	lc           logger.LoggingClient
 	sc           metadata.DeviceServiceClient
+	ec           coredata.EventClient
 	ds           models.DeviceService
 	r            *mux.Router
 	cd           *cache.Devices
@@ -95,17 +106,16 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 		// TODO: same as above
 		if addr.Name != s.Name {
-			// TODO: does HTTPMethod need to be specified?
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin: millis,
 				},
 				Name:       s.Name,
-				HTTPMethod: "POST",
-				Protocol:   "HTTP",
+				HTTPMethod: http.MethodPost,
+				Protocol:   httpProto,
 				Address:    s.c.Service.Host,
 				Port:       s.c.Service.Port,
-				Path:       "/api/v1/callback",
+				Path:       v1Callback,
 			}
 			addr.Origin = millis
 
@@ -177,25 +187,36 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 func (s *Service) validateClientConfig() error {
 
-	if len(s.c.Clients["Metadata"].Host) == 0 {
+	if len(s.c.Clients[gxds.ClientMetadata].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
 	}
 
-	if s.c.Clients["Metadata"].Port == 0 {
+	if s.c.Clients[gxds.ClientMetadata].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
 	}
 
-	if len(s.c.Clients["Data"].Host) == 0 {
+	if len(s.c.Clients[gxds.ClientData].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
 	}
 
-	if s.c.Clients["Data"].Port == 0 {
+	if s.c.Clients[gxds.ClientData].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
 	}
 
 	// TODO: validate other settings for sanity: maxcmdops, ...
 
 	return nil
+}
+
+func buildAddr(host string, port string) string {
+	var buffer bytes.Buffer
+
+	buffer.WriteString(httpScheme)
+	buffer.WriteString(host)
+	buffer.WriteString(colon)
+	buffer.WriteString(port)
+
+	return buffer.String()
 }
 
 // Initialize the Service
@@ -241,28 +262,38 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 	s.cs = cache.NewSchedules(s.c)
 
 	// set up clients
-	metaPort := strconv.Itoa(s.c.Clients["Metadata"].Port)
-	metaHost := s.c.Clients["Metadata"].Host
-	metaAddr := "http://" + metaHost + ":" + metaPort
-	metaPath := "/api/v1/addressable"
+	metaPort := strconv.Itoa(s.c.Clients[gxds.ClientMetadata].Port)
+	metaHost := s.c.Clients[gxds.ClientMetadata].Host
+	metaAddr := buildAddr(metaHost, metaPort)
+	metaPath := v1Addressable
 	metaURL := metaAddr + metaPath
 
-	// TODO: edgex-go - endpoint paths shouldn't be in config files!!!
-
-	// Create metadata clients
 	params := types.EndpointParams{
 		// TODO: Can't use edgex-go internal constants!
 		//ServiceKey:internal.CoreMetaDataServiceKey,
-		ServiceKey:  "edgex-core-metadata",
+		ServiceKey:  coreMetadataServiceKey,
 		Path:        metaPath,
 		UseRegistry: s.useRegistry,
 		Url:         metaURL}
 
 	s.ac = metadata.NewAddressableClient(params, types.Endpoint{})
 
-	params.Path = "/api/v1/deviceservice"
+	params.Path = v1DevService
 	params.Url = metaAddr + params.Path
 	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
+
+	dataPort := strconv.Itoa(s.c.Clients[gxds.ClientData].Port)
+	dataHost := s.c.Clients[gxds.ClientData].Host
+	dataAddr := buildAddr(dataHost, dataPort)
+	dataPath := v1Event
+	dataURL := dataAddr + dataPath
+
+	params.ServiceKey = coreDataServiceKey
+	params.Path = dataPath
+	params.UseRegistry = s.useRegistry
+	params.Url = dataURL
+
+	s.ec = coredata.NewEventClient(params, types.Endpoint{})
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
@@ -304,7 +335,7 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 // Start the Service
 func (s *Service) Start() {
 	s.lc.Info("*Service Start() called")
-	s.lc.Error(http.ListenAndServe(":"+strconv.Itoa(s.c.Service.Port), s.r).Error())
+	s.lc.Error(http.ListenAndServe(colon+strconv.Itoa(s.c.Service.Port), s.r).Error())
 	s.lc.Debug("*Service Start() exit")
 }
 

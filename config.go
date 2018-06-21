@@ -13,6 +13,11 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+const (
+	ClientData     = "Data"
+	ClientMetadata = "Metadata"
+)
+
 // ServiceInfo is a struct which contains service related configuration
 // settings.
 type ServiceInfo struct {
