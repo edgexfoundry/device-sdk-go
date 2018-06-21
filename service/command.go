@@ -34,22 +34,20 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 	cmd := vars["command"]
 
-	s.lc.Debug(fmt.Sprintf("commandFunc: dev: %s cmd: %s", id, cmd))
-
 	// TODO - models.Device isn't thread safe currently
 	d := s.cd.DeviceById(id)
 	if d == nil {
 		// TODO: standardize error message format (use of prefix)
 		msg := fmt.Sprintf("dev: %s not found; %s %s", id, r.Method, r.URL)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusNotFound)
+		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
 	}
 
 	if d.AdminState == "LOCKED" {
-		msg := fmt.Sprintf("dev: %s locked; %s %s", id, r.Method, r.URL)
+		msg := fmt.Sprintf("%s is locked; %s %s", id, r.Method, r.URL)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusLocked)
+		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
 
@@ -62,31 +60,30 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
-		msg := fmt.Sprintf("command: internal error; dev: %s not found in cache; %s %s", id, r.Method, r.URL)
+		msg := fmt.Sprintf("internal error; dev: %s not found in cache; %s %s", id, r.Method, r.URL)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusExpectationFailed)
+		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
 	if !exists {
-		msg := fmt.Sprintf("command: %s for dev: %s not found; %s %s", cmd, id, r.Method, r.URL)
+		msg := fmt.Sprintf("%s for dev: %s not found; %s %s", cmd, id, r.Method, r.URL)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusNotFound)
+		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
 	}
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		msg := fmt.Sprintf("error reading request body for: %s %s", r.Method, r.URL)
+		msg := fmt.Sprintf("commandFunc: error reading request body for: %s %s", r.Method, r.URL)
 		s.lc.Error(msg)
 	}
 
-	// TODO: RAML doesn't mention StatusBadRequest (400)
-	if len(body) == 0 && r.Method == "PUT" {
-		msg := fmt.Sprintf("no command args provided; %s %s", r.Method, r.URL)
+	if len(body) == 0 && r.Method == http.MethodPut {
+		msg := fmt.Sprintf("no request body provided; %s %s", r.Method, r.URL)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusBadRequest)
+		http.Error(w, msg, http.StatusBadRequest) // status=400
 		return
 	}
 
@@ -126,26 +123,24 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	ops, err := s.cp.GetResourceOperations(d.Name, cmd, method)
 	if err != nil {
 		s.lc.Error(err.Error())
-
-		// TODO: review as this doesn't match the RAML
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusNotFound) // status=404
 		return
 	}
 
 	if len(ops) > s.c.Device.MaxCmdOps {
-		msg := fmt.Sprintf("command: MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
+		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
 			s.c.Device.MaxCmdOps, d.Name, cmd, method)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusInternalServerError)
+		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
 	rChan := make(chan *gxds.CommandResult)
 	devObjs := s.cp.GetDeviceObjects(d.Name)
 	if devObjs == nil {
-		msg := fmt.Sprintf("command: internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
+		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
 		s.lc.Error(msg)
-		http.Error(w, msg, http.StatusExpectationFailed)
+		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
@@ -162,7 +157,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		s.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
 		if !ok {
 			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
-			http.Error(w, msg, http.StatusInternalServerError)
+			http.Error(w, msg, http.StatusInternalServerError) // status=500
 			return
 		}
 
@@ -199,15 +194,15 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		count--
 	}
 
-	// TODO: create event
+	// push to Core Data
 	event := &models.Event{Device: d.Name, Readings: readings}
-
-	// TODO: send to core data
-
-	s.lc.Debug(fmt.Sprintf("command: readings: %v", readings))
-
-	// Here's what a single reading result looks like:
-	// CurrentHumidity is: {"AnalogValue_22":"57.040000915527344"}
+	_, err = s.ec.Add(event)
+	if err != nil {
+		msg := fmt.Sprintf("internal error; failed to push event for dev: %s cmd: %s to CoreData: %s", d.Name, cmd, err)
+		s.lc.Error(msg)
+		http.Error(w, msg, http.StatusInternalServerError) // status=500
+		return
+	}
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
 	// the rest of the Reading JSON + Event JSON length?  Should there be
@@ -225,7 +220,7 @@ func (c *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if c.s.locked {
 		msg := fmt.Sprintf("%s is locked; %s %s", c.s.Name, r.Method, r.URL)
 		c.s.lc.Error(msg)
-		http.Error(w, msg, http.StatusLocked)
+		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
 
