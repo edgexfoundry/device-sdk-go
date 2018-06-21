@@ -34,6 +34,7 @@ import (
 )
 
 const (
+	apiV1      = "/api/v1"
 	colon      = ":"
 	httpScheme = "http://"
 	httpProto  = "HTTP"
@@ -308,7 +309,7 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 	s.proto.Initialize(s.lc)
 
 	// Setup REST API
-	s.r = mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	s.r = mux.NewRouter().PathPrefix(apiV1).Subrouter()
 	initStatus(s)
 	initCommand(s)
 	initService(s)
