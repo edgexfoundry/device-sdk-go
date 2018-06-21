@@ -34,11 +34,6 @@ Service Operation
 
   Priority: High
 
-- load any pre-defined device profiles (YAML). This requires re-work
-  of the existing profiles cache API and associated internal re-factor.
-
-  Priority: High
-
 - Validate device profiles during auto-import using a schema with
   constraints (e.g. limits on maximum number of device resources,
   commands, ...).
@@ -66,6 +61,12 @@ Cache
 
   Priority: High
 
+- [profiles] read existing deviceprofiles from metadata before
+  importing new profiles. This requires new code to be added
+  to DeviceProfileClient to return the list of existing deviceprofiles.
+
+  Priority: High
+
 - [profiles] re-factor to use a map of deviceprofile instances,
   instead of creating derived sub-objects. The existing code creates
   these derived objects as a result of the addDevice call (made by
@@ -79,10 +80,11 @@ Cache
 
   Priority: Medium
 
-- [objects] re-factor to break apart readings creations from storage
-  of readings results, and actually implement a real caching scheme.
+- [objects] remove caching related logic in this code, keeping any
+  for command processing to occur.  It was decided at the Palo Alto
+  f2f that the device service SDKs would perform no caching.
 
-  Priority: Medium
+  Priority: High
 
 - [devices] add support for generic init and disconnect functions
   when devices are added or removed from the cache. The code checks
@@ -97,8 +99,6 @@ REST
 
 - implement response formatting logic
 
-- implement update endpoints (/callback):
-
 - implement service endpoints:
   - /discover
 
@@ -108,23 +108,10 @@ REST
 
 - implement command 'All':
 
-- understand all callbacks (updates & schedule*)
-
-  Priority: Low
-
 Readings
 ========
 
-- push readings: implement logic to push events & readings
-  to core data
-
 - implement transforms: implement transforms for both get & puts
-
-Driver
-======
-
-- merge process* methods: the current doesn't make much sense
-
 
 Discovery
 =========
