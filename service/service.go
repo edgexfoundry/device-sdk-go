@@ -126,11 +126,7 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 				return
 			}
 
-			// TODO: add back length check in from non-public metadata-clients logic
-			//
-			// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
-			//
-			if !bson.IsObjectIdHex(id) {
+			if len(id) != 24 || !bson.IsObjectIdHex(id) {
 				s.lc.Error("Add addressable returned invalid Id: " + id)
 				return
 			}
@@ -151,22 +147,13 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		}
 
 		ds.Service.Origin = millis
-
-		s.lc.Debug("Adding new deviceservice: " + ds.Service.Name)
-		s.lc.Debug(fmt.Sprintf("New deviceservice: %v", ds))
-
-		// use s.clientService to register the deviceservice
 		id, err := s.sc.Add(&ds)
 		if err != nil {
 			s.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.Name, err))
 			return
 		}
 
-		// TODO: add back length check in from non-public metadata-clients logic
-		//
-		// if len(bodyBytes) != 24 || !bson.IsObjectIdHex(bodyString) {
-		//
-		if !bson.IsObjectIdHex(id) {
+		if len(id) != 24 || !bson.IsObjectIdHex(id) {
 			s.lc.Error("Add deviceservice returned invalid Id: %s", id)
 			return
 		}
