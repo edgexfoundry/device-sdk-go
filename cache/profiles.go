@@ -20,6 +20,12 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+const (
+	colon      = ":"
+	httpScheme = "http://"
+	v1Valuedescriptor = "/api/v1/valuedescriptor"
+)
+
 // Profiles is a local cache of devices seeded from Core Metadata.
 type Profiles struct {
 	config *gxds.Config
@@ -45,10 +51,11 @@ func NewProfiles(c *gxds.Config, lc logger.LoggingClient, useRegistry bool) *Pro
 	pcOnce.Do(func() {
 		profiles = &Profiles{config: c, lc: lc}
 
-		dataHost := c.Clients["Data"].Host
-		dataPort := strconv.Itoa(c.Clients["Data"].Port)
-		dataAddr := "http://" + dataHost + ":" + dataPort
-		dataPath := "/api/v1/valuedescriptor"
+		// TODO: move all client init code into service
+		dataHost := c.Clients[gxds.ClientData].Host
+		dataPort := strconv.Itoa(c.Clients[gxds.ClientData].Port)
+		dataAddr := httpScheme + dataHost + colon + dataPort
+		dataPath := v1Valuedescriptor
 		dataURL := dataAddr + dataPath
 
 		params := types.EndpointParams{
@@ -59,7 +66,6 @@ func NewProfiles(c *gxds.Config, lc logger.LoggingClient, useRegistry bool) *Pro
 			UseRegistry: useRegistry,
 			Url:         dataURL}
 
-		// TODO: share clients with service!
 		profiles.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
 
 		profiles.objects = make(map[string]map[string]models.DeviceObject)
