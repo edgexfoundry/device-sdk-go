@@ -8,13 +8,6 @@
 // service.  This interace provides an asbstraction layer for the device
 // or protocol specific logic of a device service.
 //
-// TODO:
-// * Determine if gxds should define separate 'Handler' and 'Driver'
-//   protocol interfaces?  Can they be combined?
-//
-// * Investigate changing calling signatures to leverage std Go
-//   interfaces, such as Reader/Writer, ...
-//
 package gxds
 
 import (
@@ -38,15 +31,6 @@ type ProtocolDriver interface {
 	// this should be *models.Device?
 	//
 	DisconnectDevice(address *models.Addressable) error
-
-	// Discover triggers protocol specific device discovery, which is
-	// a synchronous operation which returns a list of new devices
-	// which may be added to the device service based on service
-	// configuration. This function may also optionally trigger sensor
-	// discovery, which could result in dynamic device profile creation.
-	//
-	// TODO: add models.ScanList (or define locally) for devices
-	Discover() (devices *interface{}, err error)
 
 	// Initialize performs protocol-specific initialization for the device
 	// service.  If the DS supports asynchronous data pushed from devices/sensors,
