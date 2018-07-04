@@ -4,27 +4,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package cache
+package service
 
 import (
 	"testing"
-
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
-	"github.com/tonyespy/gxds"
 )
-
-func TestNewDevices(t *testing.T) {
-	config := &gxds.Config{ServiceName: "dummy-service"}
-
-	// TODO: add dummy Config
-	lc := logger.NewClient("devices_test", false, "./devices_test.log")
-
-	d1 := NewDevices(config, lc, nil)
-	d2 := NewDevices(config, lc, nil)
-	if d1 != d2 {
-		t.Error("Broken singleton")
-	}
-}
 
 // TODO:
 //   TestCompareCommands
