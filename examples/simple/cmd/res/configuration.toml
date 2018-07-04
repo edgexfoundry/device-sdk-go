@@ -29,7 +29,7 @@ Port = 8500
   MaxCmdValueLen = 256
   RemoveCmd = ""
   RemoveCmdArgs = ""
-  ProfilesDir = "./profiles"
+  ProfilesDir = ""
   SendReadingsOnChanged = true
 
 [Logging]
