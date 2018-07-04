@@ -19,6 +19,11 @@ import (
 	"github.com/tonyespy/gxds/service"
 )
 
+const (
+	serviceName    = "device-simple"
+	serviceVersion = "0.1"
+)
+
 var flags struct {
 	configPath *string
 }
@@ -43,20 +48,22 @@ func main() {
 }
 
 func startService(useRegistry bool, profile string, confDir string) error {
-	s := simple.SimpleDriver{}
+	sd := simple.SimpleDriver{}
 
-	d, err := service.New("device-simple")
+	s, err := service.New(serviceName, serviceVersion, &sd)
 	if err != nil {
 		return err
 	}
 
-	if err := d.Init(useRegistry, profile, confDir, &s); err != nil {
+	fmt.Fprintf(os.Stdout, "Calling service.Start.\n")
+
+	if err := s.Start(useRegistry, profile, confDir); err != nil {
 		return err
 	}
 
-	d.Version = "0.1"
+	fmt.Fprintf(os.Stdout, "Setting up signals.\n")
 
-	d.Start()
+	// TODO: this code never executes!
 
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
@@ -65,5 +72,5 @@ func startService(useRegistry bool, profile string, confDir string) error {
 		fmt.Fprintf(os.Stderr, "Exiting on %s signal.\n", sig)
 	}
 
-	return d.Stop()
+	return s.Stop()
 }
