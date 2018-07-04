@@ -14,10 +14,6 @@ Global
 
   Priority: High
 
-- review consistent usage of i[I]nit v.s. i[I]nitialize in methods funcs
-
-  Priority: Medium
-
 Service Operation
 =================
 

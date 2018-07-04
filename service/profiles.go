@@ -4,51 +4,41 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package cache
+package service
 
 import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/edgexfoundry/edgex-go/core/clients/coredata"
-	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
-	"github.com/edgexfoundry/edgex-go/core/clients/types"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
 	"github.com/tonyespy/gxds"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/yaml.v2"
 )
 
 const (
-	colon             = ":"
-	httpScheme        = "http://"
 	v1Deviceprofile   = "/api/v1/deviceprofile"
 	v1Valuedescriptor = "/api/v1/valuedescriptor"
 	yamlExt           = ".yaml"
 	yamlExtUpper      = ".YAML"
 )
 
-// Profiles is a local cache of devices seeded from Core Metadata.
-type Profiles struct {
+// profileCache is a local cache of devices seeded from Core Metadata.
+type profileCache struct {
 	config *gxds.Config
-	dpc    metadata.DeviceProfileClient
-	vdc    coredata.ValueDescriptorClient
 	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
 	objects     map[string]map[string]models.DeviceObject // TODO: make *models.DeviceObject?
 	profiles    map[string]models.DeviceProfile
-	lc          logger.LoggingClient
 }
 
 var (
 	pcOnce   sync.Once
-	profiles *Profiles
+	pc       *profileCache
 )
 
 func loadProfiles(path string) {
@@ -58,13 +48,13 @@ func loadProfiles(path string) {
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		profiles.lc.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v\n", path, err))
+		svc.lc.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v\n", path, err))
 		return
 	}
 
 	fileInfo, err := ioutil.ReadDir(absPath)
 	if err != nil {
-		profiles.lc.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v\n", path, err))
+		svc.lc.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v\n", path, err))
 		return
 	}
 
@@ -77,23 +67,23 @@ func loadProfiles(path string) {
 			yamlFile, err := ioutil.ReadFile(path)
 
 			if err != nil {
-				profiles.lc.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", name, err))
+				svc.lc.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", name, err))
 			}
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
-				profiles.lc.Error(fmt.Sprintf("profiles: invalid deviceprofile: %s; %v\n", name, err))
+				svc.lc.Error(fmt.Sprintf("profiles: invalid deviceprofile: %s; %v\n", name, err))
 			}
 
 			// add profile to metadata
-			id, err := profiles.dpc.Add(&profile)
+			id, err := svc.dpc.Add(&profile)
 			if err != nil {
-				profiles.lc.Error(fmt.Sprintf("profiles: Add device profile: %s to Core Metadata failed: %v\n", name, err))
+				svc.lc.Error(fmt.Sprintf("profiles: Add device profile: %s to Core Metadata failed: %v\n", name, err))
 				continue
 			}
 
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				profiles.lc.Error("Add deviceprofile returned invalid Id: " + id)
+				svc.lc.Error("Add deviceprofile returned invalid Id: " + id)
 				return
 			}
 
@@ -106,60 +96,29 @@ func loadProfiles(path string) {
 			//   to return the list of existing deviceprofiles.
 			// - re-work the rest of the code to use profiles
 
-			profiles.profiles[profile.Name] = profile
+			pc.profiles[profile.Name] = profile
 		}
 	}
 }
 
-// Create a singleton Profile cache instance. The cache
+// Create a singleton profileCache cache instance. The cache
 // actually stores copies of the objects contained within
 // a device profile vs. the profiles themselves, although
 // it can be used to update and existing profile.
-func NewProfiles(c *gxds.Config, lc logger.LoggingClient, useRegistry bool) *Profiles {
+func newProfileCache() {
 
 	pcOnce.Do(func() {
-		profiles = &Profiles{config: c, lc: lc}
+		pc = &profileCache{}
 
-		// TODO: move all client init code into service
-		dataHost := c.Clients[gxds.ClientData].Host
-		dataPort := strconv.Itoa(c.Clients[gxds.ClientData].Port)
-		dataAddr := httpScheme + dataHost + colon + dataPort
-		dataPath := v1Valuedescriptor
-		dataURL := dataAddr + dataPath
+		pc.objects = make(map[string]map[string]models.DeviceObject)
+		pc.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
+		pc.profiles = make(map[string]models.DeviceProfile)
 
-		params := types.EndpointParams{
-			// TODO: Can't use edgex-go internal constants!
-			//ServiceKey:internal.CoreDataServiceKey,
-			ServiceKey:  "edgex-core-data",
-			Path:        dataPath,
-			UseRegistry: useRegistry,
-			Url:         dataURL}
-
-		profiles.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
-
-		metaHost := c.Clients[gxds.ClientMetadata].Host
-		metaPort := strconv.Itoa(c.Clients[gxds.ClientMetadata].Port)
-		metaAddr := httpScheme + metaHost + colon + metaPort
-		metaPath := v1Deviceprofile
-		metaURL := metaAddr + metaPath
-
-		params.ServiceKey = "edgex-core-metadata"
-		params.Path = metaPath
-		params.Url = metaURL
-
-		profiles.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
-
-		profiles.objects = make(map[string]map[string]models.DeviceObject)
-		profiles.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
-		profiles.profiles = make(map[string]models.DeviceProfile)
-
-		loadProfiles(c.Device.ProfilesDir)
+		loadProfiles(svc.c.Device.ProfilesDir)
 	})
-
-	return profiles
 }
 
-func (p *Profiles) descriptorExists(name string) bool {
+func (p *profileCache) descriptorExists(name string) bool {
 	var exists bool
 
 	// TODO: make this a map?
@@ -174,7 +133,7 @@ func (p *Profiles) descriptorExists(name string) bool {
 }
 
 // GetDeviceObjects returns a map of object names to DeviceObject instances.
-func (p *Profiles) GetDeviceObjects(devName string) map[string]models.DeviceObject {
+func (p *profileCache) GetDeviceObjects(devName string) map[string]models.DeviceObject {
 	devObjs := p.objects[devName]
 	return devObjs
 }
@@ -184,7 +143,7 @@ func (p *Profiles) GetDeviceObjects(devName string) map[string]models.DeviceObje
 // Note - this command currently checks that a deviceprofile *resource* with the given name
 // exists, it's not actually checking that a deviceprofile *command* with this name exists.
 // See addDevice() for more details.
-func (p *Profiles) CommandExists(devName string, cmd string) (bool, error) {
+func (p *profileCache) CommandExists(devName string, cmd string) (bool, error) {
 	devOps, ok := p.commands[devName]
 	if !ok {
 		err := fmt.Errorf("profiles: CommandExists: specified dev: %s not found", devName)
@@ -199,7 +158,7 @@ func (p *Profiles) CommandExists(devName string, cmd string) (bool, error) {
 }
 
 // GetResourceOperation...
-func (p *Profiles) GetResourceOperations(devName string, cmd string, method string) ([]models.ResourceOperation, error) {
+func (p *profileCache) GetResourceOperations(devName string, cmd string, method string) ([]models.ResourceOperation, error) {
 	var err error
 
 	devOps, ok := p.commands[devName]
@@ -225,8 +184,8 @@ func (p *Profiles) GetResourceOperations(devName string, cmd string, method stri
 
 // TODO: this function is based on the original Java device-sdk-tools,
 // and is too large & complicated; re-factor for simplicity, testability!
-func (p *Profiles) addDevice(d *models.Device) error {
-	p.lc.Debug(fmt.Sprintf("profiles: dev: %s\n", d.Name))
+func (p *profileCache) addDevice(d *models.Device) error {
+	svc.lc.Debug(fmt.Sprintf("profiles: dev: %s\n", d.Name))
 
 	var devOps = make(map[string]map[string][]models.ResourceOperation)
 
@@ -237,8 +196,8 @@ func (p *Profiles) addDevice(d *models.Device) error {
 	// TODO: this should be done once, and changes watched...
 	// get current value descriptors from core-data
 	// ignore err, zero-value slice returned by default
-	descs, _ := p.vdc.ValueDescriptors()
-	p.lc.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descs))
+	descs, _ := svc.vdc.ValueDescriptors()
+	svc.lc.Debug(fmt.Sprintf("profiles: valuedescriptors: %v\n", descs))
 
 	// TODO: deviceprofiles with no device resources aren't supported, unlike
 	// the Java SDK-based DSs.
@@ -258,7 +217,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 	// descriptors of each command to a single list of used descriptors
 	vdNames := make(map[string]string)
 	for _, cmd := range d.Profile.Commands {
-		p.lc.Debug(fmt.Sprintf("profiles: cmd: %s\n", cmd.Name))
+		svc.lc.Debug(fmt.Sprintf("profiles: cmd: %s\n", cmd.Name))
 		cmd.AllAssociatedValueDescriptors(&vdNames)
 	}
 
@@ -267,13 +226,13 @@ func (p *Profiles) addDevice(d *models.Device) error {
 
 	}
 
-	p.lc.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescs))
+	svc.lc.Debug(fmt.Sprintf("profiles: usedDescriptors: %v\n", usedDescs))
 
 	// ** Resources **
 
 	for _, r := range d.Profile.Resources {
 		profOps := make(map[string][]models.ResourceOperation)
-		p.lc.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", r.Name))
+		svc.lc.Debug(fmt.Sprintf("\nprofiles: resource: %s\n", r.Name))
 
 		profOps["get"] = r.Get
 		profOps["set"] = r.Set
@@ -281,7 +240,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 		name := strings.ToLower(r.Name)
 
 		devOps[name] = profOps
-		p.lc.Debug(fmt.Sprintf("profiles: profOps: %v\n\n", profOps))
+		svc.lc.Debug(fmt.Sprintf("profiles: profOps: %v\n\n", profOps))
 
 		// NOTE - Java uses ArrayList.addAll, which gets rid of duplicates!
 
@@ -290,7 +249,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
-			p.lc.Debug(fmt.Sprintf("profiles: adding Get ro: %v to ops\n", ro))
+			svc.lc.Debug(fmt.Sprintf("profiles: adding Get ro: %v to ops\n", ro))
 			ops = append(ops, ro)
 		}
 
@@ -299,13 +258,13 @@ func (p *Profiles) addDevice(d *models.Device) error {
 			// TODO: note, Resource.Index isn't being set to 1 here...
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=1],
 			//  [operation=get, object=HoldingRegister_8455, property=value, parameter=HoldingRegister_8455, mappings={}, index=null]
-			p.lc.Debug(fmt.Sprintf("profiles: adding Set ro: %v to ops\n", ro))
+			svc.lc.Debug(fmt.Sprintf("profiles: adding Set ro: %v to ops\n", ro))
 			ops = append(ops, ro)
 		}
 	}
 
-	p.lc.Debug(fmt.Sprintf("\n\nprofiles: ops: %v\n\n", ops))
-	p.lc.Debug(fmt.Sprintf("\n\nprofiles: devOps: %v\n\n", devOps))
+	svc.lc.Debug(fmt.Sprintf("\n\nprofiles: ops: %v\n\n", ops))
+	svc.lc.Debug(fmt.Sprintf("\n\nprofiles: devOps: %v\n\n", devOps))
 
 	// put the device's profile objects in the objects map
 	// put the device's profile objects in the commands map if no resource exists
@@ -313,11 +272,11 @@ func (p *Profiles) addDevice(d *models.Device) error {
 	// attributes from DeviceObject.Attributes map directly
 	devObjs := make(map[string]models.DeviceObject)
 
-	p.lc.Debug(fmt.Sprintf("\nprofiles: start-->DeviceResources\n\n"))
+	svc.lc.Debug(fmt.Sprintf("\nprofiles: start-->DeviceResources\n\n"))
 
 	for _, dr := range d.Profile.DeviceResources {
 		value := dr.Properties.Value
-		p.lc.Debug(fmt.Sprintf("profiles: devobject: %v\n", dr))
+		svc.lc.Debug(fmt.Sprintf("profiles: devobject: %v\n", dr))
 
 		devObjs[dr.Name] = dr
 
@@ -329,7 +288,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 		if _, ok := devOps[name]; !ok {
 			rw := strings.ToLower(value.ReadWrite)
 
-			p.lc.Debug(fmt.Sprintf("profiles: couldn't find %s in devOps; rw: %s\n", name, rw))
+			svc.lc.Debug(fmt.Sprintf("profiles: couldn't find %s in devOps; rw: %s\n", name, rw))
 			resOps := make(map[string][]models.ResourceOperation)
 
 			if strings.Contains(rw, "r") {
@@ -344,7 +303,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 				getOp := []models.ResourceOperation{*res}
 				key := strings.ToLower(res.Operation)
 
-				p.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, getOp))
+				svc.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, getOp))
 
 				resOps[key] = getOp
 				ops = append(ops, *res)
@@ -363,7 +322,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 				setOp := []models.ResourceOperation{*res}
 				key := strings.ToLower(res.Operation)
 
-				p.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
+				svc.lc.Debug(fmt.Sprintf("profiles: created new get operation %s: %v\n", key, setOp))
 
 				resOps[key] = setOp
 				ops = append(ops, *res)
@@ -374,9 +333,9 @@ func (p *Profiles) addDevice(d *models.Device) error {
 		}
 	}
 
-	p.lc.Debug(fmt.Sprintf("\nprofiles: done w/devresources\n\n"))
-	p.lc.Debug(fmt.Sprintf("profiles: ops: %v\n\n", ops))
-	p.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", devOps))
+	svc.lc.Debug(fmt.Sprintf("\nprofiles: done w/devresources\n\n"))
+	svc.lc.Debug(fmt.Sprintf("profiles: ops: %v\n\n", ops))
+	svc.lc.Debug(fmt.Sprintf("\n\nprofiles: deviceOps: %v\n\n", devOps))
 
 	p.objects[d.Name] = devObjs
 	p.commands[d.Name] = devOps
@@ -386,11 +345,11 @@ func (p *Profiles) addDevice(d *models.Device) error {
 		var desc *models.ValueDescriptor
 		var devObj *models.DeviceObject
 
-		p.lc.Debug(fmt.Sprintf("profiles: op: %v\n", op))
+		svc.lc.Debug(fmt.Sprintf("profiles: op: %v\n", op))
 
 		// descs is []models.ValueDescriptor
 		for _, v := range descs {
-			p.lc.Debug(fmt.Sprintf("profiles: addDevice: op.Parameter: %s v.Name: %s\n", op.Parameter, v.Name))
+			svc.lc.Debug(fmt.Sprintf("profiles: addDevice: op.Parameter: %s v.Name: %s\n", op.Parameter, v.Name))
 			if op.Parameter == v.Name {
 				desc = &v
 				break
@@ -412,7 +371,7 @@ func (p *Profiles) addDevice(d *models.Device) error {
 			}
 
 			for _, dr := range d.Profile.DeviceResources {
-				p.lc.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s dr.Name: %s\n", op.Object, dr.Name))
+				svc.lc.Debug(fmt.Sprintf("ps: addDevice: op.Object: %s dr.Name: %s\n", op.Object, dr.Name))
 				if op.Object == dr.Name {
 					devObj = &dr
 					break
@@ -433,21 +392,21 @@ func (p *Profiles) addDevice(d *models.Device) error {
 	return nil
 }
 
-func (p *Profiles) updateDevice(d *models.Device) {
+func (p *profileCache) updateDevice(d *models.Device) {
 	p.removeDevice(d)
 	p.addDevice(d)
 }
 
-func (p *Profiles) removeDevice(d *models.Device) {
+func (p *profileCache) removeDevice(d *models.Device) {
 	delete(p.objects, d.Name)
 	delete(p.commands, d.Name)
 }
 
-func (p *Profiles) createDescriptor(name string, devObj models.DeviceObject) *models.ValueDescriptor {
+func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject) *models.ValueDescriptor {
 	value := devObj.Properties.Value
 	units := devObj.Properties.Units
 
-	p.lc.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
+	svc.lc.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
 
 	desc := &models.ValueDescriptor{
 		Name: name,
@@ -461,28 +420,28 @@ func (p *Profiles) createDescriptor(name string, devObj models.DeviceObject) *mo
 		Description:  devObj.Description,
 	}
 
-	id, err := p.vdc.Add(desc)
+	id, err := svc.vdc.Add(desc)
 	if err != nil {
-		p.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor failed: %v\n", err))
+		svc.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor failed: %v\n", err))
 		return nil
 	}
 
 	if !bson.IsObjectIdHex(id) {
 		// TODO: should probably be an assertion?
-		p.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor returned invalid Id: %s\n", id))
+		svc.lc.Error(fmt.Sprintf("profiles: Add ValueDescriptor returned invalid Id: %s\n", id))
 		return nil
 	} else {
 		desc.Id = bson.ObjectIdHex(id)
-		p.lc.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
+		svc.lc.Debug(fmt.Sprintf("profiles: createDescriptor id: %s\n", id))
 	}
 
 	return desc
 }
 
-// UpdateProfile updates the specified device profile in
+// UpdateprofileCache updates the specified device profile in
 // the local cache, as well as updating all devices that
 // in the local cache, and in Core Metadata with the
 // updated profile.
-func (p *Profiles) UpdateProfile(id string) bool {
+func (p *profileCache) UpdateProfile(id string) bool {
 	return true
 }

@@ -35,18 +35,18 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	cmd := vars["command"]
 
 	// TODO - models.Device isn't thread safe currently
-	d := s.cd.DeviceById(id)
+	d := dc.DeviceById(id)
 	if d == nil {
 		// TODO: standardize error message format (use of prefix)
 		msg := fmt.Sprintf("dev: %s not found; %s %s", id, r.Method, r.URL)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
 	}
 
 	if d.AdminState == "LOCKED" {
 		msg := fmt.Sprintf("%s is locked; %s %s", id, r.Method, r.URL)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
@@ -56,19 +56,19 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	// NOTE: as currently implemented, CommandExists checks the existence of a deviceprofile
 	// *resource* name, not a *command* name! A deviceprofile's command section is only used
 	// to trigger valuedescriptor creation.
-	exists, err := s.cp.CommandExists(d.Name, cmd)
+	exists, err := pc.CommandExists(d.Name, cmd)
 
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
 		msg := fmt.Sprintf("internal error; dev: %s not found in cache; %s %s", id, r.Method, r.URL)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
 	if !exists {
 		msg := fmt.Sprintf("%s for dev: %s not found; %s %s", cmd, id, r.Method, r.URL)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusNotFound) // status=404
 		return
 	}
@@ -77,12 +77,12 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		msg := fmt.Sprintf("commandFunc: error reading request body for: %s %s", r.Method, r.URL)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 	}
 
 	if len(body) == 0 && r.Method == http.MethodPut {
 		msg := fmt.Sprintf("no request body provided; %s %s", r.Method, r.URL)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusBadRequest) // status=400
 		return
 	}
@@ -93,7 +93,7 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	s.lc.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
+	svc.lc.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
 	w.WriteHeader(200)
 	io.WriteString(w, "OK")
 
@@ -120,9 +120,9 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	var value = ""
 
 	// make ResourceOperations
-	ops, err := s.cp.GetResourceOperations(d.Name, cmd, method)
+	ops, err := pc.GetResourceOperations(d.Name, cmd, method)
 	if err != nil {
-		s.lc.Error(err.Error())
+		svc.lc.Error(err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound) // status=404
 		return
 	}
@@ -130,23 +130,23 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	if len(ops) > s.c.Device.MaxCmdOps {
 		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
 			s.c.Device.MaxCmdOps, d.Name, cmd, method)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
 	rChan := make(chan *gxds.CommandResult)
-	devObjs := s.cp.GetDeviceObjects(d.Name)
+	devObjs := pc.GetDeviceObjects(d.Name)
 	if devObjs == nil {
 		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
 
 	for _, op := range ops {
 		objName := op.Object
-		s.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
+		svc.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
 		// deviceprofile resource command operation references another resource command
@@ -154,7 +154,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		devObj, ok := devObjs[objName]
 
-		s.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
+		svc.lc.Debug(fmt.Sprintf("deviceObject: %v", devObj))
 		if !ok {
 			msg := fmt.Sprintf("no devobject: %s for dev: %s cmd: %s method: %s", objName, d.Name, cmd, method)
 			http.Error(w, msg, http.StatusInternalServerError) // status=500
@@ -169,13 +169,13 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 	// wait for fixed number of results
 	for count != 0 {
-		s.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
+		svc.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
 		cr := <-rChan
 
 		// TODO: call Transform & pass valuedescriptor; handle overflows...
 
 		// get the device resource associated with the rsp.RO
-		do := s.co.GetDeviceObject(d, cr.RO)
+		do := oc.GetDeviceObject(d, cr.RO)
 
 		// TODO: the Java SDK supports a RO secondary device resource(object).
 		// If defined, then a RO result will generate a reading for the
@@ -189,7 +189,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		// TODO: add caching logic
 
-		s.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
+		svc.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
 
 		count--
 	}
@@ -199,7 +199,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	_, err = s.ec.Add(event)
 	if err != nil {
 		msg := fmt.Sprintf("internal error; failed to push event for dev: %s cmd: %s to CoreData: %s", d.Name, cmd, err)
-		s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
 	}
@@ -215,11 +215,11 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 func (c *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	c.s.lc.Debug(fmt.Sprintf("*commandHandler: ServeHTTP %s url: %v vars: %v", r.Method, r.URL, vars))
+	svc.lc.Debug(fmt.Sprintf("*commandHandler: ServeHTTP %s url: %v vars: %v", r.Method, r.URL, vars))
 	// TODO: use for all endpoints vs. having a StatusHandler, UpdateHandler, ...
 	if c.s.locked {
 		msg := fmt.Sprintf("%s is locked; %s %s", c.s.Name, r.Method, r.URL)
-		c.s.lc.Error(msg)
+		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusLocked) // status=423
 		return
 	}
@@ -228,7 +228,7 @@ func (c *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func initCommand(s *Service) {
-	s.lc.Debug("initCommand called")
+	svc.lc.Debug("initCommand called")
 
 	sr := s.r.PathPrefix("/device").Subrouter()
 	ch := &commandHandler{fn: commandFunc, s: s}

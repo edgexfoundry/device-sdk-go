@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package cache
+package service
 
 import (
 	"bytes"
@@ -12,42 +12,35 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
-	"github.com/tonyespy/gxds"
 )
 
 var (
 	ocOnce  sync.Once
-	objects *Objects
+	oc      *objectCache
 )
 
-// TODO: re-name to 'values'?
-type Objects struct {
-	c             *gxds.Config
+type objectCache struct {
 	objects       map[string]map[string][]string
 	responses     map[string]map[string][]*models.Reading
 	cacheSize     int
 	transformData bool
 	mu            sync.RWMutex
-	lc            logger.LoggingClient
 }
 
-func NewObjects(c *gxds.Config, lc logger.LoggingClient) *Objects {
+func newObjectCache() {
 
 	ocOnce.Do(func() {
-		objects = &Objects{c: c, lc: lc}
+		oc = &objectCache{}
 
-		objects.objects = make(map[string]map[string][]string)
-		objects.responses = make(map[string]map[string][]*models.Reading)
+		oc.objects = make(map[string]map[string][]string)
+		oc.responses = make(map[string]map[string][]*models.Reading)
 	})
-
-	return objects
 }
 
 // GetDeviceObject...
-func (o *Objects) GetDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
+func (o *objectCache) GetDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
 	var devObj models.DeviceObject
-	devObjs := profiles.GetDeviceObjects(d.Name)
+	devObjs := pc.GetDeviceObjects(d.Name)
 
 	if op != nil && devObjs != nil {
 		devObj, ok := devObjs[op.Object]
@@ -56,7 +49,7 @@ func (o *Objects) GetDeviceObject(d *models.Device, op *models.ResourceOperation
 			return nil
 		}
 
-		if profiles.descriptorExists(op.Parameter) {
+		if pc.descriptorExists(op.Parameter) {
 			devObj.Name = op.Parameter
 		}
 	}
@@ -64,17 +57,17 @@ func (o *Objects) GetDeviceObject(d *models.Device, op *models.ResourceOperation
 	return &devObj
 }
 
-func (o *Objects) createObjectList(d *models.Device, op *models.ResourceOperation) []models.DeviceObject {
-	devObjs := profiles.GetDeviceObjects(d.Name)
+func (o *objectCache) createObjectList(d *models.Device, op *models.ResourceOperation) []models.DeviceObject {
+	devObjs := pc.GetDeviceObjects(d.Name)
 	objs := make([]models.DeviceObject, 0, 64)
 
 	if op != nil && devObjs != nil {
 		do := devObjs[op.Object]
 
-		if profiles.descriptorExists(op.Parameter) {
+		if pc.descriptorExists(op.Parameter) {
 			do.Name = op.Parameter
 			objs = append(objs, do)
-		} else if profiles.descriptorExists(do.Name) {
+		} else if pc.descriptorExists(do.Name) {
 			objs = append(objs, do)
 		}
 	}
@@ -82,7 +75,7 @@ func (o *Objects) createObjectList(d *models.Device, op *models.ResourceOperatio
 	return objs
 }
 
-func (o *Objects) transformResult(d *models.Device, op *models.ResourceOperation, do *models.DeviceObject, val string) string {
+func (o *objectCache) transformResult(d *models.Device, op *models.ResourceOperation, do *models.DeviceObject, val string) string {
 	// TODO: implement
 	return val
 }
@@ -96,7 +89,7 @@ func (o *Objects) transformResult(d *models.Device, op *models.ResourceOperation
 //
 // TODO - this probably can get removed, as a caller could just uses
 // the Readings() method instead, and check for an empty list.
-func (o *Objects) ReadingsExist(d *models.Device, op *models.ResourceOperation) bool {
+func (o *objectCache) ReadingsExist(d *models.Device, op *models.ResourceOperation) bool {
 	return false
 }
 
@@ -118,7 +111,7 @@ func buildOpId(objs []models.DeviceObject) string {
 }
 
 // AddReading adds a result from the specified ResourceOperation result to the cache.
-func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val string) []*models.Reading {
+func (o *objectCache) AddReading(d *models.Device, op *models.ResourceOperation, val string) []*models.Reading {
 	if val == "" || val == "{}" {
 		return nil
 	}
@@ -126,7 +119,7 @@ func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val
 	objs := o.createObjectList(d, op)
 	id := d.Id.Hex()
 
-	readings := make([]*models.Reading, 0, o.c.Device.MaxCmdOps)
+	readings := make([]*models.Reading, 0, svc.c.Device.MaxCmdOps)
 
 	for _, do := range objs {
 		result := o.transformResult(d, op, &do, val)
@@ -175,18 +168,18 @@ func (o *Objects) AddReading(d *models.Device, op *models.ResourceOperation, val
 
 // Responses returns a list of readings from the cache for the specified
 // device and ResourceOperation.
-func (o *Objects) Readings(d *models.Device, op *models.ResourceOperation) []models.Reading {
+func (o *objectCache) Readings(d *models.Device, op *models.ResourceOperation) []models.Reading {
 	return nil
 }
 
 // TransformData returns a bool which indicates if data read from a device
 // or sensor should be tranformed before using it to create a reading.
 // TODO: default values comes from Config: DataTransform
-func (o *Objects) TransformData() bool {
+func (o *objectCache) TransformData() bool {
 	return false
 }
 
 // SetTransformData returns a bool which indicates if data read from a device
 // or sensor should be tranformed before using it to create a reading.
-func (o *Objects) SetTransformData(transform bool) {
+func (o *objectCache) SetTransformData(transform bool) {
 }

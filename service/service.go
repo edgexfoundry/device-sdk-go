@@ -44,8 +44,13 @@ const (
 
 	v1Addressable = "/api/v1/addressable"
 	v1Callback    = "/api/v1/callback"
+	v1Device      = "/api/v1/device"
 	v1DevService  = "/api/v1/deviceservice"
 	v1Event       = "/api/v1/event"
+)
+
+var (
+	svc *Service
 )
 
 // A Service listens for requests and routes them to the right command
@@ -57,15 +62,15 @@ type Service struct {
 	initialized  bool
 	locked       bool
 	useRegistry  bool
-	ac           metadata.AddressableClient
-	lc           logger.LoggingClient
-	sc           metadata.DeviceServiceClient
 	ec           coredata.EventClient
+	ac           metadata.AddressableClient
+	dc           metadata.DeviceClient
+	sc           metadata.DeviceServiceClient
+	dpc          metadata.DeviceProfileClient
+	lc           logger.LoggingClient
+	vdc          coredata.ValueDescriptorClient
 	ds           models.DeviceService
 	r            *mux.Router
-	cd           *cache.Devices
-	co           *cache.Objects
-	cp           *cache.Profiles
 	cs           *cache.Schedules
 	cw           *cache.Watchers
 	proto        gxds.ProtocolDriver
@@ -240,13 +245,10 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 
 	done := make(chan struct{})
 
-	s.cp = cache.NewProfiles(s.c, s.lc, s.useRegistry)
 	s.cw = cache.NewWatchers()
-	s.co = cache.NewObjects(s.c, s.lc)
-	s.cd = cache.NewDevices(s.c, s.lc, s.useRegistry)
 	s.cs = cache.NewSchedules(s.c)
 
-	// set up clients
+	// initialize Core Metadata clients
 	metaPort := strconv.Itoa(s.c.Clients[gxds.ClientMetadata].Port)
 	metaHost := s.c.Clients[gxds.ClientMetadata].Host
 	metaAddr := buildAddr(metaHost, metaPort)
@@ -263,10 +265,19 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 
 	s.ac = metadata.NewAddressableClient(params, types.Endpoint{})
 
+	params.Path = v1Device
+	params.Url = metaAddr + params.Path
+	s.dc = metadata.NewDeviceClient(params, types.Endpoint{})
+
 	params.Path = v1DevService
 	params.Url = metaAddr + params.Path
 	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
 
+	params.Path = v1Deviceprofile
+	params.Url = metaAddr + metaPath
+	s.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
+
+	// initialize Core Data clients
 	dataPort := strconv.Itoa(s.c.Clients[gxds.ClientData].Port)
 	dataHost := s.c.Clients[gxds.ClientData].Host
 	dataAddr := buildAddr(dataHost, dataPort)
@@ -279,6 +290,10 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	params.Url = dataURL
 
 	s.ec = coredata.NewEventClient(params, types.Endpoint{})
+
+	params.Path = v1Valuedescriptor
+	params.Url = dataAddr + dataPath
+	s.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
@@ -296,9 +311,10 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		return err
 	}
 
-	// initialize devicestore
-	// TODO: add method to Service to return this...
-	s.cd.Init(s.ds.Service.Id.Hex())
+	// initialize devices, objects & profiles
+	newDeviceCache(s.ds.Service.Id.Hex())
+	newObjectCache()
+	newProfileCache()
 
 	// TODO: initialize scheduler
 
@@ -328,6 +344,12 @@ func (s *Service) Stop() error {
 
 // New Service
 func New(name string, version string, proto gxds.ProtocolDriver) (*Service, error) {
+
+	if svc != nil {
+		err := fmt.Errorf("NewService: service already exists!\n")
+		return nil, err
+	}
+
 	if len(name) == 0 {
 		err := fmt.Errorf("NewService: empty name specified\n")
 		return nil, err
@@ -338,5 +360,7 @@ func New(name string, version string, proto gxds.ProtocolDriver) (*Service, erro
 		return nil, err
 	}
 
-	return &Service{Name: name, Version: version, proto: proto}, nil
+	svc = &Service{Name: name, Version: version, proto: proto}
+
+	return svc, nil
 }
