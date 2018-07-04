@@ -27,15 +27,6 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 	return nil
 }
 
-// Discover triggers protocol specific device discovery, which is
-// a synchronous operation which returns a list of new devices
-// which may be added to the device service based on service
-// configuration. This function may also optionally trigger sensor
-// discovery, which could result in dynamic device profile creation.
-func (s *SimpleDriver) Discover() (devices *interface{}, err error) {
-	return nil, nil
-}
-
 // Initialize performs protocol-specific initialization for the device
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
