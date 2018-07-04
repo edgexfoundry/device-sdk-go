@@ -207,12 +207,10 @@ func buildAddr(host string, port string) string {
 	return buffer.String()
 }
 
-// Initialize the Service
-func (s *Service) Init(useRegistry bool, profile string, confDir string, proto gxds.ProtocolDriver) (err error) {
-	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s proto is: %v\n",
-		useRegistry, profile, confDir, proto)
-
-	// TODO: check if proto is nil, and fail...
+// Start the service
+func (s *Service) Start(useRegistry bool, profile string, confDir string) (err error) {
+	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
+		useRegistry, profile, confDir)
 
 	s.c, err = gxds.LoadConfig(profile, confDir)
 	if err != nil {
@@ -242,7 +240,6 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 
 	done := make(chan struct{})
 
-	s.proto = proto
 	s.cp = cache.NewProfiles(s.c, s.lc, s.useRegistry)
 	s.cw = cache.NewWatchers()
 	s.co = cache.NewObjects(s.c, s.lc)
@@ -317,14 +314,11 @@ func (s *Service) Init(useRegistry bool, profile string, confDir string, proto g
 
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.c.Service.Timeout), "Request timed out")
 
-	return err
-}
-
-// Start the Service
-func (s *Service) Start() {
 	s.lc.Info("*Service Start() called")
 	s.lc.Error(http.ListenAndServe(colon+strconv.Itoa(s.c.Service.Port), s.r).Error())
 	s.lc.Debug("*Service Start() exit")
+
+	return err
 }
 
 // Stop shuts down the Service
@@ -333,7 +327,16 @@ func (s *Service) Stop() error {
 }
 
 // New Service
-// TODO: re-factor to make this a singleton
-func New(name string) (*Service, error) {
-	return &Service{Name: name}, nil
+func New(name string, version string, proto gxds.ProtocolDriver) (*Service, error) {
+	if len(name) == 0 {
+		err := fmt.Errorf("NewService: empty name specified\n")
+		return nil, err
+	}
+
+	if proto == nil {
+		err := fmt.Errorf("NewService: no ProtocolDriver specified\n")
+		return nil, err
+	}
+
+	return &Service{Name: name, Version: version, proto: proto}, nil
 }
