@@ -4,19 +4,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package cache
+package service
 
 import (
-	"sync"
-
-	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	"sync"
 )
 
 type Watchers struct {
 	devices map[string]models.Device
-	ac      metadata.AddressableClient
-	dc      metadata.DeviceClient
 }
 
 var (
@@ -25,7 +21,7 @@ var (
 )
 
 // Create a singleton WatcherCache instance
-func NewWatchers() *Watchers {
+func newWatchers() *Watchers {
 
 	wcOnce.Do(func() {
 		watchers = &Watchers{}
