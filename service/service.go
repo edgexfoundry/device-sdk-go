@@ -14,7 +14,6 @@ package service
 
 import (
 	"github.com/tonyespy/gxds"
-	"github.com/tonyespy/gxds/cache"
 
 	"bytes"
 	"fmt"
@@ -71,8 +70,8 @@ type Service struct {
 	vdc          coredata.ValueDescriptorClient
 	ds           models.DeviceService
 	r            *mux.Router
-	cs           *cache.Schedules
-	cw           *cache.Watchers
+	cs           *Schedules
+	cw           *Watchers
 	proto        gxds.ProtocolDriver
 }
 
@@ -245,8 +244,8 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 
 	done := make(chan struct{})
 
-	s.cw = cache.NewWatchers()
-	s.cs = cache.NewSchedules(s.c)
+	s.cw = newWatchers()
+	s.cs = newSchedules(s.c)
 
 	// initialize Core Metadata clients
 	metaPort := strconv.Itoa(s.c.Clients[gxds.ClientMetadata].Port)

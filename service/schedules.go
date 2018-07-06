@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package cache
+package service
 
 import (
 	"github.com/tonyespy/gxds"
@@ -25,7 +25,7 @@ var (
 )
 
 // Creates a singleton Schedules cache instance.
-func NewSchedules(config *gxds.Config) *Schedules {
+func newSchedules(config *gxds.Config) *Schedules {
 
 	scOnce.Do(func() {
 		schedules = &Schedules{config: config}
