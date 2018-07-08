@@ -20,15 +20,28 @@ Service Operation
 - [consul] if enabled, read config settings from consul
 
   Priority: High
+  Effort: 5d
 
 - [consul] after all dependencies have been verified, and
   initialization finished, register as a service with consul
 
   Priority: High
+  Effort: 2d
 
 - [consul] ensure health mechanism is properly configured/implemented
 
   Priority: High
+  Effort: 1d
+
+- Add top-level service functions to add, remove, and update devices.
+
+  Priority: High
+  Effort: 3-4d
+
+- Add top-level service functions to add, remove, and update device profiles.
+
+  Priority: High
+  Effort: 3-4d
 
 - Validate device profiles during auto-import using a schema with
   constraints (e.g. limits on maximum number of device resources,
@@ -36,51 +49,71 @@ Service Operation
 
   Priority: Medium
 
-Cache
+Devices
 =======
 
-- Review exported code for all cache objects, and if possible, make them
-  use a consistent approach.
+- Implement a new object which encapsulates models.Device, and
+  adds an in-progress mutex so that devices can't be removed
+  while operations are pending.
 
   Priority: High
+  Effort: 3d
 
-- Implement interfaces for each cache type to allow unit testing.
-
-  Priority: High
-
-- Review for thread safety
+- Review thread safety in devices.go
 
   Priority: High
+  Effort: 2d
+
+- Implement a device interface to allow unit testing.
+
+  Priority: High
+  Effort: 2d
+
+- Implement device unit tests
+
+  Priority: High
+  Effort: 3d
+
+Profiles
+========
+
+- Re-factor profiles.go to use a simpler approach (ie. a map
+  of DeviceProfiles vs. a number of derived data structs).
+
+  Priority: High
+  Effort: 5d
+
+- Review thread safety in profiles.go
+
+  Priority: High
+  Effort: 2d
 
 - Review composition of complex data types. Should arrays/maps/slices
   use structs or pointers to structs? If latter, re-factor.
 
   Priority: High
+  Effort: 3-4d
 
 - [profiles] read existing deviceprofiles from metadata before
   importing new profiles. This requires new code to be added
   to DeviceProfileClient to return the list of existing deviceprofiles.
 
   Priority: High
-
-- [profiles] re-factor to use a map of deviceprofile instances,
-  instead of creating derived sub-objects. The existing code creates
-  these derived objects as a result of the addDevice call (made by
-  devices cache), there's no AddProfile method which is needed to
-  support auto-import of deviceprofiles from YAML files.
-
-  Priority: High
+  Effort: 2d
 
 - [profiles] implement size constraints based on settings for both
   local vars and members of the Profile struct.
 
   Priority: Medium
 
-- [objects] remove caching related logic in this code, keeping any
-  for command processing to occur.  It was decided at the Palo Alto
-  f2f that the device service SDKs would perform no caching.
+- [objects] remove code from objects.go and add any code required
+  for command of async readings to other existing source files and/or
+  create a new source file for this miscellaneous code (eg. utils.go).
+  It was decided at the Palo Alto f2f that the device service SDKs
+  would perform no caching.
 
   Priority: High
+  Effort: 2-3d
 
 - [devices] add support for generic init and disconnect functions
   when devices are added or removed from the cache. The code checks
@@ -89,59 +122,70 @@ Cache
   for both which specify the args to pass with the command.
 
   Priority: Medium
-
-REST
-====
-
-- implement response formatting logic
-
-- implement service endpoints:
-  - /discover
-
-  - /debug/*
-
-- implemenent schedule endpoints:
-
-- implement command 'All':
+  Effort: 3-4d
 
 Readings
 ========
 
-- implement transforms: implement transforms for both get & puts
+- Implement assertions, transforms, and mappings.
+
+  Priority: High
+  Effort: 4-5d
+
+- Implement binary encoding of CommandResults.
+
+  Priority: High
+  Effort: 2d
+
+- Impement floating point base64 encoding of CommandResults.
+
+  Priority: High
+  Effort: 2d
+
+- Implement ALL form of GET command endpoint.
+
+  Priority: High
+  Effort: 3-4d
+
+- Implement PUT support for command actuation.
+
+  Priority: High
+  Effort: 5-6d
+
+- Implement unit tests for command endpoint.
+
+  Priority: High
+  Effort: 5-7d
 
 Discovery
 =========
 
-- dynamically create provisionwatcher instances based on
-  configuration settings.
-
-  Priority: Medium
-
-- Re-think whether Scan() should remain part of the ProtocolDriver
-  interface or be split into it's own interface. If we do the latter,
-  then we either need to add a new parameter to service.Init, or we
-  add a function like AddScanHandler.
-
-  Priority: Medium
-
-- implement discovery logic: if discovery endpoint hit, call
+- Implement discovery logic: if discovery endpoint hit, call
   protocoldriver.scan(), process ScanList, and add new devices
   that match any provisionwatchers.
 
-- provisionwatcher init: create default provisionwatchers startup
+  Priority: Medium
+  Effort: 5-7d
+
+- Dynamically create provisionwatcher instances based on
+  configuration settings.
 
   Priority: Medium
+  Effort: 3d
 
 Scheduling
 ==========
 
-- default schecule init: create default schedules & schedule events
+- Default schecule init: create default schedules & schedule events
   on startup.
 
   Priority: High
+  Effort: 3d
 
+Metadata
+========
 
+- Implement callback endpoint to handle device adminState.
 
-
-
-
+  Priority: High
+  Effort: 3d
