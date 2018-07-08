@@ -167,15 +167,22 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		count++
 	}
 
+	var transformsOK bool = true
+
 	// wait for fixed number of results
 	for count != 0 {
 		svc.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
 		cr := <-rChan
 
-		// TODO: call Transform & pass valuedescriptor; handle overflows...
-
 		// get the device resource associated with the rsp.RO
 		do := oc.GetDeviceObject(d, cr.RO)
+
+		ok := cr.TransformResult(do.Properties.Value)
+		if !ok {
+			transformsOK = false
+		}
+
+		// TODO: handle Mappings (part of RO)
 
 		// TODO: the Java SDK supports a RO secondary device resource(object).
 		// If defined, then a RO result will generate a reading for the
@@ -186,8 +193,6 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		reading := cr.Reading(d.Name, do.Name)
 		readings = append(readings, *reading)
-
-		// TODO: add caching logic
 
 		svc.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
 
@@ -202,6 +207,13 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
+	}
+
+	// TODO: the 'all' form of the endpoint returns 200 if a transform
+	// overflow or assertion trips...
+	if !transformsOK {
+		msg := fmt.Sprintf("Transform failed for dev: %s cmd: %s method: %s", d.Name, cmd, method)
+		http.Error(w, msg, http.StatusInternalServerError) // status=500
 	}
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
