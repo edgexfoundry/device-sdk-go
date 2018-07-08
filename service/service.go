@@ -56,6 +56,7 @@ var (
 type Service struct {
 	Name         string
 	Version      string
+	Discovery    gxds.ProtocolDiscovery
 	c            *gxds.Config
 	initAttempts int
 	initialized  bool
