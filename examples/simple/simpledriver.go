@@ -31,10 +31,10 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient) (<-chan struct{}, error) {
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh <-chan *gxds.CommandResult) error {
 	s.lc = lc
 	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
-	return nil, nil
+	return nil
 }
 
 // HandleOperation triggers an asynchronous protocol specific GET or SET operation
@@ -43,7 +43,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient) (<-chan struct{}, err
 // a SET operation, otherwise it should be 'nil'.
 //
 // This function is always called in a new goroutine. The driver is responsible
-// for writing the command result to the send channel.
+// for writing the CommandResults to the send channel.
 //
 // Note - DeviceObject represents a deviceResource defined in deviceprofile.
 //
@@ -56,4 +56,13 @@ func (s *SimpleDriver) HandleOperation(ro *models.ResourceOperation,
 	cr := &gxds.CommandResult{RO: ro, Type: gxds.Bool, BoolResult: true}
 
 	send <- cr
+	close(cr)
+}
+
+// Stop the protocol-specific DS code to shutdown gracefully, or
+// if the force parameter is 'true', immediately. The driver is responsible
+// for closing any in-use channels, including the channel used to send async
+// readings (if supported).
+func (s *SimpleDriver) Stop(force bool) {
+	s.lc.Debug(fmt.Sprintf("Stop called: force=%v", force))
 }

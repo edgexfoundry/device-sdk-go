@@ -54,26 +54,29 @@ var (
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
-	Name         string
-	Version      string
-	Discovery    gxds.ProtocolDiscovery
-	c            *gxds.Config
-	initAttempts int
-	initialized  bool
-	locked       bool
-	useRegistry  bool
-	ec           coredata.EventClient
-	ac           metadata.AddressableClient
-	dc           metadata.DeviceClient
-	sc           metadata.DeviceServiceClient
-	dpc          metadata.DeviceProfileClient
-	lc           logger.LoggingClient
-	vdc          coredata.ValueDescriptorClient
-	ds           models.DeviceService
-	r            *mux.Router
-	cs           *Schedules
-	cw           *Watchers
-	proto        gxds.ProtocolDriver
+	Name          string
+	Version       string
+	Discovery     gxds.ProtocolDiscovery
+	AsyncReadings bool
+	c             *gxds.Config
+	initAttempts  int
+	initialized   bool
+	locked        bool
+	useRegistry   bool
+	stopped       bool
+	ec            coredata.EventClient
+	ac            metadata.AddressableClient
+	dc            metadata.DeviceClient
+	sc            metadata.DeviceServiceClient
+	dpc           metadata.DeviceProfileClient
+	lc            logger.LoggingClient
+	vdc           coredata.ValueDescriptorClient
+	ds            models.DeviceService
+	r             *mux.Router
+	cs            *Schedules
+	cw            *Watchers
+	proto         gxds.ProtocolDriver
+	asyncCh       <-chan *gxds.CommandResult
 }
 
 func (s *Service) attemptInit(done chan<- struct{}) {
@@ -319,7 +322,18 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	// TODO: initialize scheduler
 
 	// initialize driver
-	s.proto.Initialize(s.lc)
+	if s.AsyncReadings {
+		// TODO: make channel buffer size a setting
+		s.asyncCh = make(<-chan *gxds.CommandResult, 16)
+
+		go s.processAsyncResults()
+	}
+
+	err = s.proto.Initialize(s.lc, s.asyncCh)
+	if err != nil {
+		s.lc.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
+		return err
+	}
 
 	// Setup REST API
 	s.r = mux.NewRouter().PathPrefix(apiV1).Subrouter()
@@ -330,6 +344,8 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.c.Service.Timeout), "Request timed out")
 
+	// TODO: call ListenAndServe in a goroutine
+
 	s.lc.Info("*Service Start() called")
 	s.lc.Error(http.ListenAndServe(colon+strconv.Itoa(s.c.Service.Port), s.r).Error())
 	s.lc.Debug("*Service Start() exit")
@@ -338,7 +354,10 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 }
 
 // Stop shuts down the Service
-func (s *Service) Stop() error {
+func (s *Service) Stop(force bool) error {
+
+	s.stopped = true
+	s.proto.Stop(force)
 	return nil
 }
 
