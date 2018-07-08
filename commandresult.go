@@ -404,3 +404,11 @@ func (cr *CommandResult) String() (str string) {
 
 	return
 }
+
+// TransformResult applies transforms specified in the given
+// PropertyValue instance.
+func (cr *CommandResult) TransformResult(models.PropertyValue) bool {
+
+	// TODO: implement base, scale, offset & assertions
+	return true
+}
