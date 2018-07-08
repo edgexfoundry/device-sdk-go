@@ -59,6 +59,10 @@ const (
 )
 
 type CommandResult struct {
+	// DeviceId identifies the device that produced this result.
+	DeviceId string
+	// DeviceName identifies the device that produced this result.
+	DeviceName string
 	// RO is a pointer to the ResourceOperation that triggered the
 	// CommandResult to be returned from the ProtocolDriver instance.
 	RO *models.ResourceOperation

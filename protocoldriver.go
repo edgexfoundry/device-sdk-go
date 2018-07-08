@@ -34,9 +34,9 @@ type ProtocolDriver interface {
 
 	// Initialize performs protocol-specific initialization for the device
 	// service.  If the DS supports asynchronous data pushed from devices/sensors,
-	// then a valid receive' channel must be created and returned, otherwise nil
-	// is returned.
-	Initialize(lc logger.LoggingClient) (out <-chan struct{}, err error)
+	// then a valid receive' channel will be given, otherwise the channel is nil
+	// and must not be used.
+	Initialize(lc logger.LoggingClient, asyncCh <-chan *CommandResult) error
 
 	// HandleOperation triggers an asynchronous protocol specific GET or SET operation
 	// for the specified device. Device profile attributes are passed as part
@@ -44,7 +44,8 @@ type ProtocolDriver interface {
 	// a SET operation, otherwise it should be 'nil'.
 	//
 	// This function is always called in a new goroutine. The driver is responsible
-	// for writing the command result to the send channel.
+	// for writing the CommandResults to the send channel. The driver is also
+	// responsible for closing send channel if/when Stop is called.
 	//
 	// NOTE - the Java-based device-virtual includes an additional parameter called
 	// operations which is used to optimize how virtual resources are saved for SETs.
@@ -55,4 +56,10 @@ type ProtocolDriver interface {
 		desc *models.ValueDescriptor,
 		value string,
 		send chan<- *CommandResult)
+
+	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
+	// if the force parameter is 'true', immediately. The driver is responsible
+	// for closing any in-use channels, including the channel used to send async
+	// readings (if supported).
+	Stop(force bool) error
 }
