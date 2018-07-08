@@ -38,9 +38,9 @@ func newObjectCache() {
 }
 
 // GetDeviceObject...
-func (o *objectCache) GetDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
+func (o *objectCache) GetDeviceObjectByName(name string, op *models.ResourceOperation) *models.DeviceObject {
 	var devObj models.DeviceObject
-	devObjs := pc.GetDeviceObjects(d.Name)
+	devObjs := pc.GetDeviceObjects(name)
 
 	if op != nil && devObjs != nil {
 		devObj, ok := devObjs[op.Object]
@@ -55,6 +55,11 @@ func (o *objectCache) GetDeviceObject(d *models.Device, op *models.ResourceOpera
 	}
 
 	return &devObj
+}
+
+// GetDeviceObject...
+func (o *objectCache) GetDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
+	return oc.GetDeviceObjectByName(d.Name, op)
 }
 
 func (o *objectCache) createObjectList(d *models.Device, op *models.ResourceOperation) []models.DeviceObject {
