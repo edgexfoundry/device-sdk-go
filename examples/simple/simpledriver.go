@@ -56,7 +56,6 @@ func (s *SimpleDriver) HandleOperation(ro *models.ResourceOperation,
 	cr := &gxds.CommandResult{RO: ro, Type: gxds.Bool, BoolResult: true}
 
 	send <- cr
-	close(cr)
 }
 
 // Stop the protocol-specific DS code to shutdown gracefully, or
