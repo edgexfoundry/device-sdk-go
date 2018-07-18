@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package service
+package gxds
 
 import (
 	"fmt"
@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	"github.com/tonyespy/gxds"
 	"gopkg.in/mgo.v2/bson"
 	"gopkg.in/yaml.v2"
 )
@@ -28,7 +27,7 @@ const (
 
 // profileCache is a local cache of devices seeded from Core Metadata.
 type profileCache struct {
-	config *gxds.Config
+	config *Config
 	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation

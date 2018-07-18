@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package service
+package gxds
 
 import (
 	"encoding/json"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"github.com/gorilla/mux"
-	"github.com/tonyespy/gxds"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
@@ -135,7 +134,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		return
 	}
 
-	rChan := make(chan *gxds.CommandResult)
+	rChan := make(chan *CommandResult)
 	devObjs := pc.GetDeviceObjects(d.Name)
 	if devObjs == nil {
 		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)

@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package service
+package gxds
 
 import (
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
