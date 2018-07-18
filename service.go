@@ -10,10 +10,9 @@
 // Clients of this package must provide concrete implementations of the
 // device-specific interfaces (e.g. ProtocolDriver).
 //
-package service
+package gxds
 
 import (
-	"github.com/tonyespy/gxds"
 
 	"bytes"
 	"fmt"
@@ -56,9 +55,9 @@ var (
 type Service struct {
 	Name          string
 	Version       string
-	Discovery     gxds.ProtocolDiscovery
+	Discovery     ProtocolDiscovery
 	AsyncReadings bool
-	c             *gxds.Config
+	c             *Config
 	initAttempts  int
 	initialized   bool
 	locked        bool
@@ -75,8 +74,8 @@ type Service struct {
 	r             *mux.Router
 	cs            *Schedules
 	cw            *Watchers
-	proto         gxds.ProtocolDriver
-	asyncCh       <-chan *gxds.CommandResult
+	proto         ProtocolDriver
+	asyncCh       <-chan *CommandResult
 }
 
 func (s *Service) attemptInit(done chan<- struct{}) {
@@ -183,19 +182,19 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 
 func (s *Service) validateClientConfig() error {
 
-	if len(s.c.Clients[gxds.ClientMetadata].Host) == 0 {
+	if len(s.c.Clients[ClientMetadata].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
 	}
 
-	if s.c.Clients[gxds.ClientMetadata].Port == 0 {
+	if s.c.Clients[ClientMetadata].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
 	}
 
-	if len(s.c.Clients[gxds.ClientData].Host) == 0 {
+	if len(s.c.Clients[ClientData].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
 	}
 
-	if s.c.Clients[gxds.ClientData].Port == 0 {
+	if s.c.Clients[ClientData].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
 	}
 
@@ -220,7 +219,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
 
-	s.c, err = gxds.LoadConfig(profile, confDir)
+	s.c, err = LoadConfig(profile, confDir)
 	if err != nil {
 		s.lc.Error(fmt.Sprintf("error loading config file: %v\n", err))
 		return err
@@ -252,8 +251,8 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	s.cs = newSchedules(s.c)
 
 	// initialize Core Metadata clients
-	metaPort := strconv.Itoa(s.c.Clients[gxds.ClientMetadata].Port)
-	metaHost := s.c.Clients[gxds.ClientMetadata].Host
+	metaPort := strconv.Itoa(s.c.Clients[ClientMetadata].Port)
+	metaHost := s.c.Clients[ClientMetadata].Host
 	metaAddr := buildAddr(metaHost, metaPort)
 	metaPath := v1Addressable
 	metaURL := metaAddr + metaPath
@@ -281,8 +280,8 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	s.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
 
 	// initialize Core Data clients
-	dataPort := strconv.Itoa(s.c.Clients[gxds.ClientData].Port)
-	dataHost := s.c.Clients[gxds.ClientData].Host
+	dataPort := strconv.Itoa(s.c.Clients[ClientData].Port)
+	dataHost := s.c.Clients[ClientData].Host
 	dataAddr := buildAddr(dataHost, dataPort)
 	dataPath := v1Event
 	dataURL := dataAddr + dataPath
@@ -324,7 +323,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	// initialize driver
 	if s.AsyncReadings {
 		// TODO: make channel buffer size a setting
-		s.asyncCh = make(<-chan *gxds.CommandResult, 16)
+		s.asyncCh = make(<-chan *CommandResult, 16)
 
 		go s.processAsyncResults()
 	}
@@ -362,7 +361,7 @@ func (s *Service) Stop(force bool) error {
 }
 
 // New Service
-func New(name string, version string, proto gxds.ProtocolDriver) (*Service, error) {
+func New(name string, version string, proto ProtocolDriver) (*Service, error) {
 
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")

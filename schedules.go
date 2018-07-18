@@ -4,11 +4,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package service
+package gxds
 
 import (
-	"github.com/tonyespy/gxds"
-
 	"sync"
 )
 
@@ -16,7 +14,7 @@ import (
 // usually loaded into Core Metadata, however existing schedules
 // scheduleevents can be used to seed this cache.
 type Schedules struct {
-	config *gxds.Config
+	config *Config
 }
 
 var (
@@ -25,7 +23,7 @@ var (
 )
 
 // Creates a singleton Schedules cache instance.
-func newSchedules(config *gxds.Config) *Schedules {
+func newSchedules(config *Config) *Schedules {
 
 	scOnce.Do(func() {
 		schedules = &Schedules{config: config}
