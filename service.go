@@ -214,7 +214,10 @@ func buildAddr(host string, port string) string {
 	return buffer.String()
 }
 
-// Start the service
+// Start the device service. The bool useRegisty indicates whether the registry
+// should be used to read initial configuration settings. This also controls
+// whether the service registers itself the registry. The profile and confDir
+// are used to locate the local TOML configuration file.
 func (s *Service) Start(useRegistry bool, profile string, confDir string) (err error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
@@ -360,8 +363,9 @@ func (s *Service) Stop(force bool) error {
 	return nil
 }
 
-// New Service
-func New(name string, version string, proto ProtocolDriver) (*Service, error) {
+// NewService create a new device service instance with the given
+// name, version and ProtocolDriver, which cannot be nil.
+func NewService(name string, version string, proto ProtocolDriver) (*Service, error) {
 
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
