@@ -198,6 +198,8 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		count--
 	}
 
+	close(rChan)
+
 	// push to Core Data
 	event := &models.Event{Device: d.Name, Readings: readings}
 	_, err = s.ec.Add(event)
