@@ -16,7 +16,7 @@ import (
 	"syscall"
 
 	"github.com/tonyespy/gxds/examples/simple"
-	"github.com/tonyespy/gxds/service"
+	"github.com/tonyespy/gxds"
 )
 
 const (
@@ -50,7 +50,7 @@ func main() {
 func startService(useRegistry bool, profile string, confDir string) error {
 	sd := simple.SimpleDriver{}
 
-	s, err := service.New(serviceName, serviceVersion, &sd)
+	s, err := gxds.NewService(serviceName, serviceVersion, &sd)
 	if err != nil {
 		return err
 	}
@@ -72,5 +72,5 @@ func startService(useRegistry bool, profile string, confDir string) error {
 		fmt.Fprintf(os.Stderr, "Exiting on %s signal.\n", sig)
 	}
 
-	return s.Stop()
+	return s.Stop(false)
 }
