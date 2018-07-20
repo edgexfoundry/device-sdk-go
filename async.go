@@ -12,6 +12,9 @@ import (
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 )
 
+// processAsyncResults processes readings that are pushed from
+// a DS implementation. Each is reading is optionally transformed
+// before being pushed to Core Data.
 func (s *Service) processAsyncResults() {
 	for !s.stopped {
 		readings := make([]models.Reading, 0, s.c.Device.MaxCmdOps)
