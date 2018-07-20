@@ -1,7 +1,9 @@
 package: github.com/tonyespy/gxds
 import:
 - package: github.com/edgexfoundry/edgex-go
-  version: california
+  repo: git@github.com:tonyespy/edgex-go.git
+  vcs: git
+  version: cali-gxds
   subpackages:
   - /core/domain/models
   - /core/clients/coredata
