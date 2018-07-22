@@ -279,7 +279,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
 
 	params.Path = v1Deviceprofile
-	params.Url = metaAddr + metaPath
+	params.Url = metaAddr + params.Path
 	s.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
 
 	// initialize Core Data clients
