@@ -40,6 +40,17 @@ var (
 	pc       *profileCache
 )
 
+
+func findProfile(name string, profiles []models.DeviceProfile) (found bool) {
+	for _, prof := range profiles {
+		if prof.Name == name {
+			found = true
+		}
+	}
+
+	return
+}
+
 func loadProfiles(path string) {
 	if path == "" {
 		path = "./res"
@@ -48,6 +59,12 @@ func loadProfiles(path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		svc.lc.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v\n", path, err))
+		return
+	}
+
+	profiles, err := svc.dpc.DeviceProfiles()
+	if err != nil {
+		svc.lc.Error(fmt.Sprintf("profiles: couldn't read device profiles from Core Metadata: %v\n", err))
 		return
 	}
 
@@ -74,6 +91,12 @@ func loadProfiles(path string) {
 				svc.lc.Error(fmt.Sprintf("profiles: invalid deviceprofile: %s; %v\n", name, err))
 			}
 
+			// if profile already exists in metadata, skip it
+			// TODO: optimize by making profiles a map
+			if findProfile(profile.Name, profiles) {
+				continue
+			}
+
 			// add profile to metadata
 			id, err := svc.dpc.Add(&profile)
 			if err != nil {
@@ -87,14 +110,6 @@ func loadProfiles(path string) {
 			}
 
 			profile.Id = bson.ObjectIdHex(id)
-
-			// TODO:
-			// - don't add to map here; query metadata for entire list
-			//   first, then only add profile if it doesn't already exist.
-			//   This requires new code to be added to DeviceProfileClient
-			//   to return the list of existing deviceprofiles.
-			// - re-work the rest of the code to use profiles
-
 			pc.profiles[profile.Name] = profile
 		}
 	}
