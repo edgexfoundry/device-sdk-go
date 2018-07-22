@@ -55,7 +55,7 @@ func newDeviceCache(serviceId string) error {
 			}
 
 			md.OperatingState = models.OperatingState("DISABLED")
-			dc.Add(&md)
+			dc.add(&md)
 		}
 
 		// TODO: call Protocol.initialize
@@ -65,10 +65,15 @@ func newDeviceCache(serviceId string) error {
 	return retval
 }
 
-// Add a new device to the cache. This method is used to populate the
+// AddDevice adds a new device to the device service.
+func (s *Service) AddDevice(dev models.Device) error {
+	return dc.add(&dev)
+}
+
+// Adds a new device to the cache. This method is used to populate the
 // devices cache with pre-existing devices from Core Metadata, as well
 // as create new devices returned in a ScanList during discovery.
-func (d *deviceCache) Add(dev *models.Device) error {
+func (d *deviceCache) add(dev *models.Device) error {
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[dev.Name]; ok {
