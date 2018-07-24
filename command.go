@@ -135,7 +135,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	}
 
 	rChan := make(chan *CommandResult)
-	devObjs := pc.GetDeviceObjects(d.Name)
+	devObjs := pc.getDeviceObjects(d.Name)
 	if devObjs == nil {
 		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
 		svc.lc.Error(msg)
@@ -174,7 +174,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		cr := <-rChan
 
 		// get the device resource associated with the rsp.RO
-		do := oc.GetDeviceObject(d, cr.RO)
+		do := pc.getDeviceObject(d, cr.RO)
 
 		ok := cr.TransformResult(do.Properties.Value)
 		if !ok {

@@ -319,7 +319,6 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	// initialize devices, objects & profiles
 	newProfileCache()
 	newDeviceCache(s.ds.Service.Id.Hex())
-	newObjectCache()
 
 	// TODO: initialize scheduler
 

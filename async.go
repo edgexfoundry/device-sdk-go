@@ -21,7 +21,7 @@ func (s *Service) processAsyncResults() {
 		cr := <-s.asyncCh
 
 		// get the device resource associated with the rsp.RO
-		do := oc.GetDeviceObjectByName(cr.DeviceName, cr.RO)
+		do := pc.getDeviceObjectByName(cr.DeviceName, cr.RO)
 
 		_ = cr.TransformResult(do.Properties.Value)
 
