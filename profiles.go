@@ -146,10 +146,35 @@ func (p *profileCache) descriptorExists(name string) bool {
 	return exists
 }
 
-// GetDeviceObjects returns a map of object names to DeviceObject instances.
-func (p *profileCache) GetDeviceObjects(devName string) map[string]models.DeviceObject {
+// getDeviceObjects returns a map of object names to DeviceObject instances.
+func (p *profileCache) getDeviceObjects(devName string) map[string]models.DeviceObject {
 	devObjs := p.objects[devName]
 	return devObjs
+}
+
+// getDeviceObject...
+func (p *profileCache) getDeviceObjectByName(devName string, op *models.ResourceOperation) *models.DeviceObject {
+	var devObj models.DeviceObject
+	devObjs := p.getDeviceObjects(devName)
+
+	if op != nil && devObjs != nil {
+		devObj, ok := devObjs[op.Object]
+
+		if !ok {
+			return nil
+		}
+
+		if pc.descriptorExists(op.Parameter) {
+			devObj.Name = op.Parameter
+		}
+	}
+
+	return &devObj
+}
+
+// getDeviceObject...
+func (p *profileCache) getDeviceObject(d *models.Device, op *models.ResourceOperation) *models.DeviceObject {
+	return pc.getDeviceObjectByName(d.Name, op)
 }
 
 // CommandExists returns a bool indicating whether the specified command exists for the
