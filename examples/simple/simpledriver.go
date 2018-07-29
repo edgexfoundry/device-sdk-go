@@ -14,7 +14,7 @@ import (
 
 	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
-	"github.com/tonyespy/gxds"
+	device "github.com/edgexfoundry/device-sdk-go"
 )
 
 type SimpleDriver struct {
