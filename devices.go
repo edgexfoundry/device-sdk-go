@@ -8,7 +8,7 @@
 // objects that may be distributed across one or more EdgeX
 // core microservices.
 //
-package gxds
+package device
 
 import (
 	"fmt"

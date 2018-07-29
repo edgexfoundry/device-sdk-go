@@ -10,7 +10,7 @@
 // Clients of this package must provide concrete implementations of the
 // device-specific interfaces (e.g. ProtocolDriver).
 //
-package gxds
+package device
 
 import (
 

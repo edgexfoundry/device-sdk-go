@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package gxds
+package device
 
 // ProtocolDiscovery is a low-level device-specific interface implemented
 // by device services that support dynamic device discovery.
