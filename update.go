@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 func callbackHandler(w http.ResponseWriter, req *http.Request) {

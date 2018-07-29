@@ -2,10 +2,10 @@ package: github.com/tonyespy/gxds
 import:
 - package: github.com/edgexfoundry/edgex-go
   subpackages:
-  - /core/domain/models
-  - /core/clients/coredata
-  - /core/clients/metadata
-  - /support/logging-client
+  - /pkg/models
+  - /pkg/clients/coredata
+  - /pkg/clients/metadata
+  - /pkg/clients/logging
 - package: github.com/gorilla/mux
 - package: github.com/hashicorp/consul
   subpackages:

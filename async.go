@@ -9,7 +9,7 @@ package gxds
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/edgex-go/core/domain/models"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 // processAsyncResults processes readings that are pushed from

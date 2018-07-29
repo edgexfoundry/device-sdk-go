@@ -16,7 +16,7 @@ import (
 	// TODO: imports commented out till cache objects become interfaces
 	//	"time"
 
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	//	"github.com/edgexfoundry/edgex-go/core/domain/models"
 	"github.com/gorilla/mux"
 	//	"gopkg.in/mgo.v2/bson"

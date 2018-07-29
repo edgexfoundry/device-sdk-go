@@ -21,11 +21,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgexfoundry/edgex-go/core/clients/coredata"
-	"github.com/edgexfoundry/edgex-go/core/clients/metadata"
-	"github.com/edgexfoundry/edgex-go/core/clients/types"
-	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/gorilla/mux"
 
 	"gopkg.in/mgo.v2/bson"

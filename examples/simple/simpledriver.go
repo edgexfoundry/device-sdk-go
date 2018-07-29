@@ -12,8 +12,8 @@ package simple
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/tonyespy/gxds"
 )
 

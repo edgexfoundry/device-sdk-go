@@ -11,8 +11,8 @@
 package gxds
 
 import (
-	"github.com/edgexfoundry/edgex-go/core/domain/models"
-	logger "github.com/edgexfoundry/edgex-go/support/logging-client"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 )
 
 // ProtocolDriver is a low-level device-specific interface used by
