@@ -451,8 +451,7 @@ func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject)
 		Name: name,
 		Min:  value.Minimum,
 		Max:  value.Maximum,
-		// TODO: fix this --> IoTType.valueOf(value.getType().substring(0,1))
-		Type:         "0",
+		Type:         value.getType(),
 		UomLabel:     units.DefaultValue,
 		DefaultValue: value.DefaultValue,
 		Formatting:   "%s",
