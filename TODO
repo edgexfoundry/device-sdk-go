@@ -1,0 +1,191 @@
+Background
+==========
+
+Format of this file borrowed from the bluez project.
+
+Global
+======
+
+- review package structure; compare to edgex-go
+
+  Priority: High
+
+- decide on top-level package name; choices include deviceservice[-go] or device[-go]
+
+  Priority: High
+
+Service Operation
+=================
+
+- [consul] if enabled, read config settings from consul
+
+  Priority: High
+  Effort: 5d
+
+- [consul] after all dependencies have been verified, and
+  initialization finished, register as a service with consul
+
+  Priority: High
+  Effort: 2d
+
+- [consul] ensure health mechanism is properly configured/implemented
+
+  Priority: High
+  Effort: 1d
+
+- Add top-level service functions to add, remove, and update devices.
+
+  Priority: High
+  Effort: 3-4d
+
+- Add top-level service functions to add, remove, and update device profiles.
+
+  Priority: High
+  Effort: 3-4d
+
+- Validate device profiles during auto-import using a schema with
+  constraints (e.g. limits on maximum number of device resources,
+  commands, ...).
+
+  Priority: Medium
+
+Devices
+=======
+
+- Implement a new object which encapsulates models.Device, and
+  adds an in-progress mutex so that devices can't be removed
+  while operations are pending.
+
+  Priority: High
+  Effort: 3d
+
+- Review thread safety in devices.go
+
+  Priority: High
+  Effort: 2d
+
+- Implement a device interface to allow unit testing.
+
+  Priority: High
+  Effort: 2d
+
+- Implement device unit tests
+
+  Priority: High
+  Effort: 3d
+
+Profiles
+========
+
+- Re-factor profiles.go to use a simpler approach (ie. a map
+  of DeviceProfiles vs. a number of derived data structs).
+
+  Priority: High
+  Effort: 5d
+
+- Review thread safety in profiles.go
+
+  Priority: High
+  Effort: 2d
+
+- Review composition of complex data types. Should arrays/maps/slices
+  use structs or pointers to structs? If latter, re-factor.
+
+  Priority: High
+  Effort: 3-4d
+
+- [profiles] read existing deviceprofiles from metadata before
+  importing new profiles. This requires new code to be added
+  to DeviceProfileClient to return the list of existing deviceprofiles.
+
+  Priority: High
+  Effort: 2d
+
+- [profiles] implement size constraints based on settings for both
+  local vars and members of the Profile struct.
+
+  Priority: Medium
+
+- [objects] remove code from objects.go and add any code required
+  for command of async readings to other existing source files and/or
+  create a new source file for this miscellaneous code (eg. utils.go).
+  It was decided at the Palo Alto f2f that the device service SDKs
+  would perform no caching.
+
+  Priority: High
+  Effort: 2-3d
+
+- [devices] add support for generic init and disconnect functions
+  when devices are added or removed from the cache. The code checks
+  for presence of device commands specified by the configuration
+  settings DeviceInitCmd and DeviceRemoveCmd. There also are settings
+  for both which specify the args to pass with the command.
+
+  Priority: Medium
+  Effort: 3-4d
+
+Readings
+========
+
+- Implement assertions, transforms, and mappings.
+
+  Priority: High
+  Effort: 4-5d
+
+- Implement binary encoding of CommandResults.
+
+  Priority: High
+  Effort: 2d
+
+- Impement floating point base64 encoding of CommandResults.
+
+  Priority: High
+  Effort: 2d
+
+- Implement ALL form of GET command endpoint.
+
+  Priority: High
+  Effort: 3-4d
+
+- Implement PUT support for command actuation.
+
+  Priority: High
+  Effort: 5-6d
+
+- Implement unit tests for command endpoint.
+
+  Priority: High
+  Effort: 5-7d
+
+Discovery
+=========
+
+- Implement discovery logic: if discovery endpoint hit, call
+  protocoldriver.scan(), process ScanList, and add new devices
+  that match any provisionwatchers.
+
+  Priority: Medium
+  Effort: 5-7d
+
+- Dynamically create provisionwatcher instances based on
+  configuration settings.
+
+  Priority: Medium
+  Effort: 3d
+
+Scheduling
+==========
+
+- Default schecule init: create default schedules & schedule events
+  on startup.
+
+  Priority: High
+  Effort: 3d
+
+Metadata
+========
+
+- Implement callback endpoint to handle device adminState.
+
+  Priority: High
+  Effort: 3d

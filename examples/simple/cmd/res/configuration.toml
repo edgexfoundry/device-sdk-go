@@ -1,0 +1,38 @@
+[Service]
+Host = "localhost"
+Port = 49990
+ConnectRetries = 3
+HealthCheck = ""
+Labels = []
+OpenMsg = "device simple started"
+ReadMaxLimit = 256
+Timeout = 5000
+
+[Registry]
+Host = "localhost"
+Port = 8500
+
+[Clients]
+  [Clients.Data]
+  Host = "localhost"
+  Port = 48080
+
+  [Clients.Metadata]
+  Host = "localhost"
+  Port = 48081
+
+[Device]
+  DataTransform = true
+  InitCmd = ""
+  InitCmdArgs = ""
+  MaxCmdOps = 128
+  MaxCmdValueLen = 256
+  RemoveCmd = ""
+  RemoveCmdArgs = ""
+  ProfilesDir = ""
+  SendReadingsOnChanged = true
+
+[Logging]
+RemoteURL = ''
+File = "./device-simple.log"
+

@@ -1,0 +1,17 @@
+package: github.com/edgexfoundry/device-sdk-go
+import:
+- package: github.com/edgexfoundry/edgex-go
+  subpackages:
+  - /pkg/models
+  - /pkg/clients/coredata
+  - /pkg/clients/metadata
+  - /pkg/clients/logging
+- package: github.com/gorilla/mux
+- package: github.com/hashicorp/consul
+  subpackages:
+  - api
+- package: github.com/BurntSushi/toml
+- package: gopkg.in/mgo.v2
+  subpackages:
+  - bson
+- package: gopkg.in/yaml.v2
