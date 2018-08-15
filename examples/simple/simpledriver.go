@@ -31,7 +31,7 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh <-chan *gxds.CommandResult) error {
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh <-chan *device.CommandResult) error {
 	s.lc = lc
 	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
 	return nil
@@ -49,11 +49,11 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh <-chan *gxds.
 //
 func (s *SimpleDriver) HandleOperation(ro *models.ResourceOperation,
 	d *models.Device, do *models.DeviceObject, desc *models.ValueDescriptor,
-	value string, send chan<- *gxds.CommandResult) {
+	value string, send chan<- *device.CommandResult) {
 
 	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", d.Name, ro.Operation, do.Attributes))
 
-	cr := &gxds.CommandResult{RO: ro, Type: gxds.Bool, BoolResult: true}
+	cr := &device.CommandResult{RO: ro, Type: device.Bool, BoolResult: true}
 
 	send <- cr
 }

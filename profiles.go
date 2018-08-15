@@ -451,7 +451,7 @@ func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject)
 		Name: name,
 		Min:  value.Minimum,
 		Max:  value.Maximum,
-		Type:         value.getType(),
+		Type:         value.Type,
 		UomLabel:     units.DefaultValue,
 		DefaultValue: value.DefaultValue,
 		Formatting:   "%s",

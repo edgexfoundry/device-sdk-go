@@ -50,7 +50,7 @@ func main() {
 func startService(useRegistry bool, profile string, confDir string) error {
 	sd := simple.SimpleDriver{}
 
-	s, err := gxds.NewService(serviceName, serviceVersion, &sd)
+	s, err := device.NewService(serviceName, serviceVersion, &sd)
 	if err != nil {
 		return err
 	}
