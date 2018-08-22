@@ -21,13 +21,13 @@ import (
 
 // deviceCache is a local cache of devices seeded from Core Metadata.
 type deviceCache struct {
-	devices     map[string]*models.Device
-	names       map[string]string
+	devices map[string]*models.Device
+	names   map[string]string
 }
 
 var (
-	dcOnce  sync.Once
-	dc      *deviceCache
+	dcOnce sync.Once
+	dc     *deviceCache
 )
 
 // Creates a singleton deviceCache instance.
