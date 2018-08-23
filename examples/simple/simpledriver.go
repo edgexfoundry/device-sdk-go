@@ -12,9 +12,9 @@ package simple
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/edgex-go/pkg/models"
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	device "github.com/edgexfoundry/device-sdk-go"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 type SimpleDriver struct {

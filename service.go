@@ -13,7 +13,6 @@
 package device
 
 import (
-
 	"bytes"
 	"fmt"
 	"net/http"
@@ -22,10 +21,10 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
+	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/gorilla/mux"
 
 	"gopkg.in/mgo.v2/bson"

@@ -36,10 +36,9 @@ type profileCache struct {
 }
 
 var (
-	pcOnce   sync.Once
-	pc       *profileCache
+	pcOnce sync.Once
+	pc     *profileCache
 )
-
 
 func findProfile(name string, profiles []models.DeviceProfile) (found bool) {
 	for _, prof := range profiles {
@@ -448,9 +447,9 @@ func (p *profileCache) createDescriptor(name string, devObj models.DeviceObject)
 	svc.lc.Debug(fmt.Sprintf("ps: createDescriptor: %v value: %v units: %s\n", name, value, units))
 
 	desc := &models.ValueDescriptor{
-		Name: name,
-		Min:  value.Minimum,
-		Max:  value.Maximum,
+		Name:         name,
+		Min:          value.Minimum,
+		Max:          value.Maximum,
 		Type:         value.Type,
 		UomLabel:     units.DefaultValue,
 		DefaultValue: value.DefaultValue,
