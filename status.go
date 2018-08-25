@@ -15,6 +15,6 @@ func statusHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "pong")
 }
 
-func initStatus(s *Service) {
-	s.r.HandleFunc("/ping", statusHandler)
+func initStatus() {
+	svc.r.HandleFunc("/ping", statusHandler)
 }

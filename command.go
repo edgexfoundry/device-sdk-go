@@ -19,19 +19,17 @@ import (
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-
-// common for all REST APIs?
-type handlerFunc func(s *Service, w http.ResponseWriter, r *http.Request)
-
-type commandHandler struct {
-	fn handlerFunc
-	s  *Service
-}
-
-func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
+func commandFunc(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	cmd := vars["command"]
+
+	if svc.locked {
+		msg := fmt.Sprintf("%s is locked; %s %s", svc.Name, r.Method, r.URL)
+		svc.lc.Error(msg)
+		http.Error(w, msg, http.StatusLocked) // status=423
+		return
+	}
 
 	// TODO - models.Device isn't thread safe currently
 	d := dc.DeviceById(id)
@@ -86,13 +84,21 @@ func commandFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	executeCommand(s, w, d, cmd, r.Method, string(body))
+	executeCommand(w, d, cmd, r.Method, string(body))
 }
 
-func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
+func commandAllFunc(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	svc.lc.Debug(fmt.Sprintf("cmd: dev: all cmd: %s", vars["command"]))
+
+	if svc.locked {
+		msg := fmt.Sprintf("%s is locked; %s %s", svc.Name, r.Method, r.URL)
+		svc.lc.Error(msg)
+		http.Error(w, msg, http.StatusLocked) // status=423
+		return
+	}
+
 	w.WriteHeader(200)
 	io.WriteString(w, "OK")
 
@@ -111,9 +117,9 @@ func commandAllFunc(s *Service, w http.ResponseWriter, r *http.Request) {
 	//      - formats reading(s) into an event, sends to core-data, return result
 }
 
-func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
+func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
 	var count int
-	readings := make([]models.Reading, 0, s.c.Device.MaxCmdOps)
+	readings := make([]models.Reading, 0, svc.c.Device.MaxCmdOps)
 
 	// TODO: add support for PUT/SET commands
 	var value = ""
@@ -126,9 +132,9 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 		return
 	}
 
-	if len(ops) > s.c.Device.MaxCmdOps {
+	if len(ops) > svc.c.Device.MaxCmdOps {
 		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
-			s.c.Device.MaxCmdOps, d.Name, cmd, method)
+			svc.c.Device.MaxCmdOps, d.Name, cmd, method)
 		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
@@ -162,7 +168,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 		// TODO: lookup valuedescriptor & pass to HandleOperation
 
-		go s.proto.HandleOperation(&op, d, &devObj, nil, value, rChan)
+		go svc.proto.HandleOperation(&op, d, &devObj, nil, value, rChan)
 		count++
 	}
 
@@ -202,7 +208,7 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 
 	// push to Core Data
 	event := &models.Event{Device: d.Name, Readings: readings}
-	_, err = s.ec.Add(event)
+	_, err = svc.ec.Add(event)
 	if err != nil {
 		msg := fmt.Sprintf("internal error; failed to push event for dev: %s cmd: %s to CoreData: %s", d.Name, cmd, err)
 		svc.lc.Error(msg)
@@ -225,28 +231,10 @@ func executeCommand(s *Service, w http.ResponseWriter, d *models.Device, cmd str
 	json.NewEncoder(w).Encode(event)
 }
 
-func (c *commandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-
-	svc.lc.Debug(fmt.Sprintf("*commandHandler: ServeHTTP %s url: %v vars: %v", r.Method, r.URL, vars))
-	// TODO: use for all endpoints vs. having a StatusHandler, UpdateHandler, ...
-	if c.s.locked {
-		msg := fmt.Sprintf("%s is locked; %s %s", c.s.Name, r.Method, r.URL)
-		svc.lc.Error(msg)
-		http.Error(w, msg, http.StatusLocked) // status=423
-		return
-	}
-
-	c.fn(c.s, w, r)
-}
-
-func initCommand(s *Service) {
+func initCommand() {
 	svc.lc.Debug("initCommand called")
 
-	sr := s.r.PathPrefix("/device").Subrouter()
-	ch := &commandHandler{fn: commandFunc, s: s}
-	sr.Handle("/{id}/{command}", ch).Methods(http.MethodGet, http.MethodPut)
-
-	ch = &commandHandler{fn: commandAllFunc, s: s}
-	sr.Handle("/all/{command}", ch).Methods(http.MethodGet, http.MethodPut)
+	sr := svc.r.PathPrefix("/device").Subrouter()
+	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
+	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
 }

@@ -36,6 +36,6 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "OK")
 }
 
-func initUpdate(s *Service) {
-	s.r.HandleFunc("callback", callbackHandler)
+func initUpdate() {
+	svc.r.HandleFunc("callback", callbackHandler)
 }
