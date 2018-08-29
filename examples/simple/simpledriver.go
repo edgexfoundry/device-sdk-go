@@ -31,7 +31,7 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh <-chan *device.CommandResult) error {
+func (s *SimpleDriver) Initialize(svc *device.Service, lc logger.LoggingClient, asyncCh <-chan *device.CommandResult) error {
 	s.lc = lc
 	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
 	return nil

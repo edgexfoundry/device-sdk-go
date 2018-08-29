@@ -33,10 +33,9 @@ type ProtocolDriver interface {
 	DisconnectDevice(address *models.Addressable) error
 
 	// Initialize performs protocol-specific initialization for the device
-	// service.  If the DS supports asynchronous data pushed from devices/sensors,
-	// then a valid receive' channel will be given, otherwise the channel is nil
-	// and must not be used.
-	Initialize(lc logger.LoggingClient, asyncCh <-chan *CommandResult) error
+	// service. The given *CommandResult channel can be used to push asynchronous
+	// events and readings to Core Data.
+	Initialize(s *Service, lc logger.LoggingClient, asyncCh <-chan *CommandResult) error
 
 	// HandleCommands passes a slice of CommandRequest structs each representing
 	// a ResourceOperation for a specific device resource (aka DeviceObject).
