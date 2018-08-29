@@ -23,8 +23,11 @@ import (
 	//	"gopkg.in/mgo.v2/bson"
 )
 
-const deviceCommandTest = "device-command-test"
-const testCmd = "TestCmd"
+const (
+	badDeviceId       = "5abae51de23bf81c9ef0f390"
+	deviceCommandTest = "device-command-test"
+	testCmd           = "TestCmd"
+)
 
 func TestMain(m *testing.M) {
 	lc := logger.NewClient("command_test", false, "./command_test.log")
@@ -62,7 +65,6 @@ func TestCommandServiceLocked(t *testing.T) {
 func TestCommandNoDevice(t *testing.T) {
 	reset()
 
-	badDeviceId := "5abae51de23bf81c9ef0f390"
 	newDeviceCache("fakeID")
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", v1Device, badDeviceId, testCmd), nil)
@@ -139,5 +141,5 @@ func TestCommandDeviceLocked(t *testing.T) {
 
 // reset re-initializes dependencies for each test
 func reset() {
-     svc.locked = false
+	svc.locked = false
 }
