@@ -77,14 +77,14 @@ type Service struct {
 	asyncCh       <-chan *CommandResult
 }
 
-func (s *Service) attemptInit(done chan<- struct{}) {
+func attemptInit(done chan<- struct{}) {
 	defer func() { done <- struct{}{} }()
 
-	s.lc.Debug("Trying to find ds: " + s.Name)
+	svc.lc.Debug("Trying to find ds: " + svc.Name)
 
-	ds, err := s.sc.DeviceServiceForName(s.Name)
+	ds, err := svc.sc.DeviceServiceForName(svc.Name)
 	if err != nil {
-		s.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
+		svc.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 
 		// TODO: restore if/when the issue with detecting 'not-found'
 		// is resolves.  Otherwise, just log errors and move on.
@@ -93,18 +93,18 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		// return
 	}
 
-	s.lc.Debug("DeviceServiceForName returned: " + ds.Service.Name)
-	s.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
+	svc.lc.Debug("DeviceServiceForName returned: " + ds.Service.Name)
+	svc.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
 
 	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Service.Name != s.Name {
-		s.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d", s.Name, s.initAttempts))
+	if ds.Service.Name != svc.Name {
+		svc.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d", svc.Name, svc.initAttempts))
 
 		// check for addressable
-		s.lc.Error(fmt.Sprintf("Trying to find addressable for: %s", s.Name))
-		addr, err := s.ac.AddressableForName(s.Name)
+		svc.lc.Error(fmt.Sprintf("Trying to find addressable for: %s", svc.Name))
+		addr, err := svc.ac.AddressableForName(svc.Name)
 		if err != nil {
-			s.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", s.Name, err))
+			svc.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", svc.Name, err))
 
 			// don't quit, but instead try to create addressable & service
 		}
@@ -112,41 +112,40 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
 
 		// TODO: same as above
-		if addr.Name != s.Name {
+		if addr.Name != svc.Name {
 			addr = models.Addressable{
 				BaseObject: models.BaseObject{
 					Origin: millis,
 				},
-				Name:       s.Name,
+				Name:       svc.Name,
 				HTTPMethod: http.MethodPost,
 				Protocol:   httpProto,
-				Address:    s.c.Service.Host,
-				Port:       s.c.Service.Port,
+				Address:    svc.c.Service.Host,
+				Port:       svc.c.Service.Port,
 				Path:       v1Callback,
 			}
 			addr.Origin = millis
 
-			// use s.clientService to register Addressable
-			id, err := s.ac.Add(&addr)
+			id, err := svc.ac.Add(&addr)
 			if err != nil {
-				s.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v", s.Name, err))
+				svc.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v", svc.Name, err))
 				return
 			}
 
 			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				s.lc.Error("Add addressable returned invalid Id: " + id)
+				svc.lc.Error("Add addressable returned invalid Id: " + id)
 				return
 			}
 
 			addr.Id = bson.ObjectIdHex(id)
-			s.lc.Error("New addressable Id: " + addr.Id.Hex())
+			svc.lc.Error("New addressable Id: " + addr.Id.Hex())
 		}
 
 		// setup the service
 		ds = models.DeviceService{
 			Service: models.Service{
-				Name:           s.Name,
-				Labels:         s.c.Service.Labels,
+				Name:           svc.Name,
+				Labels:         svc.c.Service.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
@@ -154,46 +153,46 @@ func (s *Service) attemptInit(done chan<- struct{}) {
 		}
 
 		ds.Service.Origin = millis
-		id, err := s.sc.Add(&ds)
+		id, err := svc.sc.Add(&ds)
 		if err != nil {
-			s.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.Name, err))
+			svc.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", svc.Name, err))
 			return
 		}
 
 		if len(id) != 24 || !bson.IsObjectIdHex(id) {
-			s.lc.Error("Add deviceservice returned invalid Id: %s", id)
+			svc.lc.Error("Add deviceservice returned invalid Id: %s", id)
 			return
 		}
 
 		// NOTE - this differs from Addressable and Device objects,
 		// neither of which require the '.Service'prefix
 		ds.Service.Id = bson.ObjectIdHex(id)
-		s.lc.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
+		svc.lc.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
 
-		s.initialized = true
-		s.ds = ds
+		svc.initialized = true
+		svc.ds = ds
 	} else {
-		s.lc.Debug(fmt.Sprintf("Found ds.Name: %s, s.Name: %s", ds.Service.Name, s.Name))
-		s.initialized = true
-		s.ds = ds
+		svc.lc.Debug(fmt.Sprintf("Found ds.Name: %s, svc.Name: %s", ds.Service.Name, svc.Name))
+		svc.initialized = true
+		svc.ds = ds
 	}
 }
 
-func (s *Service) validateClientConfig() error {
+func validateClientConfig() error {
 
-	if len(s.c.Clients[ClientMetadata].Host) == 0 {
+	if len(svc.c.Clients[ClientMetadata].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
 	}
 
-	if s.c.Clients[ClientMetadata].Port == 0 {
+	if svc.c.Clients[ClientMetadata].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
 	}
 
-	if len(s.c.Clients[ClientData].Host) == 0 {
+	if len(svc.c.Clients[ClientData].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
 	}
 
-	if s.c.Clients[ClientData].Port == 0 {
+	if svc.c.Clients[ClientData].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
 	}
 
@@ -230,7 +229,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	// TODO: add useRegistry logic
 
 	// TODO: validate that metadata and core config settings are set
-	err = s.validateClientConfig()
+	err = validateClientConfig()
 	if err != nil {
 		return err
 	}
@@ -306,7 +305,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 			time.Sleep(30 * time.Second)
 		}
 
-		go s.attemptInit(done)
+		go attemptInit(done)
 		<-done // wait for background attempt to finish
 	}
 
@@ -326,7 +325,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		// TODO: make channel buffer size a setting
 		s.asyncCh = make(<-chan *CommandResult, 16)
 
-		go s.processAsyncResults()
+		go processAsyncResults()
 	}
 
 	err = s.proto.Initialize(s.lc, s.asyncCh)
@@ -337,10 +336,10 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 
 	// Setup REST API
 	s.r = mux.NewRouter().PathPrefix(apiV1).Subrouter()
-	initStatus(s)
-	initCommand(s)
-	initService(s)
-	initUpdate(s)
+	initStatus()
+	initCommand()
+	initControl()
+	initUpdate()
 
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.c.Service.Timeout), "Request timed out")
 
@@ -363,6 +362,8 @@ func (s *Service) Stop(force bool) error {
 
 // NewService create a new device service instance with the given
 // name, version and ProtocolDriver, which cannot be nil.
+// Note - this function is a singleton, if called more than once,
+// it will alwayd return an error.
 func NewService(name string, version string, proto ProtocolDriver) (*Service, error) {
 
 	if svc != nil {

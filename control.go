@@ -26,7 +26,7 @@ func transformHandler(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, "OK")
 }
 
-func initService(s *Service) {
-	s.r.HandleFunc("/discovery", discoveryHandler).Methods("POST")
-	s.r.HandleFunc("/debug/transformData/{transformData}", transformHandler).Methods("GET")
+func initControl() {
+	svc.r.HandleFunc("/discovery", discoveryHandler).Methods("POST")
+	svc.r.HandleFunc("/debug/transformData/{transformData}", transformHandler).Methods("GET")
 }

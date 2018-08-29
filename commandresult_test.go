@@ -62,7 +62,7 @@ func TestNewStringResult(t *testing.T) {
 	}
 
 	if result != cr.StringResult {
-		t.Errorf("NewStringResult: cr.StringResult: %s doesn't match result: %s")
+		t.Errorf("NewStringResult: cr.StringResult: %s doesn't match result: %s", cr.StringResult, result)
 	}
 
 	reading = cr.Reading("FakeDevice", "FakeDeviceObject")
