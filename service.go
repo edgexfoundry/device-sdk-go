@@ -291,11 +291,10 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	params.Path = dataPath
 	params.UseRegistry = s.useRegistry
 	params.Url = dataURL
-
 	s.ec = coredata.NewEventClient(params, types.Endpoint{})
 
 	params.Path = v1Valuedescriptor
-	params.Url = dataAddr + dataPath
+	params.Url = dataAddr + params.Path
 	s.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
