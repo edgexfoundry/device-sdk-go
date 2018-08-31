@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
@@ -24,18 +23,53 @@ func callbackHandler(w http.ResponseWriter, req *http.Request) {
 
 	err := dec.Decode(&cbAlert)
 	if err != nil {
-		// TODO: handle error properly
-		fmt.Fprintf(os.Stderr, "service: callbackHandler invalid request: %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		svc.lc.Error(fmt.Sprintf("callbackHandler invalid request: %v", err))
+		return
 	}
 
-	action := cbAlert.ActionType
+	action := req.Method
+	actionType := cbAlert.ActionType
 	id := cbAlert.Id
 
-	fmt.Fprintf(os.Stderr, "service: callbackHandler action: %v id: %s\n", action, id)
+	switch actionType {
+	case models.DEVICE:
+		if action == http.MethodPost {
+			err = dc.AddById(id)
+			if err == nil {
+				svc.lc.Info(fmt.Sprintf("Added device %s", id))
+			}
+		} else if action == http.MethodPut {
+			err = dc.Update(id)
+			if err == nil {
+				svc.lc.Info(fmt.Sprintf("Updated device %s", id))
+			}
+		} else if action == http.MethodDelete {
+			err = dc.RemoveById(id)
+			if err == nil {
+				svc.lc.Info(fmt.Sprintf("Removed device %s", id))
+			}
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			svc.lc.Error(fmt.Sprintf("callbackHandler invalid device action: %s", action))
+			return
+		}
+		break
+	default:
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		svc.lc.Error(fmt.Sprintf("callbackHandler invalid action type: %s", actionType))
+		return
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		svc.lc.Error(err.Error())
+		return
+	}
 
 	io.WriteString(w, "OK")
 }
 
 func initUpdate() {
-	svc.r.HandleFunc("callback", callbackHandler)
+	svc.r.HandleFunc("/callback", callbackHandler)
 }
