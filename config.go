@@ -1,6 +1,8 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2017-2018
+// Canonical Ltd
+// IOTech
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -40,10 +42,15 @@ type ServiceInfo struct {
 }
 
 type service struct {
+	// Name is service's register name
+	Name string
 	// Host is the hostname or IP address of a service.
 	Host string
 	// Port is the HTTP port of a service.
 	Port int
+	// Timeout specifies a timeout (in milliseconds) for
+	// processing REST calls from other services.
+	Timeout int
 	// Health check url
 	CheckPath string
 	// Health check interval
