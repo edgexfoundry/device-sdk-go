@@ -16,10 +16,17 @@ Port = 8500
   [Clients.Data]
   Host = "localhost"
   Port = 48080
+  Timeout = 50000
 
   [Clients.Metadata]
   Host = "localhost"
   Port = 48081
+  Timeout = 50000
+
+  [Clients.Logging]
+  Host = "localhost"
+  Port = 48061
+  Timeout = 50000
 
 [Device]
   DataTransform = true
@@ -33,6 +40,5 @@ Port = 8500
   SendReadingsOnChanged = true
 
 [Logging]
-RemoteURL = ''
 File = "./device-simple.log"
 

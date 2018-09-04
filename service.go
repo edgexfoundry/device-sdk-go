@@ -21,9 +21,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
 
@@ -234,69 +233,12 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		return err
 	}
 
-	var remoteLog bool = false
-	var logTarget string
-
-	if s.c.Logging.RemoteURL == "" {
-		logTarget = s.c.Logging.File
-	} else {
-		remoteLog = true
-		logTarget = s.c.Logging.RemoteURL
-	}
-
-	s.lc = logger.NewClient(s.Name, remoteLog, logTarget)
+	initService(useRegistry)
 
 	done := make(chan struct{})
 
 	s.cw = newWatchers()
 	s.cs = newSchedules(s.c)
-
-	// initialize Core Metadata clients
-	metaPort := strconv.Itoa(s.c.Clients[ClientMetadata].Port)
-	metaHost := s.c.Clients[ClientMetadata].Host
-	metaAddr := buildAddr(metaHost, metaPort)
-	metaPath := v1Addressable
-	metaURL := metaAddr + metaPath
-
-	params := types.EndpointParams{
-		// TODO: Can't use edgex-go internal constants!
-		//ServiceKey:internal.CoreMetaDataServiceKey,
-		ServiceKey:  coreMetadataServiceKey,
-		Path:        metaPath,
-		UseRegistry: s.useRegistry,
-		Url:         metaURL}
-
-	s.ac = metadata.NewAddressableClient(params, types.Endpoint{})
-
-	params.Path = v1Device
-	params.Url = metaAddr + params.Path
-	s.dc = metadata.NewDeviceClient(params, types.Endpoint{})
-
-	params.Path = v1DevService
-	params.Url = metaAddr + params.Path
-	s.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
-
-	params.Path = v1Deviceprofile
-	params.Url = metaAddr + params.Path
-	s.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
-
-	// initialize Core Data clients
-	dataPort := strconv.Itoa(s.c.Clients[ClientData].Port)
-	dataHost := s.c.Clients[ClientData].Host
-	dataAddr := buildAddr(dataHost, dataPort)
-	dataPath := v1Event
-	dataURL := dataAddr + dataPath
-
-	params.ServiceKey = coreDataServiceKey
-	params.Path = dataPath
-	params.UseRegistry = s.useRegistry
-	params.Url = dataURL
-
-	s.ec = coredata.NewEventClient(params, types.Endpoint{})
-
-	params.Path = v1Valuedescriptor
-	params.Url = dataAddr + dataPath
-	s.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++

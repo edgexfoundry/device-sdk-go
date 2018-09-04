@@ -3,6 +3,6 @@
 examples/simple/cmd/cmd
 glide.lock
 vendor
-
+.idea
 
 
