@@ -21,7 +21,7 @@ import (
 
 // deviceCache is a local cache of devices seeded from Core Metadata.
 type deviceCache struct {
-	devices map[string]*models.Device
+	devices map[string]models.Device
 	names   map[string]string
 }
 
@@ -45,7 +45,7 @@ func newDeviceCache(serviceId string) error {
 
 		svc.lc.Debug(fmt.Sprintf("returned devices %v\n", mDevs))
 
-		dc.devices = make(map[string]*models.Device)
+		dc.devices = make(map[string]models.Device)
 		dc.names = make(map[string]string)
 
 		for _, md := range mDevs {
@@ -120,7 +120,7 @@ func (d *deviceCache) DeviceById(id string) *models.Device {
 	}
 
 	dev := d.devices[name]
-	return dev
+	return &dev
 }
 
 // Devices returns the current list of devices in the cache.
@@ -128,7 +128,7 @@ func (d *deviceCache) DeviceById(id string) *models.Device {
 // is used, as it's bad form to return an internal data struct to
 // callers, especially when the result is a map, which can then be
 // modified externally to this package.
-func (d *deviceCache) Devices() map[string]*models.Device {
+func (d *deviceCache) Devices() map[string]models.Device {
 	return d.devices
 }
 
@@ -248,7 +248,7 @@ func (d *deviceCache) addDeviceToMetadata(dev *models.Device) error {
 		return err
 	}
 
-	d.devices[dev.Name] = dev
+	d.devices[dev.Name] = *dev
 	d.names[dev.Id.Hex()] = dev.Name
 
 	return nil
