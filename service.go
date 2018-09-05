@@ -218,10 +218,10 @@ func buildAddr(host string, port string) string {
 func (s *Service) Start(useRegistry bool, profile string, confDir string) (err error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
-
+	s.useRegistry = useRegistry
 	s.c, err = LoadConfig(profile, confDir)
 	if err != nil {
-		s.lc.Error(fmt.Sprintf("error loading config file: %v\n", err))
+		fmt.Printf("error loading config file: %v \n", err)
 		return err
 	}
 

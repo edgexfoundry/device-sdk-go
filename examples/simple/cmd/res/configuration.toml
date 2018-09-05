@@ -40,5 +40,7 @@ Port = 8500
   SendReadingsOnChanged = true
 
 [Logging]
+RemoteURL = 'http://localhost:48061'
 File = "./device-simple.log"
+
 
