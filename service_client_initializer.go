@@ -6,6 +6,7 @@ import (
 	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
+	consulapi "github.com/hashicorp/consul/api"
 	"net"
 	"net/http"
 	"strconv"
@@ -16,95 +17,148 @@ import (
 // Trigger Service Client Initializer to establish connection to Metadata and Core Data Services through Metadata Client and Core Data Client.
 // Service Client Initializer also needs to check the service status of Metadata and Core Data Services, because they are important dependencies of Device Service.
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
-func initService(useRegistry bool) {
-	// check logging service
+func initService() {
+	initializeLoggingClient()
+
+	if checkServiceUp(ClientData) && checkServiceUp(ClientMetadata) {
+		initializeClients()
+	}
+}
+
+func initializeLoggingClient() {
 	var remoteLog = false
 	var logTarget string
 
-	if svc.c.Clients[Logging].Host == "" {
+	if svc.c.Logging.RemoteURL == "" {
 		logTarget = svc.c.Logging.File
-	} else if err := checkRemoteLoggingAvailable(); err != nil {
-		remoteLog = true
 
-		host := svc.c.Clients[Logging].Host
-		port := strconv.Itoa(svc.c.Clients[Logging].Port)
-		addr := buildAddr(host, port)
-		logTarget = addr
+	} else if checkRemoteLoggingAvailable() {
+		remoteLog = true
+		logTarget = svc.c.Logging.RemoteURL
+		fmt.Println("Ping remote logging service success, use remote logging.")
 	} else {
-		fmt.Println("Logging service is unavailable, use file instead.")
 		logTarget = svc.c.Logging.File
+		fmt.Println("Ping remote logging service failed, use log file instead.")
 	}
 
 	svc.lc = logger.NewClient(svc.Name, remoteLog, logTarget)
-
-	// check core-data core-metadata
-	checkCoreDataAvailable()
-	checkCoreMetaDataAvailable()
-
-	initializeClients()
 }
 
-func checkRemoteLoggingAvailable() error {
-	fmt.Println("Check Logging service is available ...")
-	host := svc.c.Clients[Logging].Host
-	port := strconv.Itoa(svc.c.Clients[Logging].Port)
-	addr := buildAddr(host, port)
-	timeout := int64(svc.c.Clients[Logging].Timeout) * int64(time.Millisecond)
+func checkRemoteLoggingAvailable() bool {
+	var available = true
+	fmt.Println("Check Logging service's status ...")
 
-	client := http.Client{
-		Timeout: time.Duration(timeout),
-	}
-
-	_, err := client.Get(addr + "/api/v1" + "/ping")
+	_, err := http.Get(svc.c.Logging.RemoteURL + apiV1 + "/ping")
 	if err != nil {
-		fmt.Println(fmt.Sprintf("Error getting ping: %v", err))
-		return err
+		fmt.Println(fmt.Sprintf("Timeout error getting ping: %v", err))
+		available = false
 	}
-	return nil
+
+	return available
 }
 
-func checkCoreDataAvailable() {
-	svc.lc.Info("Check CoreData service is available ...")
-	host := svc.c.Clients[ClientData].Host
-	port := strconv.Itoa(svc.c.Clients[ClientData].Port)
+func checkServiceUp(serviceId string) bool {
+	if svc.useRegistry {
+		var serviceConsulId string
+		if serviceId == ClientData {
+			serviceConsulId = coreDataServiceKey
+		} else if serviceId == ClientMetadata {
+			serviceConsulId = coreMetadataServiceKey
+		}
+
+		var bool = checkServiceUpByConsul(serviceConsulId)
+		if !bool {
+			time.Sleep(10 * time.Second)
+			checkServiceUp(serviceId)
+		}
+	} else {
+		var err = checkServiceUpByPing(serviceId)
+		if err, ok := err.(net.Error); ok && err.Timeout() {
+			checkServiceUp(serviceId)
+		} else if err != nil {
+			time.Sleep(10 * time.Second)
+			checkServiceUp(serviceId)
+		}
+	}
+
+	return true
+}
+
+func checkServiceUpByPing(serviceId string) error {
+	svc.lc.Info(fmt.Sprintf("Check %v service's status ...", serviceId))
+	host := svc.c.Clients[serviceId].Host
+	port := strconv.Itoa(svc.c.Clients[serviceId].Port)
 	addr := buildAddr(host, port)
-	timeout := int64(svc.c.Clients[ClientData].Timeout) * int64(time.Millisecond)
+	timeout := int64(svc.c.Clients[serviceId].Timeout) * int64(time.Millisecond)
 
 	client := http.Client{
 		Timeout: time.Duration(timeout),
 	}
 
-	_, err := client.Get(addr + "/api/v1" + "/ping")
-	if err, ok := err.(net.Error); ok && err.Timeout() {
-		svc.lc.Error(fmt.Sprintf("Timeout rror getting ping: %v", err))
-		checkCoreDataAvailable()
-	} else {
-		svc.lc.Error(fmt.Sprintf("Error getting ping: %v", err))
-		time.Sleep(10 * time.Second)
-		checkCoreDataAvailable()
+	_, err := client.Get(addr + apiV1 + "/ping")
+
+	if err != nil {
+		svc.lc.Error(fmt.Sprintf("Error getting ping: %v ", err))
 	}
+	return err
 }
 
-func checkCoreMetaDataAvailable() {
-	svc.lc.Info("Check CoreMetaData service is available ...")
-	host := svc.c.Clients[ClientMetadata].Host
-	port := strconv.Itoa(svc.c.Clients[ClientMetadata].Port)
-	addr := buildAddr(host, port)
-	timeout := int64(svc.c.Clients[ClientMetadata].Timeout) * int64(time.Millisecond)
+func checkServiceUpByConsul(serviceConsulId string) bool {
+	result := false
 
-	client := http.Client{
-		Timeout: time.Duration(timeout),
+	isConsulUp := checkConsulUp()
+	if !isConsulUp {
+		return false
 	}
 
-	_, err := client.Get(addr + "/api/v1" + "/ping")
-	if err, ok := err.(net.Error); ok && err.Timeout() {
-		svc.lc.Error(fmt.Sprintf("Timeout rror getting ping: %v", err))
-		checkCoreDataAvailable()
+	// Get a new client
+	var host = svc.c.Registry.Host
+	var port = strconv.Itoa(svc.c.Registry.Port)
+	var consulAddr = buildAddr(host, port)
+	consulConfig := consulapi.DefaultConfig()
+	consulConfig.Address = consulAddr
+	client, err := consulapi.NewClient(consulConfig)
+	if err != nil {
+		svc.lc.Error(err.Error())
+		return false
+	}
+
+	services, _, err := client.Catalog().Service(serviceConsulId, "", nil)
+	if err != nil {
+		svc.lc.Error(err.Error())
+		return false
+	}
+	if len(services) <= 0 {
+		svc.lc.Error(serviceConsulId + " service hasn't started...")
+		return false
+	}
+
+	healthCheck, _, err := client.Health().Checks(serviceConsulId, nil)
+	if err != nil {
+		svc.lc.Error(err.Error())
+		return false
+	}
+	status := healthCheck.AggregatedStatus()
+	if status == "passing" {
+		result = true
 	} else {
-		svc.lc.Error(fmt.Sprintf("Error getting ping: %v", err))
-		time.Sleep(10 * time.Second)
-		checkCoreMetaDataAvailable()
+		svc.lc.Error(serviceConsulId + " service hasn't been available...")
+		result = false
 	}
+
+	return result
+}
+
+func checkConsulUp() bool {
+	addr := fmt.Sprintf("%v:%v", svc.c.Registry.Host, svc.c.Registry.Port)
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		svc.lc.Info("Consul cannot be reached, address: " + addr)
+		svc.lc.Info(err.Error())
+		return false
+	}
+	conn.Close()
+	return true
 }
 
 func initializeClients() {
