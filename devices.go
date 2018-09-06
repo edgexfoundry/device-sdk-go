@@ -48,14 +48,14 @@ func newDeviceCache(serviceId string) error {
 		dc.devices = make(map[string]*models.Device)
 		dc.names = make(map[string]string)
 
-		for _, md := range mDevs {
-			err = svc.dc.UpdateOpState(md.Id.Hex(), "DISABLED")
+		for index, _ := range mDevs {
+			err = svc.dc.UpdateOpState(mDevs[index].Id.Hex(), "DISABLED")
 			if err != nil {
-				svc.lc.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", md.Name, err))
+				svc.lc.Error(fmt.Sprintf("Update metadata DeviceOpState failed: %s; error: %v", mDevs[index].Name, err))
 			}
 
-			md.OperatingState = models.OperatingState("DISABLED")
-			dc.add(&md)
+			mDevs[index].OperatingState = models.OperatingState("DISABLED")
+			dc.add(&mDevs[index])
 		}
 
 		// TODO: call Protocol.initialize
