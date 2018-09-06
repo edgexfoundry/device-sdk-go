@@ -31,7 +31,7 @@ type profileCache struct {
 	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
-	objects     map[string]map[string]models.DeviceObject
+	objects     map[string]map[string]models.DeviceObject // TODO: make *models.DeviceObject?
 	profiles    map[string]models.DeviceProfile
 }
 
