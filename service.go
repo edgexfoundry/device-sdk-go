@@ -226,7 +226,17 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		return err
 	}
 
-	// TODO: add useRegistry logic
+	var consulMsg string
+	if useRegistry {
+		consulMsg = "Register in Consul..."
+		err := connectToConsul(s.Name, s.c)
+		if err != nil {
+			return err
+		}
+	} else {
+		consulMsg = "Bypassing registration in Consul..."
+	}
+	fmt.Print(consulMsg)
 
 	// TODO: validate that metadata and core config settings are set
 	err = validateClientConfig()
