@@ -16,6 +16,7 @@ import (
 const (
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
+	Logging        = "Logging"
 )
 
 // ServiceInfo is a struct which contains service related configuration
@@ -51,6 +52,9 @@ type service struct {
 	Host string
 	// Port is the HTTP port of a service.
 	Port int
+	// Timeout specifies a timeout (in milliseconds) for
+	// processing REST calls from other services.
+	Timeout int
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.
