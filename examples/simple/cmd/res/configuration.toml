@@ -23,11 +23,6 @@ Port = 8500
   Port = 48081
   Timeout = 50000
 
-  [Clients.Logging]
-  Host = "localhost"
-  Port = 48061
-  Timeout = 50000
-
 [Device]
   DataTransform = true
   InitCmd = ""
@@ -40,7 +35,7 @@ Port = 8500
   SendReadingsOnChanged = true
 
 [Logging]
-RemoteURL = 'http://localhost:48061'
+RemoteURL = ''
 File = "./device-simple.log"
 
 
