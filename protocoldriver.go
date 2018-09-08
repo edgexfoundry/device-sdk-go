@@ -33,29 +33,18 @@ type ProtocolDriver interface {
 	DisconnectDevice(address *models.Addressable) error
 
 	// Initialize performs protocol-specific initialization for the device
-	// service.  If the DS supports asynchronous data pushed from devices/sensors,
-	// then a valid receive' channel will be given, otherwise the channel is nil
-	// and must not be used.
-	Initialize(lc logger.LoggingClient, asyncCh <-chan *CommandResult) error
+	// service. The given *CommandResult channel can be used to push asynchronous
+	// events and readings to Core Data.
+	Initialize(s *Service, lc logger.LoggingClient, asyncCh <-chan *CommandResult) error
 
-	// HandleOperation triggers an asynchronous protocol specific GET or SET operation
-	// for the specified device. Device profile attributes are passed as part
-	// of the *models.DeviceObject. The parameter 'value' must be provided for
-	// a SET operation, otherwise it should be 'nil'.
+	// HandleCommands passes a slice of CommandRequest structs each representing
+	// a ResourceOperation for a specific device resource (aka DeviceObject).
+	// If commands are actuation commands, then params may be used to provide
+	// an optional JSON encoded string specifying paramters for the individual
+	// commands.
 	//
-	// This function is always called in a new goroutine. The driver is responsible
-	// for writing the CommandResults to the send channel. The driver is also
-	// responsible for closing send channel if/when Stop is called.
-	//
-	// NOTE - the Java-based device-virtual includes an additional parameter called
-	// operations which is used to optimize how virtual resources are saved for SETs.
-	//
-	HandleOperation(ro *models.ResourceOperation,
-		device *models.Device,
-		object *models.DeviceObject,
-		desc *models.ValueDescriptor,
-		value string,
-		send chan<- *CommandResult)
+	// TODO: add param to CommandRequest and have command endpoint parse the params.
+	HandleCommands(d models.Device, reqs []CommandRequest, params string) ([]CommandResult, error)
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible

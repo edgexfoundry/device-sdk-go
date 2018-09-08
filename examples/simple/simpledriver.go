@@ -31,31 +31,32 @@ func (s *SimpleDriver) DisconnectDevice(address *models.Addressable) error {
 // service.  If the DS supports asynchronous data pushed from devices/sensors,
 // then a valid receive' channel must be created and returned, otherwise nil
 // is returned.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh <-chan *device.CommandResult) error {
+func (s *SimpleDriver) Initialize(svc *device.Service, lc logger.LoggingClient, asyncCh <-chan *device.CommandResult) error {
 	s.lc = lc
 	s.lc.Debug(fmt.Sprintf("SimpleHandler.Initialize called!"))
 	return nil
 }
 
-// HandleOperation triggers an asynchronous protocol specific GET or SET operation
-// for the specified device. Device profile attributes are passed as part
-// of the *models.DeviceObject. The parameter 'value' must be provided for
-// a SET operation, otherwise it should be 'nil'.
-//
-// This function is always called in a new goroutine. The driver is responsible
-// for writing the CommandResults to the send channel.
-//
-// Note - DeviceObject represents a deviceResource defined in deviceprofile.
-//
-func (s *SimpleDriver) HandleOperation(ro *models.ResourceOperation,
-	d *models.Device, do *models.DeviceObject, desc *models.ValueDescriptor,
-	value string, send chan<- *device.CommandResult) {
+// HandleCommand triggers an asynchronous protocol specific GET or SET operation
+// for the specified device.
+func (s *SimpleDriver) HandleCommands(d models.Device, reqs []device.CommandRequest,
+	params string) (res []device.CommandResult, err error) {
 
-	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", d.Name, ro.Operation, do.Attributes))
+	if len(reqs) != 1 {
+		err = fmt.Errorf("SimpleDriver.HandleCommands; too many command requests; only one supported")
+		return
+	}
 
-	cr := &device.CommandResult{RO: ro, Type: device.Bool, BoolResult: true}
+	s.lc.Debug(fmt.Sprintf("HandleCommand: dev: %s op: %v attrs: %v", d.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
 
-	send <- cr
+	res = make([]device.CommandResult, 1)
+
+	// TODO: change CommandResult to get rid of pointer to RO
+	res[0].RO = &reqs[0].RO
+	res[0].Type = device.Bool
+	res[0].BoolResult = true
+
+	return
 }
 
 // Stop the protocol-specific DS code to shutdown gracefully, or

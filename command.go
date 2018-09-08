@@ -118,11 +118,7 @@ func commandAllFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
-	var count int
 	readings := make([]models.Reading, 0, svc.c.Device.MaxCmdOps)
-
-	// TODO: add support for PUT/SET commands
-	var value = ""
 
 	// make ResourceOperations
 	ops, err := pc.GetResourceOperations(d.Name, cmd, method)
@@ -140,7 +136,6 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		return
 	}
 
-	rChan := make(chan *CommandResult)
 	devObjs := pc.getDeviceObjects(d.Name)
 	if devObjs == nil {
 		msg := fmt.Sprintf("internal error; no devObjs for dev: %s; %s %s", d.Name, cmd, method)
@@ -149,7 +144,9 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		return
 	}
 
-	for _, op := range ops {
+	reqs := make([]CommandRequest, len(ops))
+
+	for i, op := range ops {
 		objName := op.Object
 		svc.lc.Debug(fmt.Sprintf("deviceObject: %s", objName))
 
@@ -166,19 +163,20 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 			return
 		}
 
-		// TODO: lookup valuedescriptor & pass to HandleOperation
+		reqs[i].RO = op
+		reqs[i].DeviceObject = devObj
+	}
 
-		go svc.proto.HandleOperation(&op, d, &devObj, nil, value, rChan)
-		count++
+	results, err := svc.proto.HandleCommands(*d, reqs, args)
+	if err != nil {
+		msg := fmt.Sprintf("HandleCommands error for dev: %s cmd: %s method: %s", d.Name, cmd, method)
+		http.Error(w, msg, http.StatusInternalServerError) // status=500
+		return
 	}
 
 	var transformsOK bool = true
 
-	// wait for fixed number of results
-	for count != 0 {
-		svc.lc.Debug(fmt.Sprintf("command: waiting for protcol response; count: %d", count))
-		cr := <-rChan
-
+	for _, cr := range results {
 		// get the device resource associated with the rsp.RO
 		do := pc.getDeviceObject(d, cr.RO)
 
@@ -200,11 +198,7 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		readings = append(readings, *reading)
 
 		svc.lc.Debug(fmt.Sprintf("dev: %s RO: %v reading: %v", d.Name, cr.RO, reading))
-
-		count--
 	}
-
-	close(rChan)
 
 	// push to Core Data
 	event := &models.Event{Device: d.Name, Readings: readings}

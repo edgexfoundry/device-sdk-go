@@ -327,7 +327,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 		go processAsyncResults()
 	}
 
-	err = s.proto.Initialize(s.lc, s.asyncCh)
+	err = s.proto.Initialize(s, s.lc, s.asyncCh)
 	if err != nil {
 		s.lc.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
 		return err
