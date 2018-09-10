@@ -311,6 +311,11 @@ func (s *Service) Stop(force bool) error {
 	return nil
 }
 
+// AddDevice adds a new device to the device service.
+func (s *Service) AddDevice(dev models.Device) error {
+	return dc.Add(&dev)
+}
+
 // NewService create a new device service instance with the given
 // name, version and ProtocolDriver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,

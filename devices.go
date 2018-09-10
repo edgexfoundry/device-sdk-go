@@ -19,6 +19,21 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+// Inteface for device
+type deviceCacheInterface interface {
+	InitDeviceCache()
+	Device(name string) *models.Device
+	Devices() map[string]*models.Device
+	Add(dev *models.Device) error
+	AddById(id string) error
+	Update(id string) error
+	DeviceById(id string) *models.Device
+	RemoveById(id string) error
+	IsDeviceLocked(id string) (exists, locked bool)
+	SetDeviceOpState(name string, os models.OperatingState) error
+	SetDeviceByIdOpState(id string, os models.OperatingState) error
+}
+
 // deviceCache is a local cache of devices seeded from Core Metadata.
 type deviceCache struct {
 	devices map[string]*models.Device
@@ -27,7 +42,7 @@ type deviceCache struct {
 
 var (
 	dcOnce sync.Once
-	dc     *deviceCache
+	dc     deviceCacheInterface
 )
 
 // Creates a singleton deviceCache instance.
@@ -45,8 +60,7 @@ func newDeviceCache(serviceId string) error {
 
 		svc.lc.Debug(fmt.Sprintf("returned devices %v\n", mDevs))
 
-		dc.devices = make(map[string]*models.Device)
-		dc.names = make(map[string]string)
+		dc.InitDeviceCache()
 
 		for index, _ := range mDevs {
 			err = svc.dc.UpdateOpState(mDevs[index].Id.Hex(), "DISABLED")
@@ -55,7 +69,7 @@ func newDeviceCache(serviceId string) error {
 			}
 
 			mDevs[index].OperatingState = models.OperatingState("DISABLED")
-			dc.add(&mDevs[index])
+			dc.Add(&mDevs[index])
 		}
 
 		// TODO: call Protocol.initialize
@@ -65,15 +79,16 @@ func newDeviceCache(serviceId string) error {
 	return retval
 }
 
-// AddDevice adds a new device to the device service.
-func (s *Service) AddDevice(dev models.Device) error {
-	return dc.add(&dev)
+// Init basic state for deviceCache
+func (d *deviceCache) InitDeviceCache() {
+	d.devices = make(map[string]*models.Device)
+	d.names = make(map[string]string)
 }
 
 // Adds a new device to the cache. This method is used to populate the
 // devices cache with pre-existing devices from Core Metadata, as well
 // as create new devices returned in a ScanList during discovery.
-func (d *deviceCache) add(dev *models.Device) error {
+func (d *deviceCache) Add(dev *models.Device) error {
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[dev.Name]; ok {
