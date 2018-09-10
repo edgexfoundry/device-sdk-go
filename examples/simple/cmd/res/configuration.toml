@@ -43,3 +43,33 @@ FailWaitTime = 10
 [Logging]
 RemoteURL = ''
 File = "./device-simple.log"
+
+# internal schedule
+[[schedules]]
+name = "10sec-schedule"
+cron = "*/10 * * * * *"
+
+[[scheduleEvents]]
+name = "readTemperature"
+schedule = "10sec-schedule"
+parameters = ""
+  [scheduleEvents.Addressable]
+  path = "GetCommandExecutor::JC.RR5.NAE9.ConfRoom.Padre.Island::temperature"
+
+[[scheduleEvents]]
+name = "readHumidity"
+schedule = "10sec-schedule"
+parameters = ""
+  [scheduleEvents.Addressable]
+  path = "GetCommandExecutor::JC.RR5.NAE9.ConfRoom.Padre.Island::humidity"
+
+[[schedules]]
+name = "5sec-schedule"
+cron = "*/5 * * * * *"
+
+[[scheduleEvents]]
+name = "readVoltage"
+schedule = "5sec-schedule"
+parameters = ""
+  [scheduleEvents.Addressable]
+  path = "GetCommandExecutor::GS1-AC-Drive::voltage"

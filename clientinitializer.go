@@ -178,21 +178,23 @@ func checkConsulAvailable() bool {
 }
 
 func initializeClients() {
-	// initialize Core Metadata clients
 	metaPort := strconv.Itoa(svc.c.Clients[ClientMetadata].Port)
 	metaHost := svc.c.Clients[ClientMetadata].Host
 	metaAddr := buildAddr(metaHost, metaPort)
-	metaPath := v1Addressable
-	metaURL := metaAddr + metaPath
+
+	dataPort := strconv.Itoa(svc.c.Clients[ClientData].Port)
+	dataHost := svc.c.Clients[ClientData].Host
+	dataAddr := buildAddr(dataHost, dataPort)
 
 	params := types.EndpointParams{
-		// TODO: Can't use edgex-go internal constants!
-		//ServiceKey:internal.CoreMetaDataServiceKey,
-		ServiceKey:  svc.c.Clients[ClientMetadata].Name,
-		Path:        metaPath,
 		UseRegistry: svc.useRegistry,
-		Url:         metaURL}
+	}
 
+	// initialize Core Metadata clients
+	params.ServiceKey = svc.c.Clients[ClientMetadata].Name
+
+	params.Path = v1Addressable
+	params.Url = metaAddr + params.Path
 	svc.ac = metadata.NewAddressableClient(params, types.Endpoint{})
 
 	params.Path = v1Device
@@ -207,18 +209,19 @@ func initializeClients() {
 	params.Url = metaAddr + params.Path
 	svc.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
 
+	params.Path = v1Schedule
+	params.Url = metaAddr + params.Path
+	svc.scc = metadata.NewScheduleClient(params, types.Endpoint{})
+
+	params.Path = v1ScheduleEvent
+	params.Url = metaAddr + params.Path
+	svc.scec = metadata.NewScheduleEventClient(params, types.Endpoint{})
+
 	// initialize Core Data clients
-	dataPort := strconv.Itoa(svc.c.Clients[ClientData].Port)
-	dataHost := svc.c.Clients[ClientData].Host
-	dataAddr := buildAddr(dataHost, dataPort)
-	dataPath := v1Event
-	dataURL := dataAddr + dataPath
-
 	params.ServiceKey = svc.c.Clients[ClientData].Name
-	params.Path = dataPath
-	params.UseRegistry = svc.useRegistry
-	params.Url = dataURL
 
+	params.Path = v1Event
+	params.Url = dataAddr + params.Path
 	svc.ec = coredata.NewEventClient(params, types.Endpoint{})
 
 	params.Path = v1Valuedescriptor

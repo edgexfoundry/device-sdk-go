@@ -8,6 +8,10 @@
 //
 package device
 
+import (
+	"github.com/edgexfoundry/edgex-go/pkg/models"
+)
+
 const (
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
@@ -132,10 +136,10 @@ type Config struct {
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
-	// Schedules is a map schedules to be created on startup.
-	Schedules map[string]string
-	// SchedulesEvents is a map scheduleevents to be created on startup.
-	ScheduleEvents map[string]ScheduleEventInfo
+	// Schedules is created on startup.
+	Schedules []models.Schedule
+	// SchedulesEvents is created on startup.
+	ScheduleEvents []models.ScheduleEvent
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
 }

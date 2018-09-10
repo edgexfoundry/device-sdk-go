@@ -67,9 +67,11 @@ type Service struct {
 	dpc           metadata.DeviceProfileClient
 	lc            logger.LoggingClient
 	vdc           coredata.ValueDescriptorClient
+	scc           metadata.ScheduleClient
+	scec          metadata.ScheduleEventClient
 	ds            models.DeviceService
 	r             *mux.Router
-	cs            *Schedules
+	scca          ScheduleCacheInterface
 	cw            *Watchers
 	proto         ProtocolDriver
 	asyncCh       <-chan *CommandResult
@@ -247,7 +249,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	done := make(chan struct{})
 
 	s.cw = newWatchers()
-	s.cs = newSchedules(s.c)
+	s.scca = getScheduleCache(s.c)
 
 	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
