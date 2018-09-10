@@ -11,6 +11,10 @@ Timeout = 5000
 [Registry]
 Host = "localhost"
 Port = 8500
+CheckPath = "/api/v1/ping"
+CheckInterval = "10s"
+FailLimit = 3
+FailWaitTime = 10
 
 [Clients]
   [Clients.Data]
