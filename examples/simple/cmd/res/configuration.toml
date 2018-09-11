@@ -18,12 +18,16 @@ FailWaitTime = 10
 
 [Clients]
   [Clients.Data]
+  name = "edgex-core-data"
   Host = "localhost"
   Port = 48080
+  Timeout = 50000
 
   [Clients.Metadata]
+  name = "edgex-core-metadata"
   Host = "localhost"
   Port = 48081
+  Timeout = 50000
 
 [Device]
   DataTransform = true
@@ -39,4 +43,3 @@ FailWaitTime = 10
 [Logging]
 RemoteURL = ''
 File = "./device-simple.log"
-
