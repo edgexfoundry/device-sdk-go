@@ -2,7 +2,7 @@
 Host = "localhost"
 Port = 49990
 ConnectRetries = 3
-HealthCheck = ""
+HealthCheck = "/api/v1/ping"
 Labels = []
 OpenMsg = "device simple started"
 ReadMaxLimit = 256
@@ -11,7 +11,6 @@ Timeout = 5000
 [Registry]
 Host = "localhost"
 Port = 8500
-CheckPath = "/api/v1/ping"
 CheckInterval = "10s"
 FailLimit = 3
 FailWaitTime = 10

@@ -21,12 +21,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/registry"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
-
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -44,7 +44,8 @@ const (
 )
 
 var (
-	svc *Service
+	svc            *Service
+	registryClient registry.Client
 )
 
 // A Service listens for requests and routes them to the right command
@@ -216,15 +217,15 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 
 	var consulMsg string
 	if useRegistry {
-		consulMsg = "Register in Consul..."
-		err := connectToConsul(s.Name, s.c)
+		consulMsg = "Register in consul..."
+		registryClient, err = GetConsulClient(s.Name, profile, s.c)
 		if err != nil {
 			return err
 		}
 	} else {
-		consulMsg = "Bypassing registration in Consul..."
+		consulMsg = "Bypassing registration in consul..."
 	}
-	fmt.Print(consulMsg)
+	fmt.Println(consulMsg)
 
 	// TODO: validate that metadata and core config settings are set
 	err = validateClientConfig()

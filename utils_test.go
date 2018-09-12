@@ -36,12 +36,12 @@ func TestConsulClientReturnErrorOnTimeout(t *testing.T) {
 	config.Registry.FailLimit = 1
 	config.Registry.FailWaitTime = 0
 
-	consul, err := getConsulClient(config)
+	consul, err := GetConsulClient("test-service-name", "test-profile", config)
 	if consul != nil || err == nil {
 		t.Error("Error should be raised")
 	}
 
-	if err.Error() != "Cannot get connection to Consul" {
+	if err.Error() != "Cannot get connection to consul" {
 		t.Error("Wrong error message")
 	}
 }
@@ -66,13 +66,13 @@ func TestConsulClientReturnErrorOnBadResponse(t *testing.T) {
 	config.Registry.FailLimit = 1
 	config.Registry.FailWaitTime = 0
 
-	consul, err := getConsulClient(config)
+	consul, err := GetConsulClient("test-service-name", "test-profile", config)
 	if consul != nil || err == nil {
 		t.Error("Error should be raised")
 	}
 
-	if err.Error() != "Bad response from Consul service" {
-		t.Error("Wrong error message")
+	if err.Error() != "Cannot get connection to consul" {
+		t.Error("Wrong error message ", err.Error())
 	}
 }
 

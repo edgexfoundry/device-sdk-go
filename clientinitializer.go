@@ -8,8 +8,9 @@ package device
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/registry"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
-	logger "github.com/edgexfoundry/edgex-go/pkg/clients/logging"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	consulapi "github.com/hashicorp/consul/api"
@@ -30,6 +31,10 @@ func initDependencyClients() {
 	checkDependencyServices()
 
 	initializeClients()
+
+	checkClientsInitialSuccessful()
+
+	svc.lc.Info("Service clients initialize successful.")
 }
 
 func initializeLoggingClient() {
@@ -178,6 +183,8 @@ func checkConsulAvailable() bool {
 }
 
 func initializeClients() {
+	consulEndpoint := &registry.ConsulEndpoint{RegistryClient: registryClient}
+
 	metaPort := strconv.Itoa(svc.c.Clients[ClientMetadata].Port)
 	metaHost := svc.c.Clients[ClientMetadata].Host
 	metaAddr := buildAddr(metaHost, metaPort)
@@ -195,36 +202,55 @@ func initializeClients() {
 
 	params.Path = v1Addressable
 	params.Url = metaAddr + params.Path
-	svc.ac = metadata.NewAddressableClient(params, types.Endpoint{})
+	svc.ac = metadata.NewAddressableClient(params, consulEndpoint)
 
 	params.Path = v1Device
 	params.Url = metaAddr + params.Path
-	svc.dc = metadata.NewDeviceClient(params, types.Endpoint{})
+	svc.dc = metadata.NewDeviceClient(params, consulEndpoint)
 
 	params.Path = v1DevService
 	params.Url = metaAddr + params.Path
-	svc.sc = metadata.NewDeviceServiceClient(params, types.Endpoint{})
+	svc.sc = metadata.NewDeviceServiceClient(params, consulEndpoint)
 
 	params.Path = v1Deviceprofile
 	params.Url = metaAddr + params.Path
-	svc.dpc = metadata.NewDeviceProfileClient(params, types.Endpoint{})
+	svc.dpc = metadata.NewDeviceProfileClient(params, consulEndpoint)
 
 	params.Path = v1Schedule
 	params.Url = metaAddr + params.Path
-	svc.scc = metadata.NewScheduleClient(params, types.Endpoint{})
+	svc.scc = metadata.NewScheduleClient(params, consulEndpoint)
 
 	params.Path = v1ScheduleEvent
 	params.Url = metaAddr + params.Path
-	svc.scec = metadata.NewScheduleEventClient(params, types.Endpoint{})
+	svc.scec = metadata.NewScheduleEventClient(params, consulEndpoint)
 
 	// initialize Core Data clients
 	params.ServiceKey = svc.c.Clients[ClientData].Name
 
 	params.Path = v1Event
 	params.Url = dataAddr + params.Path
-	svc.ec = coredata.NewEventClient(params, types.Endpoint{})
+	svc.ec = coredata.NewEventClient(params, consulEndpoint)
 
 	params.Path = v1Valuedescriptor
 	params.Url = dataAddr + params.Path
-	svc.vdc = coredata.NewValueDescriptorClient(params, types.Endpoint{})
+	svc.vdc = coredata.NewValueDescriptorClient(params, consulEndpoint)
+
+}
+
+// checkClientsInitialSuccessful is used to check some clients need operate immediately.
+// So far we only add default schedule and scheduleEvent after client initialize.
+func checkClientsInitialSuccessful() {
+	_, err := svc.scc.Schedules()
+	if err != nil {
+		svc.lc.Warn(fmt.Sprintf("Metadata.schedule client has not been initialized yet... Error: %v . Wait a seconds.", err.Error()))
+		time.Sleep(2 * time.Second)
+		checkClientsInitialSuccessful()
+	}
+
+	_, err = svc.scec.ScheduleEvents()
+	if err != nil {
+		svc.lc.Warn(fmt.Sprintf("Metadata.scheduleEvent has not been initialized yet... Error: %v . Wait a seconds.", err.Error()))
+		time.Sleep(2 * time.Second)
+		checkClientsInitialSuccessful()
+	}
 }
