@@ -24,7 +24,7 @@ func TestConsulClientReturnErrorOnTimeout(t *testing.T) {
 	defer ts.Close()
 
 	url := strings.Split(ts.URL, ":")
-	host := url[0] + ":" + url[1]
+	host := strings.Split(url[1], "//")[1]
 	port, err := strconv.Atoi(url[2])
 	if err != nil {
 		fmt.Println(err.Error())
@@ -54,7 +54,7 @@ func TestConsulClientReturnErrorOnBadResponse(t *testing.T) {
 	defer ts.Close()
 
 	url := strings.Split(ts.URL, ":")
-	host := url[0] + ":" + url[1]
+	host := strings.Split(url[1], "//")[1]
 	port, err := strconv.Atoi(url[2])
 	if err != nil {
 		fmt.Println(err.Error())
@@ -73,5 +73,13 @@ func TestConsulClientReturnErrorOnBadResponse(t *testing.T) {
 
 	if err.Error() != "Bad response from Consul service" {
 		t.Error("Wrong error message")
+	}
+}
+
+func TestBuildAddr(t *testing.T) {
+	addr := buildAddr("test.xyz", "8000")
+
+	if addr != "http://test.xyz:8000" {
+		t.Errorf("Expected 'http://test.xyz:8000' but got: %s", addr)
 	}
 }

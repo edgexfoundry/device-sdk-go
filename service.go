@@ -15,7 +15,6 @@
 package device
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"os"
@@ -199,17 +198,6 @@ func validateClientConfig() error {
 	// TODO: validate other settings for sanity: maxcmdops, ...
 
 	return nil
-}
-
-func buildAddr(host string, port string) string {
-	var buffer bytes.Buffer
-
-	buffer.WriteString(httpScheme)
-	buffer.WriteString(host)
-	buffer.WriteString(colon)
-	buffer.WriteString(port)
-
-	return buffer.String()
 }
 
 // Start the device service. The bool useRegisty indicates whether the registry

@@ -7,6 +7,7 @@
 package device
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -29,7 +30,7 @@ var (
 
 // Return Consul client instance
 func getConsulClient(config *Config) (*consulapi.Client, error) {
-	consulUrl := config.Registry.Host + ":" + strconv.Itoa(config.Registry.Port)
+	consulUrl := buildAddr(config.Registry.Host, strconv.Itoa(config.Registry.Port))
 	fails := 0
 	for fails < config.Registry.FailLimit {
 		// http.Get return error in case of wrong HTTP method or invalid URL
@@ -77,7 +78,7 @@ func registerDeviceService(consul *consulapi.Client, deviceServiceName string, c
 		return err
 	}
 
-	checkAddress := "http://" + config.Registry.Host + ":" + strconv.Itoa(config.Registry.Port) + config.Registry.CheckPath
+	checkAddress := buildAddr(config.Registry.Host, strconv.Itoa(config.Registry.Port)) + config.Registry.CheckPath
 	// Register the Health Check
 	err = consul.Agent().CheckRegister(&consulapi.AgentCheckRegistration{
 		Name:      "Health Check: " + deviceServiceName,
@@ -153,4 +154,15 @@ func LoadConfig(profile string, configDir string) (config *Config, err error) {
 	}
 
 	return config, nil
+}
+
+func buildAddr(host string, port string) string {
+	var buffer bytes.Buffer
+
+	buffer.WriteString(httpScheme)
+	buffer.WriteString(host)
+	buffer.WriteString(colon)
+	buffer.WriteString(port)
+
+	return buffer.String()
 }
