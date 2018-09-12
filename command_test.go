@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
@@ -29,21 +28,15 @@ const (
 	testCmd           = "TestCmd"
 )
 
-func TestMain(m *testing.M) {
-	lc := logger.NewClient("command_test", false, "./command_test.log")
-	r := mux.NewRouter().PathPrefix(apiV1).Subrouter()
-	svc = &Service{Name: deviceCommandTest, lc: lc, r: r}
-	initCommand()
-	os.Exit(m.Run())
-}
-
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
-	reset()
+	lc := logger.NewClient("command_test", false, "./command_test.log")
+	r := mux.NewRouter().PathPrefix(apiV1).Subrouter()
+	svc = &Service{Name: deviceCommandTest, lc: lc, r: r, locked: true}
+	initCommand()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", v1Device, "nil", "nil"), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": "nil", "cmd": "nil"})
-	svc.locked = true
 
 	rr := httptest.NewRecorder()
 	svc.r.ServeHTTP(rr, req)
@@ -63,7 +56,10 @@ func TestCommandServiceLocked(t *testing.T) {
 // TestCommandNoDevice tests the command REST call when the given deviceId doesn't
 // specify an existing device.
 func TestCommandNoDevice(t *testing.T) {
-	reset()
+	lc := logger.NewClient("command_test", false, "./command_test.log")
+	r := mux.NewRouter().PathPrefix(apiV1).Subrouter()
+	svc = &Service{Name: deviceCommandTest, lc: lc, r: r}
+	initCommand()
 
 	dc = &deviceCache{}
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", v1Device, badDeviceId, testCmd), nil)
@@ -88,8 +84,10 @@ func TestCommandNoDevice(t *testing.T) {
 // TestCommandNoDevice tests the command REST call when the device specified
 // by deviceId is locked.
 func TestCommandDeviceLocked(t *testing.T) {
-	reset()
-
+	lc := logger.NewClient("command_test", false, "./command_test.log")
+	r := mux.NewRouter().PathPrefix(apiV1).Subrouter()
+	svc = &Service{Name: deviceCommandTest, lc: lc, r: r}
+	initCommand()
 	// Empty cache will by default have no devices.
 	dc = &deviceCache{}
 
@@ -136,9 +134,4 @@ func TestCommandDeviceLocked(t *testing.T) {
 		t.Errorf("DeviceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
 	}
 	*/
-}
-
-// reset re-initializes dependencies for each test
-func reset() {
-	svc.locked = false
 }

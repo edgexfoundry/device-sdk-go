@@ -1,6 +1,6 @@
 *~
 *.log
-examples/simple/cmd/cmd
+examples/simple/cmd/simple-device
 glide.lock
 vendor
 .idea
