@@ -21,6 +21,8 @@ import (
 const (
 	v1Deviceprofile   = "/api/v1/deviceprofile"
 	v1Valuedescriptor = "/api/v1/valuedescriptor"
+	v1Schedule        = "/api/v1/schedule"
+	v1ScheduleEvent   = "/api/v1/scheduleevent"
 	yamlExt           = ".yaml"
 	yamlExtUpper      = ".YAML"
 )
