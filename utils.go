@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -77,38 +76,6 @@ func LoadConfig(profile string, configDir string) (config *Config, err error) {
 	return config, nil
 }
 
-func GetConsulClient(serviceName string, profile string, config *Config) (*registry.ConsulClient, error) {
-	err := checkConsulUp(config)
-	if err != nil {
-		return nil, err
-	}
-
-	consulClient := &registry.ConsulClient{}
-	consulConfig := registry.Config{
-		Address:        config.Registry.Host,
-		Port:           config.Registry.Port,
-		ServiceName:    serviceName,
-		ServiceAddress: config.Service.Host,
-		ServicePort:    config.Service.Port,
-		CheckAddress:   fmt.Sprintf("http://%v:%v%v", config.Service.Host, config.Service.Port, config.Service.HealthCheck),
-		CheckInterval:  config.Registry.CheckInterval,
-	}
-	err = consulClient.Init(consulConfig)
-
-	if err != nil {
-		err = fmt.Errorf("connection to consul could not be made: %v", err.Error())
-	}
-
-	// Update configuration data from consul
-	profiles := strings.Split(profile, ";")
-	err = consulClient.CheckKeyValuePairs(&config.Service, serviceName, profiles)
-	if err != nil {
-		err = fmt.Errorf("error getting key/values from consul: %v", err.Error())
-	}
-
-	return consulClient, err
-}
-
 func checkConsulUp(config *Config) error {
 	consulUrl := buildAddr(config.Registry.Host, strconv.Itoa(config.Registry.Port))
 	fmt.Println("Check consul is up...", consulUrl)
@@ -145,4 +112,33 @@ func buildAddr(host string, port string) string {
 	buffer.WriteString(port)
 
 	return buffer.String()
+}
+
+func newConsulClient(serviceName string, config *Config) (*registry.ConsulClient, error) {
+	consulClient := &registry.ConsulClient{}
+	consulConfig := registry.Config{
+		Address:        config.Registry.Host,
+		Port:           config.Registry.Port,
+		ServiceName:    serviceName,
+		ServiceAddress: config.Service.Host,
+		ServicePort:    config.Service.Port,
+		CheckAddress:   fmt.Sprintf("http://%v:%v%v", config.Service.Host, config.Service.Port, config.Service.HealthCheck),
+		CheckInterval:  config.Registry.CheckInterval,
+	}
+	err := consulClient.Init(consulConfig)
+	return consulClient, err
+}
+
+func GetConsulClient(serviceName string, config *Config) (*registry.ConsulClient, error) {
+	err := checkConsulUp(config)
+	if err != nil {
+		return nil, err
+	}
+
+	consulClient, err := newConsulClient(serviceName, config)
+	if err != nil {
+		err = fmt.Errorf("connection to consul could not be made: %v", err.Error())
+	}
+
+	return consulClient, err
 }

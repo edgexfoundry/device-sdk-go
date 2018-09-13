@@ -218,7 +218,7 @@ func (s *Service) Start(useRegistry bool, profile string, confDir string) (err e
 	var consulMsg string
 	if useRegistry {
 		consulMsg = "Register in consul..."
-		registryClient, err = GetConsulClient(s.Name, profile, s.c)
+		registryClient, err = GetConsulClient(s.Name, s.c)
 		if err != nil {
 			return err
 		}
