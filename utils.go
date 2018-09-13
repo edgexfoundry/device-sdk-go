@@ -127,11 +127,11 @@ func checkConsulUp(config *Config) error {
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
 			break
 		} else {
-			return errors.New("Bad response from consul service")
+			return errors.New("bad response from Consul service")
 		}
 	}
 	if fails >= config.Registry.FailLimit {
-		return errors.New("Cannot get connection to consul")
+		return errors.New("can't get connection to Consul")
 	}
 	return nil
 }

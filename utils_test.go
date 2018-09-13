@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-func TestConsulClientReturnErrorOnTimeout(t *testing.T) {
+func TestCheckConsulUpReturnErrorOnTimeout(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(time.Second * 11)
@@ -36,17 +36,17 @@ func TestConsulClientReturnErrorOnTimeout(t *testing.T) {
 	config.Registry.FailLimit = 1
 	config.Registry.FailWaitTime = 0
 
-	consul, err := GetConsulClient("test-service-name", "test-profile", config)
-	if consul != nil || err == nil {
+	err = checkConsulUp(config)
+	if err == nil {
 		t.Error("Error should be raised")
 	}
 
-	if err.Error() != "Cannot get connection to consul" {
-		t.Error("Wrong error message")
+	if err.Error() != "can't get connection to Consul" {
+		t.Error("Wrong error message", err.Error())
 	}
 }
 
-func TestConsulClientReturnErrorOnBadResponse(t *testing.T) {
+func TestCheckConsulUpReturnErrorOnBadResponse(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusServiceUnavailable)
@@ -66,12 +66,12 @@ func TestConsulClientReturnErrorOnBadResponse(t *testing.T) {
 	config.Registry.FailLimit = 1
 	config.Registry.FailWaitTime = 0
 
-	consul, err := GetConsulClient("test-service-name", "test-profile", config)
-	if consul != nil || err == nil {
+	err = checkConsulUp(config)
+	if err == nil {
 		t.Error("Error should be raised")
 	}
 
-	if err.Error() != "Cannot get connection to consul" {
+	if err.Error() != "bad response from Consul service" {
 		t.Error("Wrong error message ", err.Error())
 	}
 }
