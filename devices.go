@@ -11,6 +11,7 @@
 package device
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -27,6 +28,7 @@ type deviceCacheInterface interface {
 	Add(dev *models.Device) error
 	AddById(id string) error
 	Update(id string) error
+	UpdateAdminState(id string) error
 	DeviceById(id string) *models.Device
 	RemoveById(id string) error
 	IsDeviceLocked(id string) (exists, locked bool)
@@ -174,7 +176,24 @@ func (d *deviceCache) Update(id string) error {
 	return nil
 }
 
-// TODO: this should method should  be broken into two separate
+// UpdateAdminState updates the device admin state in cache by id. This method
+// is used by the UpdateHandler to trigger update device admin state that's been
+// updated directly to Core Metadata.
+func (d *deviceCache) UpdateAdminState(id string) error {
+	name, ok := d.names[id]
+	if !ok {
+		return errors.New("Device not found")
+	}
+	dev, err := svc.dc.Device(id)
+	if err != nil {
+		return err
+	}
+
+	d.devices[name].AdminState = dev.AdminState
+	return nil
+}
+
+// TODO: this should method should be broken into two separate
 // functions, one which validates an existing device and adds
 // it to the local cache, and one that adds a brand new device.
 // The current method is an almost direct translation of the Java
