@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -27,10 +28,10 @@ type deviceCacheInterface interface {
 	Devices() map[string]*models.Device
 	Add(dev *models.Device) error
 	AddById(id string) error
-	Update(id string) error
+	Update(dev *models.Device) error
 	UpdateAdminState(id string) error
 	DeviceById(id string) *models.Device
-	RemoveById(id string) error
+	Remove(dev *models.Device) error
 	IsDeviceLocked(id string) (exists, locked bool)
 	SetDeviceOpState(name string, os models.OperatingState) error
 	SetDeviceByIdOpState(id string, os models.OperatingState) error
@@ -155,8 +156,16 @@ func (d *deviceCache) IsDeviceLocked(id string) (exists, locked bool) {
 	return false, false
 }
 
-// RemoveById removes the specified (by id) device from the cache.
-func (d *deviceCache) RemoveById(id string) error {
+// Remove removes the specified device from the cache.
+func (d *deviceCache) Remove(dev *models.Device) error {
+	err := svc.dc.Delete(dev.Id.Hex())
+	if err != nil {
+		return err
+	}
+
+	delete(d.devices, dev.Name)
+	delete(d.devices, dev.Id.Hex())
+
 	return nil
 }
 
@@ -172,7 +181,19 @@ func (d *deviceCache) SetDeviceByIdOpState(id string, os models.OperatingState) 
 
 // Update updates the device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (d *deviceCache) Update(id string) error {
+func (d *deviceCache) Update(dev *models.Device) error {
+	err := svc.dc.Update(*dev)
+	if err != nil {
+		return err
+	}
+
+	// consider device name can be modified, so remove the old one and put new one
+	if _, ok := d.names[dev.Id.Hex()]; ok {
+		delete(d.devices, d.names[dev.Id.Hex()])
+	}
+	d.devices[dev.Name] = dev
+	d.names[dev.Id.Hex()] = dev.Name
+
 	return nil
 }
 
