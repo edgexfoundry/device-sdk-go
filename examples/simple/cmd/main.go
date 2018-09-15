@@ -33,6 +33,7 @@ func main() {
 	var profile string
 	var confDir string
 
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	flag.BoolVar(&useRegistry, "registry", false, "Indicates the service should use the registry.")
 	flag.BoolVar(&useRegistry, "r", false, "Indicates the service should use registry.")
 	flag.StringVar(&profile, "profile", "", "Specify a profile other than default.")
