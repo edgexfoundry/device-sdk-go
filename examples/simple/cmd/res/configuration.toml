@@ -43,32 +43,44 @@ FailWaitTime = 10
 RemoteURL = ''
 File = "./device-simple.log"
 
-# internal schedule
+# Pre-define Schedule Configuration
 [[schedules]]
 name = "10sec-schedule"
-cron = "*/10 * * * * *"
+frequency = "PT10S"
 
 [[scheduleEvents]]
 name = "readTemperature"
 schedule = "10sec-schedule"
-parameters = ""
   [scheduleEvents.Addressable]
-  path = "GetCommandExecutor::JC.RR5.NAE9.ConfRoom.Padre.Island::temperature"
+  method = "GET"
+  path = "/api/v1/device/{name=JC.RR5.NAE9.ConfRoom.Padre.Island}/temperature"
 
 [[scheduleEvents]]
 name = "readHumidity"
 schedule = "10sec-schedule"
-parameters = ""
   [scheduleEvents.Addressable]
-  path = "GetCommandExecutor::JC.RR5.NAE9.ConfRoom.Padre.Island::humidity"
+  method = "GET"
+  path = "/api/v1/device/{name=JC.RR5.NAE9.ConfRoom.Padre.Island}/humidity"
+
+# trigger schedule by support-scheduler
+[[scheduleEvents]]
+name = "readTemperature"
+schedule = "10sec-schedule"
+service="edgex-support-scheduler"
+  [scheduleEvents.Addressable]
+  protocol = "HTTP"
+  method = "GET"
+  address = "edgex-device-simple"
+  port = 49991
+  path = "/api/v1/device/{name=JC.RR5.NAE9.ConfRoom.Padre.Island}/temperature"
 
 [[schedules]]
 name = "5sec-schedule"
-cron = "*/5 * * * * *"
+frequency = "PT5S"
 
 [[scheduleEvents]]
 name = "readVoltage"
 schedule = "5sec-schedule"
-parameters = ""
   [scheduleEvents.Addressable]
-  path = "GetCommandExecutor::GS1-AC-Drive::voltage"
+  method = "GET"
+  path = "/api/v1/device/{name=GS1-AC-Drive}/voltage"
