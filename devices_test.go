@@ -1,12 +1,15 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
 package device
 
 import (
+	"github.com/edgexfoundry/device-sdk-go/mock"
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"testing"
 )
 
@@ -66,4 +69,27 @@ func TestCompareStrStrMap(t *testing.T) {
 	if compareStrStrMap(map1, map3) {
 		t.Error("Maps with different content are OK!")
 	}
+}
+
+func TestUpdateDevice(t *testing.T) {
+	svc = &Service{}
+	svc.ac = mock.AddressableClientMock{}
+	svc.dc = &mock.DeviceClientMock{}
+	devicesMap := map[string]*models.Device{
+		"meter": {Name: "meter", AdminState: models.Locked, Addressable: models.Addressable{Name: "addressable-meter"}},
+	}
+
+	dc = &deviceCache{devices: devicesMap, names: map[string]string{}}
+
+	device := models.Device{Name: "meter", AdminState: models.Unlocked, Addressable: models.Addressable{Name: "addressable-meter"}}
+	err := dc.Update(&device)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if dc.Devices()["meter"].AdminState != models.Unlocked {
+		t.Fatal("AdminState should be updated")
+	}
+
 }
