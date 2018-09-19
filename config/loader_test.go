@@ -1,13 +1,15 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package device
+package config
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/common"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -30,7 +32,7 @@ func TestCheckConsulUpReturnErrorOnTimeout(t *testing.T) {
 		fmt.Println(err.Error())
 	}
 
-	config := &Config{}
+	config := &common.Config{}
 	config.Registry.Host = host
 	config.Registry.Port = port
 	config.Registry.FailLimit = 1
@@ -60,7 +62,7 @@ func TestCheckConsulUpReturnErrorOnBadResponse(t *testing.T) {
 		fmt.Println(err.Error())
 	}
 
-	config := &Config{}
+	config := &common.Config{}
 	config.Registry.Host = host
 	config.Registry.Port = port
 	config.Registry.FailLimit = 1
@@ -73,13 +75,5 @@ func TestCheckConsulUpReturnErrorOnBadResponse(t *testing.T) {
 
 	if err.Error() != "bad response from Consul service" {
 		t.Error("Wrong error message ", err.Error())
-	}
-}
-
-func TestBuildAddr(t *testing.T) {
-	addr := buildAddr("test.xyz", "8000")
-
-	if addr != "http://test.xyz:8000" {
-		t.Errorf("Expected 'http://test.xyz:8000' but got: %s", addr)
 	}
 }

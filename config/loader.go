@@ -1,25 +1,25 @@
-// -*- Mode: Go; indent-tabs-mode: t -*-
+// -*- mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2017-2018
-// Canonical Ltd
-// IOTech
+// Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package device
+package config
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"github.com/BurntSushi/toml"
+	"github.com/edgexfoundry/device-sdk-go/common"
+	"github.com/edgexfoundry/device-sdk-go/registry"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
-
-	"github.com/BurntSushi/toml"
-	"github.com/edgexfoundry/device-sdk-go/registry"
 )
+
 
 const consulStatusPath = "/v1/agent/self"
 
@@ -27,26 +27,29 @@ var (
 	// Need to set timeout because it hang until server close connection
 	// https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
 	netClient = &http.Client{Timeout: time.Second * 10}
+	RegistryClient registry.Client
 )
 
 // LoadConfig loads the local configuration file based upon the
-// specified parameters and returns a pointer to the global Config
+// specified parameters and returns a pointer to the global RegistryConfig
 // struct which holds all of the local configuration settings for
 // the DS.
-func LoadConfig(profile string, configDir string) (config *Config, err error) {
-	var name string
+func LoadConfig(useRegistry bool, profile string, confDir string) (config *common.Config, err error) {
+	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
+		useRegistry, profile, confDir)
+	var confName string
 
-	if len(configDir) == 0 {
-		configDir = "./res/"
+	if len(confDir) == 0 {
+		confDir = "./res/"
 	}
 
 	if len(profile) > 0 {
-		name = "configuration-" + profile + ".toml"
+		confName = "configuration-" + profile + ".toml"
 	} else {
-		name = "configuration.toml"
+		confName = "configuration.toml"
 	}
 
-	path := configDir + name
+	path := confDir + confName
 
 	// As the toml package can panic if TOML is invalid,
 	// or elements are found that don't match members of
@@ -58,7 +61,7 @@ func LoadConfig(profile string, configDir string) (config *Config, err error) {
 		}
 	}()
 
-	config = &Config{}
+	config = &common.Config{}
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not load configuration file (%s): %v", path, err.Error())
@@ -73,11 +76,37 @@ func LoadConfig(profile string, configDir string) (config *Config, err error) {
 		return nil, fmt.Errorf("unable to parse configuration file (%s): %v", path, err.Error())
 	}
 
+	var consulMsg string
+	if useRegistry {
+		consulMsg = "Register in consul..."
+		RegistryClient, err = GetConsulClient(common.ServiceName, config)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		consulMsg = "Bypassing registration in consul..."
+	}
+	fmt.Println(consulMsg)
+
 	return config, nil
 }
 
-func checkConsulUp(config *Config) error {
-	consulUrl := buildAddr(config.Registry.Host, strconv.Itoa(config.Registry.Port))
+func GetConsulClient(serviceName string, config *common.Config) (*registry.ConsulClient, error) {
+	err := checkConsulUp(config)
+	if err != nil {
+		return nil, err
+	}
+
+	consulClient, err := newConsulClient(serviceName, config)
+	if err != nil {
+		err = fmt.Errorf("connection to consul could not be made: %v", err.Error())
+	}
+
+	return consulClient, err
+}
+
+func checkConsulUp(config *common.Config) error {
+	consulUrl := common.BuildAddr(config.Registry.Host, strconv.Itoa(config.Registry.Port))
 	fmt.Println("Check consul is up...", consulUrl)
 	fails := 0
 	for fails < config.Registry.FailLimit {
@@ -103,20 +132,9 @@ func checkConsulUp(config *Config) error {
 	return nil
 }
 
-func buildAddr(host string, port string) string {
-	var buffer bytes.Buffer
-
-	buffer.WriteString(httpScheme)
-	buffer.WriteString(host)
-	buffer.WriteString(colon)
-	buffer.WriteString(port)
-
-	return buffer.String()
-}
-
-func newConsulClient(serviceName string, config *Config) (*registry.ConsulClient, error) {
+func newConsulClient(serviceName string, config *common.Config) (*registry.ConsulClient, error) {
 	consulClient := &registry.ConsulClient{}
-	consulConfig := registry.Config{
+	consulConfig := registry.RegistryConfig{
 		Address:        config.Registry.Host,
 		Port:           config.Registry.Port,
 		ServiceName:    serviceName,
@@ -126,19 +144,5 @@ func newConsulClient(serviceName string, config *Config) (*registry.ConsulClient
 		CheckInterval:  config.Registry.CheckInterval,
 	}
 	err := consulClient.Init(consulConfig)
-	return consulClient, err
-}
-
-func GetConsulClient(serviceName string, config *Config) (*registry.ConsulClient, error) {
-	err := checkConsulUp(config)
-	if err != nil {
-		return nil, err
-	}
-
-	consulClient, err := newConsulClient(serviceName, config)
-	if err != nil {
-		err = fmt.Errorf("connection to consul could not be made: %v", err.Error())
-	}
-
 	return consulClient, err
 }

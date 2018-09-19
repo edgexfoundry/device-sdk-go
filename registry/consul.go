@@ -1,6 +1,5 @@
 //
-// Copyright (c) 2018
-// IOTech
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -20,7 +19,7 @@ type ConsulClient struct {
 	Consul *consulapi.Client
 }
 
-func (c *ConsulClient) Init(config Config) error {
+func (c *ConsulClient) Init(config RegistryConfig) error {
 	var err error // Declare error to be used throughout function
 
 	// Connect to the Consul Agent

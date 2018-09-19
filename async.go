@@ -17,7 +17,7 @@ import (
 // before being pushed to Core Data.
 func processAsyncResults() {
 	for !svc.stopped {
-		readings := make([]models.Reading, 0, svc.c.Device.MaxCmdOps)
+		readings := make([]models.Reading, 0, svc.config.Device.MaxCmdOps)
 		cr := <-svc.asyncCh
 
 		// get the device resource associated with the rsp.RO

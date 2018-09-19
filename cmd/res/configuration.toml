@@ -53,14 +53,14 @@ name = "readTemperature"
 schedule = "10sec-schedule"
   [scheduleEvents.Addressable]
   method = "GET"
-  path = "/api/v1/device/{name=JC.RR5.NAE9.ConfRoom.Padre.Island}/temperature"
+  path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
 
 [[scheduleEvents]]
 name = "readHumidity"
 schedule = "10sec-schedule"
   [scheduleEvents.Addressable]
   method = "GET"
-  path = "/api/v1/device/{name=JC.RR5.NAE9.ConfRoom.Padre.Island}/humidity"
+  path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/humidity"
 
 # trigger schedule by support-scheduler
 [[scheduleEvents]]
@@ -72,7 +72,7 @@ service="edgex-support-scheduler"
   method = "GET"
   address = "edgex-device-simple"
   port = 49991
-  path = "/api/v1/device/{name=JC.RR5.NAE9.ConfRoom.Padre.Island}/temperature"
+  path = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island/temperature"
 
 [[schedules]]
 name = "5sec-schedule"
@@ -83,4 +83,4 @@ name = "readVoltage"
 schedule = "5sec-schedule"
   [scheduleEvents.Addressable]
   method = "GET"
-  path = "/api/v1/device/{name=GS1-AC-Drive}/voltage"
+  path = "/api/v1/device/name/GS1-AC-Drive/voltage"

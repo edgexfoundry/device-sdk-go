@@ -5,23 +5,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-package device
+package common
 
 import (
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-const (
-	ClientData     = "Data"
-	ClientMetadata = "Metadata"
-)
-
-// ServiceInfo is a struct which contains service related configuration
+// ServiceInfo is a struct which contains RegisteredService related configuration
 // settings.
 type ServiceInfo struct {
-	// Host is the hostname or IP address of the service.
+	// Host is the hostname or IP address of the RegisteredService.
 	Host string
-	// Port is the HTTP port of the service.
+	// Port is the HTTP port of the RegisteredService.
 	Port int
 	// ConnectRetries is the number of times the DS will try
 	// to connect to Core Metadata to either register itself
@@ -30,7 +25,7 @@ type ServiceInfo struct {
 	ConnectRetries int
 	// HealthCheck is a URL specifying a healthcheck REST
 	// endpoint used by the Registry to determine if the
-	// service is available.
+	// RegisteredService is available.
 	HealthCheck string
 	// Labels are...
 	Labels []string
@@ -44,12 +39,12 @@ type ServiceInfo struct {
 	Timeout int
 }
 
-type service struct {
-	// Name is service's register name
+type RegisteredService struct {
+	// Name is RegisteredService's register name
 	Name string
-	// Host is the hostname or IP address of a service.
+	// Host is the hostname or IP address of a RegisteredService.
 	Host string
-	// Port is the HTTP port of a service.
+	// Port is the HTTP port of a RegisteredService.
 	Port int
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
@@ -99,7 +94,7 @@ type DeviceInfo struct {
 type LoggingInfo struct {
 	// File is the pathname of a local log file to be created.
 	File string
-	// RemoteURL is the URL of the support logging service.
+	// RemoteURL is the URL of the support logging RegisteredService.
 	// TODO: make this just another client!
 	RemoteURL string
 }
@@ -112,7 +107,7 @@ type ScheduleEventInfo struct {
 	// Path is the endpoint of the DS to be called when the
 	// ScheduleEvent is triggered.
 	Path string
-	// Service is the DS service name.
+	// Service is the DS RegisteredService name.
 	Service string
 }
 
@@ -125,12 +120,12 @@ type WatcherInfo struct {
 
 // Config is a struct which contains all of a DS's configuration settings.
 type Config struct {
-	// Service contains service-specific settings.
+	// Service contains RegisteredService-specific settings.
 	Service ServiceInfo
 	// Registry contains registry-specific settings.
-	Registry service
+	Registry RegisteredService
 	// Clients is a map of services used by a DS.
-	Clients map[string]service
+	Clients map[string]RegisteredService
 	// Device contains device-specific coniguration settings.
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
