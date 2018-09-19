@@ -10,6 +10,7 @@ package device
 import (
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
 	"sync"
@@ -43,7 +44,7 @@ var (
 )
 
 // Creates a singleton Schedule Cache instance.
-func getScheduleCache(config *Config) *ScheduleCache {
+func getScheduleCache(config *common.Config) *ScheduleCache {
 	scOnce.Do(func() {
 		scheduleCache = &ScheduleCache{
 			schedules:      config.Schedules,

@@ -1,6 +1,5 @@
 //
-// Copyright (c) 2018
-// IOTech
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +7,7 @@ package registry
 
 type Client interface {
 	// Initialize Consul by connecting to the agent and registering the service/check
-	Init(config Config) error
+	Init(config RegistryConfig) error
 
 	GetServiceEndpoint(serviceKey string) (ServiceEndpoint, error)
 
@@ -22,7 +21,7 @@ type ServiceEndpoint struct {
 	Port    int
 }
 
-type Config struct {
+type RegistryConfig struct {
 	Address        string
 	Port           int
 	ServiceName    string

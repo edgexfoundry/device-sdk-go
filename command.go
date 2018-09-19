@@ -118,7 +118,7 @@ func commandAllFunc(w http.ResponseWriter, r *http.Request) {
 }
 
 func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method string, args string) {
-	readings := make([]models.Reading, 0, svc.c.Device.MaxCmdOps)
+	readings := make([]models.Reading, 0, svc.config.Device.MaxCmdOps)
 
 	// make ResourceOperations
 	ops, err := pc.GetResourceOperations(d.Name, cmd, method)
@@ -128,9 +128,9 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 		return
 	}
 
-	if len(ops) > svc.c.Device.MaxCmdOps {
+	if len(ops) > svc.config.Device.MaxCmdOps {
 		msg := fmt.Sprintf("MaxCmdOps (%d) execeeded for dev: %s cmd: %s method: %s",
-			svc.c.Device.MaxCmdOps, d.Name, cmd, method)
+			svc.config.Device.MaxCmdOps, d.Name, cmd, method)
 		svc.lc.Error(msg)
 		http.Error(w, msg, http.StatusInternalServerError) // status=500
 		return
