@@ -3,14 +3,14 @@
 GO=CGO_ENABLED=0 go
 GOFLAGS=-ldflags
 
-MICROSERVICES=examples/simple/cmd/simple-device
+MICROSERVICES=cmd/simple-device/simple-device
 .PHONY: $(MICROSERVICES)
 
 build: $(MICROSERVICES)
 	go build ./...
 
-examples/simple/cmd/simple-device:
-	$(GO) build -o $@ ./examples/simple/cmd/ 
+cmd/simple-device:
+	$(GO) build -o $@ ./cmd/simple-device
 
 test:
 	go test ./... -cover
