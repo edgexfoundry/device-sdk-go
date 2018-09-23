@@ -6,7 +6,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // Package service(service?) implements the core logic of a device service,
-// which include loading config, handling service registration,
+// which include loading configuration, handling service registration,
 // creation of object caches, REST APIs, and basic service functionality.
 // Clients of this package must provide concrete implementations of the
 // device-specific interfaces (e.g. ProtocolDriver).
@@ -15,11 +15,12 @@ package device
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/registry"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
@@ -28,8 +29,22 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+const (
+	apiV1      = "/api/v1"
+	colon      = ":"
+	httpScheme = "http://"
+	httpProto  = "HTTP"
+
+	v1Addressable = "/api/v1/addressable"
+	v1Callback    = "/api/v1/callback"
+	v1Device      = "/api/v1/device"
+	v1DevService  = "/api/v1/deviceservice"
+	v1Event       = "/api/v1/event"
+)
+
 var (
 	svc            *Service
+	registryClient registry.Client
 )
 
 // A Service listens for requests and routes them to the right command
@@ -38,7 +53,7 @@ type Service struct {
 	Version       string
 	Discovery     ProtocolDiscovery
 	AsyncReadings bool
-	config        *common.Config
+	c             *Config
 	initAttempts  int
 	initialized   bool
 	locked        bool
@@ -103,10 +118,10 @@ func attemptInit(done chan<- struct{}) {
 				},
 				Name:       svc.Name,
 				HTTPMethod: http.MethodPost,
-				Protocol:   common.HttpProto,
-				Address:    svc.config.Service.Host,
-				Port:       svc.config.Service.Port,
-				Path:       common.V1Callback,
+				Protocol:   httpProto,
+				Address:    svc.c.Service.Host,
+				Port:       svc.c.Service.Port,
+				Path:       v1Callback,
 			}
 			addr.Origin = millis
 
@@ -129,7 +144,7 @@ func attemptInit(done chan<- struct{}) {
 		ds = models.DeviceService{
 			Service: models.Service{
 				Name:           svc.Name,
-				Labels:         svc.config.Service.Labels,
+				Labels:         svc.c.Service.Labels,
 				OperatingState: "ENABLED",
 				Addressable:    addr,
 			},
@@ -164,19 +179,19 @@ func attemptInit(done chan<- struct{}) {
 
 func validateClientConfig() error {
 
-	if len(svc.config.Clients[common.ClientMetadata].Host) == 0 {
+	if len(svc.c.Clients[ClientMetadata].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
 	}
 
-	if svc.config.Clients[common.ClientMetadata].Port == 0 {
+	if svc.c.Clients[ClientMetadata].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
 	}
 
-	if len(svc.config.Clients[common.ClientData].Host) == 0 {
+	if len(svc.c.Clients[ClientData].Host) == 0 {
 		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
 	}
 
-	if svc.config.Clients[common.ClientData].Port == 0 {
+	if svc.c.Clients[ClientData].Port == 0 {
 		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
 	}
 
@@ -186,11 +201,30 @@ func validateClientConfig() error {
 }
 
 // Start the device service. The bool useRegisty indicates whether the registry
-// should be used to read initial config settings. This also controls
+// should be used to read initial configuration settings. This also controls
 // whether the service registers itself the registry. The profile and confDir
-// are used to locate the local TOML config file.
-func (s *Service) Start(config *common.Config) (err error) {
-	s.config = config
+// are used to locate the local TOML configuration file.
+func (s *Service) Start(useRegistry bool, profile string, confDir string) (err error) {
+	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
+		useRegistry, profile, confDir)
+	s.useRegistry = useRegistry
+	s.c, err = LoadConfig(profile, confDir)
+	if err != nil {
+		fmt.Printf("error loading config file: %v \n", err)
+		return err
+	}
+
+	var consulMsg string
+	if useRegistry {
+		consulMsg = "Register in consul..."
+		registryClient, err = GetConsulClient(s.Name, s.c)
+		if err != nil {
+			return err
+		}
+	} else {
+		consulMsg = "Bypassing registration in consul..."
+	}
+	fmt.Println(consulMsg)
 
 	// TODO: validate that metadata and core config settings are set
 	err = validateClientConfig()
@@ -203,9 +237,9 @@ func (s *Service) Start(config *common.Config) (err error) {
 	done := make(chan struct{})
 
 	s.cw = newWatchers()
-	s.scca = getScheduleCache(s.config)
+	s.scca = getScheduleCache(s.c)
 
-	for s.initAttempts < s.config.Service.ConnectRetries && !s.initialized {
+	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
 		s.initAttempts++
 
 		if s.initAttempts > 1 {
@@ -242,18 +276,18 @@ func (s *Service) Start(config *common.Config) (err error) {
 	}
 
 	// Setup REST API
-	s.r = mux.NewRouter().PathPrefix(common.APIPrefix).Subrouter()
+	s.r = mux.NewRouter().PathPrefix(apiV1).Subrouter()
 	initStatus()
 	initCommand()
 	initControl()
 	initUpdate()
 
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.config.Service.Timeout), "Request timed out")
+	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.c.Service.Timeout), "Request timed out")
 
 	// TODO: call ListenAndServe in a goroutine
 
 	s.lc.Info("*Service Start() called")
-	s.lc.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.config.Service.Port), s.r).Error())
+	s.lc.Error(http.ListenAndServe(colon+strconv.Itoa(s.c.Service.Port), s.r).Error())
 	s.lc.Debug("*Service Start() exit")
 
 	return err
@@ -276,14 +310,14 @@ func (s *Service) AddDevice(dev models.Device) error {
 // name, version and ProtocolDriver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will alwayd return an error.
-func NewService(proto ProtocolDriver) (*Service, error) {
+func NewService(name string, version string, proto ProtocolDriver) (*Service, error) {
 
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
 		return nil, err
 	}
 
-	if len(common.ServiceName) == 0 {
+	if len(name) == 0 {
 		err := fmt.Errorf("NewService: empty name specified\n")
 		return nil, err
 	}
@@ -293,7 +327,7 @@ func NewService(proto ProtocolDriver) (*Service, error) {
 		return nil, err
 	}
 
-	svc = &Service{Name: common.ServiceName, Version: common.ServiceVersion, proto: proto}
+	svc = &Service{Name: name, Version: version, proto: proto}
 
 	return svc, nil
 }

@@ -6,7 +6,6 @@
 package device
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/common"
 	"github.com/edgexfoundry/device-sdk-go/mock"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -14,13 +13,13 @@ import (
 )
 
 func setup() {
-	var loggingConfig = common.LoggingInfo{File: "./device-simple.log", RemoteURL: ""}
-	var config = common.Config{Logging: loggingConfig}
-	svc = &Service{config: &config}
+	var loggingConfig = LoggingInfo{File: "./device-simple.log", RemoteURL: ""}
+	var config = Config{Logging: loggingConfig}
+	svc = &Service{c: &config}
 	svc.scc = &mock.ScheduleClientMock{}
 	svc.scec = &mock.ScheduleEventClientMock{}
 	svc.ac = &mock.AddressableClientMock{}
-	svc.lc = logger.NewClient("test_service", false, svc.config.Logging.File)
+	svc.lc = logger.NewClient("test_service", false, svc.c.Logging.File)
 }
 
 func TestNewSchedules(t *testing.T) {
@@ -35,7 +34,7 @@ func TestNewSchedules(t *testing.T) {
 		{Name: "daily clean", Schedule: "daily"},
 	}
 
-	var config = common.Config{
+	var config = Config{
 		Schedules:      defaultSchedules,
 		ScheduleEvents: defaultScheduleEvents,
 	}

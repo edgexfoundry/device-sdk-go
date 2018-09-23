@@ -7,7 +7,7 @@
 // This package provides a simple example implementation of
 // a ProtocolDriver interface.
 //
-package driver
+package simple
 
 import (
 	"fmt"

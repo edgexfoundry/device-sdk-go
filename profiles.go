@@ -8,7 +8,6 @@ package device
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -30,7 +29,7 @@ const (
 
 // profileCache is a local cache of devices seeded from Core Metadata.
 type profileCache struct {
-	config *common.Config
+	config *Config
 	// TODO: descriptors should be a map of vds.name to vds!!!
 	descriptors []models.ValueDescriptor
 	commands    map[string]map[string]map[string][]models.ResourceOperation
@@ -130,7 +129,7 @@ func newProfileCache() {
 		pc.commands = make(map[string]map[string]map[string][]models.ResourceOperation)
 		pc.profiles = make(map[string]models.DeviceProfile)
 
-		loadProfiles(svc.config.Device.ProfilesDir)
+		loadProfiles(svc.c.Device.ProfilesDir)
 	})
 }
 

@@ -7,8 +7,6 @@ package device
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/common"
-	"github.com/edgexfoundry/device-sdk-go/config"
 	"github.com/edgexfoundry/device-sdk-go/registry"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
@@ -42,15 +40,15 @@ func initializeLoggingClient() {
 	var remoteLog = false
 	var logTarget string
 
-	if svc.config.Logging.RemoteURL == "" {
-		logTarget = svc.config.Logging.File
+	if svc.c.Logging.RemoteURL == "" {
+		logTarget = svc.c.Logging.File
 
 	} else if checkRemoteLoggingAvailable() {
 		remoteLog = true
-		logTarget = svc.config.Logging.RemoteURL
+		logTarget = svc.c.Logging.RemoteURL
 		fmt.Println("Ping remote logging service success, use remote logging.")
 	} else {
-		logTarget = svc.config.Logging.File
+		logTarget = svc.c.Logging.File
 		fmt.Println("Ping remote logging service failed, use log file instead.")
 	}
 
@@ -61,7 +59,7 @@ func checkRemoteLoggingAvailable() bool {
 	var available = true
 	fmt.Println("Check Logging service's status ...")
 
-	_, err := http.Get(svc.config.Logging.RemoteURL + common.APIPrefix + "/ping")
+	_, err := http.Get(svc.c.Logging.RemoteURL + apiV1 + "/ping")
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Error getting ping: %v", err))
 		available = false
@@ -71,7 +69,7 @@ func checkRemoteLoggingAvailable() bool {
 }
 
 func checkDependencyServices() {
-	var dependencyList = []string{common.ClientData, common.ClientMetadata}
+	var dependencyList = []string{ClientData, ClientMetadata}
 
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(len(dependencyList))
@@ -90,7 +88,7 @@ func checkDependencyServices() {
 
 func checkServiceAvailable(serviceId string) {
 	if svc.useRegistry {
-		if !checkServiceAvailableByConsul(svc.config.Clients[serviceId].Name) {
+		if !checkServiceAvailableByConsul(svc.c.Clients[serviceId].Name) {
 			time.Sleep(10 * time.Second)
 			checkServiceAvailable(serviceId)
 		}
@@ -107,16 +105,16 @@ func checkServiceAvailable(serviceId string) {
 
 func checkServiceAvailableByPing(serviceId string) error {
 	svc.lc.Info(fmt.Sprintf("Check %v service's status ...", serviceId))
-	host := svc.config.Clients[serviceId].Host
-	port := strconv.Itoa(svc.config.Clients[serviceId].Port)
-	addr := common.BuildAddr(host, port)
-	timeout := int64(svc.config.Clients[serviceId].Timeout) * int64(time.Millisecond)
+	host := svc.c.Clients[serviceId].Host
+	port := strconv.Itoa(svc.c.Clients[serviceId].Port)
+	addr := buildAddr(host, port)
+	timeout := int64(svc.c.Clients[serviceId].Timeout) * int64(time.Millisecond)
 
 	client := http.Client{
 		Timeout: time.Duration(timeout),
 	}
 
-	_, err := client.Get(addr + common.APIPrefix + "/ping")
+	_, err := client.Get(addr + apiV1 + "/ping")
 
 	if err != nil {
 		svc.lc.Error(fmt.Sprintf("Error getting ping: %v ", err))
@@ -135,9 +133,9 @@ func checkServiceAvailableByConsul(serviceConsulId string) bool {
 	}
 
 	// Get a new client
-	var host = svc.config.Registry.Host
-	var port = strconv.Itoa(svc.config.Registry.Port)
-	var consulAddr = common.BuildAddr(host, port)
+	var host = svc.c.Registry.Host
+	var port = strconv.Itoa(svc.c.Registry.Port)
+	var consulAddr = buildAddr(host, port)
 	consulConfig := consulapi.DefaultConfig()
 	consulConfig.Address = consulAddr
 	client, err := consulapi.NewClient(consulConfig)
@@ -173,7 +171,7 @@ func checkServiceAvailableByConsul(serviceConsulId string) bool {
 }
 
 func checkConsulAvailable() bool {
-	addr := fmt.Sprintf("%v:%v", svc.config.Registry.Host, svc.config.Registry.Port)
+	addr := fmt.Sprintf("%v:%v", svc.c.Registry.Host, svc.c.Registry.Port)
 	conn, err := net.Dial("tcp", addr)
 	if err != nil {
 		svc.lc.Error(fmt.Sprintf("Consul cannot be reached, address: %v and error is \"%v\" ", addr, err.Error()))
@@ -184,32 +182,32 @@ func checkConsulAvailable() bool {
 }
 
 func initializeClients() {
-	consulEndpoint := &registry.ConsulEndpoint{RegistryClient: config.RegistryClient}
+	consulEndpoint := &registry.ConsulEndpoint{RegistryClient: registryClient}
 
-	metaPort := strconv.Itoa(svc.config.Clients[common.ClientMetadata].Port)
-	metaHost := svc.config.Clients[common.ClientMetadata].Host
-	metaAddr := common.BuildAddr(metaHost, metaPort)
+	metaPort := strconv.Itoa(svc.c.Clients[ClientMetadata].Port)
+	metaHost := svc.c.Clients[ClientMetadata].Host
+	metaAddr := buildAddr(metaHost, metaPort)
 
-	dataPort := strconv.Itoa(svc.config.Clients[common.ClientData].Port)
-	dataHost := svc.config.Clients[common.ClientData].Host
-	dataAddr := common.BuildAddr(dataHost, dataPort)
+	dataPort := strconv.Itoa(svc.c.Clients[ClientData].Port)
+	dataHost := svc.c.Clients[ClientData].Host
+	dataAddr := buildAddr(dataHost, dataPort)
 
 	params := types.EndpointParams{
 		UseRegistry: svc.useRegistry,
 	}
 
 	// initialize Core Metadata clients
-	params.ServiceKey = svc.config.Clients[common.ClientMetadata].Name
+	params.ServiceKey = svc.c.Clients[ClientMetadata].Name
 
-	params.Path = common.V1Addressable
+	params.Path = v1Addressable
 	params.Url = metaAddr + params.Path
 	svc.ac = metadata.NewAddressableClient(params, consulEndpoint)
 
-	params.Path = common.V1Device
+	params.Path = v1Device
 	params.Url = metaAddr + params.Path
 	svc.dc = metadata.NewDeviceClient(params, consulEndpoint)
 
-	params.Path = common.V1DevService
+	params.Path = v1DevService
 	params.Url = metaAddr + params.Path
 	svc.sc = metadata.NewDeviceServiceClient(params, consulEndpoint)
 
@@ -226,9 +224,9 @@ func initializeClients() {
 	svc.scec = metadata.NewScheduleEventClient(params, consulEndpoint)
 
 	// initialize Core Data clients
-	params.ServiceKey = svc.config.Clients[common.ClientData].Name
+	params.ServiceKey = svc.c.Clients[ClientData].Name
 
-	params.Path = common.V1Event
+	params.Path = v1Event
 	params.Url = dataAddr + params.Path
 	svc.ec = coredata.NewEventClient(params, consulEndpoint)
 
