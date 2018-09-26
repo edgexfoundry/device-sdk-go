@@ -3,11 +3,7 @@
 // Copyright (C) 2018 Canonical Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
-// This package defines an interface used to build an EdgeX Foundry device
-// service.  This interace provides an asbstraction layer for the device
-// or protocol specific logic of a device service.
-//
+
 package device
 
 import (
