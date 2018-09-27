@@ -7,8 +7,9 @@
 package device
 
 import (
-	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"sync"
+
+	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 type Watchers struct {

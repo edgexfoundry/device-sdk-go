@@ -6,10 +6,11 @@
 package device
 
 import (
+	"testing"
+
 	"github.com/edgexfoundry/device-sdk-go/mock"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"testing"
 )
 
 func setup() {

@@ -6,9 +6,10 @@
 package device
 
 import (
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"net"
 	"testing"
+
+	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 )
 
 func TestInitializeLoggingClientByFile(test *testing.T) {
