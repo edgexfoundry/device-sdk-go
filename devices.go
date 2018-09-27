@@ -8,7 +8,7 @@
 // This package provides management of device service related
 // objects that may be distributed across one or more EdgeX
 // core microservices.
-//
+
 package device
 
 import (

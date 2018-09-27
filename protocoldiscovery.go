@@ -3,7 +3,7 @@
 // Copyright (C) 2018 Canonical Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
-//
+
 package device
 
 // ProtocolDiscovery is a low-level device-specific interface implemented
