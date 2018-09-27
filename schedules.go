@@ -10,9 +10,10 @@ package device
 import (
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"gopkg.in/mgo.v2/bson"
-	"sync"
 )
 
 type ScheduleCacheInterface interface {

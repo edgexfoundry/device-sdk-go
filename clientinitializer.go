@@ -7,17 +7,18 @@ package device
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/edgexfoundry/device-sdk-go/registry"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	consulapi "github.com/hashicorp/consul/api"
-	"net"
-	"net/http"
-	"strconv"
-	"sync"
-	"time"
 )
 
 // initDependencyClients
