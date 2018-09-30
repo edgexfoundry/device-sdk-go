@@ -89,9 +89,9 @@ func (d *deviceCache) Add(dev *models.Device) error {
 
 	// if device already exists in devices, delete & re-add
 	if _, ok := d.devices[dev.Name]; ok {
+		pc.removeDevice(dev)
+		delete(d.names, dev.Id.Hex())
 		delete(d.devices, dev.Name)
-
-		// TODO: remove from profiles
 	}
 
 	svc.lc.Debug(fmt.Sprintf("Adding managed device: : %v\n", dev))
@@ -157,8 +157,9 @@ func (d *deviceCache) Remove(dev *models.Device) error {
 		return err
 	}
 
+	pc.removeDevice(dev)
+	delete(d.names, dev.Id.Hex())
 	delete(d.devices, dev.Name)
-	delete(d.devices, dev.Id.Hex())
 
 	return nil
 }
