@@ -105,7 +105,7 @@ func attemptInit(done chan<- struct{}) {
 			// don't quit, but instead try to create addressable & service
 		}
 
-		millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
+		millis := time.Now().UnixNano() / int64(time.Millisecond)
 
 		// TODO: same as above
 		if addr.Name != svc.Name {
