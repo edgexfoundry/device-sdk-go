@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 	"github.com/gorilla/mux"
@@ -202,13 +203,8 @@ func executeCommand(w http.ResponseWriter, d *models.Device, cmd string, method 
 
 	// push to Core Data
 	event := &models.Event{Device: d.Name, Readings: readings}
-	_, err = svc.ec.Add(event)
-	if err != nil {
-		msg := fmt.Sprintf("internal error; failed to push event for dev: %s cmd: %s to CoreData: %s", d.Name, cmd, err)
-		svc.lc.Error(msg)
-		http.Error(w, msg, http.StatusInternalServerError) // status=500
-		return
-	}
+	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+	go sendEvent(event)
 
 	// TODO: the 'all' form of the endpoint returns 200 if a transform
 	// overflow or assertion trips...
@@ -231,4 +227,11 @@ func initCommand() {
 	sr := svc.r.PathPrefix("/device").Subrouter()
 	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
 	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
+}
+
+func sendEvent(event *models.Event) {
+	_, err := svc.ec.Add(event)
+	if err != nil {
+		svc.lc.Error(fmt.Sprintf("Failed to push event for device %s: %s", event.Device, err))
+	}
 }
