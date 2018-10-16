@@ -12,319 +12,262 @@ package device
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/registry"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/internal/clients"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/internal/controller"
+	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/gorilla/mux"
 	"gopkg.in/mgo.v2/bson"
 )
 
-const (
-	apiV1      = "/api/v1"
-	colon      = ":"
-	httpScheme = "http://"
-	httpProto  = "HTTP"
-
-	v1Addressable = "/api/v1/addressable"
-	v1Callback    = "/api/v1/callback"
-	v1Device      = "/api/v1/device"
-	v1DevService  = "/api/v1/deviceservice"
-	v1Event       = "/api/v1/event"
-)
-
 var (
-	svc            *Service
-	registryClient registry.Client
+	svc *Service
 )
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
-	Name          string
-	Version       string
-	Discovery     ProtocolDiscovery
-	AsyncReadings bool
-	c             *Config
-	initAttempts  int
-	initialized   bool
-	locked        bool
-	useRegistry   bool
-	stopped       bool
-	ec            coredata.EventClient
-	ac            metadata.AddressableClient
-	dc            metadata.DeviceClient
-	sc            metadata.DeviceServiceClient
-	dpc           metadata.DeviceProfileClient
-	lc            logger.LoggingClient
-	vdc           coredata.ValueDescriptorClient
-	scc           metadata.ScheduleClient
-	scec          metadata.ScheduleEventClient
-	ds            models.DeviceService
-	r             *mux.Router
-	scca          ScheduleCacheInterface
-	cw            *Watchers
-	proto         ProtocolDriver
-	asyncCh       <-chan *CommandResult
+	svcInfo      *common.ServiceInfo
+	discovery    ds_models.ProtocolDiscovery
+	initAttempts int
+	initialized  bool
+	stopped      bool
+	cw           *Watchers
+	asyncCh      chan *ds_models.AsyncValues
 }
 
-func attemptInit(done chan<- struct{}) {
-	defer func() { done <- struct{}{} }()
-
-	svc.lc.Debug("Trying to find ds: " + svc.Name)
-
-	ds, err := svc.sc.DeviceServiceForName(svc.Name)
-	if err != nil {
-		svc.lc.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
-
-		// TODO: restore if/when the issue with detecting 'not-found'
-		// is resolves.  Otherwise, just log errors and move on.
-		//
-		// https://github.com/edgexfoundry/core-clients-go/issues/5
-		// return
-	}
-
-	svc.lc.Debug("DeviceServiceForName returned: " + ds.Service.Name)
-	svc.lc.Debug(fmt.Sprintf("DeviceServiceId is: %s", ds.Service.Id))
-
-	// TODO: this checks if names are equal, not if the resulting ds is a valid instance
-	if ds.Service.Name != svc.Name {
-		svc.lc.Error(fmt.Sprintf("Failed to find ds: %s; attempts: %d", svc.Name, svc.initAttempts))
-
-		// check for addressable
-		svc.lc.Error(fmt.Sprintf("Trying to find addressable for: %s", svc.Name))
-		addr, err := svc.ac.AddressableForName(svc.Name)
-		if err != nil {
-			svc.lc.Error(fmt.Sprintf("AddressableForName: %s; failed: %v", svc.Name, err))
-
-			// don't quit, but instead try to create addressable & service
-		}
-
-		millis := time.Now().UnixNano() / int64(time.Millisecond)
-
-		// TODO: same as above
-		if addr.Name != svc.Name {
-			addr = models.Addressable{
-				BaseObject: models.BaseObject{
-					Origin: millis,
-				},
-				Name:       svc.Name,
-				HTTPMethod: http.MethodPost,
-				Protocol:   httpProto,
-				Address:    svc.c.Service.Host,
-				Port:       svc.c.Service.Port,
-				Path:       v1Callback,
-			}
-			addr.Origin = millis
-
-			id, err := svc.ac.Add(&addr)
-			if err != nil {
-				svc.lc.Error(fmt.Sprintf("Add Addressable: %s; failed: %v", svc.Name, err))
-				return
-			}
-
-			if len(id) != 24 || !bson.IsObjectIdHex(id) {
-				svc.lc.Error("Add addressable returned invalid Id: " + id)
-				return
-			}
-
-			addr.Id = bson.ObjectIdHex(id)
-			svc.lc.Error("New addressable Id: " + addr.Id.Hex())
-		}
-
-		// setup the service
-		ds = models.DeviceService{
-			Service: models.Service{
-				Name:           svc.Name,
-				Labels:         svc.c.Service.Labels,
-				OperatingState: "ENABLED",
-				Addressable:    addr,
-			},
-			AdminState: "UNLOCKED",
-		}
-
-		ds.Service.Origin = millis
-		id, err := svc.sc.Add(&ds)
-		if err != nil {
-			svc.lc.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", svc.Name, err))
-			return
-		}
-
-		if len(id) != 24 || !bson.IsObjectIdHex(id) {
-			svc.lc.Error("Add deviceservice returned invalid Id: %s", id)
-			return
-		}
-
-		// NOTE - this differs from Addressable and Device objects,
-		// neither of which require the '.Service'prefix
-		ds.Service.Id = bson.ObjectIdHex(id)
-		svc.lc.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
-
-		svc.initialized = true
-		svc.ds = ds
-	} else {
-		svc.lc.Debug(fmt.Sprintf("Found ds.Name: %s, svc.Name: %s", ds.Service.Name, svc.Name))
-		svc.initialized = true
-		svc.ds = ds
-	}
+func (s *Service) Name() string {
+	return common.ServiceName
 }
 
-func validateClientConfig() error {
-
-	if len(svc.c.Clients[ClientMetadata].Host) == 0 {
-		return fmt.Errorf("Fatal error; Host setting for Core Metadata client not configured")
-	}
-
-	if svc.c.Clients[ClientMetadata].Port == 0 {
-		return fmt.Errorf("Fatal error; Port setting for Core Metadata client not configured")
-	}
-
-	if len(svc.c.Clients[ClientData].Host) == 0 {
-		return fmt.Errorf("Fatal error; Host setting for Core Data client not configured")
-	}
-
-	if svc.c.Clients[ClientData].Port == 0 {
-		return fmt.Errorf("Fatal error; Port setting for Core Ddata client not configured")
-	}
-
-	// TODO: validate other settings for sanity: maxcmdops, ...
-
-	return nil
+func (s *Service) Version() string {
+	return common.ServiceVersion
 }
 
-// Start the device service. The bool useRegisty indicates whether the registry
-// should be used to read initial configuration settings. This also controls
-// whether the service registers itself the registry. The profile and confDir
-// are used to locate the local TOML configuration file.
-func (s *Service) Start(useRegistry bool, profile string, confDir string) (err error) {
-	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
-		useRegistry, profile, confDir)
-	s.useRegistry = useRegistry
-	s.c, err = LoadConfig(profile, confDir)
-	if err != nil {
-		fmt.Printf("error loading config file: %v \n", err)
-		return err
-	}
+func (s *Service) Discovery() ds_models.ProtocolDiscovery {
+	return s.discovery
+}
 
-	var consulMsg string
-	if useRegistry {
-		consulMsg = "Register in consul..."
-		registryClient, err = GetConsulClient(s.Name, s.c)
-		if err != nil {
-			return err
-		}
-	} else {
-		consulMsg = "Bypassing registration in consul..."
-	}
-	fmt.Println(consulMsg)
+func (s *Service) AsyncReadings() bool {
+	return common.CurrentConfig.Service.EnableAsyncReadings
+}
 
-	// TODO: validate that metadata and core config settings are set
-	err = validateClientConfig()
+// Start the device service.
+func (s *Service) Start() (err error) {
+	err = clients.InitDependencyClients()
 	if err != nil {
 		return err
 	}
 
-	initDependencyClients()
-
-	done := make(chan struct{})
-
-	s.cw = newWatchers()
-	s.scca = getScheduleCache(s.c)
-
-	for s.initAttempts < s.c.Service.ConnectRetries && !s.initialized {
-		s.initAttempts++
-
-		if s.initAttempts > 1 {
-			time.Sleep(30 * time.Second)
-		}
-
-		go attemptInit(done)
-		<-done // wait for background attempt to finish
-	}
-
-	if !s.initialized {
-		err = fmt.Errorf("Couldn't register to metadata service; MaxLimit reaches.")
+	err = selfRegister()
+	if err != nil {
+		err = common.LoggingClient.Error("Couldn't register to metadata service")
 		return err
 	}
 
 	// initialize devices, objects & profiles
-	newProfileCache()
-	newDeviceCache(s.ds.Service.Id.Hex())
-
-	// TODO: initialize scheduler
-
-	// initialize driver
-	if s.AsyncReadings {
-		// TODO: make channel buffer size a setting
-		s.asyncCh = make(<-chan *CommandResult, 16)
-
-		go processAsyncResults()
+	cache.InitCache()
+	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
+	if err != nil {
+		err = common.LoggingClient.Error("Failed to create the pre-defined Device Profiles")
+		return err
 	}
 
-	err = s.proto.Initialize(s, s.lc, s.asyncCh)
+	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
 	if err != nil {
-		s.lc.Error(fmt.Sprintf("ProtocolDriver.Initialize failure: %v; exiting.", err))
+		err = common.LoggingClient.Error("Failed to create the pre-defined Devices")
+		return err
+	}
+
+	err = provision.LoadSchedulesAndEvents(common.CurrentConfig)
+	if err != nil {
+		err = common.LoggingClient.Error("Failed to create the pre-defined Schedules or Schedule Events")
+		return err
+	}
+
+	s.cw = newWatchers()
+
+	// initialize driver
+	if common.CurrentConfig.Service.EnableAsyncReadings {
+		s.asyncCh = make(chan *ds_models.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
+		go processAsyncResults()
+	}
+	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("Driver.Initialize failure: %v; exiting.", err))
 		return err
 	}
 
 	// Setup REST API
-	s.r = mux.NewRouter().PathPrefix(apiV1).Subrouter()
-	initStatus()
-	initCommand()
-	initControl()
-	initUpdate()
+	r := controller.InitRestRoutes()
 
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.c.Service.Timeout), "Request timed out")
+	scheduler.StartScheduler()
+	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
 
 	// TODO: call ListenAndServe in a goroutine
 
-	s.lc.Info("*Service Start() called")
-	s.lc.Error(http.ListenAndServe(colon+strconv.Itoa(s.c.Service.Port), s.r).Error())
-	s.lc.Debug("*Service Start() exit")
+	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
+	common.LoggingClient.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r).Error())
+	common.LoggingClient.Debug("*Service Start() exit")
 
 	return err
 }
 
-// Stop shuts down the Service
-func (s *Service) Stop(force bool) error {
+func selfRegister() error {
+	common.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
 
-	s.stopped = true
-	s.proto.Stop(force)
+	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName)
+
+	if err != nil {
+		if _, ok := err.(types.ErrNotFound); ok {
+			common.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
+			ds, err = createNewDeviceService()
+		} else {
+			common.LoggingClient.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
+			return err
+		}
+	} else {
+		common.LoggingClient.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
+	}
+
+	common.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %v", ds))
+	common.CurrentDeviceService = ds
+	svc.initialized = true
 	return nil
 }
 
-// AddDevice adds a new device to the device service.
-func (s *Service) AddDevice(dev models.Device) error {
-	return dc.Add(&dev)
+func createNewDeviceService() (models.DeviceService, error) {
+	addr, err := makeNewAddressable()
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
+		return models.DeviceService{}, err
+	}
+	millis := time.Now().UnixNano() / int64(time.Millisecond)
+	ds := models.DeviceService{
+		Service: models.Service{
+			Name:           common.ServiceName,
+			Labels:         svc.svcInfo.Labels,
+			OperatingState: "ENABLED",
+			Addressable:    *addr,
+		},
+		AdminState: "UNLOCKED",
+	}
+	ds.Service.Origin = millis
+
+	id, err := common.DeviceServiceClient.Add(&ds)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
+		return models.DeviceService{}, err
+	}
+	if err = common.VerifyIdFormat(id, "Device Service"); err != nil {
+		return models.DeviceService{}, err
+	}
+
+	// NOTE - this differs from Addressable and Device objects,
+	// neither of which require the '.Service'prefix
+	ds.Service.Id = bson.ObjectIdHex(id)
+	common.LoggingClient.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
+
+	return ds, nil
+}
+
+func makeNewAddressable() (*models.Addressable, error) {
+	// check whether there has been an existing addressable
+	addr, err := common.AddressableClient.AddressableForName(common.ServiceName)
+	if err != nil {
+		if _, ok := err.(types.ErrNotFound); ok {
+			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
+			millis := time.Now().UnixNano() / int64(time.Millisecond)
+			addr = models.Addressable{
+				BaseObject: models.BaseObject{
+					Origin: millis,
+				},
+				Name:       common.ServiceName,
+				HTTPMethod: http.MethodPost,
+				Protocol:   common.HttpProto,
+				Address:    svc.svcInfo.Host,
+				Port:       svc.svcInfo.Port,
+				Path:       common.APICallbackRoute,
+			}
+			id, err := common.AddressableClient.Add(&addr)
+			if err != nil {
+				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
+				return nil, err
+			}
+			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
+				return nil, err
+			}
+			addr.Id = bson.ObjectIdHex(id)
+		} else {
+			common.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
+			return nil, err
+		}
+	} else {
+		common.LoggingClient.Info(fmt.Sprintf("Addressable %s exists", common.ServiceName))
+	}
+
+	return &addr, nil
+}
+
+// Stop shuts down the Service
+func (s *Service) Stop(force bool) error {
+	s.stopped = true
+	common.Driver.Stop(force)
+	scheduler.StopScheduler()
+	return nil
 }
 
 // NewService create a new device service instance with the given
-// name, version and ProtocolDriver, which cannot be nil.
+// version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
-// it will alwayd return an error.
-func NewService(name string, version string, proto ProtocolDriver) (*Service, error) {
-
+// it will always return an error.
+func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry bool, proto ds_models.ProtocolDriver) (*Service, error) {
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
 		return nil, err
 	}
 
-	if len(name) == 0 {
+	config, err := configLoader.LoadConfig(useRegistry, confProfile, confDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
+		os.Exit(1)
+	}
+	common.CurrentConfig = config
+
+	if len(serviceName) == 0 {
 		err := fmt.Errorf("NewService: empty name specified\n")
 		return nil, err
 	}
+	common.ServiceName = serviceName
+
+	if len(serviceVersion) == 0 {
+		err := fmt.Errorf("NewService: empty version number specified\n")
+		return nil, err
+	}
+	common.ServiceVersion = serviceVersion
 
 	if proto == nil {
-		err := fmt.Errorf("NewService: no ProtocolDriver specified\n")
+		err := fmt.Errorf("NewService: no Driver specified\n")
 		return nil, err
 	}
 
-	svc = &Service{Name: name, Version: version, proto: proto}
+	svc = &Service{}
+	svc.svcInfo = &config.Service
+	common.Driver = proto
 
 	return svc, nil
+}
+
+// RunningService returns the Service instance which is running
+func RunningService() *Service {
+	return svc
 }

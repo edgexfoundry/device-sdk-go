@@ -6,11 +6,12 @@ import:
   - /pkg/clients/coredata
   - /pkg/clients/metadata
   - /pkg/clients/logging
+- package: github.com/BurntSushi/toml
 - package: github.com/gorilla/mux
 - package: github.com/hashicorp/consul
   subpackages:
   - api
-- package: github.com/BurntSushi/toml
+- package: github.com/robfig/cron
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
