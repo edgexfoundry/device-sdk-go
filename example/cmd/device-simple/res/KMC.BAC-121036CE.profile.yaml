@@ -1,0 +1,124 @@
+name: "KMC.BAC-121036CE"
+manufacturer: "KMC"
+model: "BAC-121036CE"
+labels: 
+    - "thermostat"
+    - "industrial"
+description: "KMC BAC-121036CE BACnet thermostat"
+deviceResources:
+    -   
+        name: "AnalogValue_40"
+        description: "The current temperature."
+        attributes: 
+            { type: "analogValue", instance: "40" }
+        properties: 
+            value:
+                { type: "Float", size: "4", readWrite: "R", precision: "3.2", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "DegreesFarenheit" }
+    -
+        name: "AnalogValue_22"
+        description: "Get the current humidity."
+        attributes: 
+            { type: "analogValue", instance: "22" }
+        properties: 
+            value:
+                { type: "Float", size: "4", readWrite: "R", precision: "3.2", defaultValue: "0.00", minimum: "0.00", maximum: "100.00"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "RelativeHumidity" }
+    -
+        name: "AnalogValue_20"
+        description: "The occupied cooling set point."
+        attributes: 
+            { type: "analogValue", instance: "20" }
+        properties: 
+            value:
+                { type: "Float", size: "4", readWrite: "R", precision: "3.2", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "DegreesFarenheit" }
+    -
+        name: "AnalogValue_21"
+        description: "The occupied heating set point."
+        attributes: 
+            { type: "analogValue", instance: "21" }
+        properties: 
+            value:
+                { type: "Float", size: "4", readWrite: "R", precision: "3.2", defaultValue: "0.00", minimum: "-99.99", maximum: "199.99"  }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "DegreesFarenheit" }
+                
+resources:
+    -
+        name: "CurrentTemperature"
+        get:
+            -
+                { operation: "get", object: "AnalogValue_40", property: "value", parameter: "CurrentTemperature" }
+    -
+        name: "CurrentHumidity"
+        get:
+            -
+                { operation: "get", object: "AnalogValue_22", property: "value", parameter: "CurrentHumidity" }
+    -   
+        name: "OccupiedCoolingSetPoint"
+        get:
+            -
+                { operation: "get", object: "AnalogValue_20", property: "value", parameter: "OccupiedCoolingSetPoint" }
+    -   
+        name: "OccupiedHeatingSetPoint"
+        get:
+            -
+                { operation: "get", object: "AnalogValue_21", property: "value", parameter: "OccupiedHeatingSetPoint" }
+
+commands: 
+  - 
+    name: "CurrentTemperature"
+    get: 
+        path: "/api/v1/device/{deviceId}/CurrentTemperature"
+        responses: 
+          -
+            code: "200"
+            description: ""
+            expectedValues: ["CurrentTemperature"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  -
+    name: "CurrentHumidity"
+    get: 
+        path: "/api/v1/device/{deviceId}/CurrentHumidity"
+        responses: 
+          -
+            code: "200"
+            description: ""
+            expectedValues: ["CurrentHumidity"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  - 
+    name: "OccupiedCoolingSetPoint"
+    get: 
+        path: "/api/v1/device/{deviceId}/OccupiedCoolingSetPoint"
+        responses: 
+          -
+            code: "200"
+            description: ""
+            expectedValues: ["OccupiedCoolingSetPoint"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+  - 
+    name: "OccupiedHeatingSetPoint"
+    get: 
+        path: "/api/v1/device/{deviceId}/OccupiedHeatingSetPoint"
+        responses: 
+          -
+            code: "200"
+            description: ""
+            expectedValues: ["OccupiedHeatingSetPoint"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
