@@ -137,8 +137,8 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 
 		err = transformer.CheckAssertion(cv, do.Properties.Value.Assertion, device)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %s", cv.String(), err))
-			transformsOK = false
+			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
+			cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), do.Properties.Value.Assertion))
 		}
 
 		if len(cv.RO.Mappings) > 0 {
