@@ -43,7 +43,7 @@ func processAsyncResults() {
 				err := transformer.TransformReadResult(cv, do.Properties.Value)
 				if err != nil {
 					common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
-					continue
+					cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), do.Properties.Value, err))
 				}
 			}
 
