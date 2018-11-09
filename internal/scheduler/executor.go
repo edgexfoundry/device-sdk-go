@@ -14,14 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
 const (
-	idVar      string = "id"
+	nameVar    string = "name"
 	commandVar string = "command"
 )
 
@@ -59,13 +58,8 @@ func execCmd(se *schEvtExec) {
 		common.LoggingClient.Error(fmt.Sprintf("Schedule Event execution failed: %v, %v", se.schEvt, err))
 		return
 	}
-	device, ok := cache.Devices().ForName(deviceName)
-	if !ok {
-		common.LoggingClient.Error(fmt.Sprintf("Schedule Event execution failed: Device %s not found", deviceName))
-		return
-	}
 	vars := make(map[string]string, 2)
-	vars[idVar] = device.Id.Hex()
+	vars[nameVar] = deviceName
 	vars[commandVar] = cmdName
 	evt, appErr := handler.CommandHandler(vars, se.schEvt.Parameters, addr.HTTPMethod)
 	if appErr != nil {
