@@ -1,0 +1,50 @@
+name: "Simple-Device"
+manufacturer: "Simple Corp."
+model: "SP-01"
+labels:
+ - "modbus"
+description: "Example of Simple Device"
+
+deviceResources:
+    -
+        name: "SwitchButton"
+        description: "Switch On/Off."
+        properties:
+            value:
+                { type: "Bool", readWrite: "RW" }
+            units:
+                { type: "String", readWrite: "R", defaultValue: "On/Off" }
+
+resources:
+    -
+        name: "Switch"
+        get:
+            - { operation: "get", object: "SwitchButton", property: "value", parameter: "Switch" }
+        set:
+            - { operation: "set", object: "SwitchButton", property: "value", parameter: "Switch" }
+
+commands:
+  -
+    name: "Switch"
+    get:
+        path: "/api/v1/device/{deviceId}/Switch"
+        responses:
+          -
+            code: "200"
+            description: ""
+            expectedValues: ["Switch"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
+    put:
+      path: "/api/v1/device/{deviceId}/Switch"
+      parameterNames: ["Switch"]
+      responses:
+      -
+        code: "200"
+        description: ""
+      -
+        code: "503"
+        description: "service unavailable"
+        expectedValues: []

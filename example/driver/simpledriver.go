@@ -20,8 +20,9 @@ import (
 )
 
 type SimpleDriver struct {
-	lc      logger.LoggingClient
-	asyncCh chan<- *ds_models.AsyncValues
+	lc           logger.LoggingClient
+	asyncCh      chan<- *ds_models.AsyncValues
+	switchButton bool
 }
 
 // DisconnectDevice handles protocol-specific cleanup when a device
@@ -46,12 +47,11 @@ func (s *SimpleDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_mo
 		return
 	}
 
-	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: device: %s operation: %v attributes: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
 
 	res = make([]*ds_models.CommandValue, 1)
-
 	now := time.Now().UnixNano() / int64(time.Millisecond)
-	cv, _ := ds_models.NewBoolValue(&reqs[0].RO, now, true)
+	cv, _ := ds_models.NewBoolValue(&reqs[0].RO, now, s.switchButton)
 	res[0] = cv
 
 	return
@@ -68,8 +68,17 @@ func (s *SimpleDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds_m
 		err := fmt.Errorf("SimpleDriver.HandleWriteCommands; too many command requests; only one supported")
 		return err
 	}
+	if len(params) != 1 {
+		err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the number of parameter is not correct; only one supported")
+		return err
+	}
 
-	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleWriteCommands: dev: %s op: %v attrs: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleWriteCommands: device: %s, operation: %v, parameters: %v", addr.Name, reqs[0].RO.Operation, params))
+	var err error
+	if s.switchButton, err = params[0].BoolValue(); err != nil {
+		err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Boolean, parameter: %s", params[0].String())
+		return err
+	}
 
 	return nil
 }
