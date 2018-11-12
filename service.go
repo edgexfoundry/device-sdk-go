@@ -236,18 +236,18 @@ func NewService(serviceName string, serviceVersion string, confProfile string, c
 		return nil, err
 	}
 
+	if len(serviceName) == 0 {
+		err := fmt.Errorf("NewService: empty name specified\n")
+		return nil, err
+	}
+	common.ServiceName = serviceName
+
 	config, err := configLoader.LoadConfig(useRegistry, confProfile, confDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
 		os.Exit(1)
 	}
 	common.CurrentConfig = config
-
-	if len(serviceName) == 0 {
-		err := fmt.Errorf("NewService: empty name specified\n")
-		return nil, err
-	}
-	common.ServiceName = serviceName
 
 	if len(serviceVersion) == 0 {
 		err := fmt.Errorf("NewService: empty version number specified\n")
