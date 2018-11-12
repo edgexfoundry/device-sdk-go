@@ -9,6 +9,7 @@ package cache
 
 import (
 	"fmt"
+
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
@@ -22,6 +23,7 @@ type DeviceCache interface {
 	All() []models.Device
 	Add(device models.Device) error
 	Update(device models.Device) error
+	UpdateAddressable(addressable models.Addressable) error
 	Remove(id string) error
 	RemoveByName(name string) error
 	UpdateAdminState(id string, state models.AdminState) error
@@ -84,6 +86,23 @@ func (d *deviceCache) Update(device models.Device) error {
 		return err
 	}
 	return d.Add(device)
+}
+
+// UpdateAddressable updates the device addressable in the cache
+func (d *deviceCache) UpdateAddressable(add models.Addressable) error {
+	found := false
+	for _, device := range d.dMap {
+		if device.Addressable.Id == add.Id {
+			device.Addressable = add
+			found = true
+		}
+	}
+
+	if found == false {
+		return fmt.Errorf("addressable %s does not exist in cache", add.Id.Hex())
+	}
+
+	return nil
 }
 
 // Remove removes the specified device by id from the cache.
