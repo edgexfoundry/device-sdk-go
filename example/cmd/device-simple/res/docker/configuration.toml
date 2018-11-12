@@ -71,56 +71,37 @@ Schedule = "10sec-schedule"
   HTTPMethod = "GET"
   Path = "/api/v1/device/name/KMC.BAC-121036CE01/CurrentHumidity"
 
-# trigger schedule by support-scheduler
+# Pre-define Devices
+[[DeviceList]]
+  Name = "Simple-Device01"
+  Profile = "Simple-Device"
+  Description = "Example of Simple Device"
+  Labels = [ "industrial" ]
+  [DeviceList.Addressable]
+    Address = "simple01"
+    Port = 300
+    Protocol = "OTHER"
+
+# Pre-define Schedule Configuration
+[[Schedules]]
+Name = "10sec-schedule"
+Frequency = "PT10S"
+
 [[ScheduleEvents]]
-Name = "readTemperature2"
+Name = "turnOnSwitch"
+Parameters = "[{\"Switch\": \"true\"}]"
 Schedule = "10sec-schedule"
-Service="edgex-support-scheduler"
   [ScheduleEvents.Addressable]
-  Protocol = "HTTP"
-  HTTPMethod = "GET"
-  Address = "edgex-device-simple"
-  Port = 49991
-  PPath = "/api/v1/device/name/JC.RR5.NAE9.ConfRoom.Padre.Island01/CurrentTemperature"
+  HTTPMethod = "PUT"
+  Path = "/api/v1/device/name/Simple-Device01/Switch"
 
 [[Schedules]]
 Name = "5sec-schedule"
 Frequency = "PT5S"
 
 [[ScheduleEvents]]
-Name = "readVoltage"
+Name = "readSwtich"
 Schedule = "5sec-schedule"
   [ScheduleEvents.Addressable]
   HTTPMethod = "GET"
-  Path = "/api/v1/device/name/GS1-AC-Drive01/OutputVoltage"
-
-# Pre-define Devices
-[[DeviceList]]
-  Name = "JC.RR5.NAE9.ConfRoom.Padre.Island01"
-  Profile = "JC.RR5.NAE9.ConfRoom.Padre.Island"
-  Description = "US RR5-2 Padre Island Conference Room"
-  Labels = [ "thermostat", "industrial" ]
-  [DeviceList.Addressable]
-    Address = "bacnet01"
-    Port = 300
-    Protocol = "OTHER"
-
-[[DeviceList]]
-  Name = "KMC.BAC-121036CE01"
-  Profile = "KMC.BAC-121036CE"
-  Description = "KMC BAC-121036CE BACnet thermostat"
-  Labels = [ "thermostat", "industrial" ]
-  [DeviceList.Addressable]
-    Address = "bacnet02"
-    Port = 300
-    Protocol = "OTHER"
-
-[[DeviceList]]
-  Name = "GS1-AC-Drive01"
-  Profile = "GS1-AC-Drive"
-  Description = "GS1 AC Drive"
-  Labels = [ "modbus", "industrial" ]
-  [DeviceList.Addressable]
-    Address = "modbus01"
-    Port = 503
-    Protocol = "TCP"
+  Path = "/api/v1/device/name/Simple-Device01/Switch"
