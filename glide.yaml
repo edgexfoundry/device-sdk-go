@@ -1,7 +1,7 @@
 package: github.com/edgexfoundry/device-sdk-go
 import:
 - package: github.com/edgexfoundry/edgex-go
-  version: delhi
+  version: master
   subpackages:
   - /pkg/models
   - /pkg/clients/coredata
