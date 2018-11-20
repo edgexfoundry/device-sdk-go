@@ -39,14 +39,14 @@ func LoadProfiles(path string) error {
 
 	profiles, err := common.DeviceProfileClient.DeviceProfiles()
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read Device Profile from Core Metadata: %v\n", err))
+		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read Device Profile from Core Metadata: %v", err))
 		return err
 	}
 	pMap := profileSliceToMap(profiles)
 
 	fileInfo, err := ioutil.ReadDir(absPath)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v\n", absPath, err))
+		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v", absPath, err))
 		return err
 	}
 
@@ -59,13 +59,13 @@ func LoadProfiles(path string) error {
 			fullPath := absPath + "/" + fName
 			yamlFile, err := ioutil.ReadFile(fullPath)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v\n", fullPath, err))
+				common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v", fullPath, err))
 				continue
 			}
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("profiles: invalid Device Profile: %s; %v\n", fullPath, err))
+				common.LoggingClient.Error(fmt.Sprintf("profiles: invalid Device Profile: %s; %v", fullPath, err))
 				continue
 			}
 
@@ -78,7 +78,7 @@ func LoadProfiles(path string) error {
 			// add profile to metadata
 			id, err := common.DeviceProfileClient.Add(&profile)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v\n", fullPath, err))
+				common.LoggingClient.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
 			}
 			if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
@@ -159,7 +159,7 @@ func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDes
 	}
 
 	desc.Id = bson.ObjectIdHex(id)
-	common.LoggingClient.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s\n", id))
+	common.LoggingClient.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s", id))
 
 	return desc, nil
 }
