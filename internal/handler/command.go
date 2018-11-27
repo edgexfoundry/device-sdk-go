@@ -314,31 +314,45 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*ds_mod
 		value = v
 		t = ds_models.String
 	case "uint8":
-		value, err = strconv.ParseUint(v, 10, 8)
+		n, e := strconv.ParseUint(v, 10, 8)
+		value = uint8(n)
+		err = e
 		t = ds_models.Uint8
 	case "uint16":
-		value, err = strconv.ParseUint(v, 10, 16)
+		n, e := strconv.ParseUint(v, 10, 16)
+		value = uint16(n)
+		err = e
 		t = ds_models.Uint16
 	case "uint32":
-		value, err = strconv.ParseUint(v, 10, 32)
+		n, e := strconv.ParseUint(v, 10, 32)
+		value = uint32(n)
+		err = e
 		t = ds_models.Uint32
 	case "uint64":
 		value, err = strconv.ParseUint(v, 10, 64)
 		t = ds_models.Uint64
 	case "int8":
-		value, err = strconv.ParseInt(v, 10, 8)
+		n, e := strconv.ParseInt(v, 10, 8)
+		value = int8(n)
+		err = e
 		t = ds_models.Int8
 	case "int16":
-		value, err = strconv.ParseInt(v, 10, 16)
+		n, e := strconv.ParseInt(v, 10, 16)
+		value = int16(n)
+		err = e
 		t = ds_models.Int16
 	case "int32":
-		value, err = strconv.ParseInt(v, 10, 32)
+		n, e := strconv.ParseInt(v, 10, 32)
+		value = int32(n)
+		err = e
 		t = ds_models.Int32
 	case "int64":
 		value, err = strconv.ParseInt(v, 10, 64)
 		t = ds_models.Int64
 	case "float32":
-		value, err = strconv.ParseFloat(v, 32)
+		n, e := strconv.ParseFloat(v, 32)
+		value = float32(n)
+		err = e
 		t = ds_models.Float32
 	case "float64":
 		value, err = strconv.ParseFloat(v, 64)
