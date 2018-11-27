@@ -25,14 +25,19 @@ import (
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
 func CommandHandler(vars map[string]string, body string, method string) (*models.Event, common.AppError) {
-	id := vars["id"]
+	dKey := vars["id"]
 	cmd := vars["command"]
 
-	// TODO - models.Device isn't thread safe currently
-	d, ok := cache.Devices().ForId(id)
+	var ok bool
+	var d models.Device
+	if dKey != "" {
+		d, ok = cache.Devices().ForId(dKey)
+	} else {
+		dKey = vars["name"]
+		d, ok = cache.Devices().ForName(dKey)
+	}
 	if !ok {
-		// TODO: standardize error message format (use of prefix)
-		msg := fmt.Sprintf("Device: %s not found; %s", id, method)
+		msg := fmt.Sprintf("Device: %s not found; %s", dKey, method)
 		common.LoggingClient.Error(msg)
 		return nil, common.NewNotFoundError(msg, nil)
 	}

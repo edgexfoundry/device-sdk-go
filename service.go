@@ -12,7 +12,6 @@ package device
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	"net/http"
 	"os"
 	"strconv"
@@ -24,6 +23,7 @@ import (
 	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -62,7 +62,7 @@ func (s *Service) AsyncReadings() bool {
 }
 
 // Start the device service.
-func (s *Service) Start() (err error) {
+func (s *Service) Start(errChan chan error) (err error) {
 	err = clients.InitDependencyClients()
 	if err != nil {
 		return err
@@ -70,28 +70,24 @@ func (s *Service) Start() (err error) {
 
 	err = selfRegister()
 	if err != nil {
-		err = common.LoggingClient.Error("Couldn't register to metadata service")
-		return err
+		return fmt.Errorf("Couldn't register to metadata service")
 	}
 
 	// initialize devices, objects & profiles
 	cache.InitCache()
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {
-		err = common.LoggingClient.Error("Failed to create the pre-defined Device Profiles")
-		return err
+		return fmt.Errorf("Failed to create the pre-defined Device Profiles")
 	}
 
 	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
 	if err != nil {
-		err = common.LoggingClient.Error("Failed to create the pre-defined Devices")
-		return err
+		return fmt.Errorf("Failed to create the pre-defined Devices")
 	}
 
 	err = provision.LoadSchedulesAndEvents(common.CurrentConfig)
 	if err != nil {
-		err = common.LoggingClient.Error("Failed to create the pre-defined Schedules or Schedule Events")
-		return err
+		return fmt.Errorf("Failed to create the pre-defined Schedules or Schedule Events")
 	}
 
 	s.cw = newWatchers()
@@ -103,8 +99,7 @@ func (s *Service) Start() (err error) {
 	}
 	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Driver.Initialize failure: %v; exiting.", err))
-		return err
+		return fmt.Errorf("Driver.Initialize failure: %v", err)
 	}
 
 	// Setup REST API
@@ -116,7 +111,11 @@ func (s *Service) Start() (err error) {
 	// TODO: call ListenAndServe in a goroutine
 
 	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
-	common.LoggingClient.Error(http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r).Error())
+
+	go func() {
+		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r)
+	}()
+
 	common.LoggingClient.Debug("*Service Start() exit")
 
 	return err
