@@ -49,17 +49,24 @@ func startService(serviceName string, serviceVersion string, driver ds_models.Pr
 
 	fmt.Fprintf(os.Stdout, "Calling service.Start.\n")
 
-	if err := s.Start(); err != nil {
+	errChan := make(chan error, 2)
+	listenForInterrupt(errChan)
+
+	err = s.Start(errChan)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "Setting up signals.\n")
 
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case sig := <-ch:
-		fmt.Fprintf(os.Stderr, "Exiting on %s signal.\n", sig)
-	}
+	err = <-errChan
+	fmt.Fprintf(os.Stdout, "Terminating: %v.\n", err)
 
 	return s.Stop(false)
+}
+
+func listenForInterrupt(errChan chan error) {
+	go func() {
+		c := make(chan os.Signal)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		errChan <- fmt.Errorf("%s", <-c)
+	}()
 }
