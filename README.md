@@ -6,8 +6,9 @@ Developers could make their own Device Service by implementing the `ProtocolDriv
 Please see the build-in [Simple Device Service](https://github.com/edgexfoundry/device-sdk-go/tree/master/example) as an example.
 
 ## Community
-- Chat: https://chat.edgexfoundry.org/home
+- Chat: https://edgexfoundry.slack.com
 - Mailing lists: https://lists.edgexfoundry.org/mailman/listinfo
 
 ## License
 [Apache-2.0](LICENSE)
+
