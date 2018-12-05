@@ -7,7 +7,7 @@ MICROSERVICES=example/cmd/device-simple/device-simple
 
 VERSION=$(shell cat ./VERSION)
 
-GOFLAGS=-ldflags "-X github.com/edgexfoundry/devoce-sdk-go.Version=$(VERSION)"
+GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go.Version=$(VERSION)"
 
 build: $(MICROSERVICES)
 	go build ./...
