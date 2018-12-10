@@ -43,7 +43,7 @@ func TestCallback(t *testing.T) {
 		{"Invalid id", http.MethodPut, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"DEVICE"}`, http.StatusBadRequest},
 	}
 
-	lc := logger.NewClient("update_test", false, "", "DEBUG")
+	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
 	common.LoggingClient = lc
 	common.DeviceClient = &mock.DeviceClientMock{}
 	r := InitRestRoutes()

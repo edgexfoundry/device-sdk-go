@@ -31,7 +31,7 @@ func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 	var clientConfig = map[string]common.ClientInfo{common.ClientData: common.ClientInfo{Protocol: "http", Host: "www.google.com", Port: 81, Timeout: 3000}}
 	var config = common.Config{Clients: clientConfig}
 	common.CurrentConfig = &config
-	common.LoggingClient = logger.NewClient("test_service", false, common.CurrentConfig.Logging.File, "DEBUG")
+	common.LoggingClient = logger.NewClient("test_service", false, "./device-simple.log", "DEBUG")
 
 	err := checkServiceAvailableByPing(common.ClientData)
 
