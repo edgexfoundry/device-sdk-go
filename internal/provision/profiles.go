@@ -158,7 +158,7 @@ func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDes
 		return nil, err
 	}
 
-	desc.Id = bson.ObjectIdHex(id)
+	desc.Id = id
 	common.LoggingClient.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s", id))
 
 	return desc, nil
