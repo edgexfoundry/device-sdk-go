@@ -51,12 +51,12 @@ func (v *valueDescriptorCache) Add(descriptor models.ValueDescriptor) error {
 		return fmt.Errorf("value descriptor %s has already existed in cache", descriptor.Name)
 	}
 	v.vdMap[descriptor.Name] = descriptor
-	v.nameMap[descriptor.Id.Hex()] = descriptor.Name
+	v.nameMap[descriptor.Id] = descriptor.Name
 	return nil
 }
 
 func (v *valueDescriptorCache) Update(descriptor models.ValueDescriptor) error {
-	if err := v.Remove(descriptor.Id.Hex()); err != nil {
+	if err := v.Remove(descriptor.Id); err != nil {
 		return err
 	}
 	return v.Add(descriptor)
@@ -76,7 +76,7 @@ func (v *valueDescriptorCache) RemoveByName(name string) error {
 	if !ok {
 		return fmt.Errorf("value descriptor %s does not exist in cache", name)
 	}
-	delete(v.nameMap, vd.Id.Hex())
+	delete(v.nameMap, vd.Id)
 	delete(v.vdMap, name)
 	return nil
 }
@@ -87,7 +87,7 @@ func newValueDescriptorCache(descriptors []models.ValueDescriptor) ValueDescript
 	nameMap := make(map[string]string, defaultSize)
 	for _, vd := range descriptors {
 		vdMap[vd.Name] = vd
-		nameMap[vd.Id.Hex()] = vd.Name
+		nameMap[vd.Id] = vd.Name
 	}
 	vdc = &valueDescriptorCache{vdMap: vdMap, nameMap: nameMap}
 	return vdc
