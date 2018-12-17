@@ -10,6 +10,7 @@ package common
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -212,7 +213,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 	// check whether there has been an existing addressable
 	addressable, err := AddressableClient.AddressableForName(name)
 	if err != nil {
-		if _, ok := err.(types.ErrNotFound); ok {
+		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			LoggingClient.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addressable = *addr
