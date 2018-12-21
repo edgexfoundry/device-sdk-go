@@ -205,7 +205,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
 				return nil, err
 			}
-			addr.Id = bson.ObjectIdHex(id)
+			addr.Id = id
 		} else {
 			common.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
 			return nil, err
