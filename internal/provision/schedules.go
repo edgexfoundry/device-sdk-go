@@ -124,7 +124,7 @@ func createScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 	if err = common.VerifyIdFormat(addressableId, "Addressable"); err != nil {
 		return err
 	}
-	scheduleEvent.Addressable.Id = bson.ObjectIdHex(addressableId)
+	scheduleEvent.Addressable.Id = addressableId
 
 	return nil
 }

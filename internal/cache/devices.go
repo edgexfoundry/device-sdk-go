@@ -99,7 +99,7 @@ func (d *deviceCache) UpdateAddressable(add models.Addressable) error {
 	}
 
 	if found == false {
-		return fmt.Errorf("addressable %s does not exist in cache", add.Id.Hex())
+		return fmt.Errorf("addressable %s does not exist in cache", add.Id)
 	}
 
 	return nil
