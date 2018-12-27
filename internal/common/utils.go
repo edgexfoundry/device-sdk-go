@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -30,7 +29,7 @@ func BuildAddr(host string, port string) string {
 }
 
 func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.Reading {
-	reading := &models.Reading{Name: cv.RO.Parameter, Device: devName}
+	reading := &models.Reading{Name: cv.RO.Parameter, Device: devName, Type: cv.Type, Unit: cv.Unit}
 	reading.Value = cv.ValueToString()
 
 	// if value has a non-zero Origin, use it
@@ -225,6 +224,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 				return nil, err
 			}
 			if err = VerifyIdFormat(id, "Addressable"); err != nil {
+				LoggingClient.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
 				return nil, err
 			}
 			addressable.Id = id
@@ -239,6 +239,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 	return &addressable, nil
 }
 
+
 func VerifyIdFormat(id string, objName string) error {
 	if len(id) == 0 {
 		errMsg := fmt.Sprintf("The Id of %s is empty string", objName)
@@ -247,3 +248,4 @@ func VerifyIdFormat(id string, objName string) error {
 	}
 	return nil
 }
+

@@ -301,7 +301,7 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*ds_mod
 	var result *ds_models.CommandValue
 	var err error
 	var value interface{}
-	var t ds_models.ValueType
+	var t models.ValueType
 	vd, ok := cache.ValueDescriptors().ForName(ro.Parameter)
 	if !ok {
 		msg := fmt.Sprintf("Handler - Command: The parameter %s cannot find the matched Value Descriptor", ro.Parameter)

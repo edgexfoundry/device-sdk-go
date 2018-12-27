@@ -18,14 +18,11 @@ import (
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 
-// ValueType indicates the type of value being passed back
-// from a ProtocolDriver instance.
-type ValueType int
 
 const (
 	// Bool indicates that the value is a bool,
 	// stored in CommandValue's boolRes member.
-	Bool ValueType = iota
+	Bool models.ValueType = iota
 	// String indicates that the value is a string,
 	// stored in CommandValue's stringRes member.
 	String
@@ -73,7 +70,7 @@ type CommandValue struct {
 	// value was returned from the ProtocolDriver instance in
 	// response to HandleCommand being called to handle a single
 	// ResourceOperation.
-	Type ValueType
+	Type models.ValueType
 	// NumericValue is a byte slice with a maximum capacity of
 	// 64 bytes, used to hold a numeric value returned by a
 	// ProtocolDriver instance. The value can be converted to
@@ -81,6 +78,8 @@ type CommandValue struct {
 	NumericValue []byte
 	// stringValue is a string value returned as a value by a ProtocolDriver instance.
 	stringValue string
+	// Units of the Numeric Value
+	Unit string
 }
 
 func NewBoolValue(ro *models.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
@@ -165,7 +164,7 @@ func NewFloat64Value(ro *models.ResourceOperation, origin int64, value float64) 
 }
 
 //NewCommandValue create a CommandValue according to the Type supplied
-func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
+func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t models.ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
 	if t != String {
 		err = encodeValue(cv, value)
@@ -311,7 +310,7 @@ func (cv *CommandValue) String() (str string) {
 		typeStr = "Float64: "
 	}
 
-	valueStr := typeStr + cv.ValueToString()
+	valueStr := typeStr + cv.ValueToString() + " Unit:" + cv.Unit
 
 	str = originStr + valueStr
 

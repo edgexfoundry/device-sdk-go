@@ -201,7 +201,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
 				return nil, err
 			}
-			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
+			if err = common.VerifyUuidFormat(id, "Addressable"); err != nil {
 				return nil, err
 			}
 			addr.Id = id
