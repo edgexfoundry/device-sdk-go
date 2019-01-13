@@ -120,67 +120,69 @@ func transformReadBase(value interface{}, base string) (interface{}, error) {
 func transformReadScale(value interface{}, scale string) (interface{}, error) {
 	switch v := value.(type) {
 	case uint8:
-		s, err := strconv.ParseUint(scale, 10, 8)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := uint8(s)
-		value = v * ns
+		nv := float64(v)
+		value = uint8(nv * s)
 	case uint16:
-		s, err := strconv.ParseUint(scale, 10, 16)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := uint16(s)
-		value = v * ns
+		nv := float64(v)
+		value = uint16(nv * s)
 	case uint32:
-		s, err := strconv.ParseUint(scale, 10, 32)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := uint32(s)
-		value = v * ns
+		nv := float64(v)
+		value = uint32(nv * s)
 	case uint64:
-		s, err := strconv.ParseUint(scale, 10, 64)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		value = v * s
+		nv := float64(v)
+		value = uint64(nv * s)
 	case int8:
-		s, err := strconv.ParseInt(scale, 10, 8)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := int8(s)
-		value = v * ns
+		nv := float64(v)
+		value = int8(nv * s)
 	case int16:
-		s, err := strconv.ParseInt(scale, 10, 16)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := int16(s)
-		value = v * ns
+		nv := float64(v)
+		value = int16(nv * s)
 	case int32:
-		s, err := strconv.ParseInt(scale, 10, 32)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		ns := int32(s)
-		value = v * ns
+		nv := float64(v)
+		value = int32(nv * s)
 	case int64:
-		s, err := strconv.ParseInt(scale, 10, 64)
+		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
-		value = v * s
+		nv := float64(v)
+		value = int64(nv * s)
 	case float32:
 		s, err := strconv.ParseFloat(scale, 32)
 		if err != nil {
