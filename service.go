@@ -27,7 +27,6 @@ import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/globalsign/mgo/bson"
 )
 
 var (
@@ -173,8 +172,8 @@ func createNewDeviceService() (models.DeviceService, error) {
 
 	// NOTE - this differs from Addressable and Device objects,
 	// neither of which require the '.Service'prefix
-	ds.Service.Id = bson.ObjectIdHex(id)
-	common.LoggingClient.Debug("New deviceservice Id: " + ds.Service.Id.Hex())
+	ds.Service.Id = id
+	common.LoggingClient.Debug("New deviceservice Id: " + ds.Service.Id)
 
 	return ds, nil
 }
