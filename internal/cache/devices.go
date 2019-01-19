@@ -76,13 +76,13 @@ func (d *deviceCache) Add(device models.Device) error {
 		return fmt.Errorf("device %s has already existed in cache", device.Name)
 	}
 	d.dMap[device.Name] = &device
-	d.nameMap[device.Id.Hex()] = device.Name
+	d.nameMap[device.Id] = device.Name
 	return nil
 }
 
 // Update updates the device in the cache
 func (d *deviceCache) Update(device models.Device) error {
-	if err := d.Remove(device.Id.Hex()); err != nil {
+	if err := d.Remove(device.Id); err != nil {
 		return err
 	}
 	return d.Add(device)
@@ -122,7 +122,7 @@ func (d *deviceCache) RemoveByName(name string) error {
 		return fmt.Errorf("device %s does not exist in cache", name)
 	}
 
-	delete(d.nameMap, device.Id.Hex())
+	delete(d.nameMap, device.Id)
 	delete(d.dMap, name)
 	return nil
 }
@@ -146,7 +146,7 @@ func newDeviceCache(devices []models.Device) DeviceCache {
 	nameMap := make(map[string]string, defaultSize)
 	for i, d := range devices {
 		dMap[d.Name] = &devices[i]
-		nameMap[d.Id.Hex()] = d.Name
+		nameMap[d.Id] = d.Name
 	}
 	dc = &deviceCache{dMap: dMap, nameMap: nameMap}
 	return dc

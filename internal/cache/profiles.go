@@ -75,7 +75,7 @@ func (p *profileCache) Add(profile models.DeviceProfile) error {
 		return fmt.Errorf("device profile %s has already existed in cache", profile.Name)
 	}
 	p.dpMap[profile.Name] = profile
-	p.nameMap[profile.Id.Hex()] = profile.Name
+	p.nameMap[profile.Id] = profile.Name
 	p.doMap[profile.Name] = deviceObjectSliceToMap(profile.DeviceResources)
 	p.getOpMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.Resources)
 	p.cmdMap[profile.Name] = commandSliceToMap(profile.Commands)
@@ -113,7 +113,7 @@ func commandSliceToMap(commands []models.Command) map[string]models.Command {
 }
 
 func (p *profileCache) Update(profile models.DeviceProfile) error {
-	if err := p.Remove(profile.Id.Hex()); err != nil {
+	if err := p.Remove(profile.Id); err != nil {
 		return err
 	}
 	return p.Add(profile)
@@ -135,7 +135,7 @@ func (p *profileCache) RemoveByName(name string) error {
 	}
 
 	delete(p.dpMap, name)
-	delete(p.nameMap, profile.Id.Hex())
+	delete(p.nameMap, profile.Id)
 	delete(p.doMap, name)
 	delete(p.getOpMap, name)
 	delete(p.setOpMap, name)
@@ -232,7 +232,7 @@ func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 	cmdMap := make(map[string]map[string]models.Command, defaultSize)
 	for _, dp := range profiles {
 		dpMap[dp.Name] = dp
-		nameMap[dp.Id.Hex()] = dp.Name
+		nameMap[dp.Id] = dp.Name
 		doMap[dp.Name] = deviceObjectSliceToMap(dp.DeviceResources)
 		getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.Resources)
 		cmdMap[dp.Name] = commandSliceToMap(dp.Commands)
