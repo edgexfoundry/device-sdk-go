@@ -55,7 +55,7 @@ func handleDevice(method string, id string) common.AppError {
 			err = cache.Profiles().Add(device.Profile)
 			if err == nil {
 				provision.CreateDescriptorsFromProfile(&device.Profile)
-				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", device.Profile.Id.Hex()))
+				common.LoggingClient.Info(fmt.Sprintf("Added device profile %s", device.Profile.Id))
 			} else {
 				appErr := common.NewServerError(err.Error(), err)
 				common.LoggingClient.Error(fmt.Sprintf("Couldn't add device profile %s: %v", device.Profile.Name, err.Error()))

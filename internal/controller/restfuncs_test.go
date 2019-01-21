@@ -151,7 +151,7 @@ addr.Origin = millis
 
 // Create a locked Device
 d := &models.Device{name: "DummyDevice", AdminState: "LOCKED", OperatingState: "ENABLED"}
-d.Id = bson.ObjectIdHex(testDeviceId)
+d.Id = testDeviceId
 
 s.cd.Add(d)
 

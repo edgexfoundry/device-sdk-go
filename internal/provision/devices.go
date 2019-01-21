@@ -14,7 +14,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/globalsign/mgo/bson"
 )
 
 func LoadDevices(deviceList []common.DeviceConfig) error {
@@ -70,7 +69,7 @@ func createDevice(dc common.DeviceConfig) error {
 	if err = common.VerifyIdFormat(id, "Device"); err != nil {
 		return err
 	}
-	device.Id = bson.ObjectIdHex(id)
+	device.Id = id
 	cache.Devices().Add(*device)
 
 	return nil

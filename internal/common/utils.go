@@ -16,7 +16,6 @@ import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/globalsign/mgo/bson"
 )
 
 func BuildAddr(host string, port string) string {
@@ -241,8 +240,8 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 }
 
 func VerifyIdFormat(id string, objName string) error {
-	if len(id) != 24 || !bson.IsObjectIdHex(id) {
-		errMsg := fmt.Sprintf("Add %s returned invalid Id: %s", objName, id)
+	if len(id) == 0 {
+		errMsg := fmt.Sprintf("The Id of %s is empty string", objName)
 		LoggingClient.Error(errMsg)
 		return fmt.Errorf(errMsg)
 	}

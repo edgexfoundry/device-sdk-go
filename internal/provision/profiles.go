@@ -16,7 +16,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/globalsign/mgo/bson"
 	"gopkg.in/yaml.v2"
 )
 
@@ -85,7 +84,7 @@ func LoadProfiles(path string) error {
 				return err
 			}
 
-			profile.Id = bson.ObjectIdHex(id)
+			profile.Id = id
 			cache.Profiles().Add(profile)
 			CreateDescriptorsFromProfile(&profile)
 		}
