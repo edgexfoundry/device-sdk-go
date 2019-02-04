@@ -1,0 +1,18 @@
+{
+    "runtime": "go",
+    "handler" : "github.efx.functions.filterdata.Handler",
+    "bindings": [
+        {
+            "type": "http",
+            "direction": "in",
+            "name": "req",
+            "topic": "dataIn"
+        },
+        {
+            "type": "messageBus",
+            "direction": "out",
+            "name": "res",
+            "topic": "dataOut"
+        }
+    ]
+}
