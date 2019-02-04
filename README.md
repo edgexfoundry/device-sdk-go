@@ -1,4 +1,4 @@
-# App Functions SDK (Golang)
+# App Functions SDK (Golang) - WORK IN PROGRESS
 
 Welcome the App Functions SDK for EdgeX. This sdk is meant to provide all the plumbing necessary for developers to get started in processing/transforming/exporting data out of EdgeX. 
 
@@ -30,6 +30,29 @@ func main() {
 	edgexsdk.MakeItRun()
 }
 ```
+
+The above example is meant to merely demonstrate the structure of your application. Notice that the output of the last function is not available anywhere inside this application. You must provide a function to in order to work with the data from the previous function. Let's go ahead and add the following function that prints the output to the console.
+
+```golang
+func printXMLToConsole(params ...interface{}) interface{} {
+	if len(params) > 0 {
+		// We didn't receive a result
+		return nil
+	}
+	println(params[0])
+	return nil
+}
+```
+After placing the above function in your code, the next step is to modify the pipeline to call this function:
+```golang
+    edgexsdk.SetPipeline(
+	edgexsdk.FilterByDeviceID(deviceIDs),
+        edgexsdk.TransformToXML(),
+        printXMLToConsole //notice this is not a function call, but simply a function pointer. 
+    )
+```
+After making the above modifications you should now see data printing out to the console in XML.
+
 ## Built-In Transforms/Functions 
 
 ## Filtering

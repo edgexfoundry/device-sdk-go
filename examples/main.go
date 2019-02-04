@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/edgexsdk"
 )
 
@@ -18,16 +16,18 @@ func main() {
 	edgexsdk.SetPipeline(
 		edgexsdk.FilterByDeviceID(deviceIDs),
 		edgexsdk.TransformToXML(),
-		myFunc,
+		printXMLToConsole,
 	)
 	// 4) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
 	// to trigger the pipeline.
 	edgexsdk.MakeItRun()
 }
 
-func myFunc(params ...interface{}) interface{} { // context context.Context, event event.Event) {
-	fmt.Println("HELLO WORLD")
-
-	// context.Complete("OUTPUT FROM FUNCTION")
+func printXMLToConsole(params ...interface{}) interface{} { // context context.Context, event event.Event) {
+	if len(params) > 0 {
+		// We didn't receive a result
+		return nil
+	}
+	println(params[0])
 	return nil
 }
