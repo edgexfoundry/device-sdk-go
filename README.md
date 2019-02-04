@@ -10,7 +10,7 @@ package main
 
 import (
 	"fmt"
-	edgexsdk "github.com/edgexfoundry-holdings/app-functions-sdk-go"
+	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/edgexsdk"
 )
 func main() {
         // 1) First thing to do is to create an instance of the EdgeX SDK.
