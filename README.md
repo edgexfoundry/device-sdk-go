@@ -52,17 +52,24 @@ After placing the above function in your code, the next step is to modify the pi
     )
 ```
 After making the above modifications, you should now see data printing out to the console in XML when an event is triggered.
+> You can find this example in the `examples` directory located in this repository. You can also use the provided `EdgeX Applications Function SDK.postman_collection.json" file to load into postman to trigger the sample pipeline.
 
 ## Built-In Transforms/Functions 
 
-## Filtering
-There are two basic types of filtering included in the SDK to add to your pipeline.
- - `FilterByDeviceId([]string deviceIDs)`
- - `FilterByValueDescriptor`
+### Filtering
+There are two basic types of filtering included in the SDK to add to your pipeline. The provided Filter functions return a type of `events.Model`.
+ - `FilterByDeviceId([]string deviceIDs)` - This function will filter the event data down to the specified deviceIDs before calling the next function. 
+ - `FilterByValueDescriptor()` - This function will filter the event data down to the specified deviceIDs before calling the next function. 
 
-## Conversion
- There are two primary conversions available in the SDK that can be added to your pipeline. 
+### Conversion
+ There are two primary conversions available in the SDK that can be added to your pipeline. These transforms return a `string`.
  
- - `TransformToXML()`: 
- - `TransformToJSON()`:
+ - `TransformToXML()`  - This function takes an `events.Model` type and converts it to XML format
+ - `TransformToJSON()` - This function takes an `events.Model` type and converts it to JSON format
+## Configuration
+ - WIP
+## Error Handling
+ - WIP
+
+
 
