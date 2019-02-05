@@ -59,7 +59,7 @@ After making the above modifications, you should now see data printing out to th
 ### Filtering
 There are two basic types of filtering included in the SDK to add to your pipeline. The provided Filter functions return a type of `events.Model`.
  - `FilterByDeviceId([]string deviceIDs)` - This function will filter the event data down to the specified deviceIDs before calling the next function. 
- - `FilterByValueDescriptor()` - This function will filter the event data down to the specified deviceIDs before calling the next function. 
+ - `FilterByValueDescriptor()` - This function will filter the event data down to the specified device value descriptor before calling the next function. 
 
 ### Conversion
  There are two primary conversions available in the SDK that can be added to your pipeline. These transforms return a `string`.
