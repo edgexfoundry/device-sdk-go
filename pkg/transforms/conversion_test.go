@@ -143,7 +143,7 @@ func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
 	eventIn1 := models.Event{
 		Device: devID1,
 	}
-	// Event from device 1
+	// Event from device 2
 	eventIn2 := models.Event{
 		Device: devID2,
 	}

@@ -27,7 +27,6 @@ func TestFilterByDeviceIDFound(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	// expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin><Event></Event></Event>`
 	filter := Filter{
 		DeviceIDs: []string{"id1"},
 	}
@@ -46,7 +45,6 @@ func TestFilterByDeviceIDNotFound(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	// expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin><Event></Event></Event>`
 	filter := Filter{
 		DeviceIDs: []string{"id2"},
 	}
