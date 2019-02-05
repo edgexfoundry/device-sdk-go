@@ -40,7 +40,7 @@ func (f Conversion) TransformToXML(params ...interface{}) interface{} {
 		return nil
 	}
 	println("TRANSFORMING TO XML")
-	if result, ok := params[0].(*models.Event); ok {
+	if result, ok := params[0].(models.Event); ok {
 		b, err := xml.Marshal(result)
 		if err != nil {
 			// LoggingClient.Error(fmt.Sprintf("Error parsing XML. Error: %s", err.Error()))

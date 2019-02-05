@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/edgexsdk"
@@ -23,11 +23,11 @@ func main() {
 	edgexsdk.MakeItRun()
 }
 
-func printXMLToConsole(params ...interface{}) interface{} { // context context.Context, event event.Event) {
-	if len(params) > 0 {
+func printXMLToConsole(params ...interface{}) interface{} {
+	if len(params) < 1 {
 		// We didn't receive a result
 		return nil
 	}
-	println(params[0])
+	println(params[0].(string))
 	return nil
 }

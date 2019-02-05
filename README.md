@@ -35,11 +35,11 @@ The above example is meant to merely demonstrate the structure of your applicati
 
 ```golang
 func printXMLToConsole(params ...interface{}) interface{} {
-	if len(params) > 0 {
+	if len(params) < 1 {
 		// We didn't receive a result
 		return nil
 	}
-	println(params[0])
+	println(params[0].(string))
 	return nil
 }
 ```
