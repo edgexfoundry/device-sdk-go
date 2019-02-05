@@ -51,7 +51,7 @@ After placing the above function in your code, the next step is to modify the pi
         printXMLToConsole //notice this is not a function call, but simply a function pointer. 
     )
 ```
-After making the above modifications you should now see data printing out to the console in XML.
+After making the above modifications, you should now see data printing out to the console in XML when an event is triggered.
 
 ## Built-In Transforms/Functions 
 
