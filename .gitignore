@@ -4,3 +4,4 @@ example/cmd/device-simple/device-simple
 glide.lock
 vendor
 .idea
+go.sum
