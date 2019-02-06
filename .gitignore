@@ -1,0 +1,4 @@
+*.out
+examples/examples
+.vscode
+**/debug
