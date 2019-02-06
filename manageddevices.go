@@ -68,6 +68,17 @@ func (s *Service) Devices() []models.Device {
 	return cache.Devices().All()
 }
 
+// GetDeviceByName returns device if it exists in EdgeX registration cache.
+func (s *Service) GetDeviceByName(name string) (models.Device, error) {
+	device, ok := cache.Devices().ForName(name)
+	if !ok {
+		msg := fmt.Sprintf("Device %s cannot be found in cache", name)
+		common.LoggingClient.Info(msg)
+		return models.Device{}, fmt.Errorf(msg)
+	}
+	return device, nil
+}
+
 // RemoveDevice removes the specified Device by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *Service) RemoveDevice(id string) error {
