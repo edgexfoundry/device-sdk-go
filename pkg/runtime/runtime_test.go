@@ -18,7 +18,7 @@ package runtime
 import (
 	"testing"
 
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/context"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/context"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 )
 

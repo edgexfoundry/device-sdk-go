@@ -17,7 +17,7 @@
 package main
 
 import (
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/edgexsdk"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/edgexsdk"
 )
 
 func main() {

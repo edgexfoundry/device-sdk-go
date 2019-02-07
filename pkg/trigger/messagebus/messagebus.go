@@ -17,8 +17,8 @@
 package messagebustrigger
 
 import (
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/configuration"
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/configuration"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/runtime"
 )
 
 // MessageBusTrigger implements ITrigger to support MessageBusData

@@ -1,4 +1,6 @@
 *.out
-examples/examples
+examples/bin
 .vscode
 **/debug
+simple-filter-xml
+go.sum
