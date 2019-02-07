@@ -20,16 +20,15 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
 
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/context"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/context"
 
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/configuration"
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/configuration"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/runtime"
 )
 
 // HTTPTrigger implements ITrigger to support HTTPTriggers
@@ -49,7 +48,6 @@ func (h *HTTPTrigger) Initialize() error {
 	return nil
 }
 func (h *HTTPTrigger) requestHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("BOOM EXECUTED")
 	decoder := json.NewDecoder(r.Body)
 
 	// event := event.Event{Data: "DATA FROM HTTP"}

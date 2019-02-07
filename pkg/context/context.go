@@ -17,8 +17,8 @@
 package context
 
 import (
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/configuration"
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/trigger"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/configuration"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/trigger"
 )
 
 // Context ...

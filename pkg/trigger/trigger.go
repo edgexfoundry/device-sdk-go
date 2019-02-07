@@ -17,7 +17,7 @@
 package trigger
 
 import (
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/configuration"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/configuration"
 )
 
 // ITrigger interface is used to hold event data and allow function to

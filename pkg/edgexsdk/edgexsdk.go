@@ -17,17 +17,15 @@
 package edgexsdk
 
 import (
-	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
 
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/transforms"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/configuration"
 
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/configuration"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/runtime"
 
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/runtime"
-
-	"github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/trigger"
-	httptrigger "github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/trigger/http"
-	messagebustrigger "github.com/edgexfoundry-holdings/app-functions-sdk-go/pkg/trigger/messagebus"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/trigger"
+	httptrigger "github.com/edgexfoundry/app-functions-sdk-go/pkg/trigger/http"
+	messagebustrigger "github.com/edgexfoundry/app-functions-sdk-go/pkg/trigger/messagebus"
 )
 
 // AppFunctionsSDK ...
@@ -61,8 +59,6 @@ func (afsdk *AppFunctionsSDK) TransformToXML() func(...interface{}) interface{} 
 
 //MakeItRun the SDK
 func (afsdk *AppFunctionsSDK) MakeItRun() {
-
-	fmt.Println("hello framework")
 
 	// load the configuration
 	configuration := configuration.LoadConfiguration()
