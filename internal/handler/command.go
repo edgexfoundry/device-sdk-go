@@ -205,7 +205,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 
 	roMap := roSliceToMap(ros)
 
-	cvs, err := parseWriteParams(roMap, params)
+	cvs, err := parseWriteParams(device.Profile.Name, roMap, params)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -251,7 +251,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 	return nil
 }
 
-func parseWriteParams(roMap map[string]*models.ResourceOperation, params string) ([]*ds_models.CommandValue, error) {
+func parseWriteParams(profileName string, roMap map[string]*models.ResourceOperation, params string) ([]*ds_models.CommandValue, error) {
 	var paramMaps []map[string]string
 	err := json.Unmarshal([]byte(params), &paramMaps)
 	if err != nil {
@@ -274,7 +274,7 @@ func parseWriteParams(roMap map[string]*models.ResourceOperation, params string)
 						//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
 					}
 				}
-				cv, err := createCommandValueForParam(ro, v)
+				cv, err := createCommandValueForParam(profileName, ro, v)
 				if err == nil {
 					result = append(result, cv)
 				} else {
@@ -297,21 +297,22 @@ func roSliceToMap(ros []models.ResourceOperation) map[string]*models.ResourceOpe
 	return roMap
 }
 
-func createCommandValueForParam(ro *models.ResourceOperation, v string) (*ds_models.CommandValue, error) {
+func createCommandValueForParam(profileName string, ro *models.ResourceOperation, v string) (*ds_models.CommandValue, error) {
 	var result *ds_models.CommandValue
 	var err error
 	var value interface{}
 	var t ds_models.ValueType
-	vd, ok := cache.ValueDescriptors().ForName(ro.Parameter)
+
+	do, ok := cache.Profiles().DeviceObject(profileName, ro.Object)
 	if !ok {
-		msg := fmt.Sprintf("Handler - Command: The parameter %s cannot find the matched Value Descriptor", ro.Parameter)
+		msg := fmt.Sprintf("createCommandValueForParam: no devobject: %s", ro.Object)
 		common.LoggingClient.Error(msg)
 		return nil, fmt.Errorf(msg)
 	}
 
 	origin := time.Now().UnixNano() / int64(time.Millisecond)
 
-	switch strings.ToLower(vd.Type) {
+	switch strings.ToLower(do.Properties.Value.Type) {
 	case "bool":
 		value, err = strconv.ParseBool(v)
 		t = ds_models.Bool
@@ -365,7 +366,7 @@ func createCommandValueForParam(ro *models.ResourceOperation, v string) (*ds_mod
 	}
 
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, vd.Type, err))
+		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, do.Properties.Value.Type, err))
 		return result, err
 	}
 
