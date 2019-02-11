@@ -362,7 +362,7 @@ func CheckAssertion(cv *ds_models.CommandValue, assertion string, device *models
 	if assertion != "" && cv.ValueToString() != assertion {
 		device.OperatingState = models.Disabled
 		cache.Devices().Update(*device)
-		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled)
+		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled, nil)
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		common.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)

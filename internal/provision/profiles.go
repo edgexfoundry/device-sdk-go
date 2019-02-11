@@ -36,7 +36,7 @@ func LoadProfiles(path string) error {
 	}
 	common.LoggingClient.Debug(fmt.Sprintf("profiles: created absolute path for loading pre-defined Device Profiles: %s", absPath))
 
-	profiles, err := common.DeviceProfileClient.DeviceProfiles()
+	profiles, err := common.DeviceProfileClient.DeviceProfiles(nil)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read Device Profile from Core Metadata: %v", err))
 		return err
@@ -75,7 +75,7 @@ func LoadProfiles(path string) error {
 			}
 
 			// add profile to metadata
-			id, err := common.DeviceProfileClient.Add(&profile)
+			id, err := common.DeviceProfileClient.Add(&profile, nil)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
@@ -118,7 +118,7 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 		// Value Descriptor has been created
 		return
 	} else {
-		devObj, ok := cache.Profiles().DeviceObject(profileName, op.Object)
+		devObj, ok := cache.Profiles().DeviceResource(profileName, op.Object)
 		if !ok {
 			common.LoggingClient.Error(fmt.Sprintf("can't find Device Object %s to match Resource Operation %v in Device Profile %s", op.Object, op, profileName))
 		}
@@ -131,7 +131,7 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 	}
 }
 
-func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDescriptor, error) {
+func createDescriptor(name string, devObj models.DeviceResource) (*models.ValueDescriptor, error) {
 	value := devObj.Properties.Value
 	units := devObj.Properties.Units
 
@@ -148,7 +148,7 @@ func createDescriptor(name string, devObj models.DeviceObject) (*models.ValueDes
 		Description:  devObj.Description,
 	}
 
-	id, err := common.ValueDescriptorClient.Add(desc)
+	id, err := common.ValueDescriptorClient.Add(desc, nil)
 	if err != nil {
 		return nil, err
 	}

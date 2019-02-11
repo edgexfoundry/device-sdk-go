@@ -35,7 +35,7 @@ func createSchedules(schedules []models.Schedule) error {
 			continue
 		}
 
-		id, err := common.ScheduleClient.Add(&schedule)
+		id, err := common.ScheduleClient.Add(&schedule, nil)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Add schedule (%v) fail: %v", schedule.Name, err.Error()))
 			return err
@@ -59,7 +59,7 @@ func isScheduleExist(scheduleName string) bool {
 		return true
 	}
 	// confirm from Core Metadata
-	if _, err := common.ScheduleClient.ScheduleForName(scheduleName); err == nil {
+	if _, err := common.ScheduleClient.ScheduleForName(scheduleName, nil); err == nil {
 		return true
 	} else {
 		return false
@@ -84,7 +84,7 @@ func createScheduleEvents(scheduleEvents []models.ScheduleEvent) error {
 			return err
 		}
 
-		id, err := common.ScheduleEventClient.Add(&scheduleEvent)
+		id, err := common.ScheduleEventClient.Add(&scheduleEvent, nil)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Add schedule event (%v) fail: %v", scheduleEvent.Name, err.Error()))
 			return err
@@ -117,7 +117,7 @@ func createScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 		scheduleEvent.Addressable.HTTPMethod = "GET"
 	}
 
-	addressableId, err := common.AddressableClient.Add(&scheduleEvent.Addressable)
+	addressableId, err := common.AddressableClient.Add(&scheduleEvent.Addressable, nil)
 	if err != nil {
 		return err
 	}
@@ -131,7 +131,7 @@ func createScheduleEventAddressable(scheduleEvent *models.ScheduleEvent) error {
 
 func isScheduleEventAddressableExist(addressableName string) bool {
 	isExist := true
-	addressable, _ := common.AddressableClient.AddressableForName(addressableName)
+	addressable, _ := common.AddressableClient.AddressableForName(addressableName, nil)
 	if addressable.Name == "" {
 		isExist = false
 	}
@@ -144,7 +144,7 @@ func isScheduleEventExist(scheduleEventName string) bool {
 		return true
 	}
 	// confirm from Core Metadata
-	if _, err := common.ScheduleEventClient.ScheduleEventForName(scheduleEventName); err == nil {
+	if _, err := common.ScheduleEventClient.ScheduleEventForName(scheduleEventName, nil); err == nil {
 		return true
 	} else {
 		return false

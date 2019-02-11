@@ -61,7 +61,7 @@ func createDevice(dc common.DeviceConfig) error {
 	device.Origin = millis
 	device.Description = dc.Description
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
-	id, err := common.DeviceClient.Add(device)
+	id, err := common.DeviceClient.Add(device, nil)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
 		return err

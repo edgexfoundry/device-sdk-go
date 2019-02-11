@@ -33,7 +33,7 @@ func processAsyncResults() {
 
 		for _, cv := range acv.CommandValues {
 			// get the device resource associated with the rsp.RO
-			do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cv.RO.Object)
+			do, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.RO.Object)
 			if !ok {
 				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.RO.Object, acv.DeviceName))
 				continue
@@ -68,7 +68,7 @@ func processAsyncResults() {
 
 		// push to Core Data
 		event := &models.Event{Device: acv.DeviceName, Readings: readings}
-		_, err := common.EventClient.Add(event)
+		_, err := common.EventClient.Add(event, nil)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Failed to push event %v: %v", event, err))
 		}

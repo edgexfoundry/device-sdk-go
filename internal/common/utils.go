@@ -44,7 +44,7 @@ func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.R
 }
 
 func SendEvent(event *models.Event) {
-	_, err := EventClient.Add(event)
+	_, err := EventClient.Add(event, nil)
 	if err != nil {
 		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
 	}
@@ -101,7 +101,7 @@ func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool 
 		resourcesOk
 }
 
-func CompareDeviceResources(a []models.DeviceObject, b []models.DeviceObject) bool {
+func CompareDeviceResources(a []models.DeviceResource, b []models.DeviceResource) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -155,7 +155,6 @@ func CompareResourceOperations(a []models.ResourceOperation, b []models.Resource
 		if a[i].Index != b[i].Index ||
 			a[i].Operation != b[i].Operation ||
 			a[i].Object != b[i].Object ||
-			a[i].Property != b[i].Property ||
 			a[i].Parameter != b[i].Parameter ||
 			a[i].Resource != b[i].Resource ||
 			!secondaryOk ||
@@ -210,7 +209,7 @@ func CompareStrStrMap(a map[string]string, b map[string]string) bool {
 
 func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable, error) {
 	// check whether there has been an existing addressable
-	addressable, err := AddressableClient.AddressableForName(name)
+	addressable, err := AddressableClient.AddressableForName(name, nil)
 	if err != nil {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			LoggingClient.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
@@ -219,7 +218,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 			addressable.Name = name
 			addressable.Origin = millis
 			LoggingClient.Debug(fmt.Sprintf("Adding Addressable: %v", addressable))
-			id, err := AddressableClient.Add(&addressable)
+			id, err := AddressableClient.Add(&addressable, nil)
 			if err != nil {
 				LoggingClient.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
 				return nil, err
