@@ -43,7 +43,7 @@ func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppErro
 
 func handleDevice(method string, id string) common.AppError {
 	if method == http.MethodPost {
-		device, err := common.DeviceClient.Device(id)
+		device, err := common.DeviceClient.Device(id, nil)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))
@@ -72,7 +72,7 @@ func handleDevice(method string, id string) common.AppError {
 			return appErr
 		}
 	} else if method == http.MethodPut {
-		dev, err := common.DeviceClient.Device(id)
+		dev, err := common.DeviceClient.Device(id, nil)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))
@@ -107,7 +107,7 @@ func handleDevice(method string, id string) common.AppError {
 
 func handleAddresssable(method string, id string) common.AppError {
 	if method == http.MethodPut {
-		add, err := common.AddressableClient.Addressable(id)
+		add, err := common.AddressableClient.Addressable(id, nil)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the addressable %s from Core Metadata: %v", id, err))
@@ -133,7 +133,7 @@ func handleAddresssable(method string, id string) common.AppError {
 
 func handleProfile(method string, id string) common.AppError {
 	if method == http.MethodPut {
-		profile, err := common.DeviceProfileClient.DeviceProfile(id)
+		profile, err := common.DeviceProfileClient.DeviceProfile(id, nil)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device profile %s from Core Metadata: %v", id, err))

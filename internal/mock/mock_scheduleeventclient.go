@@ -7,6 +7,7 @@
 package mock
 
 import (
+	"context"
 	"errors"
 
 	"github.com/edgexfoundry/edgex-go/pkg/models"
@@ -14,23 +15,23 @@ import (
 
 type ScheduleEventClientMock struct{}
 
-func (ScheduleEventClientMock) Add(dev *models.ScheduleEvent) (string, error) {
+func (ScheduleEventClientMock) Add(dev *models.ScheduleEvent, ctx context.Context) (string, error) {
 	return "", nil
 }
 
-func (ScheduleEventClientMock) Delete(id string) error {
+func (ScheduleEventClientMock) Delete(id string, ctx context.Context) error {
 	panic("implement me")
 }
 
-func (ScheduleEventClientMock) DeleteByName(name string) error {
+func (ScheduleEventClientMock) DeleteByName(name string, ctx context.Context) error {
 	panic("implement me")
 }
 
-func (ScheduleEventClientMock) ScheduleEvent(id string) (models.ScheduleEvent, error) {
+func (ScheduleEventClientMock) ScheduleEvent(id string, ctx context.Context) (models.ScheduleEvent, error) {
 	panic("implement me")
 }
 
-func (ScheduleEventClientMock) ScheduleEventForName(name string) (models.ScheduleEvent, error) {
+func (ScheduleEventClientMock) ScheduleEventForName(name string, ctx context.Context) (models.ScheduleEvent, error) {
 	var scheduleEvent = models.ScheduleEvent{Name: name}
 	var err error = nil
 	if name == "" {
@@ -39,22 +40,22 @@ func (ScheduleEventClientMock) ScheduleEventForName(name string) (models.Schedul
 	return scheduleEvent, err
 }
 
-func (ScheduleEventClientMock) ScheduleEvents() ([]models.ScheduleEvent, error) {
+func (ScheduleEventClientMock) ScheduleEvents(ctx context.Context) ([]models.ScheduleEvent, error) {
 	panic("implement me")
 }
 
-func (ScheduleEventClientMock) ScheduleEventsForAddressable(name string) ([]models.ScheduleEvent, error) {
+func (ScheduleEventClientMock) ScheduleEventsForAddressable(name string, ctx context.Context) ([]models.ScheduleEvent, error) {
 	panic("implement me")
 }
 
-func (ScheduleEventClientMock) ScheduleEventsForAddressableByName(name string) ([]models.ScheduleEvent, error) {
+func (ScheduleEventClientMock) ScheduleEventsForAddressableByName(name string, ctx context.Context) ([]models.ScheduleEvent, error) {
 	panic("implement me")
 }
 
-func (ScheduleEventClientMock) ScheduleEventsForServiceByName(name string) ([]models.ScheduleEvent, error) {
+func (ScheduleEventClientMock) ScheduleEventsForServiceByName(name string, ctx context.Context) ([]models.ScheduleEvent, error) {
 	return []models.ScheduleEvent{}, nil
 }
 
-func (ScheduleEventClientMock) Update(dev models.ScheduleEvent) error {
+func (ScheduleEventClientMock) Update(dev models.ScheduleEvent, ctx context.Context) error {
 	panic("implement me")
 }

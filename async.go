@@ -33,24 +33,24 @@ func processAsyncResults() {
 
 		for _, cv := range acv.CommandValues {
 			// get the device resource associated with the rsp.RO
-			do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cv.RO.Object)
+			dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.RO.Object)
 			if !ok {
 				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.RO.Object, acv.DeviceName))
 				continue
 			}
 
 			if common.CurrentConfig.Device.DataTransform {
-				err := transformer.TransformReadResult(cv, do.Properties.Value)
+				err := transformer.TransformReadResult(cv, dr.Properties.Value)
 				if err != nil {
 					common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
-					cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), do.Properties.Value, err))
+					cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
 				}
 			}
 
-			err := transformer.CheckAssertion(cv, do.Properties.Value.Assertion, &device)
+			err := transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, &device)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Assertion failed for device resource: %s, with value: %s and assertion: %s, %v", cv.RO.Object, cv.String(), do.Properties.Value.Assertion, err))
-				cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), do.Properties.Value.Assertion))
+				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Assertion failed for device resource: %s, with value: %s and assertion: %s, %v", cv.RO.Object, cv.String(), dr.Properties.Value.Assertion, err))
+				cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
 			}
 
 			if len(cv.RO.Mappings) > 0 {
@@ -68,7 +68,7 @@ func processAsyncResults() {
 
 		// push to Core Data
 		event := &models.Event{Device: acv.DeviceName, Readings: readings}
-		_, err := common.EventClient.Add(event)
+		_, err := common.EventClient.Add(event, nil)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Failed to push event %v: %v", event, err))
 		}

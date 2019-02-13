@@ -39,11 +39,11 @@ type ProtocolDriver interface {
 	Initialize(lc logger.LoggingClient, asyncCh chan<- *AsyncValues) error
 
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
-	// a ResourceOperation for a specific device resource (aka DeviceObject).
+	// a ResourceOperation for a specific device resource.
 	HandleReadCommands(addr *models.Addressable, reqs []CommandRequest) ([]*CommandValue, error)
 
 	// HandleWriteCommands passes a slice of CommandRequest struct each representing
-	// a ResourceOperation for a specific device resource (aka DeviceObject).
+	// a ResourceOperation for a specific device resource.
 	// Since the commands are actuation commands, params provide parameters for the individual
 	// command.
 	HandleWriteCommands(addr *models.Addressable, reqs []CommandRequest, params []*CommandValue) error

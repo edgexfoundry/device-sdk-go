@@ -49,7 +49,7 @@ func (s *Service) AddDevice(device models.Device) (id string, err error) {
 	device.Addressable = *addr
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
 
-	id, err = common.DeviceClient.Add(&device)
+	id, err = common.DeviceClient.Add(&device, nil)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
 		return "", err
@@ -90,7 +90,7 @@ func (s *Service) RemoveDevice(id string) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %v\n", device))
-	err := common.DeviceClient.Delete(id)
+	err := common.DeviceClient.Delete(id, nil)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", id))
 		return err
@@ -111,7 +111,7 @@ func (s *Service) RemoveDeviceByName(name string) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %v\n", device))
-	err := common.DeviceClient.DeleteByName(name)
+	err := common.DeviceClient.DeleteByName(name, nil)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", name))
 		return err
@@ -132,7 +132,7 @@ func (s *Service) UpdateDevice(device models.Device) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device: : %v\n", device))
-	err := common.DeviceClient.Update(device)
+	err := common.DeviceClient.Update(device, nil)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Update Device %s from Core Metadata failed: %v", device.Name, err))
 		return err

@@ -96,23 +96,23 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 	reqs := make([]ds_models.CommandRequest, len(ros))
 
 	for i, op := range ros {
-		objName := op.Object
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceObject: %s", objName))
+		drName := op.Object
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", drName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
 		// deviceprofile resource command operation references another resource command
 		// instead of a device resource (see BoschXDK for reference).
 
-		devObj, ok := cache.Profiles().DeviceObject(device.Profile.Name, objName)
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceObject: %v", devObj))
+		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %v", dr))
 		if !ok {
-			msg := fmt.Sprintf("Handler - execReadCmd: no devobject: %s for dev: %s cmd: %s method: GET", objName, device.Name, cmd)
+			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
 			common.LoggingClient.Error(msg)
 			return nil, common.NewServerError(msg, nil)
 		}
 
 		reqs[i].RO = op
-		reqs[i].DeviceObject = devObj
+		reqs[i].DeviceResource = dr
 	}
 
 	results, err := common.Driver.HandleReadCommands(&device.Addressable, reqs)
@@ -125,25 +125,25 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 
 	for _, cv := range results {
 		// get the device resource associated with the rsp.RO
-		do, ok := cache.Profiles().DeviceObject(device.Profile.Name, cv.RO.Object)
+		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.RO.Object)
 		if !ok {
-			msg := fmt.Sprintf("Handler - execReadCmd: no devobject: %s for dev: %s in Command Result %v", cv.RO.Object, device.Name, cv)
+			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s in Command Result %v", cv.RO.Object, device.Name, cv)
 			common.LoggingClient.Error(msg)
 			return nil, common.NewServerError(msg, nil)
 		}
 
 		if common.CurrentConfig.Device.DataTransform {
-			err = transformer.TransformReadResult(cv, do.Properties.Value)
+			err = transformer.TransformReadResult(cv, dr.Properties.Value)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: CommandValue (%s) transformed failed: %v", cv.String(), err))
 				transformsOK = false
 			}
 		}
 
-		err = transformer.CheckAssertion(cv, do.Properties.Value.Assertion, device)
+		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, device)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
-			cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), do.Properties.Value.Assertion))
+			cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
 		}
 
 		if len(cv.RO.Mappings) > 0 {
@@ -214,26 +214,26 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 
 	reqs := make([]ds_models.CommandRequest, len(cvs))
 	for i, cv := range cvs {
-		objName := cv.RO.Object
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceObject: %s", objName))
+		drName := cv.RO.Object
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %s", drName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
 		// deviceprofile resource command operation references another resource command
 		// instead of a device resource (see BoschXDK for reference).
 
-		devObj, ok := cache.Profiles().DeviceObject(device.Profile.Name, objName)
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceObject: %v", devObj))
+		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %v", dr))
 		if !ok {
-			msg := fmt.Sprintf("Handler - execWriteCmd: no devobject: %s for dev: %s cmd: %s method: GET", objName, device.Name, cmd)
+			msg := fmt.Sprintf("Handler - execWriteCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
 			common.LoggingClient.Error(msg)
 			return common.NewServerError(msg, nil)
 		}
 
 		reqs[i].RO = *cv.RO
-		reqs[i].DeviceObject = devObj
+		reqs[i].DeviceResource = dr
 
 		if common.CurrentConfig.Device.DataTransform {
-			err = transformer.TransformWriteParameter(cv, devObj.Properties.Value)
+			err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
 			if err != nil {
 				msg := fmt.Sprintf("Handler - execWriteCmd: CommandValue (%s) transformed failed: %v", cv.String(), err)
 				common.LoggingClient.Error(msg)
@@ -301,16 +301,16 @@ func createCommandValueForParam(profileName string, ro *models.ResourceOperation
 	var value interface{}
 	var t ds_models.ValueType
 
-	do, ok := cache.Profiles().DeviceObject(profileName, ro.Object)
+	dr, ok := cache.Profiles().DeviceResource(profileName, ro.Object)
 	if !ok {
-		msg := fmt.Sprintf("createCommandValueForParam: no devobject: %s", ro.Object)
+		msg := fmt.Sprintf("createCommandValueForParam: no deviceResource: %s", ro.Object)
 		common.LoggingClient.Error(msg)
 		return nil, fmt.Errorf(msg)
 	}
 
 	origin := time.Now().UnixNano() / int64(time.Millisecond)
 
-	switch strings.ToLower(do.Properties.Value.Type) {
+	switch strings.ToLower(dr.Properties.Value.Type) {
 	case "bool":
 		value, err = strconv.ParseBool(v)
 		t = ds_models.Bool
@@ -364,7 +364,7 @@ func createCommandValueForParam(profileName string, ro *models.ResourceOperation
 	}
 
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, do.Properties.Value.Type, err))
+		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, dr.Properties.Value.Type, err))
 		return result, err
 	}
 

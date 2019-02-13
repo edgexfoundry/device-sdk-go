@@ -47,7 +47,7 @@ func (s *SimpleDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_mo
 		return
 	}
 
-	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: device: %s operation: %v attributes: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceObject.Attributes))
+	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: device: %s operation: %v attributes: %v", addr.Name, reqs[0].RO.Operation, reqs[0].DeviceResource.Attributes))
 
 	res = make([]*ds_models.CommandValue, 1)
 	now := time.Now().UnixNano() / int64(time.Millisecond)
@@ -58,7 +58,7 @@ func (s *SimpleDriver) HandleReadCommands(addr *models.Addressable, reqs []ds_mo
 }
 
 // HandleWriteCommands passes a slice of CommandRequest struct each representing
-// a ResourceOperation for a specific device resource (aka DeviceObject).
+// a ResourceOperation for a specific device resource.
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
 func (s *SimpleDriver) HandleWriteCommands(addr *models.Addressable, reqs []ds_models.CommandRequest,
