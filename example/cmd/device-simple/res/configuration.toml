@@ -70,7 +70,7 @@ Frequency = "PT10S"
 
 [[ScheduleEvents]]
 Name = "turnOnSwitch"
-Parameters = "[{\"Switch\": \"true\"}]"
+Parameters = "{\"Switch\": \"true\"}"
 Schedule = "10sec-schedule"
   [ScheduleEvents.Addressable]
   HTTPMethod = "PUT"
