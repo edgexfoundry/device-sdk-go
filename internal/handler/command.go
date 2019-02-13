@@ -252,37 +252,35 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 }
 
 func parseWriteParams(profileName string, roMap map[string]*models.ResourceOperation, params string) ([]*ds_models.CommandValue, error) {
-	var paramMaps []map[string]string
-	err := json.Unmarshal([]byte(params), &paramMaps)
+	var paramMap map[string]string
+	err := json.Unmarshal([]byte(params), &paramMap)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Handler - parseWriteParams: parsing Write parameters failed %s, %v", params, err))
 		return []*ds_models.CommandValue{}, err
 	}
 
-	result := make([]*ds_models.CommandValue, 0, len(paramMaps))
-	for _, m := range paramMaps {
-		for k, v := range m {
-			ro, ok := roMap[k]
-			if ok {
-				if len(ro.Mappings) > 0 {
-					newV, ok := ro.Mappings[v]
-					if ok {
-						v = newV
-					} else {
-						msg := fmt.Sprintf("Handler - parseWriteParams: Resource Operation (%v) mapping value (%s) failed with the mapping table: %v", ro, v, ro.Mappings)
-						common.LoggingClient.Warn(msg)
-						//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
-					}
-				}
-				cv, err := createCommandValueForParam(profileName, ro, v)
-				if err == nil {
-					result = append(result, cv)
+	result := make([]*ds_models.CommandValue, 0, len(paramMap))
+	for k, v := range paramMap {
+		ro, ok := roMap[k]
+		if ok {
+			if len(ro.Mappings) > 0 {
+				newV, ok := ro.Mappings[v]
+				if ok {
+					v = newV
 				} else {
-					return result, err
+					msg := fmt.Sprintf("Handler - parseWriteParams: Resource Operation (%v) mapping value (%s) failed with the mapping table: %v", ro, v, ro.Mappings)
+					common.LoggingClient.Warn(msg)
+					//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
 				}
-			} else {
-				common.LoggingClient.Warn(fmt.Sprintf("Handler - parseWriteParams: The parameter %s cannot find the matched ResourceOperation", k))
 			}
+			cv, err := createCommandValueForParam(profileName, ro, v)
+			if err == nil {
+				result = append(result, cv)
+			} else {
+				return result, err
+			}
+		} else {
+			common.LoggingClient.Warn(fmt.Sprintf("Handler - parseWriteParams: The parameter %s cannot find the matched ResourceOperation", k))
 		}
 	}
 
