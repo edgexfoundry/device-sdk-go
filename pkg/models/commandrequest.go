@@ -11,7 +11,7 @@ import "github.com/edgexfoundry/edgex-go/pkg/models"
 type CommandRequest struct {
 	// RO is a ResourceOperation
 	RO models.ResourceOperation
-	// DeviceResource (aka device resource) represents the device resource
+	// DeviceResource represents the device resource
 	// to be read or set. It can be used to access the attributes map,
 	// PropertyValue, and PropertyUnit structs.
 	DeviceResource models.DeviceResource

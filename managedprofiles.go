@@ -139,9 +139,9 @@ func (*Service) DeviceResource(deviceName string, object string, method string) 
 		common.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))
 	}
 
-	do, ok := cache.Profiles().DeviceResource(device.Profile.Name, object)
+	dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, object)
 	if !ok {
-		return do, false
+		return dr, false
 	}
-	return do, true
+	return dr, true
 }
