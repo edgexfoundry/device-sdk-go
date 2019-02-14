@@ -8,12 +8,14 @@
 package provision
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 func LoadDevices(deviceList []common.DeviceConfig) error {
@@ -61,7 +63,8 @@ func createDevice(dc common.DeviceConfig) error {
 	device.Origin = millis
 	device.Description = dc.Description
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
-	id, err := common.DeviceClient.Add(device, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err := common.DeviceClient.Add(device, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
 		return err

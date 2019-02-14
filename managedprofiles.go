@@ -8,6 +8,7 @@
 package device
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 // AddDeviceProfile adds a new DeviceProfile to the device service and Core Metadata
@@ -29,7 +31,8 @@ func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err
 	profile.Origin = millis
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Profile: %v", profile))
 
-	id, err = common.DeviceProfileClient.Add(&profile, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err = common.DeviceProfileClient.Add(&profile, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Profile failed %v, error: %v", profile, err))
 		return "", err
@@ -61,7 +64,8 @@ func (s *Service) RemoveDeviceProfile(id string) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %v\n", profile))
-	err := common.DeviceProfileClient.Delete(id, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceProfileClient.Delete(id, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete DeviceProfile %s from Core Metadata failed", id))
 		return err
@@ -82,7 +86,8 @@ func (*Service) RemoveDeviceProfileByName(name string) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %v\n", profile))
-	err := common.DeviceProfileClient.DeleteByName(name, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceProfileClient.DeleteByName(name, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete DeviceProfile %s from Core Metadata failed", name))
 		return err
@@ -103,7 +108,8 @@ func (*Service) UpdateDeviceProfile(profile models.DeviceProfile) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Updating managed DeviceProfile: : %v\n", profile))
-	err := common.DeviceProfileClient.Update(profile, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceProfileClient.Update(profile, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Update DeviceProfile %s from Core Metadata failed: %v", profile.Name, err))
 		return err

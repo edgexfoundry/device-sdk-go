@@ -12,12 +12,14 @@
 package device
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 // AddDevice adds a new Device to the device service and Core Metadata
@@ -49,7 +51,8 @@ func (s *Service) AddDevice(device models.Device) (id string, err error) {
 	device.Addressable = *addr
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
 
-	id, err = common.DeviceClient.Add(&device, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err = common.DeviceClient.Add(&device, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
 		return "", err
@@ -90,7 +93,8 @@ func (s *Service) RemoveDevice(id string) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %v\n", device))
-	err := common.DeviceClient.Delete(id, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceClient.Delete(id, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", id))
 		return err
@@ -111,7 +115,8 @@ func (s *Service) RemoveDeviceByName(name string) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %v\n", device))
-	err := common.DeviceClient.DeleteByName(name, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceClient.DeleteByName(name, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", name))
 		return err
@@ -132,7 +137,8 @@ func (s *Service) UpdateDevice(device models.Device) error {
 	}
 
 	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device: : %v\n", device))
-	err := common.DeviceClient.Update(device, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceClient.Update(device, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Update Device %s from Core Metadata failed: %v", device.Name, err))
 		return err

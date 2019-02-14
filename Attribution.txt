@@ -42,5 +42,8 @@ https://github.com/globalsign/mgo/blob/master/LICENSE
 gopkg.in/yaml v2 (Apache 2.0) https://github.com/go-yaml/yaml/tree/v2
 https://github.com/go-yaml/yaml/blob/v2/LICENSE
 
+google/uuid (BSD-3) https://github.com/google/uuid
+https://github.com/google/uuid/blob/master/LICENSE
+
 edgexfoundry/edgex-go (Apache 2.0) https://github.com/edgexfoundry/edgex-go
 https://github.com/edgexfoundry/edgex-go/blob/master/LICENSE

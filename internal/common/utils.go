@@ -9,6 +9,7 @@ package common
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -16,6 +17,7 @@ import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 func BuildAddr(host string, port string) string {
@@ -44,7 +46,8 @@ func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.R
 }
 
 func SendEvent(event *models.Event) {
-	_, err := EventClient.Add(event, nil)
+	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
+	_, err := EventClient.Add(event, ctx)
 	if err != nil {
 		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
 	}
@@ -209,7 +212,8 @@ func CompareStrStrMap(a map[string]string, b map[string]string) bool {
 
 func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable, error) {
 	// check whether there has been an existing addressable
-	addressable, err := AddressableClient.AddressableForName(name, nil)
+	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
+	addressable, err := AddressableClient.AddressableForName(name, ctx)
 	if err != nil {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			LoggingClient.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
@@ -218,7 +222,7 @@ func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable
 			addressable.Name = name
 			addressable.Origin = millis
 			LoggingClient.Debug(fmt.Sprintf("Adding Addressable: %v", addressable))
-			id, err := AddressableClient.Add(&addressable, nil)
+			id, err := AddressableClient.Add(&addressable, ctx)
 			if err != nil {
 				LoggingClient.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
 				return nil, err

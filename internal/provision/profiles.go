@@ -8,6 +8,7 @@
 package provision
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
 )
 
@@ -36,7 +38,8 @@ func LoadProfiles(path string) error {
 	}
 	common.LoggingClient.Debug(fmt.Sprintf("profiles: created absolute path for loading pre-defined Device Profiles: %s", absPath))
 
-	profiles, err := common.DeviceProfileClient.DeviceProfiles(nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	profiles, err := common.DeviceProfileClient.DeviceProfiles(ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read Device Profile from Core Metadata: %v", err))
 		return err
@@ -75,7 +78,8 @@ func LoadProfiles(path string) error {
 			}
 
 			// add profile to metadata
-			id, err := common.DeviceProfileClient.Add(&profile, nil)
+			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+			id, err := common.DeviceProfileClient.Add(&profile, ctx)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
@@ -148,7 +152,8 @@ func createDescriptor(name string, dr models.DeviceResource) (*models.ValueDescr
 		Description:  dr.Description,
 	}
 
-	id, err := common.ValueDescriptorClient.Add(desc, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err := common.ValueDescriptorClient.Add(desc, ctx)
 	if err != nil {
 		return nil, err
 	}
