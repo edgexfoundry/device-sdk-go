@@ -8,15 +8,17 @@ package transformer
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"math"
 	"strconv"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 const (
@@ -362,7 +364,8 @@ func CheckAssertion(cv *ds_models.CommandValue, assertion string, device *models
 	if assertion != "" && cv.ValueToString() != assertion {
 		device.OperatingState = models.Disabled
 		cache.Devices().Update(*device)
-		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled, nil)
+		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled, ctx)
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		common.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)

@@ -11,6 +11,7 @@
 package device
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,6 +28,7 @@ import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 var (
@@ -123,7 +125,8 @@ func (s *Service) Start(errChan chan error) (err error) {
 func selfRegister() error {
 	common.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
 
-	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName, ctx)
 
 	if err != nil {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
@@ -161,7 +164,8 @@ func createNewDeviceService() (models.DeviceService, error) {
 	}
 	ds.Service.Origin = millis
 
-	id, err := common.DeviceServiceClient.Add(&ds, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	id, err := common.DeviceServiceClient.Add(&ds, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
 		return models.DeviceService{}, err
@@ -180,7 +184,8 @@ func createNewDeviceService() (models.DeviceService, error) {
 
 func makeNewAddressable() (*models.Addressable, error) {
 	// check whether there has been an existing addressable
-	addr, err := common.AddressableClient.AddressableForName(common.ServiceName, nil)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	addr, err := common.AddressableClient.AddressableForName(common.ServiceName, ctx)
 	if err != nil {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
@@ -196,7 +201,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 				Port:       svc.svcInfo.Port,
 				Path:       common.APICallbackRoute,
 			}
-			id, err := common.AddressableClient.Add(&addr, nil)
+			id, err := common.AddressableClient.Add(&addr, ctx)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
 				return nil, err

@@ -8,6 +8,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/google/uuid"
 )
 
 func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppError {
@@ -42,8 +44,9 @@ func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppErro
 }
 
 func handleDevice(method string, id string) common.AppError {
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	if method == http.MethodPost {
-		device, err := common.DeviceClient.Device(id, nil)
+		device, err := common.DeviceClient.Device(id, ctx)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))
@@ -72,7 +75,7 @@ func handleDevice(method string, id string) common.AppError {
 			return appErr
 		}
 	} else if method == http.MethodPut {
-		dev, err := common.DeviceClient.Device(id, nil)
+		dev, err := common.DeviceClient.Device(id, ctx)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))
@@ -107,7 +110,8 @@ func handleDevice(method string, id string) common.AppError {
 
 func handleAddresssable(method string, id string) common.AppError {
 	if method == http.MethodPut {
-		add, err := common.AddressableClient.Addressable(id, nil)
+		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+		add, err := common.AddressableClient.Addressable(id, ctx)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the addressable %s from Core Metadata: %v", id, err))
@@ -133,7 +137,8 @@ func handleAddresssable(method string, id string) common.AppError {
 
 func handleProfile(method string, id string) common.AppError {
 	if method == http.MethodPut {
-		profile, err := common.DeviceProfileClient.DeviceProfile(id, nil)
+		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+		profile, err := common.DeviceProfileClient.DeviceProfile(id, ctx)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device profile %s from Core Metadata: %v", id, err))

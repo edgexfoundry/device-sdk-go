@@ -7,6 +7,7 @@ require (
 	github.com/globalsign/mgo v0.0.0-20180615134936-113d3961e731
 	github.com/go-kit/kit v0.8.0
 	github.com/go-logfmt/logfmt v0.4.0
+	github.com/google/uuid v1.1.0
 	github.com/gorilla/context v0.0.0-20181012153548-51ce91d2eadd
 	github.com/gorilla/mux v1.6.2
 	github.com/hashicorp/consul v1.1.0
