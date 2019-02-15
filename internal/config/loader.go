@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,23 +11,21 @@ package config
 import (
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-registry"
+	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
 	"io/ioutil"
-	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
-	"github.com/BurntSushi/toml"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/registry"
+	"github.com/pelletier/go-toml"
+
 )
 
-const consulStatusPath = "/v1/agent/self"
-
 var (
-	// Need to set timeout because it hang until server close connection
-	// https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
-	netClient      = &http.Client{Timeout: time.Second * 10}
 	RegistryClient registry.Client
 )
 
@@ -34,14 +33,85 @@ var (
 // specified parameters and returns a pointer to the global Config
 // struct which holds all of the local configuration settings for
 // the DS. The bool useRegisty indicates whether the registry
-// should be used to read initial config settings. This also controls
+// should be used to read config settings. This also controls
 // whether the service registers itself the registry. The profile and confDir
 // are used to locate the local TOML config file.
-func LoadConfig(useRegistry bool, profile string, confDir string) (config *common.Config, err error) {
+func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Config, error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
-	confName := "configuration.toml"
 
+	configuration, err := loadConfigFromFile(profile, confDir)
+
+	// TODO: Verify this is correct.
+	stem := common.ConfigRegistryStem + common.ServiceName + "/"
+
+	var registryMsg string
+	if useRegistry {
+		registryMsg = "Register in registry..."
+		registryConfig := registry.Config{
+			Host:          configuration.Registry.Host,
+			Port:          configuration.Registry.Port,
+			Type:          configuration.Registry.Type,
+			Stem:          stem,
+			CheckInterval: configuration.Registry.CheckInterval,
+			CheckRoute:    common.APIPingRoute,
+			ServiceKey:    common.ServiceName,
+			ServiceHost:   configuration.Service.Host,
+			ServicePort:   configuration.Service.Port,
+		}
+
+		RegistryClient, err =  factory.NewRegistryClient(registryConfig)
+		if err != nil {
+			return nil, fmt.Errorf("connection to Registry could not be made: %v", err.Error())
+		}
+
+		// Check if registry service is running
+		if err := checkRegistryUp(configuration); err != nil {
+			return nil, err
+		}
+
+		// Register the service with Registry for discovery and health checks
+		err = RegistryClient.Register()
+		if err != nil {
+			return nil, fmt.Errorf("could not register service with Registry: %v", err.Error())
+		}
+
+		hasConfiguration, err := RegistryClient.HasConfiguration()
+		err = RegistryClient.Register()
+		if err != nil {
+			return nil, fmt.Errorf("could not verify that Registry already has configuration: %v", err.Error())
+		}
+
+		if hasConfiguration{
+			// Get the configuration values from the Registry
+			rawConfig, err := RegistryClient.GetConfiguration(configuration)
+			if err != nil {
+				return nil, fmt.Errorf("could not get configuration from Registry: %v", err.Error())
+			}
+
+			actual, ok := rawConfig.(*common.Config)
+			if !ok {
+				return nil, fmt.Errorf("configuration from Registry failed type check")
+			}
+
+			configuration = actual
+		} else {
+			// Self bootstrap the Registry with the device service's configuration
+			err := RegistryClient.PutConfiguration(*configuration, true)
+			if err != nil {
+				return nil, fmt.Errorf("could not push configuration to Registry: %v", err.Error())
+			}
+		}
+	} else {
+		registryMsg = "Bypassing registration in registry..."
+	}
+
+	fmt.Println(registryMsg)
+
+	return configuration, nil
+}
+
+func loadConfigFromFile(profile string, confDir string) (config *common.Config, err error) {
 	if len(confDir) == 0 {
 		confDir = "./res"
 	}
@@ -50,7 +120,8 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 		confDir = confDir + "/" + profile
 	}
 
-	path := confDir + "/" + confName
+	path := confDir + "/" + common.ConfigFileName
+	_, _ = fmt.Fprintf(os.Stdout, "Loading configuration from: %s\n", path)
 
 	// As the toml package can panic if TOML is invalid,
 	// or elements are found that don't match members of
@@ -77,33 +148,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 		return nil, fmt.Errorf("unable to parse configuration file (%s): %v", path, err.Error())
 	}
 
-	var registryMsg string
-	if useRegistry {
-		registryMsg = "Register in registry..."
-		RegistryClient, err = GetRegistryClient(common.ServiceName, config)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		registryMsg = "Bypassing registration in registry..."
-	}
-	fmt.Println(registryMsg)
-
 	return config, nil
-}
-
-func GetRegistryClient(serviceName string, config *common.Config) (*registry.ConsulClient, error) {
-	err := checkRegistryUp(config)
-	if err != nil {
-		return nil, err
-	}
-
-	registryClient, err := newConsulClient(serviceName, config)
-	if err != nil {
-		err = fmt.Errorf("connection to registry could not be made: %v", err.Error())
-	}
-
-	return registryClient, err
 }
 
 func checkRegistryUp(config *common.Config) error {
@@ -111,39 +156,55 @@ func checkRegistryUp(config *common.Config) error {
 	fmt.Println("Check registry is up...", registryUrl)
 	fails := 0
 	for fails < config.Registry.FailLimit {
-		// http.Get return error in case of wrong HTTP method or invalid URL
-		// so we need to check for invalid status.
-		response, err := netClient.Get(registryUrl + consulStatusPath)
-		if err != nil {
-			fmt.Println(err.Error())
-			time.Sleep(time.Second * time.Duration(config.Registry.FailWaitTime))
-			fails++
-			continue
+		if RegistryClient.IsAlive() {
+			break
 		}
 
-		if response.StatusCode >= 200 && response.StatusCode < 300 {
-			break
-		} else {
-			return errors.New("bad response from Consul service")
-		}
+		time.Sleep(time.Second * time.Duration(config.Registry.FailWaitTime))
+		fails++
 	}
+
 	if fails >= config.Registry.FailLimit {
-		return errors.New("can't get connection to Consul")
+		return errors.New("can't get connection to Registry")
 	}
 	return nil
 }
 
-func newConsulClient(serviceName string, config *common.Config) (*registry.ConsulClient, error) {
-	consulClient := &registry.ConsulClient{}
-	registryConfig := registry.RegistryConfig{
-		Address:        config.Registry.Host,
-		Port:           config.Registry.Port,
-		ServiceName:    serviceName,
-		ServiceAddress: config.Service.Host,
-		ServicePort:    config.Service.Port,
-		CheckAddress:   fmt.Sprintf("http://%v:%v%v", config.Service.Host, config.Service.Port, common.APIPingRoute),
-		CheckInterval:  config.Registry.CheckInterval,
+func ListenForConfigChanges() {
+	if RegistryClient == nil {
+		common.LoggingClient.Error("listenForConfigChanges() registry client not set")
+		return
 	}
-	err := consulClient.Init(registryConfig)
-	return consulClient, err
+
+	common.LoggingClient.Info("listen for config changes from Registry")
+
+	errChannel := make(chan error )
+	updateChannel := make(chan interface{})
+
+	RegistryClient.WatchForChanges(updateChannel, errChannel, &common.WritableInfo{}, common.WritableKey)
+
+	signalChan := make(chan os.Signal)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	for {
+		select {
+		case <-signalChan:
+			// Quietly and gracefully stop when SIGINT/SIGTERM received
+			return
+		case ex := <-errChannel:
+			common.LoggingClient.Error(ex.Error())
+		case raw, ok := <-updateChannel:
+			if ok {
+				actual, ok := raw.(*common.WritableInfo)
+				if !ok {
+					common.LoggingClient.Error("listenForConfigChanges() type check failed")
+				}
+				common.CurrentConfig.Writable = *actual
+				common.LoggingClient.Info("Writeable configuration has been updated. Setting log level to " + common.CurrentConfig.Writable.LogLevel)
+				common.LoggingClient.SetLogLevel(common.CurrentConfig.Writable.LogLevel)
+			} else {
+				return
+			}
+		}
+	}
 }

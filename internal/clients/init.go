@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,20 +10,18 @@ package clients
 import (
 	"fmt"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/internal/registry"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	consulapi "github.com/hashicorp/consul/api"
+	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 )
 
 const clientCount int = 8
@@ -84,7 +83,7 @@ func initializeLoggingClient() {
 		fmt.Println("EnableRemote is false, using local log file")
 	}
 
-	common.LoggingClient = logger.NewClient(common.ServiceName, config.Logging.EnableRemote, logTarget, config.Logging.Level)
+	common.LoggingClient = logger.NewClient(common.ServiceName, config.Logging.EnableRemote, logTarget, config.Writable.LogLevel)
 }
 
 func checkDependencyServices() error {
@@ -117,7 +116,7 @@ func checkDependencyServices() error {
 func checkServiceAvailable(serviceId string) error {
 	for i := 0; i < 50; i++ {
 		if common.UseRegistry {
-			if checkServiceAvailableByConsul(common.CurrentConfig.Clients[serviceId].Name) == true {
+			if checkServiceAvailableViaRegistry(common.CurrentConfig.Clients[serviceId].Name) == true {
 				return nil
 			}
 		} else {
@@ -151,52 +150,23 @@ func checkServiceAvailableByPing(serviceId string) error {
 	return err
 }
 
-func checkServiceAvailableByConsul(serviceConsulId string) bool {
-	common.LoggingClient.Info(fmt.Sprintf("Check %v service's status by Consul...", serviceConsulId))
+func checkServiceAvailableViaRegistry(serviceId string) bool {
+	common.LoggingClient.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceId))
 
-	result := false
 
-	isConsulUp := checkConsulAvailable()
-	if !isConsulUp {
+	if !config.RegistryClient.IsAlive() {
+		common.LoggingClient.Error("unable to check status of %s service: Registry not running")
+
 		return false
 	}
 
-	// Get a new client
-	var host = common.CurrentConfig.Registry.Host
-	var port = strconv.Itoa(common.CurrentConfig.Registry.Port)
-	var consulAddr = common.BuildAddr(host, port)
-	consulConfig := consulapi.DefaultConfig()
-	consulConfig.Address = consulAddr
-	client, err := consulapi.NewClient(consulConfig)
-	if err != nil {
+	err := config.RegistryClient.IsServiceAvailable(serviceId)
+	if err != nil	{
 		common.LoggingClient.Error(err.Error())
 		return false
 	}
 
-	services, _, err := client.Catalog().Service(serviceConsulId, "", nil)
-	if err != nil {
-		common.LoggingClient.Error(err.Error())
-		return false
-	}
-	if len(services) <= 0 {
-		common.LoggingClient.Error(serviceConsulId + " service hasn't started...")
-		return false
-	}
-
-	healthCheck, _, err := client.Health().Checks(serviceConsulId, nil)
-	if err != nil {
-		common.LoggingClient.Error(err.Error())
-		return false
-	}
-	status := healthCheck.AggregatedStatus()
-	if status == common.ServiceStatusPass {
-		result = true
-	} else {
-		common.LoggingClient.Error(serviceConsulId + " service hasn't been available...")
-		result = false
-	}
-
-	return result
+	return true
 }
 
 func checkConsulAvailable() bool {
@@ -215,7 +185,7 @@ func initializeClients() {
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(clientCount)
 
-	consulEndpoint := &registry.ConsulEndpoint{RegistryClient: config.RegistryClient, WG: &waitGroup}
+	endpoint := &endpoint.Endpoint{RegistryClient: config.RegistryClient, WG: &waitGroup}
 
 	metaAddr := common.CurrentConfig.Clients[common.ClientMetadata].Url()
 	dataAddr := common.CurrentConfig.Clients[common.ClientData].Url()
@@ -230,38 +200,38 @@ func initializeClients() {
 
 	params.Path = clients.ApiAddressableRoute
 	params.Url = metaAddr + params.Path
-	common.AddressableClient = metadata.NewAddressableClient(params, consulEndpoint)
+	common.AddressableClient = metadata.NewAddressableClient(params, endpoint)
 
 	params.Path = clients.ApiDeviceRoute
 	params.Url = metaAddr + params.Path
-	common.DeviceClient = metadata.NewDeviceClient(params, consulEndpoint)
+	common.DeviceClient = metadata.NewDeviceClient(params, endpoint)
 
 	params.Path = clients.ApiDeviceServiceRoute
 	params.Url = metaAddr + params.Path
-	common.DeviceServiceClient = metadata.NewDeviceServiceClient(params, consulEndpoint)
+	common.DeviceServiceClient = metadata.NewDeviceServiceClient(params, endpoint)
 
 	params.Path = clients.ApiDeviceProfileRoute
 	params.Url = metaAddr + params.Path
-	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, consulEndpoint)
+	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, endpoint)
 
 	params.Path = clients.ApiScheduleRoute
 	params.Url = metaAddr + params.Path
-	common.ScheduleClient = metadata.NewScheduleClient(params, consulEndpoint)
+	common.ScheduleClient = metadata.NewScheduleClient(params, endpoint)
 
 	params.Path = clients.ApiScheduleEventRoute
 	params.Url = metaAddr + params.Path
-	common.ScheduleEventClient = metadata.NewScheduleEventClient(params, consulEndpoint)
+	common.ScheduleEventClient = metadata.NewScheduleEventClient(params, endpoint)
 
 	// initialize Core Data clients
 	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name
 
 	params.Path = clients.ApiEventRoute
 	params.Url = dataAddr + params.Path
-	common.EventClient = coredata.NewEventClient(params, consulEndpoint)
+	common.EventClient = coredata.NewEventClient(params, endpoint)
 
 	params.Path = common.APIValueDescriptorRoute
 	params.Url = dataAddr + params.Path
-	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, consulEndpoint)
+	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, endpoint)
 
 	if isRegistry {
 		// wait for the first endpoint discovery to make sure all clients work

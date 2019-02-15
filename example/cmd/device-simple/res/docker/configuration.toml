@@ -1,3 +1,6 @@
+[Writable]
+LogLevel = 'INFO'
+
 [Service]
 Host = "device-simple"
 Port = 49990
@@ -12,6 +15,7 @@ AsyncBufferSize = 16
 [Registry]
 Host = "edgex-core-consul"
 Port = 8500
+Type = "consul"
 CheckInterval = "10s"
 FailLimit = 3
 FailWaitTime = 10
@@ -50,7 +54,6 @@ FailWaitTime = 10
 [Logging]
 EnableRemote = true
 File = "/edgex/logs/device-simple.log"
-Level = "INFO"
 
 # Pre-define Schedule Configuration
 [[Schedules]]
