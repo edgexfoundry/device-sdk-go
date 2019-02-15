@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -67,6 +68,12 @@ func (s *Service) Start(errChan chan error) (err error) {
 	err = clients.InitDependencyClients()
 	if err != nil {
 		return err
+	}
+
+	// If useRegistry selected then configLoader.RegistryClient will not be nil
+	if configLoader.RegistryClient != nil {
+		// Logging has now been initialized so can start listening for configuration changes.
+		go configLoader.ListenForConfigChanges()
 	}
 
 	err = selfRegister()

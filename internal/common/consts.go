@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -22,6 +23,11 @@ const (
 	HttpProto         = "HTTP"
 	StatusResponse    = "pong"
 	ServiceStatusPass = "passing"
+
+	ConfigFileName       = "configuration.toml"
+	ConfigRegistryStem   = "edgex/devices/1.0/"
+	WritableKey          = "/Writable"
+
 
 	APICallbackRoute        = APIv1Prefix + "/callback"
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"
