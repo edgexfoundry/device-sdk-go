@@ -9,19 +9,24 @@ package registry
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
-	"strings"
+	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	consulapi "github.com/hashicorp/consul/api"
+	"github.com/mitchellh/consulstructure"
 )
 
 type ConsulClient struct {
 	Consul *consulapi.Client
+	config RegistryConfig
 }
 
 func (c *ConsulClient) Init(config RegistryConfig) error {
 	var err error // Declare error to be used throughout function
+	c.config = config
 
 	// Connect to the Consul Agent
 	defaultConfig := &consulapi.Config{}
@@ -32,7 +37,7 @@ func (c *ConsulClient) Init(config RegistryConfig) error {
 	}
 
 	// Register the Service
-	fmt.Println("Register the Service ...")
+	_, _ = fmt.Fprintf(os.Stdout, "Register the Service ...\n")
 	err = c.Consul.Agent().ServiceRegister(&consulapi.AgentServiceRegistration{
 		Name:    config.ServiceName,
 		Address: config.ServiceAddress,
@@ -43,7 +48,7 @@ func (c *ConsulClient) Init(config RegistryConfig) error {
 	}
 
 	// Register the Health Check
-	fmt.Println("Register the Health Check ...")
+	_, _ = fmt.Fprintf(os.Stdout, "Register the Health Check ...\n")
 	err = c.Consul.Agent().CheckRegister(&consulapi.AgentCheckRegistration{
 		Name:      "Health Check: " + config.ServiceName,
 		Notes:     "Check the health of the API",
@@ -61,6 +66,10 @@ func (c *ConsulClient) Init(config RegistryConfig) error {
 }
 
 func (c *ConsulClient) GetServiceEndpoint(serviceKey string) (ServiceEndpoint, error) {
+	if c.Consul == nil {
+		return ServiceEndpoint{}, fmt.Errorf("consul client hasn't been initialized")
+	}
+
 	services, err := c.Consul.Agent().Services()
 	if err != nil {
 		return ServiceEndpoint{}, err
@@ -77,129 +86,75 @@ func (c *ConsulClient) GetServiceEndpoint(serviceKey string) (ServiceEndpoint, e
 	return endpoint, nil
 }
 
-func (c *ConsulClient) CheckKeyValuePairs(configuration interface{}, applicationName string, profiles []string) error {
-	fmt.Println("Look at the key/value pairs to update configuration from registry ...")
-	// Consul wasn't initialized
+func (c *ConsulClient) CheckConfigExistence() bool {
 	if c.Consul == nil {
-		err := errors.New("Consul wasn't initialized, can't check key/value pairs")
-		return err
+		_, _ = fmt.Fprintf(os.Stdout, "consul client hasn't been initialized\n")
+		return false
 	}
 
-	kv := c.Consul.KV()
+	stem := common.ConfigV2Stem + c.config.ServiceName
+	if stemKeys, _, err := c.Consul.KV().Keys(stem, "", nil); err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Retrieving KV from Consul failed...\n")
+		return false
+	} else if len(stemKeys) == 0 {
+		return false
+	} else {
+		return true
+	}
+}
 
-	// Reflection to get the field names (These will be part of the key names)
-	configValue := reflect.ValueOf(configuration)
-	// Loop through the fields
-	for i := 0; i < configValue.Elem().NumField(); i++ {
-		fieldName := configValue.Elem().Type().Field(i).Name
-		fieldValue := configValue.Elem().Field(i)
-		keyPath := "config/" + applicationName + ";" + strings.Join(profiles, ";") + "/" + fieldName
-		var byteValue []byte // Byte array that will be passed to Consul
+func (c *ConsulClient) PopulateConfig(config common.Config) error {
+	if c.Consul == nil {
+		return fmt.Errorf("consul client hasn't been initialized")
+	}
 
-		// Switch off of the value type
-		switch fieldValue.Kind() {
-		case reflect.Bool:
-			byteValue = []byte(strconv.FormatBool(fieldValue.Bool()))
+	_, _ = fmt.Fprintf(os.Stdout, "populating config from file to Consul\n")
+	stem := fmt.Sprintf("%s%s", common.ConfigV2Stem, c.config.ServiceName)
+	err := populateValue(stem, reflect.ValueOf(config), c.Consul)
 
-			// Check if the key is already there
-			pair, _, err := kv.Get(keyPath, nil)
-			if err != nil {
-				return err
-			}
-			// Pair doesn't exist, create it
-			if pair == nil {
-				pair = &consulapi.KVPair{
-					Key:   keyPath,
-					Value: byteValue,
-				}
-				_, err = kv.Put(pair, nil)
-				if err != nil {
-					return err
-				}
-			} else { // Pair does exist, get the new value
-				pair, _, err = kv.Get(keyPath, nil)
-				if err != nil {
-					return err
-				}
+	return err
+}
 
-				newValue, err := strconv.ParseBool(string(pair.Value))
-				if err != nil {
-					return err
-				}
+func (c *ConsulClient) LoadConfig(config *common.Config) (*common.Config, error) {
+	_, _ = fmt.Fprintf(os.Stdout, "Look at the key/value pairs to update configuration from registry ...\n")
+	var err error
 
-				fieldValue.SetBool(newValue) // Set the new value
-			}
-			break
-		case reflect.String:
-			byteValue = []byte(fieldValue.String())
+	cfg := &consulapi.Config{}
+	cfg.Address = c.config.Address + ":" + strconv.Itoa(c.config.Port)
+	updateCh := make(chan interface{})
+	errCh := make(chan error)
+	dec := &consulstructure.Decoder{
+		Consul:   cfg,
+		Target:   &common.Config{},
+		Prefix:   common.ConfigV2Stem + common.ServiceName,
+		UpdateCh: updateCh,
+		ErrCh:    errCh,
+	}
 
-			// Check if the key is already there
-			pair, _, err := kv.Get(keyPath, nil)
-			if err != nil {
-				return err
-			}
-			// Pair doesn't exist, create it
-			if pair == nil {
-				pair = &consulapi.KVPair{
-					Key:   keyPath,
-					Value: byteValue,
-				}
-				_, err = kv.Put(pair, nil)
-				if err != nil {
-					return err
-				}
-			} else { // Pair does exist, get the new value
-				pair, _, err = kv.Get(keyPath, nil)
-				if err != nil {
-					return err
-				}
+	defer dec.Close()
+	defer close(updateCh)
+	defer close(errCh)
+	go dec.Run()
 
-				newValue := string(pair.Value)
-
-				fieldValue.SetString(newValue) // Set the new value
-			}
-			break
-		case reflect.Int:
-			byteValue = []byte(strconv.FormatInt(fieldValue.Int(), 10))
-
-			// Check if the key is already there
-			pair, _, err := kv.Get(keyPath, nil)
-			if err != nil {
-				return err
-			}
-			// Pair doesn't exist, create it
-			if pair == nil {
-				pair = &consulapi.KVPair{
-					Key:   keyPath,
-					Value: byteValue,
-				}
-				_, err = kv.Put(pair, nil)
-				if err != nil {
-					return err
-				}
-			} else { // Pair does exist, get the new value
-				pair, _, err = kv.Get(keyPath, nil)
-				if err != nil {
-					return err
-				}
-
-				newValue, err := strconv.ParseInt(string(pair.Value), 10, 64)
-				if err != nil {
-					return err
-				}
-
-				fieldValue.SetInt(newValue) // Set the new value
-			}
-			break
-
-		default:
-			// TODO Can't parse struct
-			fmt.Println("Unexpected fieldValue: ", fieldValue)
-			//err := errors.New("Can't get the type of field: " + keyPath)
-			//return err
-
+	select {
+	case <-time.After(2 * time.Second):
+		err = errors.New("timeout loading config from registry")
+	case ex := <-errCh:
+		err = errors.New(ex.Error())
+	case raw := <-updateCh:
+		actual, ok := raw.(*common.Config)
+		if !ok {
+			return config, errors.New("type check failed")
+		}
+		config = actual
+		//Check that information was successfully read from Consul
+		if config.Service.Port == 0 {
+			return nil, errors.New("error reading from Consul")
+			//} else {
+			//Handle List in special way
+			//config.MapValueToList()
 		}
 	}
 
-	return nil
+	return config, err
 }

@@ -6,14 +6,20 @@
 
 package registry
 
+import "github.com/edgexfoundry/device-sdk-go/internal/common"
+
 type Client interface {
 	// Initialize Consul by connecting to the agent and registering the service/check
 	Init(config RegistryConfig) error
 
 	GetServiceEndpoint(serviceKey string) (ServiceEndpoint, error)
 
+	CheckConfigExistence() bool
+
+	PopulateConfig(config common.Config) error
+
 	// Look at the key/value pairs to update configuration
-	CheckKeyValuePairs(configurationStruct interface{}, applicationName string, profiles []string) error
+	LoadConfig(config *common.Config) (*common.Config, error)
 }
 
 type ServiceEndpoint struct {

@@ -126,13 +126,13 @@ type Config struct {
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
 	// Schedules is created on startup.
-	Schedules []models.Schedule
+	Schedules []models.Schedule `consul:"-"`
 	// SchedulesEvents is created on startup.
-	ScheduleEvents []models.ScheduleEvent
+	ScheduleEvents []models.ScheduleEvent `consul:"-"`
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
 	// DeviceList is the list of pre-define Devices
-	DeviceList []DeviceConfig
+	DeviceList []DeviceConfig `consul:"-"`
 }
 
 // DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up

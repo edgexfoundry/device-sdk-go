@@ -38,10 +38,38 @@ var (
 // whether the service registers itself the registry. The profile and confDir
 // are used to locate the local TOML config file.
 func LoadConfig(useRegistry bool, profile string, confDir string) (config *common.Config, err error) {
-	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
+	_, _ = fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
-	confName := "configuration.toml"
+	config, err = loadConfigFromFile(profile, confDir)
 
+	var registryMsg string
+	if useRegistry {
+		registryMsg = "Register in registry...\n"
+		RegistryClient, err = GetRegistryClient(common.ServiceName, config)
+		if err != nil {
+			return nil, err
+		}
+		if RegistryClient.CheckConfigExistence() {
+			config, err = RegistryClient.LoadConfig(config)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Load config from Consul failed... %v \n", err)
+			}
+		} else {
+			err = RegistryClient.PopulateConfig(*config)
+			if err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "Popluate config to Consul failed... %v \n", err)
+				return nil, err
+			}
+		}
+	} else {
+		registryMsg = "Bypassing registration in registry...\n"
+	}
+	_, _ = fmt.Fprintf(os.Stdout, registryMsg)
+
+	return
+}
+
+func loadConfigFromFile(profile string, confDir string) (config *common.Config, err error) {
 	if len(confDir) == 0 {
 		confDir = "./res"
 	}
@@ -50,7 +78,8 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 		confDir = confDir + "/" + profile
 	}
 
-	path := confDir + "/" + confName
+	path := confDir + "/" + common.ConfigFileName
+	_, _ = fmt.Fprintf(os.Stdout, "Loading configuration from: %s\n", path)
 
 	// As the toml package can panic if TOML is invalid,
 	// or elements are found that don't match members of
@@ -77,19 +106,8 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 		return nil, fmt.Errorf("unable to parse configuration file (%s): %v", path, err.Error())
 	}
 
-	var registryMsg string
-	if useRegistry {
-		registryMsg = "Register in registry..."
-		RegistryClient, err = GetRegistryClient(common.ServiceName, config)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		registryMsg = "Bypassing registration in registry..."
-	}
-	fmt.Println(registryMsg)
-
 	return config, nil
+
 }
 
 func GetRegistryClient(serviceName string, config *common.Config) (*registry.ConsulClient, error) {

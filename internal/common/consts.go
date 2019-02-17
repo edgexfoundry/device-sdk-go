@@ -22,6 +22,8 @@ const (
 	HttpProto         = "HTTP"
 	StatusResponse    = "pong"
 	ServiceStatusPass = "passing"
+	ConfigFileName    = "configuration.toml"
+	ConfigV2Stem      = "config/V2/"
 
 	APICallbackRoute        = APIv1Prefix + "/callback"
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"
