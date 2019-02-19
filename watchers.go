@@ -9,7 +9,7 @@ package device
 import (
 	"sync"
 
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Watchers struct {
