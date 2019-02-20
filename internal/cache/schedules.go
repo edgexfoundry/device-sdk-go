@@ -9,7 +9,7 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type ScheduleCache interface {
@@ -53,12 +53,12 @@ func (s *scheduleCache) Add(sch models.Schedule) error {
 		return fmt.Errorf("schedule %s has already existed in cache", sch.Name)
 	}
 	s.scMap[sch.Name] = sch
-	s.nameMap[sch.Id.Hex()] = sch.Name
+	s.nameMap[sch.Id] = sch.Name
 	return nil
 }
 
 func (s *scheduleCache) Update(sch models.Schedule) error {
-	if err := s.Remove(sch.Id.Hex()); err != nil {
+	if err := s.Remove(sch.Id); err != nil {
 		return err
 	}
 	return s.Add(sch)
@@ -80,7 +80,7 @@ func (s *scheduleCache) RemoveByName(name string) error {
 		return fmt.Errorf("schedule %s does not exist in cache", name)
 	}
 
-	delete(s.nameMap, sch.Id.Hex())
+	delete(s.nameMap, sch.Id)
 	delete(s.scMap, name)
 	return nil
 }
@@ -89,7 +89,7 @@ func (s *scheduleCache) RemoveByName(name string) error {
 func newScheduleCache(schMap map[string]models.Schedule) ScheduleCache {
 	nameMap := make(map[string]string, len(schMap)*2)
 	for _, sc := range schMap {
-		nameMap[sc.Id.Hex()] = sc.Name
+		nameMap[sc.Id] = sc.Name
 	}
 	scCache = &scheduleCache{scMap: schMap, nameMap: nameMap}
 	return scCache

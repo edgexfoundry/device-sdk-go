@@ -9,7 +9,7 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type ScheduleEventCache interface {
@@ -53,12 +53,12 @@ func (s *scheduleEventCache) Add(schEvt models.ScheduleEvent) error {
 		return fmt.Errorf("schedule event %s has already existed in cache", schEvt.Name)
 	}
 	s.seMap[schEvt.Name] = schEvt
-	s.nameMap[schEvt.Id.Hex()] = schEvt.Name
+	s.nameMap[schEvt.Id] = schEvt.Name
 	return nil
 }
 
 func (s *scheduleEventCache) Update(schEvt models.ScheduleEvent) error {
-	if err := s.Remove(schEvt.Id.Hex()); err != nil {
+	if err := s.Remove(schEvt.Id); err != nil {
 		return err
 	}
 	return s.Add(schEvt)
@@ -80,7 +80,7 @@ func (s *scheduleEventCache) RemoveByName(name string) error {
 		return fmt.Errorf("schedule event %s does not exist in cache", name)
 	}
 
-	delete(s.nameMap, schEvt.Id.Hex())
+	delete(s.nameMap, schEvt.Id)
 	delete(s.seMap, name)
 	return nil
 }
@@ -92,7 +92,7 @@ func newScheduleEventCache(schEvts []models.ScheduleEvent) ScheduleEventCache {
 	nameMap := make(map[string]string, defaultSize)
 	for _, se := range schEvts {
 		seMap[se.Name] = se
-		nameMap[se.Id.Hex()] = se.Name
+		nameMap[se.Id] = se.Name
 	}
 	seCache = &scheduleEventCache{seMap: seMap, nameMap: nameMap}
 	return seCache

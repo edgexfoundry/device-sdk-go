@@ -8,7 +8,7 @@
 package common
 
 import (
-	"github.com/edgexfoundry/edgex-go/pkg/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 )
 
 const (

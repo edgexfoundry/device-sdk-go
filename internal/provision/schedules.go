@@ -10,11 +10,10 @@ package provision
 import (
 	"context"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
-	"github.com/globalsign/mgo/bson"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -46,7 +45,7 @@ func createSchedules(schedules []models.Schedule) error {
 		if err = common.VerifyIdFormat(id, "Schedule"); err != nil {
 			return err
 		}
-		schedule.Id = bson.ObjectIdHex(id)
+		schedule.Id = id
 		err = cache.Schedules().Add(schedule)
 		if err != nil {
 			return err
@@ -97,7 +96,7 @@ func createScheduleEvents(scheduleEvents []models.ScheduleEvent) error {
 		if err = common.VerifyIdFormat(id, "Schedule Event"); err != nil {
 			return err
 		}
-		scheduleEvent.Id = bson.ObjectIdHex(id)
+		scheduleEvent.Id = id
 		err = cache.ScheduleEvents().Add(scheduleEvent)
 		if err != nil {
 			return err
