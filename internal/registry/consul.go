@@ -92,7 +92,7 @@ func (c *ConsulClient) CheckConfigExistence() bool {
 		return false
 	}
 
-	stem := common.ConfigV2Stem + c.config.ServiceName
+	stem := common.ConfigStem + c.config.ServiceName
 	if stemKeys, _, err := c.Consul.KV().Keys(stem, "", nil); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Retrieving KV from Consul failed...\n")
 		return false
@@ -109,7 +109,7 @@ func (c *ConsulClient) PopulateConfig(config common.Config) error {
 	}
 
 	_, _ = fmt.Fprintf(os.Stdout, "populating config from file to Consul\n")
-	stem := fmt.Sprintf("%s%s", common.ConfigV2Stem, c.config.ServiceName)
+	stem := fmt.Sprintf("%s%s", common.ConfigStem, c.config.ServiceName)
 	err := populateValue(stem, reflect.ValueOf(config), c.Consul)
 
 	return err
@@ -126,7 +126,7 @@ func (c *ConsulClient) LoadConfig(config *common.Config) (*common.Config, error)
 	dec := &consulstructure.Decoder{
 		Consul:   cfg,
 		Target:   &common.Config{},
-		Prefix:   common.ConfigV2Stem + common.ServiceName,
+		Prefix:   common.ConfigStem + common.ServiceName,
 		UpdateCh: updateCh,
 		ErrCh:    errCh,
 	}

@@ -23,7 +23,7 @@ const (
 	StatusResponse    = "pong"
 	ServiceStatusPass = "passing"
 	ConfigFileName    = "configuration.toml"
-	ConfigV2Stem      = "config/V2/"
+	ConfigStem        = "edgex/devices/1.0/"
 
 	APICallbackRoute        = APIv1Prefix + "/callback"
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"

@@ -53,6 +53,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (config *commo
 			config, err = RegistryClient.LoadConfig(config)
 			if err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "Load config from Consul failed... %v \n", err)
+				return nil, err
 			}
 		} else {
 			err = RegistryClient.PopulateConfig(*config)
