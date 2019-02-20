@@ -10,7 +10,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // ServiceInfo is a struct which contains service related configuration

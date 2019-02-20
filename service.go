@@ -26,8 +26,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 

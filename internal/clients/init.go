@@ -8,7 +8,7 @@ package clients
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/edgex-go/pkg/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"net"
 	"net/http"
 	"strconv"
@@ -18,10 +18,10 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/registry"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/coredata"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/logging"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/metadata"
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	consulapi "github.com/hashicorp/consul/api"
 )
 

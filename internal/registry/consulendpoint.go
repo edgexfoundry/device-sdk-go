@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/edgex-go/pkg/clients/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 )
 
 type ConsulEndpoint struct {
