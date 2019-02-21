@@ -1,0 +1,32 @@
+[Writable]
+SubscribeTopic = "rawData"
+PublishTopic = "transformedData"
+LogLevel = 'INFO'
+
+[Service]
+BootTimeout = 30000
+ClientMonitor = 15000
+CheckInterval = '10s'
+Host = 'localhost'
+Port = 48080
+Protocol = 'http'
+ReadMaxLimit = 100
+StartupMsg = 'This is a sample Filter/XML/Post Transform Application Service'
+Timeout = 5000
+
+[Registry]
+Host = 'localhost'
+Port = 8500
+Type = 'consul'
+
+[MessageBus]
+Host = 'localhost'
+Port = 8500
+Type = 'zeroMQ'
+
+[Logging]
+EnableRemote = false
+File = './logs/edgex-core-data.log'
+
+[[Bindings]]
+ Type="http"

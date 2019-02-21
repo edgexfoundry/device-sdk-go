@@ -17,32 +17,70 @@
 package transforms
 
 import (
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"errors"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-// Filter houses various built in filter transforms
+// Filter houses various the parameters for which filter transforms filter on
 type Filter struct {
-	DeviceIDs []string
+	FilterValues []string
 }
 
-// FilterByDeviceID ...
-func (f Filter) FilterByDeviceID(params ...interface{}) interface{} {
+// FilterByDeviceID filters events received from CoreData based off the specified DeviceIDs.
+// This function returns an Event
+func (f Filter) FilterByDeviceID(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
 
 	println("FILTER BY DEVICEID")
 
 	if len(params) != 1 {
-		return nil
+		return false, errors.New("No Event Received")
 	}
-	deviceIDs := f.DeviceIDs
+	deviceIDs := f.FilterValues
 	event := params[0].(models.Event)
-
 	for _, devID := range deviceIDs {
 		if event.Device == devID {
 			// LoggingClient.Debug(fmt.Sprintf("Event accepted: %s", event.Device))
-			return event
+			return true, event
 		}
 	}
-	return nil
+	return false, nil
 	// fmt.Println(event.Data)
-	// edgexcontext.Complete("")
+
+}
+
+// FilterByValueDescriptor - filters events received from CoreData based on specified value descriptors
+// This function returns an Event
+func (f Filter) FilterByValueDescriptor(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
+	println("FILTER BY VALUE DESCRIPTOR ID")
+
+	if len(params) != 1 {
+		return false, errors.New("No Event Received")
+	}
+
+	existingEvent := params[0].(models.Event)
+	auxEvent := models.Event{
+		Pushed:   existingEvent.Pushed,
+		Device:   existingEvent.Device,
+		Created:  existingEvent.Created,
+		Modified: existingEvent.Modified,
+		Origin:   existingEvent.Origin,
+		Readings: []models.Reading{},
+	}
+
+	for _, filterID := range f.FilterValues {
+		for _, reading := range existingEvent.Readings {
+			if reading.Name == filterID {
+				// LoggingClient.Debug(fmt.Sprintf("Reading filtered: %s", reading.Name))
+				auxEvent.Readings = append(auxEvent.Readings, reading)
+			}
+		}
+	}
+	thereExistReadings := len(auxEvent.Readings) > 0
+	var returnResult models.Event
+	if thereExistReadings {
+		returnResult = auxEvent
+	}
+	return thereExistReadings, returnResult
 }

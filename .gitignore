@@ -4,3 +4,4 @@ examples/bin
 **/debug
 simple-filter-xml
 go.sum
+*.log

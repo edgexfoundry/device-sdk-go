@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package httptrigger
+package http
 
 import (
 	"bytes"
@@ -23,23 +23,25 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/context"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/configuration"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/runtime"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-// HTTPTrigger implements ITrigger to support HTTPTriggers
-type HTTPTrigger struct {
-	Configuration configuration.Configuration
+// Trigger implements ITrigger to support Triggers
+type Trigger struct {
+	Configuration common.ConfigurationStruct
 	Runtime       runtime.GolangRuntime
-	outputData    interface{}
+	outputData    string
+	logging       logger.LoggingClient
 }
 
 // Initialize ...
-func (h *HTTPTrigger) Initialize() error {
+func (h *Trigger) Initialize(logger logger.LoggingClient) error {
+	h.logging = logger
 	http.HandleFunc("/", h.requestHandler)   // set router - just a GET for now
 	err := http.ListenAndServe(":9090", nil) // set listen port
 	if err != nil {
@@ -47,19 +49,22 @@ func (h *HTTPTrigger) Initialize() error {
 	}
 	return nil
 }
-func (h *HTTPTrigger) requestHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Trigger) requestHandler(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	// event := event.Event{Data: "DATA FROM HTTP"}
-	edgexContext := context.Context{Configuration: h.Configuration,
-		Trigger: h,
+	edgexContext := excontext.Context{Configuration: h.Configuration,
+		Trigger:       h,
+		LoggingClient: h.logging,
 	}
 	var event models.Event
 	decoder.Decode(&event)
 
 	h.Runtime.ProcessEvent(edgexContext, event)
-	bytes, _ := getBytes(h.outputData)
-	w.Write(bytes)
+	// bytes, _ := getBytes(h.outputData)
+	w.Write(([]byte)(h.outputData))
+
+	h.outputData = ""
 }
 func getBytes(key interface{}) ([]byte, error) {
 	var buf bytes.Buffer
@@ -69,22 +74,21 @@ func getBytes(key interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-
 }
 
 // GetConfiguration gets the config
-func (h *HTTPTrigger) GetConfiguration() configuration.Configuration {
+func (h *Trigger) GetConfiguration() common.ConfigurationStruct {
 	//
 	return h.Configuration
 }
 
 // GetData This function might return data
-func (h *HTTPTrigger) GetData() interface{} {
+func (h *Trigger) GetData() interface{} {
 	return "data"
 }
 
 // Complete ...
-func (h *HTTPTrigger) Complete(outputData interface{}) {
+func (h *Trigger) Complete(outputData string) {
 	//
 	h.outputData = outputData
 

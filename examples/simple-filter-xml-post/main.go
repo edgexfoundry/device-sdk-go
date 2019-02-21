@@ -40,13 +40,13 @@ func main() {
 	// 2) Since our FilterByDeviceID Function requires the list of DeviceID's we would
 	// like to search for, we'll go ahead and define that now.
 	deviceIDs := []string{"GS1-AC-Drive01"}
-
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetPipeline(
 		edgexSdk.FilterByDeviceID(deviceIDs),
 		edgexSdk.TransformToXML(),
 		printXMLToConsole,
+		edgexSdk.HTTPPost("<YOURENDPOINT>"),
 	)
 
 	// 4) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
@@ -62,5 +62,5 @@ func printXMLToConsole(edgexcontext excontext.Context, params ...interface{}) (b
 
 	println(params[0].(string))
 	edgexcontext.Complete(params[0].(string))
-	return false, nil
+	return true, params[0].(string)
 }
