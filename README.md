@@ -75,13 +75,13 @@ There are two basic types of filtering included in the SDK to add to your pipeli
  - `FilterByValueDescriptor([]string valueDescriptors)` - This function will filter the event data down to the specified device value descriptor before calling the next function. 
 
 ### Conversion
-There are two primary conversions available in the SDK that can be added to your pipeline. These transforms return a `string`.
+There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
  
  - `TransformToXML()`  - This function received an `events.Model` type and converts it to XML format. 
  - `TransformToJSON()` - This function received an `events.Model` type and converts it to JSON format. 
 
 ### Export Functions
-There are two primary export functions available in the SDK that can be added to your pipeline. 
+There are two export functions included in the SDK that can be added to your pipeline. 
 	
 - `HTTPPost(string url)` - This function requires an endpoint be passed in order to configure the URL to `POST` data to. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. 
 - `MQTTPublish()` - Coming Soon
