@@ -19,8 +19,10 @@ package transforms
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 
-	"github.com/edgexfoundry/edgex-go/pkg/models"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // Conversion houses various built in conversion transforms (XML, JSON, CSV)
@@ -28,40 +30,40 @@ type Conversion struct {
 }
 
 // TransformToXML ...
-func (f Conversion) TransformToXML(params ...interface{}) interface{} {
+func (f Conversion) TransformToXML(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {
-		return nil
+		return false, errors.New("No Event Received")
 	}
 	println("TRANSFORMING TO XML")
 	if result, ok := params[0].(models.Event); ok {
 		b, err := xml.Marshal(result)
 		if err != nil {
 			// LoggingClient.Error(fmt.Sprintf("Error parsing XML. Error: %s", err.Error()))
-			return nil
+			return false, errors.New("Incorrect type received, expecting models.Event")
 		}
 		// should we return a byte[] or string?
 		// return b
-		return string(b)
+		return true, string(b)
 	}
-	return nil
+	return false, errors.New("Unexpected type received")
 }
 
 // TransformToJSON ...
-func (f Conversion) TransformToJSON(params ...interface{}) interface{} {
+func (f Conversion) TransformToJSON(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {
-		return nil
+		return false, errors.New("No Event Received")
 	}
 	println("TRANSFORMING TO JSON")
 
-	if result, ok := params[0].(*models.Event); ok {
+	if result, ok := params[0].(models.Event); ok {
 		b, err := json.Marshal(result)
 		if err != nil {
-			// LoggingClient.Error(fmt.Sprintf("Error parsing XML. Error: %s", err.Error()))
-			return nil
+			// LoggingClient.Error(fmt.Sprintf("Error parsing JSON. Error: %s", err.Error()))
+			return false, errors.New("Error marshalling JSON")
 		}
 		// should we return a byte[] or string?
 		// return b
-		return string(b)
+		return true, string(b)
 	}
-	return nil
+	return false, errors.New("Unexpected type received")
 }
