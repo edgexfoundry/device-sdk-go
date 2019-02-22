@@ -23,9 +23,16 @@ import (
 	"strings"
 	"testing"
 
+	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 )
 
+var lc logger.LoggingClient
+
+func init() {
+	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+}
 func TestHTTPPost(t *testing.T) {
 	const (
 		msgStr = "test message"
@@ -61,7 +68,9 @@ func TestHTTPPost(t *testing.T) {
 		t.Fatal("Could not parse url")
 	}
 
-	ctx := excontext.Context{}
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
 	sender := HTTPSender{
 		URL: `http://` + url.Host + path,
 	}
@@ -69,7 +78,9 @@ func TestHTTPPost(t *testing.T) {
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
-	ctx := excontext.Context{}
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
 	sender := HTTPSender{}
 	continuePipeline, result := sender.HTTPPost(ctx)
 	if continuePipeline != false {
@@ -80,7 +91,9 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 	}
 }
 func TestHTTPPostNonExistentEndpoint(t *testing.T) {
-	ctx := excontext.Context{}
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
 	sender := HTTPSender{
 		URL: "http://idontexist/",
 	}
