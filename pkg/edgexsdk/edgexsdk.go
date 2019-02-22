@@ -245,7 +245,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 	updateChannel := make(chan interface{})
 
 	defer close(errChannel)
-	defer  close(updateChannel)
+	defer close(updateChannel)
 
 	sdk.LoggingClient.Info("Listening for changes from registry")
 	sdk.registryClient.WatchForChanges(updateChannel, errChannel, &common.WritableInfo{}, internal.WritableKey)
@@ -268,7 +268,10 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 			}
 
 			sdk.config.Writable = *actual
-
+			//Check that information was successfully read from Consul
+			if sdk.config.Service.Port == 0 {
+				sdk.LoggingClient.Error("Error reading from registry")
+			}
 			sdk.LoggingClient.Info("Writeable configuration has been updated. Setting log level to " + sdk.config.Writable.LogLevel)
 			sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
 
