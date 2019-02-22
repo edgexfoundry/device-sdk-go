@@ -4,18 +4,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-FROM golang:1.11.2-alpine3.7 AS builder
+FROM golang:1.11-alpine AS builder
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2018: Intel'
 
-# The main mirrors are giving us timeout issues on builds periodically.
-# So we can try these.
-RUN echo http://nl.alpinelinux.org/alpine/v3.7/main > /etc/apk/repositories; \
-  echo http://nl.alpinelinux.org/alpine/v3.7/community >> /etc/apk/repositories
+RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
 
 # add git for go modules
-RUN apk update && apk add --no-cache make git gcc libc-dev
+RUN apk add --update --no-cache make git gcc libc-dev
 
 WORKDIR /github.com/edgexfoundry/device-sdk-go
 
