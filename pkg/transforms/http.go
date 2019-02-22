@@ -3,6 +3,8 @@ package transforms
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
@@ -24,17 +26,22 @@ func (sender HTTPSender) HTTPPost(edgexcontext excontext.Context, params ...inte
 		sender.MimeType = "application/json"
 	}
 	if result, ok := params[0].(string); ok {
+		edgexcontext.LoggingClient.Info("POSTing data")
 		response, err := http.Post(sender.URL, sender.MimeType, bytes.NewReader(([]byte)(result)))
 		if err != nil {
-
 			//LoggingClient.Error(err.Error())
 			return false, err
 		}
 		defer response.Body.Close()
-
+		edgexcontext.LoggingClient.Info(fmt.Sprintf("Response: %s", response.Status))
+		edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data: %s", result))
+		bodyBytes, errReadingBody := ioutil.ReadAll(response.Body)
+		if errReadingBody != nil {
+			return false, errReadingBody
+		}
+		// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
+		return response.StatusCode >= 200 && response.StatusCode < 300, bodyBytes
 	}
-	// LoggingClient.Info(fmt.Sprintf("Response: %s", response.Status))
 
-	// LoggingClient.Info(fmt.Sprintf("Sent data: %X", data))
 	return false, errors.New("Unexpected type received")
 }
