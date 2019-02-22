@@ -225,6 +225,11 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 			}
 
 			sdk.config = *actual
+			//Check that information was successfully read from Consul
+			if sdk.config.Service.Port == 0 {
+				sdk.LoggingClient.Error("Error reading from registry")
+			}
+
 			fmt.Println("Configuration loaded from registry")
 		} else {
 			err := sdk.registryClient.PutConfiguration(sdk.config, true)
@@ -268,10 +273,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 			}
 
 			sdk.config.Writable = *actual
-			//Check that information was successfully read from Consul
-			if sdk.config.Service.Port == 0 {
-				sdk.LoggingClient.Error("Error reading from registry")
-			}
+
 			sdk.LoggingClient.Info("Writeable configuration has been updated. Setting log level to " + sdk.config.Writable.LogLevel)
 			sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
 
