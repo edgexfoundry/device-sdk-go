@@ -116,7 +116,8 @@ func (sdk *AppFunctionsSDK) MakeItRun() {
 func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime runtime.GolangRuntime) trigger.ITrigger {
 	var trigger trigger.ITrigger
 	// Need to make dynamic, search for the binding that is input
-	switch strings.ToUpper(configuration.Bindings[0].Type) {
+
+	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
 		sdk.LoggingClient.Info("Loading Http Trigger")
 		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime}
@@ -124,6 +125,7 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruc
 		sdk.LoggingClient.Info("Loading messageBus Trigger")
 		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime}
 	}
+
 	return trigger
 }
 
@@ -144,13 +146,13 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	now := time.Now()
 	until := now.Add(time.Millisecond * time.Duration(internal.BootTimeoutDefault))
 	for now.Before(until) {
-		err := sdk.initializeRegistry()
+		err := sdk.initializeConfiguration()
 		if err != nil {
 			fmt.Printf("failed to initialize Registry: %v\n", err)
 		} else {
 			//initialize logger
 			sdk.LoggingClient = logger.NewClient("AppFunctionsSDK", false, "./test.txt", sdk.config.Writable.LogLevel)
-			sdk.LoggingClient.Info("Registry successfully retrieved from registry")
+			sdk.LoggingClient.Info("Configuration and logger successfully initialized")
 			break
 		}
 
@@ -166,7 +168,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	return nil
 }
 
-func (sdk *AppFunctionsSDK) initializeRegistry() error {
+func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 	// Currently have to load configuration from filesystem first in order to obtain Registry Host/Port
 	configuration := &common.ConfigurationStruct{}
@@ -178,24 +180,25 @@ func (sdk *AppFunctionsSDK) initializeRegistry() error {
 
 	if sdk.useRegistry {
 		registryConfig := registry.Config{
-			Host:          configuration.Registry.Host,
-			Port:          configuration.Registry.Port,
-			Type:          configuration.Registry.Type,
+			Host:          sdk.config.Registry.Host,
+			Port:          sdk.config.Registry.Port,
+			Type:          sdk.config.Registry.Type,
 			Stem:          internal.ConfigRegistryStem,
 			CheckInterval: "1s",
 			CheckRoute:    internal.ApiPingRoute,
-			ServiceHost:   configuration.Service.Host,
-			ServicePort:   configuration.Service.Port,
+			ServiceKey:    sdk.ServiceKey,
+			ServiceHost:   sdk.config.Service.Host,
+			ServicePort:   sdk.config.Service.Port,
 		}
 
-		client, err := factory.NewRegistryClient(registryConfig, sdk.ServiceKey)
+		client, err := factory.NewRegistryClient(registryConfig)
 		if err != nil {
 			return fmt.Errorf("connection to Registry could not be made: %v", err)
 		}
 		//set registryClient
 		sdk.registryClient = client
 
-		if !sdk.registryClient.IsRegistryRunning() {
+		if !sdk.registryClient.IsAlive() {
 			return fmt.Errorf("registry (%s) is not running", registryConfig.Type)
 		}
 
@@ -205,17 +208,31 @@ func (sdk *AppFunctionsSDK) initializeRegistry() error {
 			return fmt.Errorf("could not register service with Registry: %v", err)
 		}
 
-		rawConfig, err := sdk.registryClient.GetConfiguration(configuration)
+		hasConfig, err := sdk.registryClient.HasConfiguration()
 		if err != nil {
-			return fmt.Errorf("could not get configuration from Registry: %v", err)
+			return fmt.Errorf("could not determine if registry has configuration: %v", err)
 		}
 
-		actual, ok := rawConfig.(*common.ConfigurationStruct)
-		if !ok {
-			return fmt.Errorf("configuration from Registry failed type check")
-		}
+		if hasConfig {
+			rawConfig, err := sdk.registryClient.GetConfiguration(configuration)
+			if err != nil {
+				return fmt.Errorf("could not get configuration from Registry: %v", err)
+			}
 
-		sdk.config = *actual
+			actual, ok := rawConfig.(*common.ConfigurationStruct)
+			if !ok {
+				return fmt.Errorf("configuration from Registry failed type check")
+			}
+
+			sdk.config = *actual
+			fmt.Println("Configuration loaded from registry")
+		} else {
+			err := sdk.registryClient.PutConfiguration(sdk.config, true)
+			if err != nil {
+				return fmt.Errorf("could not push configuration into registry: %v", err)
+			}
+			fmt.Println("Configuration pushed to registry")
+		}
 
 	}
 
@@ -223,8 +240,12 @@ func (sdk *AppFunctionsSDK) initializeRegistry() error {
 }
 
 func (sdk *AppFunctionsSDK) listenForConfigChanges() {
-	var errChannel chan error          //A channel for "config wait error" sourced from Registry
-	var updateChannel chan interface{} //A channel for "config updates" sourced from Registry
+
+	errChannel := make(chan error)
+	updateChannel := make(chan interface{})
+
+	defer close(errChannel)
+	defer  close(updateChannel)
 
 	sdk.LoggingClient.Info("Listening for changes from registry")
 	sdk.registryClient.WatchForChanges(updateChannel, errChannel, &common.WritableInfo{}, internal.WritableKey)

@@ -106,10 +106,8 @@ func TestSetupHTTPTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Bindings: []common.Binding{
-				common.Binding{
-					Type: "htTp",
-				},
+			Binding: common.Binding{
+				Type: "htTp",
 			},
 		},
 	}
@@ -124,10 +122,8 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Bindings: []common.Binding{
-				common.Binding{
-					Type: "meSsaGebus",
-				},
+			Binding: common.Binding{
+				Type: "meSsaGebus",
 			},
 		},
 	}
