@@ -30,7 +30,7 @@ type ConfigurationStruct struct {
 	Registry   RegistryInfo
 	Service    ServiceInfo
 	MessageBus MessageBusInfo
-	Bindings   []Binding
+	Binding    Binding
 }
 
 // RegistryInfo ...

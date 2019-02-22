@@ -1,3 +1,18 @@
+//
+// Copyright (c) 2019 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 package transforms
 
 import (
@@ -8,9 +23,16 @@ import (
 	"strings"
 	"testing"
 
+	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 )
 
+var lc logger.LoggingClient
+
+func init() {
+	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+}
 func TestHTTPPost(t *testing.T) {
 	const (
 		msgStr = "test message"
@@ -46,7 +68,9 @@ func TestHTTPPost(t *testing.T) {
 		t.Fatal("Could not parse url")
 	}
 
-	ctx := excontext.Context{}
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
 	sender := HTTPSender{
 		URL: `http://` + url.Host + path,
 	}
@@ -54,7 +78,9 @@ func TestHTTPPost(t *testing.T) {
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
-	ctx := excontext.Context{}
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
 	sender := HTTPSender{}
 	continuePipeline, result := sender.HTTPPost(ctx)
 	if continuePipeline != false {
@@ -65,7 +91,9 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 	}
 }
 func TestHTTPPostNonExistentEndpoint(t *testing.T) {
-	ctx := excontext.Context{}
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
 	sender := HTTPSender{
 		URL: "http://idontexist/",
 	}
