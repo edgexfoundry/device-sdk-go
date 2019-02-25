@@ -43,7 +43,6 @@ type Service struct {
 	initAttempts int
 	initialized  bool
 	stopped      bool
-	cw           *Watchers
 	asyncCh      chan *ds_models.AsyncValues
 }
 
@@ -93,7 +92,10 @@ func (s *Service) Start(errChan chan error) (err error) {
 		return fmt.Errorf("Failed to create the pre-defined Devices")
 	}
 
-	s.cw = newWatchers()
+	err = provision.LoadWatchers(common.CurrentConfig.Watchers)
+	if err != nil {
+		return fmt.Errorf("Failed to create the pre-defined Watchers")
+	}
 
 	// initialize driver
 	if common.CurrentConfig.Service.EnableAsyncReadings {

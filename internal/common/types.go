@@ -100,6 +100,7 @@ type LoggingInfo struct {
 
 // WatcherInfo is a struct which contains provisionwatcher configuration settings.
 type WatcherInfo struct {
+	Name        string
 	Profile     string
 	Key         string
 	MatchString string
@@ -119,8 +120,8 @@ type Config struct {
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
-	// Watchers is a map provisionwatchers to be created on startup.
-	Watchers map[string]WatcherInfo
+	// Watchers are created on startup.
+	Watchers []WatcherInfo
 	// DeviceList is the list of pre-define Devices
 	DeviceList []DeviceConfig `consul:"-"`
 }

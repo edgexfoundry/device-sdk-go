@@ -15,18 +15,19 @@ import (
 )
 
 var (
-	ServiceName           string
-	ServiceVersion        string
-	CurrentConfig         *Config
-	CurrentDeviceService  models.DeviceService
-	UseRegistry           bool
-	ServiceLocked         bool
-	Driver                ds_models.ProtocolDriver
-	EventClient           coredata.EventClient
-	AddressableClient     metadata.AddressableClient
-	DeviceClient          metadata.DeviceClient
-	DeviceServiceClient   metadata.DeviceServiceClient
-	DeviceProfileClient   metadata.DeviceProfileClient
-	LoggingClient         logger.LoggingClient
-	ValueDescriptorClient coredata.ValueDescriptorClient
+	ServiceName            string
+	ServiceVersion         string
+	CurrentConfig          *Config
+	CurrentDeviceService   models.DeviceService
+	UseRegistry            bool
+	ServiceLocked          bool
+	Driver                 ds_models.ProtocolDriver
+	EventClient            coredata.EventClient
+	AddressableClient      metadata.AddressableClient
+	DeviceClient           metadata.DeviceClient
+	DeviceServiceClient    metadata.DeviceServiceClient
+	DeviceProfileClient    metadata.DeviceProfileClient
+	LoggingClient          logger.LoggingClient
+	ValueDescriptorClient  coredata.ValueDescriptorClient
+	ProvisionWatcherClient metadata.ProvisionWatcherClient
 )

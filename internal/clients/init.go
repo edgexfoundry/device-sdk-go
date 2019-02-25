@@ -9,6 +9,11 @@ package clients
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
@@ -17,10 +22,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	"net"
-	"net/http"
-	"sync"
-	"time"
 )
 
 const clientCount int = 8
@@ -211,6 +212,10 @@ func initializeClients() {
 	params.Path = clients.ApiDeviceProfileRoute
 	params.Url = metaAddr + params.Path
 	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, endpoint)
+
+	params.Path = clients.ApiProvisionWatcherRoute
+	params.Url = metaAddr + params.Path
+	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, endpoint)
 
 	// initialize Core Data clients
 	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name

@@ -39,9 +39,19 @@ func InitCache() {
 		}
 		newDeviceCache(ds)
 
-		dps := make([]models.DeviceProfile, len(ds))
-		for i, d := range ds {
-			dps[i] = d.Profile
+		pws, err := common.ProvisionWatcherClient.ProvisionWatchersForServiceByName(common.ServiceName, ctx)
+		if err != nil {
+			common.LoggingClient.Error(fmt.Sprintf("Provision Watchers cache initialization failed: %v", err))
+			pws = make([]models.ProvisionWatcher, 0)
+		}
+		newWatcherCache(pws)
+
+		dps := []models.DeviceProfile{}
+		for _, d := range ds {
+			dps = append(dps, d.Profile)
+		}
+		for _, pw := range pws {
+			dps = append(dps, pw.Profile)
 		}
 		newProfileCache(dps)
 	})

@@ -10,7 +10,6 @@ package controller
 import (
 	"bytes"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 	"github.com/gorilla/mux"
 )
@@ -98,6 +98,7 @@ func TestCommandNoDevice(t *testing.T) {
 	common.LoggingClient = lc
 	common.ServiceLocked = false
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
+	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
 	r := InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)

@@ -9,8 +9,9 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"strings"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 const (
@@ -231,11 +232,14 @@ func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 	setOpMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
 	cmdMap := make(map[string]map[string]models.Command, defaultSize)
 	for _, dp := range profiles {
-		dpMap[dp.Name] = dp
-		nameMap[dp.Id] = dp.Name
-		drMap[dp.Name] = deviceResourceSliceToMap(dp.DeviceResources)
-		getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.Resources)
-		cmdMap[dp.Name] = commandSliceToMap(dp.Commands)
+		_, ok := dpMap[dp.Name]
+		if !ok {
+			dpMap[dp.Name] = dp
+			nameMap[dp.Id] = dp.Name
+			drMap[dp.Name] = deviceResourceSliceToMap(dp.DeviceResources)
+			getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.Resources)
+			cmdMap[dp.Name] = commandSliceToMap(dp.Commands)
+		}
 	}
 	pc = &profileCache{dpMap: dpMap, nameMap: nameMap, drMap: drMap, getOpMap: getOpMap, setOpMap: setOpMap, cmdMap: cmdMap}
 	return pc
