@@ -127,9 +127,8 @@ func selfRegister() error {
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName, ctx)
-
 	if err != nil {
-		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
+		if _, ok := err.(types.ErrNotFound); ok {
 			common.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
 			ds, err = createNewDeviceService()
 		} else {
@@ -187,7 +186,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	addr, err := common.AddressableClient.AddressableForName(common.ServiceName, ctx)
 	if err != nil {
-		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
+		if _, ok := err.(types.ErrNotFound); ok {
 			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = models.Addressable{
