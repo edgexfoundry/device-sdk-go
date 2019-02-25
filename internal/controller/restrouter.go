@@ -22,9 +22,9 @@ func InitRestRoutes() *mux.Router {
 
 	common.LoggingClient.Debug("init command rest controller")
 	sr := r.PathPrefix("/device").Subrouter()
+	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
 	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
 	sr.HandleFunc("/name/{name}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
-	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
 
 	common.LoggingClient.Debug("init callback rest controller")
 	r.HandleFunc("/callback", callbackFunc)
