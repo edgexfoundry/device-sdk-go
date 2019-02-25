@@ -17,8 +17,8 @@
 package messagebus
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
 
@@ -32,17 +32,6 @@ type Trigger struct {
 // Initialize ...
 func (mb *Trigger) Initialize(logger logger.LoggingClient) error {
 	return nil
-}
-
-// GetConfiguration ...
-func (mb *Trigger) GetConfiguration() common.ConfigurationStruct {
-	//
-	return mb.Configuration
-}
-
-// GetData ...
-func (mb *Trigger) GetData() interface{} {
-	return "data"
 }
 
 // Complete ...
