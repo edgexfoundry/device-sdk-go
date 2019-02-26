@@ -17,7 +17,6 @@
 package trigger
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/common"
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
 
@@ -25,11 +24,6 @@ import (
 type ITrigger interface {
 	// Initialize performs post creation initializations
 	Initialize(logger.LoggingClient) error
-
-	// function to call to get current configuration for function
-	GetConfiguration() common.ConfigurationStruct
-	// function to call to retrieve data from input
-	GetData() interface{}
 
 	Complete(string)
 }

@@ -17,8 +17,8 @@
 package excontext
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/trigger"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 )
 

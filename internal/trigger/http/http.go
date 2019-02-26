@@ -25,9 +25,9 @@ import (
 
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/runtime"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -74,17 +74,6 @@ func getBytes(key interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-// GetConfiguration gets the config
-func (h *Trigger) GetConfiguration() common.ConfigurationStruct {
-	//
-	return h.Configuration
-}
-
-// GetData This function might return data
-func (h *Trigger) GetData() interface{} {
-	return "data"
 }
 
 // Complete ...
