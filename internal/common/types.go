@@ -160,3 +160,13 @@ func (c ClientInfo) Url() string {
 	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
 	return url
 }
+
+// Telemetry provides metrics (on a given device service) to system management.
+type Telemetry struct {
+	Alloc,
+	TotalAlloc,
+	Sys,
+	Mallocs,
+	Frees,
+	LiveObjects uint64
+}
