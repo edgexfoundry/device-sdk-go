@@ -7,3 +7,5 @@ examples/simple-filter-xml/simple-filter-xml
 go.sum
 *.log
 *.txt
+*.html
+*.out
