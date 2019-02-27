@@ -9,6 +9,9 @@ package clients
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
@@ -18,10 +21,6 @@ import (
 	"net/http"
 	"sync"
 	"time"
-
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 )
 
 const clientCount int = 8
@@ -153,7 +152,6 @@ func checkServiceAvailableByPing(serviceId string) error {
 func checkServiceAvailableViaRegistry(serviceId string) bool {
 	common.LoggingClient.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceId))
 
-
 	if !config.RegistryClient.IsAlive() {
 		common.LoggingClient.Error("unable to check status of %s service: Registry not running")
 
@@ -161,7 +159,7 @@ func checkServiceAvailableViaRegistry(serviceId string) bool {
 	}
 
 	err := config.RegistryClient.IsServiceAvailable(serviceId)
-	if err != nil	{
+	if err != nil {
 		common.LoggingClient.Error(err.Error())
 		return false
 	}
