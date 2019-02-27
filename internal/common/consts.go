@@ -22,12 +22,11 @@ const (
 	HttpScheme        = "http://"
 	HttpProto         = "HTTP"
 	StatusResponse    = "pong"
-	ServiceStatusPass = "passing"
 
-	ConfigFileName       = "configuration.toml"
-	ConfigRegistryStem   = "edgex/devices/1.0/"
-	WritableKey          = "/Writable"
-
+	ConfigDirectory	   = "./res"
+	ConfigFileName     = "configuration.toml"
+	ConfigRegistryStem = "edgex/devices/1.0/"
+	WritableKey        = "/Writable"
 
 	APICallbackRoute        = APIv1Prefix + "/callback"
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"

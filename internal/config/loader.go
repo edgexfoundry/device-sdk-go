@@ -22,7 +22,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/pelletier/go-toml"
-
 )
 
 var (
@@ -60,7 +59,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 			ServicePort:   configuration.Service.Port,
 		}
 
-		RegistryClient, err =  factory.NewRegistryClient(registryConfig)
+		RegistryClient, err = factory.NewRegistryClient(registryConfig)
 		if err != nil {
 			return nil, fmt.Errorf("connection to Registry could not be made: %v", err.Error())
 		}
@@ -77,12 +76,11 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 		}
 
 		hasConfiguration, err := RegistryClient.HasConfiguration()
-		err = RegistryClient.Register()
 		if err != nil {
 			return nil, fmt.Errorf("could not verify that Registry already has configuration: %v", err.Error())
 		}
 
-		if hasConfiguration{
+		if hasConfiguration {
 			// Get the configuration values from the Registry
 			rawConfig, err := RegistryClient.GetConfiguration(configuration)
 			if err != nil {
@@ -97,7 +95,9 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 			configuration = actual
 		} else {
 			// Self bootstrap the Registry with the device service's configuration
-			err := RegistryClient.PutConfiguration(*configuration, true)
+			fmt.Fprintln(os.Stdout, "Pushing configuration into Registry...")
+
+				err := RegistryClient.PutConfiguration(*configuration, true)
 			if err != nil {
 				return nil, fmt.Errorf("could not push configuration to Registry: %v", err.Error())
 			}
@@ -113,7 +113,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 
 func loadConfigFromFile(profile string, confDir string) (config *common.Config, err error) {
 	if len(confDir) == 0 {
-		confDir = "./res"
+		confDir = common.ConfigDirectory
 	}
 
 	if len(profile) > 0 {
@@ -178,7 +178,7 @@ func ListenForConfigChanges() {
 
 	common.LoggingClient.Info("listen for config changes from Registry")
 
-	errChannel := make(chan error )
+	errChannel := make(chan error)
 	updateChannel := make(chan interface{})
 
 	RegistryClient.WatchForChanges(updateChannel, errChannel, &common.WritableInfo{}, common.WritableKey)
