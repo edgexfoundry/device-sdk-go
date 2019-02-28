@@ -46,7 +46,7 @@ func TestMQTTSend(t *testing.T) {
 	}
 	dataToSend := "SOME DATA TO SEND"
 	continuePipeline, result := sender.MQTTSend(ctx, dataToSend)
-	assert.Equal(t, true, continuePipeline, "Should Continue Pipeline")
+	assert.True(t, continuePipeline, "Should Continue Pipeline")
 	assert.Equal(t, nil, result, "Should be nil")
 
 }
