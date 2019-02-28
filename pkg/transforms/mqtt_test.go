@@ -39,7 +39,7 @@ func TestMQTTSend(t *testing.T) {
 
 	sender := MQTTSender{
 		client: MQTT.NewClient(opts),
-		topic:  "",
+		topic:  addr.Topic,
 	}
 	ctx := excontext.Context{
 		LoggingClient: lc,
@@ -57,7 +57,7 @@ func TestMQTTSendNoData(t *testing.T) {
 		LoggingClient: lc,
 	}
 	continuePipeline, result := sender.MQTTSend(ctx)
-	assert.Equal(t, false, continuePipeline, "Should Not Continue Pipeline")
+	assert.False(t, continuePipeline, "Should Not Continue Pipeline")
 	assert.Equal(t, "No Data Received", result.(error).Error(), "Error should be: No Data Received")
 
 }
@@ -82,7 +82,7 @@ func TestMQTTSendInvalidData(t *testing.T) {
 	}
 	dataToSend := "SOME DATA TO SEND"
 	continuePipeline, result := sender.MQTTSend(ctx, ([]byte)(dataToSend))
-	assert.Equal(t, false, continuePipeline, "Should Not Continue Pipeline")
+	assert.False(t, continuePipeline, "Should Not Continue Pipeline")
 	assert.Equal(t, "Unexpected type received", result.(error).Error(), "Error should be: Unexpected type received")
 
 }
@@ -110,5 +110,5 @@ func TestNewMQTTSender(t *testing.T) {
 	assert.Equal(t, "publisher", opts.ClientID(), "ClientID should be publisher")
 	assert.Equal(t, "user", opts.Username(), "Username should be user")
 	assert.Equal(t, "password", opts.Password(), "Password should be password")
-	assert.Equal(t, false, opts.AutoReconnect(), "Autoreconnect should be false")
+	assert.False(t, opts.AutoReconnect(), "Autoreconnect should be false")
 }

@@ -45,8 +45,7 @@ func (sender MQTTSender) MQTTSend(edgexcontext excontext.Context, params ...inte
 	if !sender.client.IsConnected() {
 		edgexcontext.LoggingClient.Info("Connecting to mqtt server")
 		if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
-			edgexcontext.LoggingClient.Error(fmt.Sprintf("Could not connect to mqtt server, drop event. Error: %s", token.Error().Error()))
-			return false, nil
+			return false, fmt.Errorf("Could not connect to mqtt server, drop event. Error: %s", token.Error().Error())
 		}
 		edgexcontext.LoggingClient.Info("Connected to mqtt server")
 	}
@@ -66,7 +65,7 @@ func (sender MQTTSender) MQTTSend(edgexcontext excontext.Context, params ...inte
 }
 
 // NewMQTTSender - create new mqtt sender
-func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string) *MQTTSender {
+func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, certFile string, key string) *MQTTSender {
 	protocol := strings.ToLower(addr.Protocol)
 
 	opts := MQTT.NewClientOptions()
@@ -78,7 +77,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert s
 	opts.SetAutoReconnect(false)
 
 	if protocol == "tcps" || protocol == "ssl" || protocol == "tls" {
-		cert, err := tls.LoadX509KeyPair(cert, key)
+		cert, err := tls.LoadX509KeyPair(certFile, key)
 
 		if err != nil {
 			logging.Error("Failed loading x509 data")
