@@ -36,6 +36,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	registry "github.com/edgexfoundry/go-mod-registry"
 	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
 )
@@ -95,6 +96,16 @@ func (sdk *AppFunctionsSDK) HTTPPost(url string) func(excontext.Context, ...inte
 		URL: url,
 	}
 	return transforms.HTTPPost
+}
+
+// MQTTSend ...
+func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+	// transforms := transforms.MQTTSender{
+	// 	URL: url,
+	// }
+	sender := transforms.NewMQTTSender(sdk.LoggingClient, addr, cert, key)
+
+	return sender.MQTTSend
 }
 
 //MakeItRun the SDK

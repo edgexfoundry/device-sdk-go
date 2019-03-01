@@ -42,7 +42,9 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext excontext.Context, event model
 		}
 		if continuePipeline != true {
 			if result != nil {
-				edgexcontext.LoggingClient.Error((result).(error).Error())
+				if result, ok := result.(error); ok {
+					edgexcontext.LoggingClient.Error((result).(error).Error())
+				}
 			}
 			break
 		}
