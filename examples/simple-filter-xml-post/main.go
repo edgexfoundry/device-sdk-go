@@ -45,7 +45,7 @@ func main() {
 		edgexSdk.FilterByDeviceID(deviceIDs),
 		edgexSdk.TransformToXML(),
 		printXMLToConsole,
-		edgexSdk.HTTPPost("<YOURENDPOINT>"),
+		edgexSdk.HTTPPostXML("<YOURENDPOINT>"),
 	)
 
 	// 4) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events

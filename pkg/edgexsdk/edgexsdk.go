@@ -90,12 +90,24 @@ func (sdk *AppFunctionsSDK) TransformToJSON() func(excontext.Context, ...interfa
 	return transforms.TransformToJSON
 }
 
-// HTTPPost ...
-func (sdk *AppFunctionsSDK) HTTPPost(url string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+// HTTPPost will add an export function that sends data from the previous function to the specified Endpoint via http POST. Passing an empty string to the mimetype
+// method will default to application/json ...
+func (sdk *AppFunctionsSDK) HTTPPost(url string, mimeType string) func(excontext.Context, ...interface{}) (bool, interface{}) {
 	transforms := transforms.HTTPSender{
-		URL: url,
+		URL:      url,
+		MimeType: mimeType,
 	}
 	return transforms.HTTPPost
+}
+
+// HTTPPostJSON will add an export function that sends data from the previous function to the specified Endpoint via http POST with a mime type of application/json.
+func (sdk *AppFunctionsSDK) HTTPPostJSON(url string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+	return sdk.HTTPPost(url, "application/json")
+}
+
+// HTTPPostXML will add an export function that sends data from the previous function to the specified Endpoint via http POST with a mime type of application/xml.
+func (sdk *AppFunctionsSDK) HTTPPostXML(url string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+	return sdk.HTTPPost(url, "application/xml")
 }
 
 // MQTTSend ...
