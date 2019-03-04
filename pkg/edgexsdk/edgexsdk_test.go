@@ -17,12 +17,15 @@
 package edgexsdk
 
 import (
+	"io/ioutil"
+	http "net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
+	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
@@ -39,9 +42,7 @@ func TestSetPipelineNoTransforms(t *testing.T) {
 		LoggingClient: lc,
 	}
 	err := sdk.SetPipeline()
-	if err == nil {
-		t.Fatal("Should return error")
-	}
+	assert.NotNil(t, err, "Should return error")
 	assert.Equal(t, err.Error(), "No transforms provided to pipeline", "Incorrect error message received")
 }
 func TestSetPipelineNoTransformsNil(t *testing.T) {
@@ -96,8 +97,68 @@ func TestHTTPPost(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
-	trx := sdk.HTTPPost("http://url")
+	trx := sdk.HTTPPost("http://url", "")
 	assert.NotNil(t, trx, "return result from HTTPPost should not be nil")
+}
+func TestHTTPPostJSON(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+	}
+	msgStr := "POST ME"
+	path := "/"
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(([]byte)("RESPONSE"))
+		readMsg, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+		assert.Equal(t, msgStr, (string)(readMsg), "Invalid msg received %v, expected %v", (string)(readMsg), msgStr)
+		assert.Equal(t, "application/json", r.Header.Get("Content-type"), "Unexpected content-type received %s, expected %s", r.Header.Get("Content-type"), "application/xml")
+		assert.Equal(t, path, r.URL.EscapedPath(), "Invalid path received %s, expected %s", r.URL.EscapedPath(), path)
+	}
+
+	// create test server with handler
+	ts := httptest.NewServer(http.HandlerFunc(handler))
+	defer ts.Close()
+
+	trx := sdk.HTTPPostJSON(ts.URL)
+	assert.NotNil(t, trx, "return result from HTTPPostJSON should not be nil")
+
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
+	result, data := trx(ctx, msgStr)
+	assert.True(t, result, "continuePipeline should be true")
+	assert.Equal(t, "RESPONSE", (string)((data).([]byte)), "response should be \"RESPONSE\"")
+}
+func TestHTTPPostXML(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+	}
+	msgStr := "POST ME"
+	path := "/"
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write(([]byte)("RESPONSE"))
+		readMsg, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+		assert.Equal(t, msgStr, (string)(readMsg), "Invalid msg received %v, expected %v", (string)(readMsg), msgStr)
+		assert.Equal(t, "application/xml", r.Header.Get("Content-type"), "Unexpected content-type received %s, expected %s", r.Header.Get("Content-type"), "application/xml")
+		assert.Equal(t, path, r.URL.EscapedPath(), "Invalid path received %s, expected %s", r.URL.EscapedPath(), path)
+	}
+
+	// create test server with handler
+	ts := httptest.NewServer(http.HandlerFunc(handler))
+	defer ts.Close()
+
+	trx := sdk.HTTPPostXML(ts.URL)
+	assert.NotNil(t, trx, "return result from HTTPPostXML should not be nil")
+
+	ctx := excontext.Context{
+		LoggingClient: lc,
+	}
+	result, data := trx(ctx, msgStr)
+	assert.True(t, result, "continuePipeline should be true")
+	assert.Equal(t, "RESPONSE", (string)((data).([]byte)), "response should be \"RESPONSE\"")
 }
 
 // func TestMakeItRun(t *testing.T) {
@@ -129,10 +190,8 @@ func TestSetupHTTPTrigger(t *testing.T) {
 	}
 	runtime := runtime.GolangRuntime{Transforms: sdk.transforms}
 	trigger := sdk.setupTrigger(sdk.config, runtime)
-	result := IsInstanceOf(trigger, (*http.Trigger)(nil))
-	if !result {
-		t.Error("Expected HTTP Trigger")
-	}
+	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
+	assert.True(t, result, "Expected Instance of HTTP Trigger")
 }
 func TestSetupMessageBusTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
@@ -146,7 +205,5 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	runtime := runtime.GolangRuntime{Transforms: sdk.transforms}
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
-	if !result {
-		t.Error("Expected Message Bus Trigger")
-	}
+	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }
