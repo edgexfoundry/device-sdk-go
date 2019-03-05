@@ -101,18 +101,6 @@ type LoggingInfo struct {
 	File string
 }
 
-// ScheduleEventInfo is a struct which contains event schedule specific
-// configuration settings.
-type ScheduleEventInfo struct {
-	// Schedule is the name of the associated schedule.
-	Schedule string
-	// Path is the endpoint of the DS to be called when the
-	// ScheduleEvent is triggered.
-	Path string
-	// Service is the DS RegistryService name.
-	Service string
-}
-
 // WatcherInfo is a struct which contains provisionwatcher configuration settings.
 type WatcherInfo struct {
 	Profile     string
@@ -134,10 +122,6 @@ type Config struct {
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
-	// Schedules is created on startup.
-	Schedules []models.Schedule `consul:"-"`
-	// SchedulesEvents is created on startup.
-	ScheduleEvents []models.ScheduleEvent `consul:"-"`
 	// Watchers is a map provisionwatchers to be created on startup.
 	Watchers map[string]WatcherInfo
 	// DeviceList is the list of pre-define Devices

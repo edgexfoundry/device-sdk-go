@@ -93,11 +93,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 		return fmt.Errorf("Failed to create the pre-defined Devices")
 	}
 
-	err = provision.LoadSchedulesAndEvents(common.CurrentConfig)
-	if err != nil {
-		return fmt.Errorf("Failed to create the pre-defined Schedules or Schedule Events")
-	}
-
 	s.cw = newWatchers()
 
 	// initialize driver
