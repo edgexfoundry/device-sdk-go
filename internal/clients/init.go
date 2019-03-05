@@ -212,14 +212,6 @@ func initializeClients() {
 	params.Url = metaAddr + params.Path
 	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, endpoint)
 
-	params.Path = clients.ApiScheduleRoute
-	params.Url = metaAddr + params.Path
-	common.ScheduleClient = metadata.NewScheduleClient(params, endpoint)
-
-	params.Path = clients.ApiScheduleEventRoute
-	params.Url = metaAddr + params.Path
-	common.ScheduleEventClient = metadata.NewScheduleEventClient(params, endpoint)
-
 	// initialize Core Data clients
 	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name
 

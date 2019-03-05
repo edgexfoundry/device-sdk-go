@@ -98,8 +98,6 @@ func TestCommandNoDevice(t *testing.T) {
 	common.LoggingClient = lc
 	common.ServiceLocked = false
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
-	common.ScheduleClient = &mock.ScheduleClientMock{}
-	common.ScheduleEventClient = &mock.ScheduleEventClientMock{}
 	r := InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)

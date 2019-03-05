@@ -97,7 +97,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 			// Self bootstrap the Registry with the device service's configuration
 			fmt.Fprintln(os.Stdout, "Pushing configuration into Registry...")
 
-				err := RegistryClient.PutConfiguration(*configuration, true)
+			err := RegistryClient.PutConfiguration(*configuration, true)
 			if err != nil {
 				return nil, fmt.Errorf("could not push configuration to Registry: %v", err.Error())
 			}
