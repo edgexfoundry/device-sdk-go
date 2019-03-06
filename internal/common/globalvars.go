@@ -29,6 +29,4 @@ var (
 	DeviceProfileClient   metadata.DeviceProfileClient
 	LoggingClient         logger.LoggingClient
 	ValueDescriptorClient coredata.ValueDescriptorClient
-	ScheduleClient        metadata.ScheduleClient
-	ScheduleEventClient   metadata.ScheduleEventClient
 )

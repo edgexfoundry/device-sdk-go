@@ -44,25 +44,5 @@ func InitCache() {
 			dps[i] = d.Profile
 		}
 		newProfileCache(dps)
-
-		ses, err := common.ScheduleEventClient.ScheduleEventsForServiceByName(common.ServiceName, ctx)
-		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Schedule Event cache initialization failed: %v", err))
-			ses = make([]models.ScheduleEvent, 0)
-		}
-		newScheduleEventCache(ses)
-
-		schMap := make(map[string]models.Schedule, len(ses))
-		for _, se := range ses {
-			if _, ok := schMap[se.Schedule]; !ok {
-				sc, err := common.ScheduleClient.ScheduleForName(se.Schedule, ctx)
-				if err != nil {
-					common.LoggingClient.Error(fmt.Sprintf("Schedule %s cannot be found in Core Metadata", se.Schedule))
-					continue
-				}
-				schMap[sc.Name] = sc
-			}
-		}
-		newScheduleCache(schMap)
 	})
 }

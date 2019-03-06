@@ -65,27 +65,3 @@ File = "./device-simple.log"
     Address = "simple01"
     Port = 300
     Protocol = "OTHER"
-
-# Pre-define Schedule Configuration
-[[Schedules]]
-Name = "10sec-schedule"
-Frequency = "PT10S"
-
-[[ScheduleEvents]]
-Name = "turnOnSwitch"
-Parameters = "{\"Switch\": \"true\"}"
-Schedule = "10sec-schedule"
-  [ScheduleEvents.Addressable]
-  HTTPMethod = "PUT"
-  Path = "/api/v1/device/name/Simple-Device01/Switch"
-
-[[Schedules]]
-Name = "5sec-schedule"
-Frequency = "PT5S"
-
-[[ScheduleEvents]]
-Name = "readSwtich"
-Schedule = "5sec-schedule"
-  [ScheduleEvents.Addressable]
-  HTTPMethod = "GET"
-  Path = "/api/v1/device/name/Simple-Device01/Switch"

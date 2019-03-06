@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/robfig/cron"
 )
@@ -46,17 +45,6 @@ func StopScheduler() {
 }
 
 func loadSchEvts() []*schEvtExec {
-	schEvts := cache.ScheduleEvents().All()
-	result := make([]*schEvtExec, len(schEvts))
-	for i, schEvt := range schEvts {
-		common.LoggingClient.Debug(fmt.Sprintf("Loading Schedule Event %s", schEvt.Name))
-		sch, ok := cache.Schedules().ForName(schEvt.Schedule)
-		if !ok {
-			common.LoggingClient.Error(fmt.Sprintf("Schedule %s for Schedule Event %s cannot be found in cache", schEvt.Schedule, schEvt.Name))
-			continue
-		}
-		exec := schEvtExec{schEvt: schEvt, sch: sch}
-		result[i] = &exec
-	}
+	result := make([]*schEvtExec, 0)
 	return result
 }
