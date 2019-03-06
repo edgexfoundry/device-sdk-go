@@ -10,8 +10,6 @@ package common
 
 import (
 	"fmt"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
@@ -138,8 +136,8 @@ type DeviceConfig struct {
 	Description string
 	// Other labels applied to the device to help with searching
 	Labels []string
-	// Addressable for the device - stores information about it's address
-	Addressable models.Addressable
+	// Protocols for the device - stores protocol properties
+	Protocols map[string]map[string]string
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.

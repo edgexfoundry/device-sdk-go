@@ -12,6 +12,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"reflect"
 	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -72,7 +73,7 @@ func CompareDevices(a models.Device, b models.Device) bool {
 	profileOk := CompareDeviceProfiles(a.Profile, b.Profile)
 	serviceOk := CompareDeviceServices(a.Service, b.Service)
 
-	return a.Addressable == b.Addressable &&
+	return reflect.DeepEqual(a.Protocols, b.Protocols) &&
 		a.AdminState == b.AdminState &&
 		a.Description == b.Description &&
 		a.Id == b.Id &&

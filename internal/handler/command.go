@@ -115,7 +115,7 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 		reqs[i].DeviceResource = dr
 	}
 
-	results, err := common.Driver.HandleReadCommands(&device.Addressable, reqs)
+	results, err := common.Driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execReadCmd: error for Device: %s cmd: %s, %v", device.Name, cmd, err)
 		return nil, common.NewServerError(msg, err)
@@ -242,7 +242,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 		}
 	}
 
-	err = common.Driver.HandleWriteCommands(&device.Addressable, reqs, cvs)
+	err = common.Driver.HandleWriteCommands(device.Name, device.Protocols, reqs, cvs)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: error for Device: %s cmd: %s, %v", device.Name, cmd, err)
 		return common.NewServerError(msg, err)

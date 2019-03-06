@@ -38,17 +38,10 @@ func (s *Service) AddDevice(device models.Device) (id string, err error) {
 		return "", fmt.Errorf(errMsg)
 	}
 
-	addr, err := common.MakeAddressable(device.Name, &device.Addressable)
-	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("makeAddressable failed: %v", err))
-		return "", err
-	}
-
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	device.Origin = millis
 	device.Service = common.CurrentDeviceService
 	device.Profile = prf
-	device.Addressable = *addr
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())

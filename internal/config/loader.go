@@ -11,8 +11,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-registry"
-	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -21,6 +19,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-registry"
+	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
 	"github.com/pelletier/go-toml"
 )
 

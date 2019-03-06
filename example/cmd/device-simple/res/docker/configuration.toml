@@ -61,7 +61,7 @@ File = "/edgex/logs/device-simple.log"
   Profile = "Simple-Device"
   Description = "Example of Simple Device"
   Labels = [ "industrial" ]
-  [DeviceList.Addressable]
-    Address = "simple01"
-    Port = 300
-    Protocol = "OTHER"
+  [DeviceList.Protocols]
+    [DeviceList.Protocols.other]
+      Address = "simple01"
+      Port = "300"
