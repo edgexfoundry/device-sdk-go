@@ -28,14 +28,8 @@ func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppErro
 
 	if cbAlert.ActionType == models.DEVICE {
 		return handleDevice(method, cbAlert.Id)
-	} else if cbAlert.ActionType == models.ADDRESSABLE {
-		return handleAddresssable(method, cbAlert.Id)
 	} else if cbAlert.ActionType == models.PROFILE {
 		return handleProfile(method, cbAlert.Id)
-	} else if cbAlert.ActionType == models.SCHEDULE {
-		return handleSchedule(method, cbAlert.Id)
-	} else if cbAlert.ActionType == models.SCHEDULEEVENT {
-		return handleScheduleEvent(method, cbAlert.Id)
 	}
 
 	common.LoggingClient.Error(fmt.Sprintf("Invalid callback action type: %s", cbAlert.ActionType))
@@ -108,33 +102,6 @@ func handleDevice(method string, id string) common.AppError {
 	return nil
 }
 
-func handleAddresssable(method string, id string) common.AppError {
-	if method == http.MethodPut {
-		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		add, err := common.AddressableClient.Addressable(id, ctx)
-		if err != nil {
-			appErr := common.NewBadRequestError(err.Error(), err)
-			common.LoggingClient.Error(fmt.Sprintf("Cannot find the addressable %s from Core Metadata: %v", id, err))
-			return appErr
-		}
-
-		err = cache.Devices().UpdateAddressable(add)
-		if err == nil {
-			common.LoggingClient.Info(fmt.Sprintf("Updated addressable %s", id))
-		} else {
-			appErr := common.NewServerError(err.Error(), err)
-			common.LoggingClient.Error(fmt.Sprintf("Couldn't update addressable %s: %v", id, err.Error()))
-			return appErr
-		}
-	} else {
-		common.LoggingClient.Error(fmt.Sprintf("Invalid addressable method: %s", method))
-		appErr := common.NewBadRequestError("Invalid addressable method", nil)
-		return appErr
-	}
-
-	return nil
-}
-
 func handleProfile(method string, id string) common.AppError {
 	if method == http.MethodPut {
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
@@ -161,16 +128,4 @@ func handleProfile(method string, id string) common.AppError {
 	}
 
 	return nil
-}
-
-func handleSchedule(method string, id string) common.AppError {
-	common.LoggingClient.Error(fmt.Sprintf("Schedule callback action not implemented"))
-	appErr := common.NewServerError("Schedule callback action not implemented", nil)
-	return appErr
-}
-
-func handleScheduleEvent(method string, id string) common.AppError {
-	common.LoggingClient.Error(fmt.Sprintf("Schedule event callback action not implemented"))
-	appErr := common.NewServerError("Schedule event callback action not implemented", nil)
-	return appErr
 }

@@ -44,17 +44,11 @@ func createDevice(dc common.DeviceConfig) error {
 		return fmt.Errorf(errMsg)
 	}
 
-	addr, err := common.MakeAddressable(dc.Name, &dc.Addressable)
-	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("makeAddressable failed: %v", err))
-		return err
-	}
-
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	device := &models.Device{
 		Name:           dc.Name,
 		Profile:        prf,
-		Addressable:    *addr,
+		Protocols:      dc.Protocols,
 		Labels:         dc.Labels,
 		Service:        common.CurrentDeviceService,
 		AdminState:     models.Unlocked,
