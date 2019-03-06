@@ -8,7 +8,7 @@ BootTimeout = 30000
 ClientMonitor = 15000
 CheckInterval = '10s'
 Host = 'localhost'
-Port = 48080
+Port = 48095
 Protocol = 'http'
 ReadMaxLimit = 100
 StartupMsg = 'This is a sample Filter/XML/Post Transform Application Service'
@@ -20,13 +20,13 @@ Port = 8500
 Type = 'consul'
 
 [MessageBus]
-Host = 'localhost'
+Host = '*'
 Port = 8500
-Type = 'zeroMQ'
+Type = 'zero'
 
 [Logging]
 EnableRemote = false
-File = './logs/edgex-core-data.log'
+File = './logs/simple-filter-xml.log'
 
 [Binding]
  Type="http"

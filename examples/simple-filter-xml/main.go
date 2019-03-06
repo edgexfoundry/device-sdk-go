@@ -47,7 +47,6 @@ func main() {
 		edgexSdk.TransformToXML(),
 		printXMLToConsole,
 	)
-
 	// 4) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
 	// to trigger the pipeline.
 	edgexSdk.MakeItRun()

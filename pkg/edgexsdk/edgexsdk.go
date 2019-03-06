@@ -17,11 +17,14 @@
 package edgexsdk
 
 import (
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"errors"
 	"flag"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 
 	"os"
 	"os/signal"
@@ -48,6 +51,8 @@ type AppFunctionsSDK struct {
 	configProfile  string
 	configDir      string
 	useRegistry    bool
+	httpErrors     chan error
+	webserver      *webserver.WebServer
 	registryClient registry.Client
 	config         common.ConfigurationStruct
 	LoggingClient  logger.LoggingClient
@@ -123,17 +128,30 @@ func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key s
 //MakeItRun the SDK
 func (sdk *AppFunctionsSDK) MakeItRun() {
 	// a little telemetry where?
+	httpErrors := make(chan error)
+	defer close(httpErrors)
 
 	//determine which runtime to load
 	runtime := runtime.GolangRuntime{Transforms: sdk.transforms}
+
+	sdk.webserver = &webserver.WebServer{
+		Config:        &sdk.config,
+		LoggingClient: sdk.LoggingClient,
+	}
+	sdk.webserver.ConfigureStandardRoutes()
 
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-
-	sdk.LoggingClient.Info("Initializing...")
 	trigger.Initialize(sdk.LoggingClient)
+
+	sdk.webserver.StartHTTPServer(sdk.httpErrors)
+	c := <-sdk.httpErrors
+
+	sdk.LoggingClient.Warn(fmt.Sprintf("Terminating: %v", c))
+	os.Exit(0)
+
 }
 
 func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime runtime.GolangRuntime) trigger.ITrigger {
@@ -143,7 +161,7 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruc
 	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
 		sdk.LoggingClient.Info("Loading Http Trigger")
-		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime}
+		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver}
 	case "MESSAGEBUS":
 		sdk.LoggingClient.Info("Loading messageBus Trigger")
 		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime}
@@ -161,7 +179,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	flag.StringVar(&sdk.configProfile, "profile", "", "Specify a profile other than default.")
 	flag.StringVar(&sdk.configProfile, "p", "", "Specify a profile other than default.")
 
-	flag.StringVar(&sdk.configDir, "config", "", "Specify an alternate configuration directory.")
+	flag.StringVar(&sdk.configDir, "confdir", "", "Specify an alternate configuration directory.")
 	flag.StringVar(&sdk.configDir, "c", "", "Specify an alternate configuration directory.")
 
 	flag.Parse()
@@ -188,6 +206,9 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	// Handles SIGINT/SIGTERM and exits gracefully
 	sdk.listenForInterrupts()
+	
+	go telemetry.StartCpuUsageAverage()
+
 	return nil
 }
 
@@ -269,18 +290,16 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 
-	errChannel := make(chan error)
 	updateChannel := make(chan interface{})
 
-	defer close(errChannel)
 	defer close(updateChannel)
 
 	sdk.LoggingClient.Info("Listening for changes from registry")
-	sdk.registryClient.WatchForChanges(updateChannel, errChannel, &common.WritableInfo{}, internal.WritableKey)
+	sdk.registryClient.WatchForChanges(updateChannel, sdk.httpErrors, &common.WritableInfo{}, internal.WritableKey)
 
 	for {
 		select {
-		case err := <-errChannel:
+		case err := <-sdk.httpErrors:
 			sdk.LoggingClient.Error(err.Error())
 
 		case raw, ok := <-updateChannel:
@@ -308,11 +327,12 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 func (sdk *AppFunctionsSDK) listenForInterrupts() {
 	sdk.LoggingClient.Info("Listening for interrupts")
 	go func() {
-		signalChan := make(chan os.Signal)
-		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+		signals := make(chan os.Signal)
+		signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-		signalReceived := <-signalChan
+		signalReceived := <-signals
 		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
+		sdk.httpErrors <- fmt.Errorf("%s", <-signals)
 		os.Exit(0)
 	}()
 }

@@ -20,13 +20,13 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
@@ -37,34 +37,33 @@ type Trigger struct {
 	Runtime       runtime.GolangRuntime
 	outputData    string
 	logging       logger.LoggingClient
+	Webserver     *webserver.WebServer
 }
 
 // Initialize ...
-func (h *Trigger) Initialize(logger logger.LoggingClient) error {
-	h.logging = logger
-	http.HandleFunc("/", h.requestHandler)   // set router - just a GET for now
-	err := http.ListenAndServe(":9090", nil) // set listen port
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
+	trigger.logging = logger
+	trigger.logging.Info("Initializing HTTP Trigger")
+	trigger.Webserver.SetupTriggerRoute(trigger.requestHandler)
+	trigger.logging.Info("HTTP Trigger Initialized")
+
 	return nil
 }
-func (h *Trigger) requestHandler(w http.ResponseWriter, r *http.Request) {
+func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	// event := event.Event{Data: "DATA FROM HTTP"}
-	edgexContext := excontext.Context{Configuration: h.Configuration,
-		Trigger:       h,
-		LoggingClient: h.logging,
+	edgexContext := excontext.Context{Configuration: trigger.Configuration,
+		Trigger:       trigger,
+		LoggingClient: trigger.logging,
 	}
 	var event models.Event
 	decoder.Decode(&event)
 
-	h.Runtime.ProcessEvent(edgexContext, event)
-	// bytes, _ := getBytes(h.outputData)
-	w.Write(([]byte)(h.outputData))
+	trigger.Runtime.ProcessEvent(edgexContext, event)
+	writer.Write(([]byte)(trigger.outputData))
 
-	h.outputData = ""
+	trigger.outputData = ""
 }
 func getBytes(key interface{}) ([]byte, error) {
 	var buf bytes.Buffer
@@ -77,8 +76,8 @@ func getBytes(key interface{}) ([]byte, error) {
 }
 
 // Complete ...
-func (h *Trigger) Complete(outputData string) {
+func (trigger *Trigger) Complete(outputData string) {
 	//
-	h.outputData = outputData
+	trigger.outputData = outputData
 
 }
