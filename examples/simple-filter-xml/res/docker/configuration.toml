@@ -1,0 +1,32 @@
+[Writable]
+SubscribeTopic = "rawData"
+PublishTopic = "transformedData"
+LogLevel = 'INFO'
+
+[Service]
+BootTimeout = 30000
+ClientMonitor = 15000
+CheckInterval = '10s'
+Host = 'simple-filter-xml'
+Port = 48095
+Protocol = 'http'
+ReadMaxLimit = 100
+StartupMsg = 'This is a simple Filter/XML Transform Application Service'
+Timeout = 5000
+
+[Registry]
+Host = 'edgex-core-consul'
+Port = 8500
+Type = 'consul'
+
+[MessageBus]
+Host = '*'
+Port = 8500
+Type = 'zero'
+
+[Logging]
+EnableRemote = false
+File = '/edgex/logs/simple-filter-xml.log'
+
+[Binding]
+ Type="http"

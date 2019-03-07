@@ -50,6 +50,7 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 	return nil
 }
 func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
 	decoder := json.NewDecoder(r.Body)
 
 	// event := event.Event{Data: "DATA FROM HTTP"}
