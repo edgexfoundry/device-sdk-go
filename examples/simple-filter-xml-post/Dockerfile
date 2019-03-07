@@ -19,27 +19,26 @@ FROM golang:1.11-alpine AS builder
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
 
-# The main mirrors are giving us timeout issues on builds periodically.
-# So we can try these.
-RUN echo http://nl.alpinelinux.org/alpine/v3.7/main > /etc/apk/repositories; \
-  echo http://nl.alpinelinux.org/alpine/v3.7/community >> /etc/apk/repositories
-
 # add git for go modules
 RUN apk update && apk add --no-cache make git gcc libc-dev
+ENV GO111MODULE=on
+WORKDIR /go/src/github.com/edgexfoundry/app-functions-sdk-go
 
-WORKDIR /github.com/edgexfoundry/app-functions-sdk-go
+COPY go.mod .
 
-COPY . /github.com/edgexfoundry/app-functions-sdk-go/
+RUN go mod download
 
-RUN make build
+COPY . .
+
+RUN make examples/simple-filter-xml-post/simple-filter-xml-post
 
 # Next image - Copy built Go binary into new workspace
-# Maybe use FROM scratch for Go binaries??
-FROM alpine:3.7
+FROM scratch
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
 
-COPY --from=builder /github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml-post/simple-filter-xml-post /usr/local/bin/simple-filter-xml-post
+COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml-post/res/docker /res/docker
+COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml-post/simple-filter-xml-post /simple-filter-xml-post
 
-CMD [ "/usr/local/bin/simple-filter-xml-post" ]
+CMD [ "/simple-filter-xml-post" ]
