@@ -4,7 +4,7 @@ LogLevel = 'INFO'
 [Service]
 Host = "localhost"
 Port = 49990
-ConnectRetries = 3
+ConnectRetries = 20
 Labels = []
 OpenMsg = "device simple started"
 ReadMaxLimit = 256

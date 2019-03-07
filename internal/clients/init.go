@@ -113,7 +113,7 @@ func checkDependencyServices() error {
 }
 
 func checkServiceAvailable(serviceId string) error {
-	for i := 0; i < 50; i++ {
+	for i := 0; i < common.CurrentConfig.Service.ConnectRetries; i++ {
 		if common.UseRegistry {
 			if checkServiceAvailableViaRegistry(common.CurrentConfig.Clients[serviceId].Name) == true {
 				return nil
@@ -123,7 +123,7 @@ func checkServiceAvailable(serviceId string) error {
 				return nil
 			}
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(time.Duration(common.CurrentConfig.Service.Timeout) * time.Millisecond)
 		common.LoggingClient.Debug(fmt.Sprintf("Checked %d times for %s availibility", i+1, serviceId))
 	}
 
