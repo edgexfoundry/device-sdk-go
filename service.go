@@ -25,7 +25,6 @@ import (
 	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
-	"github.com/edgexfoundry/device-sdk-go/internal/scheduler"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -108,7 +107,7 @@ func (s *Service) Start(errChan chan error) (err error) {
 	// Setup REST API
 	r := controller.InitRestRoutes()
 
-	scheduler.StartScheduler()
+	//scheduler.StartScheduler()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
 
 	// TODO: call ListenAndServe in a goroutine
@@ -227,7 +226,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 func (s *Service) Stop(force bool) error {
 	s.stopped = true
 	common.Driver.Stop(force)
-	scheduler.StopScheduler()
+	//scheduler.StopScheduler()
 	return nil
 }
 
