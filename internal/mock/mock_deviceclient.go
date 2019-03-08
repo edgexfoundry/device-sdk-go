@@ -61,14 +61,6 @@ func (dc *DeviceClientMock) DevicesByLabel(label string, ctx context.Context) ([
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForAddressable(addressableid string, ctx context.Context) ([]models.Device, error) {
-	panic("implement me")
-}
-
-func (dc *DeviceClientMock) DevicesForAddressableByName(addressableName string, ctx context.Context) ([]models.Device, error) {
-	panic("implement me")
-}
-
 func (dc *DeviceClientMock) DevicesForProfile(profileid string, ctx context.Context) ([]models.Device, error) {
 	panic("implement me")
 }
