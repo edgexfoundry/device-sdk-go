@@ -276,3 +276,8 @@ func NewService(serviceName string, serviceVersion string, confProfile string, c
 func RunningService() *Service {
 	return svc
 }
+
+// DriverConfigs retrieves the driver specific configuration
+func DriverConfigs() map[string]string {
+	return common.CurrentConfig.Driver
+}
