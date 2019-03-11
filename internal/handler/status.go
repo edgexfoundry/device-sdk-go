@@ -12,5 +12,5 @@ import (
 )
 
 func StatusHandler() string {
-	return common.StatusResponse
+	return common.ServiceVersion
 }
