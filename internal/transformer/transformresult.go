@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -19,6 +19,7 @@ import (
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -37,20 +38,29 @@ func TransformReadResult(cv *ds_models.CommandValue, pv models.PropertyValue) er
 
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformReadBase(newValue, pv.Base)
-		if err != nil {
+		if overflowError, ok := err.(OverflowError); ok {
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.RO.Object))
+		} else if err != nil {
 			return err
 		}
 	}
 
 	if pv.Scale != "" && pv.Scale != defaultScale {
 		newValue, err = transformReadScale(newValue, pv.Scale)
-		if err != nil {
+		if overflowError, ok := err.(OverflowError); ok {
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.RO.Object))
+		} else if err != nil {
 			return err
 		}
 	}
 
 	if pv.Offset != "" && pv.Offset != defaultOffset {
 		newValue, err = transformReadOffset(newValue, pv.Offset)
+		if overflowError, ok := err.(OverflowError); ok {
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource: %v", cv.RO.Object))
+		} else if err != nil {
+			return err
+		}
 	}
 
 	if value != newValue {
@@ -92,7 +102,11 @@ func transformReadBase(value interface{}, base string) (interface{}, error) {
 		valueFloat64 = v
 	}
 
-	valueFloat64 = math.Pow(b, valueFloat64)
+	valueFloat64 = math.Pow(valueFloat64, b)
+	inRange := checkTransformedValueInRange(value, valueFloat64)
+	if !inRange {
+		return value, NewOverflowError(value, valueFloat64)
+	}
 
 	switch value.(type) {
 	case uint8:
@@ -128,7 +142,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = uint8(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint8(transformedValue)
 	case uint16:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -136,7 +157,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = uint16(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint16(transformedValue)
 	case uint32:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -144,7 +172,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = uint32(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint32(transformedValue)
 	case uint64:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -152,7 +187,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = uint64(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint64(transformedValue)
 	case int8:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -160,7 +202,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = int8(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int8(transformedValue)
 	case int16:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -168,7 +217,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = int16(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int16(transformedValue)
 	case int32:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -176,7 +232,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = int32(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int32(transformedValue)
 	case int64:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
@@ -184,7 +247,14 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		nv := float64(v)
-		value = int64(nv * s)
+		transformedValue := nv * s
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int64(transformedValue)
 	case float32:
 		s, err := strconv.ParseFloat(scale, 32)
 		if err != nil {
@@ -192,6 +262,13 @@ func transformReadScale(value interface{}, scale string) (interface{}, error) {
 			return value, err
 		}
 		ns := float32(s)
+		transformedValue := float64(v * ns)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
 		value = v * ns
 	case float64:
 		s, err := strconv.ParseFloat(scale, 64)
@@ -213,70 +290,126 @@ func transformReadOffset(value interface{}, offset string) (interface{}, error) 
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := uint8(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint8(transformedValue)
 	case uint16:
 		o, err := strconv.ParseUint(offset, 10, 16)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := uint16(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint16(transformedValue)
 	case uint32:
 		o, err := strconv.ParseUint(offset, 10, 32)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := uint32(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = uint32(transformedValue)
 	case uint64:
 		o, err := strconv.ParseUint(offset, 10, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		value = v + o
+		transformedValue := uint64(v + o)
+
+		inRange := checkTransformedValueInRange(value, float64(transformedValue))
+		if !inRange {
+			return value, NewOverflowError(value, float64(transformedValue))
+		}
+
+		value = uint64(v + o)
 	case int8:
 		o, err := strconv.ParseInt(offset, 10, 8)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := int8(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int8(transformedValue)
 	case int16:
 		o, err := strconv.ParseInt(offset, 10, 16)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := int16(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int16(transformedValue)
 	case int32:
 		o, err := strconv.ParseInt(offset, 10, 32)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := int32(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = int32(transformedValue)
 	case int64:
 		o, err := strconv.ParseInt(offset, 10, 64)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		value = v + o
+		transformedValue := int64(v + o)
+
+		inRange := checkTransformedValueInRange(value, float64(transformedValue))
+		if !inRange {
+			return value, NewOverflowError(value, float64(transformedValue))
+		}
+
+		value = transformedValue
 	case float32:
 		o, err := strconv.ParseFloat(offset, 32)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
-		no := float32(o)
-		value = v + no
+		transformedValue := float64(v) + float64(o)
+
+		inRange := checkTransformedValueInRange(value, transformedValue)
+		if !inRange {
+			return value, NewOverflowError(value, transformedValue)
+		}
+
+		value = float32(transformedValue)
 	case float64:
 		o, err := strconv.ParseFloat(offset, 64)
 		if err != nil {
