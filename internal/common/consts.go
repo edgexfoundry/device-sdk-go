@@ -21,7 +21,6 @@ const (
 	Colon          = ":"
 	HttpScheme     = "http://"
 	HttpProto      = "HTTP"
-	StatusResponse = "pong"
 
 	ConfigDirectory    = "./res"
 	ConfigFileName     = "configuration.toml"
