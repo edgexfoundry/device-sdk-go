@@ -33,5 +33,9 @@ func InitRestRoutes() *mux.Router {
 	r.HandleFunc("/discovery", discoveryFunc).Methods("POST")
 	r.HandleFunc("/debug/transformData/{transformData}", transformFunc).Methods("GET")
 
+	common.LoggingClient.Debug("init the metrics and config rest controller each")
+	r.HandleFunc("/metrics", metricsHandler).Methods(http.MethodGet)
+	r.HandleFunc("/config", configHandler).Methods(http.MethodGet)
+
 	return r
 }
