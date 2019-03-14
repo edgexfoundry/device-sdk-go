@@ -17,12 +17,13 @@
 package edgexsdk
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"errors"
 	"flag"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 
@@ -206,7 +207,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	// Handles SIGINT/SIGTERM and exits gracefully
 	sdk.listenForInterrupts()
-	
+
 	go telemetry.StartCpuUsageAverage()
 
 	return nil
@@ -290,19 +291,20 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 
-	updateChannel := make(chan interface{})
+	updates := make(chan interface{})
+	registryErrors := make(chan error)
 
-	defer close(updateChannel)
+	defer close(updates)
 
 	sdk.LoggingClient.Info("Listening for changes from registry")
-	sdk.registryClient.WatchForChanges(updateChannel, sdk.httpErrors, &common.WritableInfo{}, internal.WritableKey)
+	sdk.registryClient.WatchForChanges(updates, registryErrors, &common.WritableInfo{}, internal.WritableKey)
 
 	for {
 		select {
-		case err := <-sdk.httpErrors:
+		case err := <-registryErrors:
 			sdk.LoggingClient.Error(err.Error())
 
-		case raw, ok := <-updateChannel:
+		case raw, ok := <-updates:
 			if !ok {
 				sdk.LoggingClient.Error("Failed to receive changes from update channel")
 				return
@@ -332,7 +334,6 @@ func (sdk *AppFunctionsSDK) listenForInterrupts() {
 
 		signalReceived := <-signals
 		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
-		sdk.httpErrors <- fmt.Errorf("%s", <-signals)
 		os.Exit(0)
 	}()
 }
