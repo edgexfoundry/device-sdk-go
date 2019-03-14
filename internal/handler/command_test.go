@@ -22,3 +22,15 @@ func TestParseWriteParamsWrongParamName(t *testing.T) {
 		t.Error("expected error")
 	}
 }
+
+func TestParseWriteParamsNoParams(t *testing.T) {
+	profileName := "notFound"
+	roMap := roSliceToMap([]models.ResourceOperation{{Index: ""}})
+	params := "{ }"
+
+	_, err := parseWriteParams(profileName, roMap, params)
+
+	if  err == nil {
+		t.Error("expected error")
+	}
+}
