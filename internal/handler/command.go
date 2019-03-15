@@ -259,6 +259,11 @@ func parseWriteParams(profileName string, roMap map[string]*models.ResourceOpera
 		return []*ds_models.CommandValue{}, err
 	}
 
+	if len(paramMap) == 0 {
+		err := fmt.Errorf("no parameters specified")
+		return []*ds_models.CommandValue{}, err
+	}
+
 	result := make([]*ds_models.CommandValue, 0, len(paramMap))
 	for k, v := range paramMap {
 		ro, ok := roMap[k]
@@ -280,7 +285,8 @@ func parseWriteParams(profileName string, roMap map[string]*models.ResourceOpera
 				return result, err
 			}
 		} else {
-			common.LoggingClient.Warn(fmt.Sprintf("Handler - parseWriteParams: The parameter %s cannot find the matched ResourceOperation", k))
+			err := fmt.Errorf("the parameter %s cannot find the matched ResourceOperation", k)
+			return []*ds_models.CommandValue{}, err
 		}
 	}
 

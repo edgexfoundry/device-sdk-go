@@ -117,7 +117,7 @@ type Config struct {
 	Registry RegistryService
 	// Clients is a map of services used by a DS.
 	Clients map[string]ClientInfo
-	// Device contains device-specific coniguration settings.
+	// Device contains device-specific configuration settings.
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
@@ -125,6 +125,8 @@ type Config struct {
 	Watchers map[string]WatcherInfo
 	// DeviceList is the list of pre-define Devices
 	DeviceList []DeviceConfig `consul:"-"`
+	// Driver is a string map contains customized configuration for the protocol driver implemented based on Device SDK
+	Driver map[string]string
 }
 
 // DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up
@@ -159,4 +161,14 @@ type ClientInfo struct {
 func (c ClientInfo) Url() string {
 	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
 	return url
+}
+
+// Telemetry provides metrics (on a given device service) to system management.
+type Telemetry struct {
+	Alloc,
+	TotalAlloc,
+	Sys,
+	Mallocs,
+	Frees,
+	LiveObjects uint64
 }

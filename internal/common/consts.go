@@ -21,7 +21,6 @@ const (
 	Colon          = ":"
 	HttpScheme     = "http://"
 	HttpProto      = "HTTP"
-	StatusResponse = "pong"
 
 	ConfigDirectory    = "./res"
 	ConfigFileName     = "configuration.toml"
@@ -32,7 +31,6 @@ const (
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"
 	APIDiscoveryRoute       = APIv1Prefix + "/discovery"
 	APIPingRoute            = APIv1Prefix + "/ping"
-
 	SchedulerExecCMDPattern = APIv1Prefix + "/device/name/*/*"
 
 	CorrelationHeader = clients.CorrelationHeader
