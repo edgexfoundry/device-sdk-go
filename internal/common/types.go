@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -10,6 +10,8 @@ package common
 
 import (
 	"fmt"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
@@ -138,7 +140,7 @@ type DeviceConfig struct {
 	// Other labels applied to the device to help with searching
 	Labels []string
 	// Protocols for the device - stores protocol properties
-	Protocols map[string]map[string]string
+	Protocols map[string]models.ProtocolProperties
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
