@@ -44,6 +44,7 @@ type Service struct {
 	stopped      bool
 	cw           *Watchers
 	asyncCh      chan *ds_models.AsyncValues
+	startTime    time.Time
 }
 
 func (s *Service) Name() string {
@@ -117,6 +118,9 @@ func (s *Service) Start(errChan chan error) (err error) {
 	go func() {
 		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r)
 	}()
+
+	common.LoggingClient.Info("Listening on port: " + strconv.Itoa(common.CurrentConfig.Service.Port))
+	common.LoggingClient.Info("Service started in: " + time.Since(s.startTime).String())
 
 	common.LoggingClient.Debug("*Service Start() exit")
 
@@ -235,6 +239,7 @@ func (s *Service) Stop(force bool) error {
 // Note - this function is a singleton, if called more than once,
 // it will always return an error.
 func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry bool, proto ds_models.ProtocolDriver) (*Service, error) {
+	startTime := time.Now()
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
 		return nil, err
@@ -265,6 +270,7 @@ func NewService(serviceName string, serviceVersion string, confProfile string, c
 	}
 
 	svc = &Service{}
+	svc.startTime = startTime
 	svc.svcInfo = &config.Service
 	common.Driver = proto
 
