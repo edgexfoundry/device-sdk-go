@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -16,6 +16,7 @@ import (
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type SimpleDriver struct {
@@ -26,7 +27,7 @@ type SimpleDriver struct {
 
 // DisconnectDevice handles protocol-specific cleanup when a device
 // is removed.
-func (s *SimpleDriver) DisconnectDevice(deviceName string, protocols map[string]map[string]string) error {
+func (s *SimpleDriver) DisconnectDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
 	return nil
 }
 
@@ -39,7 +40,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *ds_mo
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
+func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []ds_models.CommandRequest) (res []*ds_models.CommandValue, err error) {
 
 	if len(reqs) != 1 {
 		err = fmt.Errorf("SimpleDriver.HandleReadCommands; too many command requests; only one supported")
@@ -60,7 +61,7 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 // a ResourceOperation for a specific device resource.
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[string]map[string]string, reqs []ds_models.CommandRequest,
+func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []ds_models.CommandRequest,
 	params []*ds_models.CommandValue) error {
 
 	if len(reqs) != 1 {

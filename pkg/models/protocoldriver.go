@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -13,6 +13,7 @@ package models
 
 import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // ProtocolDriver is a low-level device-specific interface used by
@@ -25,7 +26,7 @@ type ProtocolDriver interface {
 	// logic to be performed.  Device services which don't require this
 	// function should just return 'nil'.
 	//
-	DisconnectDevice(deviceName string, protocols map[string]map[string]string) error
+	DisconnectDevice(deviceName string, protocols map[string]models.ProtocolProperties) error
 
 	// Initialize performs protocol-specific initialization for the device
 	// service. The given *AsyncValues channel can be used to push asynchronous
@@ -34,13 +35,13 @@ type ProtocolDriver interface {
 
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource.
-	HandleReadCommands(deviceName string, protocols map[string]map[string]string, reqs []CommandRequest) ([]*CommandValue, error)
+	HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []CommandRequest) ([]*CommandValue, error)
 
 	// HandleWriteCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource.
 	// Since the commands are actuation commands, params provide parameters for the individual
 	// command.
-	HandleWriteCommands(deviceName string, protocols map[string]map[string]string, reqs []CommandRequest, params []*CommandValue) error
+	HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []CommandRequest, params []*CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible
