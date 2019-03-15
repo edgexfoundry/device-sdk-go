@@ -47,7 +47,23 @@ func main() {
 		edgexSdk.TransformToXML(),
 		printXMLToConsole,
 	)
-	// 4) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
+
+	// 4) shows how to access the application's specific configuration settings.
+	appSettings:= edgexSdk.ApplicationSettings()
+	if appSettings != nil {
+		appName, ok := appSettings["ApplicationName"]
+		if ok {
+			edgexSdk.LoggingClient.Info(fmt.Sprintf("%s now running...", appName))
+		} else {
+			edgexSdk.LoggingClient.Error("ApplicationName application setting not found")
+			os.Exit(-1)
+		}
+	} else {
+		edgexSdk.LoggingClient.Error("No application settings found")
+		os.Exit(-1)
+	}
+
+	// 5) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
 	// to trigger the pipeline.
 	edgexSdk.MakeItRun()
 }
