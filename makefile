@@ -2,7 +2,7 @@
 
 GO=CGO_ENABLED=0 GO111MODULE=on go
 
-MICROSERVICES=examples/simple-filter-xml/simple-filter-xml examples/simple-filter-xml/simple-filter-xml-mqtt examples/simple-filter-xml/simple-filter-xml-post
+MICROSERVICES=examples/simple-filter-xml/simple-filter-xml examples/simple-filter-xml-mqtt/simple-filter-xml-mqtt examples/simple-filter-xml-post/simple-filter-xml-post
 .PHONY: $(MICROSERVICES)
 
 VERSION=$(shell cat ./VERSION)
