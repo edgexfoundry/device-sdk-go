@@ -47,3 +47,6 @@ https://github.com/google/uuid/blob/master/LICENSE
 
 edgexfoundry/edgex-go (Apache 2.0) https://github.com/edgexfoundry/edgex-go
 https://github.com/edgexfoundry/edgex-go/blob/master/LICENSE
+
+pkg/errors (BSD-2) https://github.com/pkg/errors
+https://github.com/pkg/errors/blob/master/LICENSE

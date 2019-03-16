@@ -20,6 +20,7 @@ require (
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 	github.com/mitchellh/go-homedir v1.0.0
 	github.com/pelletier/go-toml v1.2.0
+	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
 	gopkg.in/yaml.v2 v2.2.2
 )
