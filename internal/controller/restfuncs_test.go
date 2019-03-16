@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	badDeviceId       = "5abae51de23bf81c9ef0f390"
+	badDeviceId       = "e0fe7ac0-f7f3-4b76-b1b0-4b9bf4788d3e"
 	deviceCommandTest = "device-command-test"
 	testCmd           = "TestCmd"
 )
@@ -38,9 +38,9 @@ func TestCallback(t *testing.T) {
 	}{
 		{"Empty body", http.MethodPut, "", http.StatusBadRequest},
 		{"Empty json", http.MethodPut, "{}", http.StatusBadRequest},
-		{"Invalid type", http.MethodPut, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"INVALID"}`, http.StatusBadRequest},
-		{"Invalid method", http.MethodPost, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"DEVICE"}`, http.StatusBadRequest},
-		{"Invalid id", http.MethodPut, `{"id":"5b9a4f9a64562a2f966fdb0b","type":"DEVICE"}`, http.StatusBadRequest},
+		{"Invalid type", http.MethodPut, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"INVALID"}`, http.StatusBadRequest},
+		{"Invalid method", http.MethodPost, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"DEVICE"}`, http.StatusBadRequest},
+		{"Invalid id", http.MethodPut, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"DEVICE"}`, http.StatusBadRequest},
 	}
 
 	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
