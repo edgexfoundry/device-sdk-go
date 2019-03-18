@@ -41,4 +41,4 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
 COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml/res/docker /res/docker
 COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml/simple-filter-xml /simple-filter-xml
 
-CMD [ "/simple-filter-xml" ]
+CMD [ "/simple-filter-xml" ,"--registry","--profile=docker","--confdir=/res"]

@@ -104,18 +104,3 @@ func TestHTTPPostInvalidParameter(t *testing.T) {
 		t.Fatal("Should have an error when no parameter was passed")
 	}
 }
-func TestHTTPPostNonExistentEndpoint(t *testing.T) {
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
-	sender := HTTPSender{
-		URL: "http://idontexist/",
-	}
-	continuePipeline, result := sender.HTTPPost(ctx, "data")
-	if continuePipeline != false {
-		t.Fatal("Pipeline should stop")
-	}
-	if !strings.Contains(result.(error).Error(), "no such host") {
-		t.Fatal("Should have an error from http post that does not find host")
-	}
-}

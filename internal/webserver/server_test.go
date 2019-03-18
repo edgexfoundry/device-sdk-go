@@ -17,6 +17,7 @@
 package webserver
 
 import (
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"encoding/json"
 	"testing"
 
@@ -55,6 +56,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 
 	webserver := WebServer{
 		LoggingClient: logClient,
+		Config: &common.ConfigurationStruct{},
 	}
 	webserver.ConfigureStandardRoutes()
 
