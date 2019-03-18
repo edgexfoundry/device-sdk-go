@@ -34,8 +34,23 @@ func main() {
   	edgexsdk.FilterByDeviceID(deviceIDs),
   	edgexsdk.TransformToXML(),
   )
-  // 4) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
-  // to trigger the pipeline.
+  
+  // 4) shows how to access the application's specific configuration settings.
+  appSettings:= edgexSdk.ApplicationSettings()
+  if appSettings != nil {
+	appName, ok := appSettings["ApplicationName"]
+	if ok {
+		edgexSdk.LoggingClient.Info(fmt.Sprintf("%s now running...", appName))
+	} else {
+		edgexSdk.LoggingClient.Error("ApplicationName application setting not found")
+		os.Exit(-1)
+	}
+  } else {
+	edgexSdk.LoggingClient.Error("No application settings found")
+	os.Exit(-1)
+  }
+  
+  // 5) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events  // to trigger the pipeline.
   edgexsdk.MakeItRun()
 }
 ```
@@ -88,8 +103,12 @@ There are two export functions included in the SDK that can be added to your pip
 
 
 ## Configuration
- - WIP
-
+ - The ApplicationSetting portion of the configuration is used for custom application settings and is accessed via the ApplicationSettings() API. The ApplicationSettings API returns a `map[string] string` containing the contents on the ApplicationSetting section of the configuration.toml file.
+ ```
+ [ApplicationSettings]
+ ApplicationName = "My Application Service"
+ ``` 
+ 
 ## Error Handling
  - Each transform returns a `true` or `false` as part of the return signature. This is called the `continuePipeline` flag and indicates whether the SDK should continue calling successive transforms in the pipeline.
  - `return false, nil` will stop the pipeline and stop processing the event. This is useful for example when filtering on values and nothing matches the criteria you've filtered on. 

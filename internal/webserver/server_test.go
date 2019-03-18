@@ -64,7 +64,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
-	expected := `{"Writable":{"SubscribeTopic":"","PublishTopic":"","LogLevel":""},"Logging":{"EnableRemote":false,"File":""},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":0,"CheckInterval":"","ClientMonitor":0,"Host":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":0},"MessageBus":{"Host":"","Port":0,"Type":""},"Binding":{"Type":"","Name":"","Topic":""}}` + "\n"
+	expected := `{"Writable":{"SubscribeTopic":"","PublishTopic":"","LogLevel":""},"Logging":{"EnableRemote":false,"File":""},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":0,"CheckInterval":"","ClientMonitor":0,"Host":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":0},"MessageBus":{"Host":"","Port":0,"Type":""},"Binding":{"Type":"","Name":"","Topic":""},"ApplicationSettings":null}` + "\n"
 	body := rr.Body.String()
 	assert.Equal(t, expected, body)
 }

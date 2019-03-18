@@ -29,4 +29,7 @@ EnableRemote = false
 File = '/edgex/logs/simple-filter-xml-mqtt.log'
 
 [Binding]
- Type="http"
+Type="http"
+
+[ApplicationSettings]
+ApplicationName = "simple-filter-xml"
