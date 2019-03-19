@@ -207,3 +207,41 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }
+
+func TestApplicationSettings(t *testing.T) {
+	expectedSettingKey := "ApplicationName"
+	expectedSettingValue := "simple-filter-xml"
+
+	sdk := AppFunctionsSDK {}
+
+	sdk.configDir = "../../examples/simple-filter-xml/res"
+	err := sdk.initializeConfiguration()
+
+	assert.NoError(t, err,"failed to initialize configuration")
+
+	appSettings := sdk.ApplicationSettings()
+	if !assert.NotNil(t, appSettings, "returned application settings is nil") {
+		t.Fatal()
+	}
+
+	actual, ok := appSettings[expectedSettingKey]
+	if !assert.True(t,ok, "expected application setting key not fond") {
+		t.Fatal()
+	}
+
+	assert.Equal(t,expectedSettingValue,actual, "actual application setting value not as expected")
+
+}
+
+func TestApplicationSettingsNil(t *testing.T) {
+	sdk := AppFunctionsSDK {}
+
+	sdk.configDir = "../../examples/simple-filter-xml-post/res"
+	err := sdk.initializeConfiguration()
+	assert.NoError(t, err,"failed to initialize configuration")
+
+	appSettings := sdk.ApplicationSettings()
+	if !assert.Nil(t, appSettings, "returned application settings expected to be nil") {
+		t.Fatal()
+	}
+}

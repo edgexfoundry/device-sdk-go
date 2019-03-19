@@ -155,6 +155,10 @@ func (sdk *AppFunctionsSDK) MakeItRun() {
 
 }
 
+func (sdk *AppFunctionsSDK) ApplicationSettings() map[string] string {
+	return sdk.config.ApplicationSettings
+}
+
 func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime runtime.GolangRuntime) trigger.ITrigger {
 	var trigger trigger.ITrigger
 	// Need to make dynamic, search for the binding that is input
@@ -318,7 +322,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 
 			sdk.config.Writable = *actual
 
-			sdk.LoggingClient.Info("Writeable configuration has been updated. Setting log level to " + sdk.config.Writable.LogLevel)
+			sdk.LoggingClient.Info("Writeable configuration has been updated from Registry")
 			sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
 
 			// TODO: Deal with pub/sub topics may have changed. Save copy of writeable so that we can determine what if anything changed?

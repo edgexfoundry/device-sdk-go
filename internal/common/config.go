@@ -31,6 +31,7 @@ type ConfigurationStruct struct {
 	Service    ServiceInfo
 	MessageBus MessageBusInfo
 	Binding    Binding
+	ApplicationSettings map[string]string
 }
 
 // RegistryInfo ...
