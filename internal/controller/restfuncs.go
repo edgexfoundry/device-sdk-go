@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/gorilla/mux"
 	"io"
@@ -22,8 +23,6 @@ import (
 
 const (
 	statusOK          string = "OK"
-	headerContentType string = "Content-Type"
-	contentTypeJson   string = "application/json"
 )
 
 type ConfigRespMap struct {
@@ -100,7 +99,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
-		w.Header().Set(headerContentType, contentTypeJson)
+		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 		json.NewEncoder(w).Encode(event)
 	}
 }
@@ -122,7 +121,7 @@ func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else if len(events) > 0 {
-		w.Header().Set(headerContentType, contentTypeJson)
+		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 		json.NewEncoder(w).Encode(events)
 	}
 }
@@ -189,8 +188,7 @@ func configHandler(w http.ResponseWriter, _ *http.Request) {
 
 // Helper function for encoding the response when servicing a REST call.
 func encode(i interface{}, w http.ResponseWriter) {
-	w.Header().Add("Content-Type", "application/json")
-
+	w.Header().Add(clients.ContentType, clients.ContentTypeJSON)
 	enc := json.NewEncoder(w)
 	err := enc.Encode(i)
 
