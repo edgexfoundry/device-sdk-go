@@ -17,15 +17,18 @@
 package webserver
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"encoding/json"
 	"testing"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
@@ -56,7 +59,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 
 	webserver := WebServer{
 		LoggingClient: logClient,
-		Config: &common.ConfigurationStruct{},
+		Config:        &common.ConfigurationStruct{},
 	}
 	webserver.ConfigureStandardRoutes()
 
@@ -64,24 +67,12 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
-	expected := `{"Writable":{"SubscribeTopic":"","PublishTopic":"","LogLevel":""},"Logging":{"EnableRemote":false,"File":""},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":0,"CheckInterval":"","ClientMonitor":0,"Host":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":0},"MessageBus":{"Host":"","Port":0,"Type":""},"Binding":{"Type":"","Name":"","Topic":""},"ApplicationSettings":null}` + "\n"
+	expected := `{"Writable":{"LogLevel":""},"Logging":{"EnableRemote":false,"File":""},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":0,"CheckInterval":"","ClientMonitor":0,"Host":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":0},"MessageBus":{"PublishHost":{"Host":"","Port":0,"Protocol":""},"SubscribeHost":{"Host":"","Port":0,"Protocol":""},"Type":"","Optional":null},"Binding":{"Type":"","Name":"","SubscribeTopic":"","PublishTopic":""},"ApplicationSettings":null}` + "\n"
 	body := rr.Body.String()
 	assert.Equal(t, expected, body)
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-
-	type Memory struct {
-		Alloc      int
-		TotalAlloc int
-		Sys        int
-		Mallocs    int
-		//more members exist in Memory, but this should suffice for this test
-	}
-	type Metrics struct {
-		Memory Memory
-	}
-
 	webserver := WebServer{
 		LoggingClient: logClient,
 	}
@@ -92,11 +83,16 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 	webserver.router.ServeHTTP(rr, req)
 
 	body := rr.Body.String()
-	metrics := Metrics{}
+	metrics := telemetry.SystemUsage{}
 	json.Unmarshal([]byte(body), &metrics)
 	assert.NotNil(t, body, "Metrics not populated")
-	assert.NotZero(t, metrics.Memory.Alloc, "Expected value of metrics to be non-zero")
-
+	assert.NotZero(t, metrics.Memory.Alloc, "Expected Alloc value of metrics to be non-zero")
+	assert.NotZero(t, metrics.Memory.Frees, "Expected Frees value of metrics to be non-zero")
+	assert.NotZero(t, metrics.Memory.LiveObjects, "Expected LiveObjects value of metrics to be non-zero")
+	assert.NotZero(t, metrics.Memory.Mallocs, "Expected Mallocs value of metrics to be non-zero")
+	assert.NotZero(t, metrics.Memory.Sys, "Expected Sys value of metrics to be non-zero")
+	assert.NotZero(t, metrics.Memory.TotalAlloc, "Expected TotalAlloc value of metrics to be non-zero")
+	assert.NotNil(t, metrics.CpuBusyAvg, "Expected CpuBusyAvg value of metrics to be not nil")
 }
 
 func TestSetupTriggerRoute(t *testing.T) {

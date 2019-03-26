@@ -22,20 +22,22 @@ import (
 	"encoding/json"
 	"net/http"
 
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 )
 
-// Trigger implements ITrigger to support Triggers
+// Trigger implements Trigger to support Triggers
 type Trigger struct {
 	Configuration common.ConfigurationStruct
 	Runtime       runtime.GolangRuntime
-	outputData    string
+	outputData    []byte
 	logging       logger.LoggingClient
 	Webserver     *webserver.WebServer
 }
@@ -51,20 +53,37 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 }
 func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	decoder := json.NewDecoder(r.Body)
 
-	// event := event.Event{Data: "DATA FROM HTTP"}
-	edgexContext := excontext.Context{Configuration: trigger.Configuration,
+	var event models.Event
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&event)
+	if err != nil {
+		trigger.logging.Debug("HTTP Body not an Edgex Event")
+		writer.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	correlationID := r.Header.Get("X-Correlation-ID")
+	edgexContext := &appcontext.Context{Configuration: trigger.Configuration,
 		Trigger:       trigger,
 		LoggingClient: trigger.logging,
+		CorrelationID: correlationID,
 	}
-	var event models.Event
-	decoder.Decode(&event)
 
-	trigger.Runtime.ProcessEvent(edgexContext, event)
-	writer.Write(([]byte)(trigger.outputData))
+	data, err := json.Marshal(event)
+	if err != nil {
+		trigger.logging.Error("Error marshaling data to []byte")
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	envelope := &types.MessageEnvelope{
+		CorrelationID: edgexContext.CorrelationID,
+		Payload:       data,
+	}
 
-	trigger.outputData = ""
+	trigger.Runtime.ProcessEvent(edgexContext, envelope)
+	writer.Write(edgexContext.OutputData)
+
+	trigger.outputData = nil
 }
 func getBytes(key interface{}) ([]byte, error) {
 	var buf bytes.Buffer
@@ -74,11 +93,4 @@ func getBytes(key interface{}) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-// Complete ...
-func (trigger *Trigger) Complete(outputData string) {
-	//
-	trigger.outputData = outputData
-
 }

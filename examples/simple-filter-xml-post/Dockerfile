@@ -20,7 +20,7 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
 
 # add git for go modules
-RUN apk update && apk add --no-cache make git gcc libc-dev
+RUN apk update && apk add --no-cache make git gcc libc-dev libsodium-dev zeromq-dev
 ENV GO111MODULE=on
 WORKDIR /go/src/github.com/edgexfoundry/app-functions-sdk-go
 
@@ -33,11 +33,12 @@ COPY . .
 RUN make examples/simple-filter-xml-post/simple-filter-xml-post
 
 # Next image - Copy built Go binary into new workspace
-FROM scratch
+FROM alpine
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
 
+RUN apk --no-cache add zeromq
 COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml-post/res/docker /res/docker
 COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml-post/simple-filter-xml-post /simple-filter-xml-post
 

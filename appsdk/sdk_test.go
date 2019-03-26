@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package edgexsdk
+package appsdk
 
 import (
 	"io/ioutil"
@@ -23,12 +23,12 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,7 +49,7 @@ func TestSetPipelineNoTransformsNil(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
-	transform1 := func(edgexcontext excontext.Context, params ...interface{}) (bool, interface{}) {
+	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		return false, nil
 	}
 	err := sdk.SetPipeline(transform1)
@@ -123,7 +123,7 @@ func TestHTTPPostJSON(t *testing.T) {
 	trx := sdk.HTTPPostJSON(ts.URL)
 	assert.NotNil(t, trx, "return result from HTTPPostJSON should not be nil")
 
-	ctx := excontext.Context{
+	ctx := &appcontext.Context{
 		LoggingClient: lc,
 	}
 	result, data := trx(ctx, msgStr)
@@ -153,7 +153,7 @@ func TestHTTPPostXML(t *testing.T) {
 	trx := sdk.HTTPPostXML(ts.URL)
 	assert.NotNil(t, trx, "return result from HTTPPostXML should not be nil")
 
-	ctx := excontext.Context{
+	ctx := &appcontext.Context{
 		LoggingClient: lc,
 	}
 	result, data := trx(ctx, msgStr)
@@ -161,21 +161,6 @@ func TestHTTPPostXML(t *testing.T) {
 	assert.Equal(t, "RESPONSE", (string)((data).([]byte)), "response should be \"RESPONSE\"")
 }
 
-// func TestMakeItRun(t *testing.T) {
-
-// 	sdk := AppFunctionsSDK{
-// 		config: common.ConfigurationStruct{
-// 			Bindings: []common.Binding{
-// 				common.Binding{
-// 					Type: "http",
-// 				},
-// 			},
-// 		},
-// 	}
-
-// 	sdk.MakeItRun()
-
-// }
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {
 	return reflect.TypeOf(objectPtr) == reflect.TypeOf(typePtr)
 }
@@ -183,7 +168,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Binding: common.Binding{
+			Binding: common.BindingInfo{
 				Type: "htTp",
 			},
 		},
@@ -197,7 +182,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Binding: common.Binding{
+			Binding: common.BindingInfo{
 				Type: "meSsaGebus",
 			},
 		},
@@ -212,12 +197,12 @@ func TestApplicationSettings(t *testing.T) {
 	expectedSettingKey := "ApplicationName"
 	expectedSettingValue := "simple-filter-xml"
 
-	sdk := AppFunctionsSDK {}
+	sdk := AppFunctionsSDK{}
 
-	sdk.configDir = "../../examples/simple-filter-xml/res"
+	sdk.configDir = "../examples/simple-filter-xml/res"
 	err := sdk.initializeConfiguration()
 
-	assert.NoError(t, err,"failed to initialize configuration")
+	assert.NoError(t, err, "failed to initialize configuration")
 
 	appSettings := sdk.ApplicationSettings()
 	if !assert.NotNil(t, appSettings, "returned application settings is nil") {
@@ -225,20 +210,20 @@ func TestApplicationSettings(t *testing.T) {
 	}
 
 	actual, ok := appSettings[expectedSettingKey]
-	if !assert.True(t,ok, "expected application setting key not fond") {
+	if !assert.True(t, ok, "expected application setting key not fond") {
 		t.Fatal()
 	}
 
-	assert.Equal(t,expectedSettingValue,actual, "actual application setting value not as expected")
+	assert.Equal(t, expectedSettingValue, actual, "actual application setting value not as expected")
 
 }
 
 func TestApplicationSettingsNil(t *testing.T) {
-	sdk := AppFunctionsSDK {}
+	sdk := AppFunctionsSDK{}
 
-	sdk.configDir = "../../examples/simple-filter-xml-post/res"
+	sdk.configDir = "../examples/simple-filter-xml-post/res"
 	err := sdk.initializeConfiguration()
-	assert.NoError(t, err,"failed to initialize configuration")
+	assert.NoError(t, err, "failed to initialize configuration")
 
 	appSettings := sdk.ApplicationSettings()
 	if !assert.Nil(t, appSettings, "returned application settings expected to be nil") {

@@ -14,22 +14,24 @@
 // limitations under the License.
 //
 
-package excontext
+package appcontext
 
 import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 // Context ...
 type Context struct {
-	Trigger       trigger.ITrigger
+	CorrelationID string
+	OutputData    []byte
+	Trigger       trigger.Trigger
 	Configuration common.ConfigurationStruct
 	LoggingClient logger.LoggingClient
 }
 
 // Complete called when ready to send output and function is finished
-func (context Context) Complete(output string) {
-	(context.Trigger).Complete(output)
+func (context *Context) Complete(output []byte) {
+	context.OutputData = output
 }

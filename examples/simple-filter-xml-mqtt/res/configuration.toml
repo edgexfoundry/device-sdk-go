@@ -1,6 +1,4 @@
 [Writable]
-SubscribeTopic = "rawData"
-PublishTopic = "transformedData"
 LogLevel = 'INFO'
 
 [Service]
@@ -20,9 +18,15 @@ Port = 8500
 Type = 'consul'
 
 [MessageBus]
-Host = '*'
-Port = 8500
 Type = 'zero'
+    [MessageBus.PublishHost]
+        Host = '*'
+        Port = 5564
+        Protocol = 'tcp'
+    [MessageBus.SubscribeHost]
+        Host = 'localhost'
+        Port = 5563
+        Protocol = 'tcp'
 
 [Logging]
 EnableRemote = false

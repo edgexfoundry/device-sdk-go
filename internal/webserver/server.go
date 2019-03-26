@@ -25,7 +25,7 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/gorilla/mux"
 )

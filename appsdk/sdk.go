@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package edgexsdk
+package appsdk
 
 import (
 	"errors"
@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
@@ -33,13 +34,12 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	registry "github.com/edgexfoundry/go-mod-registry"
 	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
@@ -47,7 +47,7 @@ import (
 
 // AppFunctionsSDK ...
 type AppFunctionsSDK struct {
-	transforms     []func(edgexcontext excontext.Context, params ...interface{}) (bool, interface{})
+	transforms     []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{})
 	ServiceKey     string
 	configProfile  string
 	configDir      string
@@ -60,7 +60,7 @@ type AppFunctionsSDK struct {
 }
 
 // SetPipeline defines the order in which each function will be called as each event comes in.
-func (sdk *AppFunctionsSDK) SetPipeline(transforms ...func(edgexcontext excontext.Context, params ...interface{}) (bool, interface{})) error {
+func (sdk *AppFunctionsSDK) SetPipeline(transforms ...func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{})) error {
 	if len(transforms) == 0 {
 		return errors.New("No transforms provided to pipeline")
 	}
@@ -69,7 +69,7 @@ func (sdk *AppFunctionsSDK) SetPipeline(transforms ...func(edgexcontext excontex
 }
 
 // FilterByDeviceID ...
-func (sdk *AppFunctionsSDK) FilterByDeviceID(deviceIDs []string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) FilterByDeviceID(deviceIDs []string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	transforms := transforms.Filter{
 		FilterValues: deviceIDs,
 	}
@@ -77,7 +77,7 @@ func (sdk *AppFunctionsSDK) FilterByDeviceID(deviceIDs []string) func(excontext.
 }
 
 // FilterByValueDescriptor ...
-func (sdk *AppFunctionsSDK) FilterByValueDescriptor(valueIDs []string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) FilterByValueDescriptor(valueIDs []string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	transforms := transforms.Filter{
 		FilterValues: valueIDs,
 	}
@@ -85,20 +85,20 @@ func (sdk *AppFunctionsSDK) FilterByValueDescriptor(valueIDs []string) func(exco
 }
 
 // TransformToXML ...
-func (sdk *AppFunctionsSDK) TransformToXML() func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) TransformToXML() func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	transforms := transforms.Conversion{}
 	return transforms.TransformToXML
 }
 
 // TransformToJSON ...
-func (sdk *AppFunctionsSDK) TransformToJSON() func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) TransformToJSON() func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	transforms := transforms.Conversion{}
 	return transforms.TransformToJSON
 }
 
 // HTTPPost will add an export function that sends data from the previous function to the specified Endpoint via http POST. Passing an empty string to the mimetype
 // method will default to application/json ...
-func (sdk *AppFunctionsSDK) HTTPPost(url string, mimeType string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) HTTPPost(url string, mimeType string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	transforms := transforms.HTTPSender{
 		URL:      url,
 		MimeType: mimeType,
@@ -107,17 +107,17 @@ func (sdk *AppFunctionsSDK) HTTPPost(url string, mimeType string) func(excontext
 }
 
 // HTTPPostJSON will add an export function that sends data from the previous function to the specified Endpoint via http POST with a mime type of application/json.
-func (sdk *AppFunctionsSDK) HTTPPostJSON(url string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) HTTPPostJSON(url string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	return sdk.HTTPPost(url, "application/json")
 }
 
 // HTTPPostXML will add an export function that sends data from the previous function to the specified Endpoint via http POST with a mime type of application/xml.
-func (sdk *AppFunctionsSDK) HTTPPostXML(url string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) HTTPPostXML(url string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	return sdk.HTTPPost(url, "application/xml")
 }
 
 // MQTTSend ...
-func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key string) func(excontext.Context, ...interface{}) (bool, interface{}) {
+func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
 	// transforms := transforms.MQTTSender{
 	// 	URL: url,
 	// }
@@ -145,7 +145,10 @@ func (sdk *AppFunctionsSDK) MakeItRun() {
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-	trigger.Initialize(sdk.LoggingClient)
+	err := trigger.Initialize(sdk.LoggingClient)
+	if err != nil {
+		sdk.LoggingClient.Error(err.Error())
+	}
 
 	sdk.webserver.StartHTTPServer(sdk.httpErrors)
 	c := <-sdk.httpErrors
@@ -155,20 +158,20 @@ func (sdk *AppFunctionsSDK) MakeItRun() {
 
 }
 
-func (sdk *AppFunctionsSDK) ApplicationSettings() map[string] string {
+func (sdk *AppFunctionsSDK) ApplicationSettings() map[string]string {
 	return sdk.config.ApplicationSettings
 }
 
-func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime runtime.GolangRuntime) trigger.ITrigger {
-	var trigger trigger.ITrigger
+func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime runtime.GolangRuntime) trigger.Trigger {
+	var trigger trigger.Trigger
 	// Need to make dynamic, search for the binding that is input
 
 	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
-		sdk.LoggingClient.Info("Loading Http Trigger")
+		sdk.LoggingClient.Info("HTTP trigger selected")
 		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver}
 	case "MESSAGEBUS":
-		sdk.LoggingClient.Info("Loading messageBus Trigger")
+		sdk.LoggingClient.Info("MessageBus trigger selected")
 		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime}
 	}
 

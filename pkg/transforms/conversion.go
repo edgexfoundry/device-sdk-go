@@ -21,7 +21,7 @@ import (
 	"encoding/xml"
 	"errors"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -30,11 +30,11 @@ type Conversion struct {
 }
 
 // TransformToXML ...
-func (f Conversion) TransformToXML(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
+func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {
 		return false, errors.New("No Event Received")
 	}
-	println("TRANSFORMING TO XML")
+	edgexcontext.LoggingClient.Debug("Transforming to XML")
 	if result, ok := params[0].(models.Event); ok {
 		b, err := xml.Marshal(result)
 		if err != nil {
@@ -49,12 +49,11 @@ func (f Conversion) TransformToXML(edgexcontext excontext.Context, params ...int
 }
 
 // TransformToJSON ...
-func (f Conversion) TransformToJSON(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
+func (f Conversion) TransformToJSON(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {
 		return false, errors.New("No Event Received")
 	}
-	println("TRANSFORMING TO JSON")
-
+	edgexcontext.LoggingClient.Debug("Transforming to JSON")
 	if result, ok := params[0].(models.Event); ok {
 		b, err := json.Marshal(result)
 		if err != nil {

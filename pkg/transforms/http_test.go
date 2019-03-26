@@ -23,15 +23,17 @@ import (
 	"strings"
 	"testing"
 
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 var lc logger.LoggingClient
 
 func init() {
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	context = &appcontext.Context{
+		LoggingClient: lc,
+	}
 }
 func TestHTTPPost(t *testing.T) {
 	const (
@@ -68,21 +70,16 @@ func TestHTTPPost(t *testing.T) {
 		t.Fatal("Could not parse url")
 	}
 
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
 	sender := HTTPSender{
 		URL: `http://` + url.Host + path,
 	}
-	sender.HTTPPost(ctx, msgStr)
+	sender.HTTPPost(context, msgStr)
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
+
 	sender := HTTPSender{}
-	continuePipeline, result := sender.HTTPPost(ctx)
+	continuePipeline, result := sender.HTTPPost(context)
 	if continuePipeline != false {
 		t.Fatal("Pipeline should stop")
 	}
@@ -91,12 +88,10 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 	}
 }
 func TestHTTPPostInvalidParameter(t *testing.T) {
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
+
 	sender := HTTPSender{}
 	data := "HELLO"
-	continuePipeline, result := sender.HTTPPost(ctx, ([]byte)(data))
+	continuePipeline, result := sender.HTTPPost(context, ([]byte)(data))
 	if continuePipeline != false {
 		t.Fatal("Pipeline should stop")
 	}

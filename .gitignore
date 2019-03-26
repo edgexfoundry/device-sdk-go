@@ -2,6 +2,7 @@
 examples/bin
 .vscode
 **/debug
+**/debug.test
 examples/simple-filter-xml-post/simple-filter-xml-post
 examples/simple-filter-xml-mqtt/simple-filter-xml-mqtt
 examples/simple-filter-xml/simple-filter-xml
@@ -10,3 +11,5 @@ go.sum
 *.txt
 *.html
 *.out
+*.dll
+*.exe

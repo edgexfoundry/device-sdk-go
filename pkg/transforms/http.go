@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
 // HTTPSender ...
@@ -33,7 +33,7 @@ type HTTPSender struct {
 }
 
 // HTTPPost ...
-func (sender HTTPSender) HTTPPost(edgexcontext excontext.Context, params ...interface{}) (bool, interface{}) {
+func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")

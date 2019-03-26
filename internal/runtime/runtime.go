@@ -17,21 +17,32 @@
 package runtime
 
 import (
+	"encoding/json"
 	"strconv"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
-	Transforms []func(excontext.Context, ...interface{}) (bool, interface{})
+	Transforms []func(*appcontext.Context, ...interface{}) (bool, interface{})
 }
 
 // ProcessEvent handles processing the event
-func (gr GolangRuntime) ProcessEvent(edgexcontext excontext.Context, event models.Event) error {
+func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope *types.MessageEnvelope) error {
+
 	edgexcontext.LoggingClient.Info("Processing Event: " + strconv.Itoa(len(gr.Transforms)) + " Transforms")
+	var event models.Event
+
+	if err := json.Unmarshal([]byte(envelope.Payload), &event); err != nil {
+		edgexcontext.LoggingClient.Error("Expected JSON EdgeX Event: " + err.Error())
+		return nil
+	}
+
+	edgexcontext.CorrelationID = envelope.CorrelationID
 	var result interface{}
 	var continuePipeline = true
 	for _, trxFunc := range gr.Transforms {

@@ -18,7 +18,7 @@
 package telemetry
 
 import (
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 var LoggingClient logger.LoggingClient

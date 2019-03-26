@@ -16,33 +16,26 @@
 
 package common
 
+import "github.com/edgexfoundry/go-mod-messaging/pkg/types"
+
 // WritableInfo ...
 type WritableInfo struct {
-	SubscribeTopic string
-	PublishTopic   string
-	LogLevel       string
+	LogLevel string
 }
 
 // ConfigurationStruct ...
 type ConfigurationStruct struct {
-	Writable   WritableInfo
-	Logging    LoggingInfo
-	Registry   RegistryInfo
-	Service    ServiceInfo
-	MessageBus MessageBusInfo
-	Binding    Binding
+	Writable            WritableInfo
+	Logging             LoggingInfo
+	Registry            RegistryInfo
+	Service             ServiceInfo
+	MessageBus          types.MessageBusConfig
+	Binding             BindingInfo
 	ApplicationSettings map[string]string
 }
 
 // RegistryInfo ...
 type RegistryInfo struct {
-	Host string
-	Port int
-	Type string
-}
-
-// MessageBusInfo ...
-type MessageBusInfo struct {
 	Host string
 	Port int
 	Type string
@@ -67,9 +60,10 @@ type ServiceInfo struct {
 	Timeout       int
 }
 
-// Binding contains Metadata associated with each binding
-type Binding struct {
-	Type  string
-	Name  string
-	Topic string
+// BindingInfo contains Metadata associated with each binding
+type BindingInfo struct {
+	Type           string
+	Name           string
+	SubscribeTopic string
+	PublishTopic   string
 }
