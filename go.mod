@@ -3,7 +3,7 @@ module github.com/edgexfoundry/device-sdk-go
 require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da
-	github.com/edgexfoundry/go-mod-core-contracts  v0.0.0-20190322062744-ed80a34a1c6e
+	github.com/edgexfoundry/go-mod-core-contracts v0.0.0-20190326164454-587b69238c54
 	github.com/edgexfoundry/go-mod-registry v0.0.0-20190221211212-171439dc16f8
 	github.com/globalsign/mgo v0.0.0-20180615134936-113d3961e731
 	github.com/go-kit/kit v0.8.0
@@ -22,5 +22,6 @@ require (
 	github.com/pelletier/go-toml v1.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/robfig/cron v0.0.0-20180505203441-b41be1df6967
+	github.com/stretchr/testify v1.3.0
 	gopkg.in/yaml.v2 v2.2.2
 )
