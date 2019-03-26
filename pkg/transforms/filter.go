@@ -19,7 +19,7 @@ package transforms
 import (
 	"errors"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -30,9 +30,9 @@ type Filter struct {
 
 // FilterByDeviceID filters events received from CoreData based off the specified DeviceIDs.
 // This function returns an Event
-func (f Filter) FilterByDeviceID(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
+func (f Filter) FilterByDeviceID(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
 
-	println("FILTER BY DEVICEID")
+	edgexcontext.LoggingClient.Debug("Filter by DeviceID")
 
 	if len(params) != 1 {
 		return false, errors.New("No Event Received")
@@ -52,8 +52,9 @@ func (f Filter) FilterByDeviceID(edgexcontext excontext.Context, params ...inter
 
 // FilterByValueDescriptor - filters events received from CoreData based on specified value descriptors
 // This function returns an Event
-func (f Filter) FilterByValueDescriptor(edgexcontext excontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	println("FILTER BY VALUE DESCRIPTOR ID")
+func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
+
+	edgexcontext.LoggingClient.Debug("Filter by ValueDescriptorID")
 
 	if len(params) != 1 {
 		return false, errors.New("No Event Received")

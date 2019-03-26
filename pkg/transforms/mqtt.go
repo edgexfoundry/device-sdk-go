@@ -23,10 +23,10 @@ import (
 	"strconv"
 	"strings"
 
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -37,7 +37,7 @@ type MQTTSender struct {
 }
 
 // MQTTSend ...
-func (sender MQTTSender) MQTTSend(edgexcontext excontext.Context, params ...interface{}) (bool, interface{}) {
+func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
@@ -55,11 +55,11 @@ func (sender MQTTSender) MQTTSend(edgexcontext excontext.Context, params ...inte
 		token.Wait()
 		if token.Error() != nil {
 			return false, token.Error()
-		} else {
-			edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
-			edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data to MQTT Broker: %X", ([]byte)(data)))
-			return true, nil
 		}
+		edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
+		edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data to MQTT Broker: %X", ([]byte)(data)))
+		return true, nil
+
 	}
 	return false, errors.New("Unexpected type received")
 }

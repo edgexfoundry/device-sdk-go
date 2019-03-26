@@ -19,10 +19,14 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/stretchr/testify/assert"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
+
+var context *appcontext.Context
 
 const (
 	devID1        = "id1"
@@ -31,61 +35,55 @@ const (
 	readingValue1 = "123.45"
 )
 
+func init() {
+	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	context = &appcontext.Context{
+		LoggingClient: lc,
+	}
+}
 func TestTransformToXML(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin><Event></Event></Event>`
+	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToXML(excontext.Context{}, eventIn)
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
-	if result.(string) != expectedResult {
-		t.Fatal("result does not match expectedResult")
-	}
+
+	continuePipeline, result := conv.TransformToXML(context, eventIn)
+
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToXMLNoParameters(t *testing.T) {
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToXML(excontext.Context{})
-	if result.(error).Error() != "No Event Received" {
-		t.Fatal("result should be an error that says \"No Event Received\"")
-	}
-	if continuePipeline == true {
-		t.Fatal("Pipeline should stop processing")
-	}
+	continuePipeline, result := conv.TransformToXML(context)
+
+	assert.Equal(t, "No Event Received", result.(error).Error())
+	assert.False(t, continuePipeline)
 }
 func TestTransformToXMLNotAnEvent(t *testing.T) {
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToXML(excontext.Context{}, "")
-	if result.(error).Error() != "Unexpected type received" {
-		t.Fatal("result should be an error that says \"Unexpected type received\"")
-	}
-	if continuePipeline == true {
-		t.Fatal("Pipeline should stop processing")
-	}
+	continuePipeline, result := conv.TransformToXML(context, "")
+
+	assert.Equal(t, "Unexpected type received", result.(error).Error())
+	assert.False(t, continuePipeline)
+
 }
 func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin><Event></Event></Event>`
+	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToXML(excontext.Context{}, eventIn, "", "", "")
+	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
 	if result == nil {
 		t.Fatal("result should not be nil")
 	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
-	if result.(string) != expectedResult {
-		t.Fatal("result does not match expectedResult")
-	}
+
+	assert.True(t, continuePipeline)
+	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 	// Event from device 1
@@ -96,18 +94,14 @@ func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 	eventIn2 := models.Event{
 		Device: devID2,
 	}
-	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id2</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin><Event></Event></Event>`
+	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id2</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToXML(excontext.Context{}, eventIn2, eventIn1, "", "")
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
-	if result.(string) != expectedResult {
-		t.Fatal("result does not match expectedResult")
-	}
+	continuePipeline, result := conv.TransformToXML(context, eventIn2, eventIn1, "", "")
+
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+	assert.Equal(t, expectedResult, result.(string))
+
 }
 
 func TestTransformToJSON(t *testing.T) {
@@ -117,36 +111,28 @@ func TestTransformToJSON(t *testing.T) {
 	}
 	expectedResult := `{"device":"id1"}`
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToJSON(excontext.Context{}, eventIn)
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
-	if result.(string) != expectedResult {
-		t.Fatal("result does not match expectedResult")
-	}
+	continuePipeline, result := conv.TransformToJSON(context, eventIn)
+
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToJSONNoEvent(t *testing.T) {
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToJSON(excontext.Context{})
-	if result.(error).Error() != "No Event Received" {
-		t.Fatal("result should be an error that says \"No Event Received\"")
-	}
-	if continuePipeline == true {
-		t.Fatal("Pipeline should stop processing")
-	}
+	continuePipeline, result := conv.TransformToJSON(context)
+
+	assert.Equal(t, "No Event Received", result.(error).Error())
+	assert.False(t, continuePipeline)
+
 }
 func TestTransformToJSONNotAnEvent(t *testing.T) {
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToJSON(excontext.Context{}, "")
+	continuePipeline, result := conv.TransformToJSON(context, "")
 	if result.(error).Error() != "Unexpected type received" {
 		t.Fatal("Should have an error when wrong type was passed")
 	}
-	if continuePipeline == true {
-		t.Fatal("Pipeline should stop processing")
-	}
+	assert.False(t, continuePipeline)
+
 }
 func TestTransformToJSONMultipleParametersValid(t *testing.T) {
 	// Event from device 1
@@ -155,16 +141,11 @@ func TestTransformToJSONMultipleParametersValid(t *testing.T) {
 	}
 	expectedResult := `{"device":"id1"}`
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToJSON(excontext.Context{}, eventIn, "", "", "")
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
-	if result.(string) != expectedResult {
-		t.Fatal("result does not match expectedResult")
-	}
+	continuePipeline, result := conv.TransformToJSON(context, eventIn, "", "", "")
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+	assert.Equal(t, expectedResult, result.(string))
+
 }
 func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
 	// Event from device 1
@@ -177,14 +158,10 @@ func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
 	}
 	expectedResult := `{"device":"id2"}`
 	conv := Conversion{}
-	continuePipeline, result := conv.TransformToJSON(excontext.Context{}, eventIn2, eventIn1, "", "")
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
-	if result.(string) != expectedResult {
-		t.Fatal("result does not match expectedResult")
-	}
+	continuePipeline, result := conv.TransformToJSON(context, eventIn2, eventIn1, "", "")
+
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+	assert.Equal(t, expectedResult, result.(string))
+
 }

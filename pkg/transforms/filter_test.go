@@ -19,7 +19,9 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -28,6 +30,12 @@ const (
 	descriptor2 = "Descriptor2"
 )
 
+func init() {
+	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	context = &appcontext.Context{
+		LoggingClient: lc,
+	}
+}
 func TestFilterByDeviceIDFound(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
@@ -36,7 +44,7 @@ func TestFilterByDeviceIDFound(t *testing.T) {
 	filter := Filter{
 		FilterValues: []string{"id1"},
 	}
-	continuePipeline, result := filter.FilterByDeviceID(excontext.Context{}, eventIn)
+	continuePipeline, result := filter.FilterByDeviceID(context, eventIn)
 	if result == nil {
 		t.Fatal("result should not be nil")
 	}
@@ -57,7 +65,7 @@ func TestFilterByDeviceIDNotFound(t *testing.T) {
 	filter := Filter{
 		FilterValues: []string{"id2"},
 	}
-	continuePipeline, result := filter.FilterByDeviceID(excontext.Context{}, eventIn)
+	continuePipeline, result := filter.FilterByDeviceID(context, eventIn)
 	if result != nil {
 		t.Fatal("result should be nil")
 	}
@@ -69,7 +77,7 @@ func TestFilterByDeviceIDNoParameters(t *testing.T) {
 	filter := Filter{
 		FilterValues: []string{"id2"},
 	}
-	continuePipeline, result := filter.FilterByDeviceID(excontext.Context{})
+	continuePipeline, result := filter.FilterByDeviceID(context)
 	if result.(error).Error() != "No Event Received" {
 		t.Fatal("Should have an error when no parameter was passed")
 	}
@@ -105,7 +113,7 @@ func TestFilterValue(t *testing.T) {
 	event12.Readings = append(event12.Readings, models.Reading{Name: descriptor1})
 	event12.Readings = append(event12.Readings, models.Reading{Name: descriptor2})
 
-	continuePipeline, res := f1.FilterByValueDescriptor(excontext.Context{})
+	continuePipeline, res := f1.FilterByValueDescriptor(context)
 	if continuePipeline {
 		t.Fatal("Pipeline should stop since no parameter was passed")
 	}
@@ -113,7 +121,7 @@ func TestFilterValue(t *testing.T) {
 		t.Fatal("Should have an error when no parameter was passed")
 	}
 
-	continuePipeline, res = f1.FilterByValueDescriptor(excontext.Context{}, event1)
+	continuePipeline, res = f1.FilterByValueDescriptor(context, event1)
 	if !continuePipeline {
 		t.Fatal("Pipeline should continue")
 	}
@@ -121,7 +129,7 @@ func TestFilterValue(t *testing.T) {
 		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
 	}
 
-	continuePipeline, res = f1.FilterByValueDescriptor(excontext.Context{}, event12)
+	continuePipeline, res = f1.FilterByValueDescriptor(context, event12)
 	if !continuePipeline {
 		t.Fatal("Event should be continuePipeline")
 	}
@@ -129,12 +137,12 @@ func TestFilterValue(t *testing.T) {
 		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
 	}
 
-	continuePipeline, res = f1.FilterByValueDescriptor(excontext.Context{}, event2)
+	continuePipeline, res = f1.FilterByValueDescriptor(context, event2)
 	if continuePipeline {
 		t.Fatal("Event should be filtered out")
 	}
 
-	continuePipeline, res = f12.FilterByValueDescriptor(excontext.Context{}, event1)
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event1)
 	if !continuePipeline {
 		t.Fatal("Event should be continuePipeline")
 	}
@@ -142,7 +150,7 @@ func TestFilterValue(t *testing.T) {
 		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
 	}
 
-	continuePipeline, res = f12.FilterByValueDescriptor(excontext.Context{}, event12)
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event12)
 	if !continuePipeline {
 		t.Fatal("Event should be continuePipeline")
 	}
@@ -150,7 +158,7 @@ func TestFilterValue(t *testing.T) {
 		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
 	}
 
-	continuePipeline, res = f12.FilterByValueDescriptor(excontext.Context{}, event2)
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event2)
 	if !continuePipeline {
 		t.Fatal("Event should be continuePipeline")
 	}

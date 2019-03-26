@@ -20,8 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/edgexsdk"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
 )
 
 const (
@@ -30,7 +29,7 @@ const (
 
 func main() {
 	// 1) First thing to do is to create an instance of the EdgeX SDK and initialize it.
-	edgexSdk := &edgexsdk.AppFunctionsSDK{ServiceKey: serviceKey}
+	edgexSdk := &appsdk.AppFunctionsSDK{ServiceKey: serviceKey}
 	if err := edgexSdk.Initialize(); err != nil {
 		edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK initialization failed: %v\n", err))
 		os.Exit(-1)
@@ -38,14 +37,13 @@ func main() {
 
 	// 2) Since our FilterByDeviceID Function requires the list of DeviceID's we would
 	// like to search for, we'll go ahead and define that now.
-	deviceIDs := []string{"GS1-AC-Drive01"}
+	deviceIDs := []string{"Random-Integer-Generator02"}
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetPipeline(
 		edgexSdk.FilterByDeviceID(deviceIDs),
 		edgexSdk.TransformToXML(),
-		printXMLToConsole,
-		edgexSdk.HTTPPostXML("<YOURENDPOINT>"),
+		edgexSdk.HTTPPostXML("<Your endpoint goes here>"),
 	)
 
 	// 4) This example doesn't have any application's specific configuration settings. Skipping call to sdk.ApplicationSettings
@@ -53,15 +51,4 @@ func main() {
 	// 5) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
 	// to trigger the pipeline.
 	edgexSdk.MakeItRun()
-}
-
-func printXMLToConsole(edgexcontext excontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
-		// We didn't receive a result
-		return false, nil
-	}
-
-	println(params[0].(string))
-	edgexcontext.Complete(params[0].(string))
-	return true, params[0].(string)
 }

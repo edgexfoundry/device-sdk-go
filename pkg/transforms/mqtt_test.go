@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/excontext"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -23,6 +23,9 @@ func init() {
 		Publisher: "",
 		Password:  "",
 		Topic:     "testMQTTTopic",
+	}
+	context = &appcontext.Context{
+		LoggingClient: lc,
 	}
 }
 
@@ -41,11 +44,8 @@ func TestMQTTSend(t *testing.T) {
 		client: MQTT.NewClient(opts),
 		topic:  addr.Topic,
 	}
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
 	dataToSend := "SOME DATA TO SEND"
-	continuePipeline, result := sender.MQTTSend(ctx, dataToSend)
+	continuePipeline, result := sender.MQTTSend(context, dataToSend)
 	assert.True(t, continuePipeline, "Should Continue Pipeline")
 	assert.Equal(t, nil, result, "Should be nil")
 
@@ -53,10 +53,7 @@ func TestMQTTSend(t *testing.T) {
 func TestMQTTSendNoData(t *testing.T) {
 
 	sender := MQTTSender{}
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
-	continuePipeline, result := sender.MQTTSend(ctx)
+	continuePipeline, result := sender.MQTTSend(context)
 	assert.False(t, continuePipeline, "Should Not Continue Pipeline")
 	assert.Equal(t, "No Data Received", result.(error).Error(), "Error should be: No Data Received")
 
@@ -77,11 +74,8 @@ func TestMQTTSendInvalidData(t *testing.T) {
 		client: MQTT.NewClient(opts),
 		topic:  "",
 	}
-	ctx := excontext.Context{
-		LoggingClient: lc,
-	}
 	dataToSend := "SOME DATA TO SEND"
-	continuePipeline, result := sender.MQTTSend(ctx, ([]byte)(dataToSend))
+	continuePipeline, result := sender.MQTTSend(context, ([]byte)(dataToSend))
 	assert.False(t, continuePipeline, "Should Not Continue Pipeline")
 	assert.Equal(t, "Unexpected type received", result.(error).Error(), "Error should be: Unexpected type received")
 

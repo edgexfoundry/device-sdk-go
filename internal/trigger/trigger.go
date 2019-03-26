@@ -17,13 +17,11 @@
 package trigger
 
 import (
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logging"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
-// ITrigger interface is used to hold event data and allow function to
-type ITrigger interface {
+// Trigger interface is used to hold event data and allow function to
+type Trigger interface {
 	// Initialize performs post creation initializations
 	Initialize(logger.LoggingClient) error
-
-	Complete(string)
 }
