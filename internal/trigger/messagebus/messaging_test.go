@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/messaging"
+	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
