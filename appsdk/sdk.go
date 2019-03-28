@@ -41,8 +41,8 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	registry "github.com/edgexfoundry/go-mod-registry"
-	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
+	"github.com/edgexfoundry/go-mod-registry/pkg/types"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 // AppFunctionsSDK ...
@@ -231,7 +231,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 	sdk.config = *configuration
 
 	if sdk.useRegistry {
-		registryConfig := registry.Config{
+		registryConfig := types.Config{
 			Host:          sdk.config.Registry.Host,
 			Port:          sdk.config.Registry.Port,
 			Type:          sdk.config.Registry.Type,
@@ -243,7 +243,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 			ServicePort:   sdk.config.Service.Port,
 		}
 
-		client, err := factory.NewRegistryClient(registryConfig)
+		client, err := registry.NewRegistryClient(registryConfig)
 		if err != nil {
 			return fmt.Errorf("connection to Registry could not be made: %v", err)
 		}
