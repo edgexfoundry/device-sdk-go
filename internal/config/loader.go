@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-registry"
-	"github.com/edgexfoundry/go-mod-registry/pkg/factory"
+	"github.com/edgexfoundry/go-mod-registry/pkg/types"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/pelletier/go-toml"
 )
 
@@ -47,7 +47,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 	var registryMsg string
 	if useRegistry {
 		registryMsg = "Register in registry..."
-		registryConfig := registry.Config{
+		registryConfig := types.Config{
 			Host:          configuration.Registry.Host,
 			Port:          configuration.Registry.Port,
 			Type:          configuration.Registry.Type,
@@ -59,7 +59,7 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 			ServicePort:   configuration.Service.Port,
 		}
 
-		RegistryClient, err = factory.NewRegistryClient(registryConfig)
+		RegistryClient, err = registry.NewRegistryClient(registryConfig)
 		if err != nil {
 			return nil, fmt.Errorf("connection to Registry could not be made: %v", err.Error())
 		}

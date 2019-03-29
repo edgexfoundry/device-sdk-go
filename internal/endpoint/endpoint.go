@@ -9,12 +9,12 @@ package endpoint
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-registry"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 type Endpoint struct {
