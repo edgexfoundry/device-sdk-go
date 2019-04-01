@@ -6,7 +6,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.1.1
 	github.com/edgexfoundry/go-mod-core-contracts v0.0.0-20190326164454-587b69238c54
 	github.com/edgexfoundry/go-mod-messaging v0.0.0-20190327144236-4222ae1edb0b
-	github.com/edgexfoundry/go-mod-registry v0.0.0-20190328183059-03f10c706a16
+	github.com/edgexfoundry/go-mod-registry v0.0.0-20190401195203-552208258719
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 // indirect
 	github.com/gorilla/mux v1.7.0
 	github.com/hashicorp/consul v1.4.2
