@@ -9,5 +9,6 @@ require (
 	github.com/pelletier/go-toml v1.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
+	github.com/ugorji/go/codec v0.0.0-20190316192920-e2bddce071ad
 	gopkg.in/yaml.v2 v2.2.2
 )
