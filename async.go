@@ -35,7 +35,7 @@ func processAsyncResults() {
 
 		for _, cv := range acv.CommandValues {
 			// get the device resource associated with the rsp.RO
-			dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.RO.Object)
+			dr, ok := cache.Profiles().DeviceResource(device.ProfileName, cv.RO.Object)
 			if !ok {
 				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.RO.Object, acv.DeviceName))
 				continue

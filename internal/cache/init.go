@@ -39,9 +39,10 @@ func InitCache() {
 		}
 		newDeviceCache(ds)
 
-		dps := make([]models.DeviceProfile, len(ds))
-		for i, d := range ds {
-			dps[i] = d.Profile
+		dps, err := common.DeviceProfileClient.DeviceProfiles(ctx)
+		if err != nil {
+			common.LoggingClient.Error(fmt.Sprintf("DeviceProfile cache initialization failed: %v", err))
+			dps = make([]models.DeviceProfile, 0)
 		}
 		newProfileCache(dps)
 	})

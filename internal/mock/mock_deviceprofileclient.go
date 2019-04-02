@@ -8,6 +8,7 @@ package mock
 
 import (
 	"context"
+	"errors"
 	"encoding/json"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -51,7 +52,20 @@ func (DeviceProfileClientMock) DeviceProfiles(ctx context.Context) ([]models.Dev
 }
 
 func (DeviceProfileClientMock) DeviceProfileForName(name string, ctx context.Context) (models.DeviceProfile, error) {
-	panic("implement me")
+	populateDeviceProfileMock()
+	dps := []models.DeviceProfile{
+		DeviceProfileRandomBoolGenerator,
+		DeviceProfileRandomIntegerGenerator,
+		DeviceProfileRandomUnsignedGenerator,
+		DeviceProfileRandomFloatGenerator,
+	}
+
+	for _, dp := range dps {
+		if dp.Name == name{
+			return dp, nil
+		}
+	}
+	return models.DeviceProfile{}, errors.New("Item not found")
 }
 
 func (DeviceProfileClientMock) Update(dp models.DeviceProfile, ctx context.Context) error {

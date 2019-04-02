@@ -70,7 +70,6 @@ func CompareCommands(a []models.Command, b []models.Command) bool {
 
 func CompareDevices(a models.Device, b models.Device) bool {
 	labelsOk := CompareStrings(a.Labels, b.Labels)
-	profileOk := CompareDeviceProfiles(a.Profile, b.Profile)
 	serviceOk := CompareDeviceServices(a.Service, b.Service)
 
 	return reflect.DeepEqual(a.Protocols, b.Protocols) &&
@@ -80,8 +79,8 @@ func CompareDevices(a models.Device, b models.Device) bool {
 		a.Location == b.Location &&
 		a.Name == b.Name &&
 		a.OperatingState == b.OperatingState &&
+		a.ProfileName == b.ProfileName &&
 		labelsOk &&
-		profileOk &&
 		serviceOk
 }
 

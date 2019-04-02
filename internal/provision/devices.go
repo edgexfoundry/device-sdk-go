@@ -47,7 +47,7 @@ func createDevice(dc common.DeviceConfig) error {
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	device := &models.Device{
 		Name:           dc.Name,
-		Profile:        prf,
+		ProfileName:    prf.Name,
 		Protocols:      dc.Protocols,
 		Labels:         dc.Labels,
 		Service:        common.CurrentDeviceService,

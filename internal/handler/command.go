@@ -53,7 +53,7 @@ func CommandHandler(vars map[string]string, body string, method string) (*models
 	// NOTE: as currently implemented, CommandExists checks the existence of a deviceprofile
 	// *resource* name, not a *command* name! A deviceprofile's command section is only used
 	// to trigger valuedescriptor creation.
-	exists, err := cache.Profiles().CommandExists(d.Profile.Name, cmd)
+	exists, err := cache.Profiles().CommandExists(d.ProfileName, cmd)
 
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
@@ -80,7 +80,7 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
-	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "get")
+	ros, err := cache.Profiles().ResourceOperations(device.ProfileName, cmd, "get")
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
 		return nil, common.NewNotFoundError(err.Error(), err)
@@ -103,7 +103,7 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 		// deviceprofile resource command operation references another resource command
 		// instead of a device resource (see BoschXDK for reference).
 
-		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
+		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, drName)
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %v", dr))
 		if !ok {
 			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
@@ -125,7 +125,7 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 
 	for _, cv := range results {
 		// get the device resource associated with the rsp.RO
-		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.RO.Object)
+		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, cv.RO.Object)
 		if !ok {
 			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s in Command Result %v", cv.RO.Object, device.Name, cv)
 			common.LoggingClient.Error(msg)
@@ -189,9 +189,9 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 }
 
 func execWriteCmd(device *models.Device, cmd string, params string) common.AppError {
-	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "set")
+	ros, err := cache.Profiles().ResourceOperations(device.ProfileName, cmd, "set")
 	if err != nil {
-		msg := fmt.Sprintf("Handler - execWriteCmd: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.Profile.Name, cmd, err)
+		msg := fmt.Sprintf("Handler - execWriteCmd: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.ProfileName, cmd, err)
 		common.LoggingClient.Error(msg)
 		return common.NewBadRequestError(msg, err)
 	}
@@ -205,7 +205,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 
 	roMap := roSliceToMap(ros)
 
-	cvs, err := parseWriteParams(device.Profile.Name, roMap, params)
+	cvs, err := parseWriteParams(device.ProfileName, roMap, params)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -221,7 +221,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 		// deviceprofile resource command operation references another resource command
 		// instead of a device resource (see BoschXDK for reference).
 
-		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
+		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, drName)
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %v", dr))
 		if !ok {
 			msg := fmt.Sprintf("Handler - execWriteCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)

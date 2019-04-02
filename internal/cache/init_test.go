@@ -14,6 +14,7 @@ import (
 func TestInitCache(t *testing.T) {
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
 	common.DeviceClient = &mock.DeviceClientMock{}
+	common.DeviceProfileClient = &mock.DeviceProfileClientMock{}
 	InitCache()
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
@@ -30,7 +31,8 @@ func TestInitCache(t *testing.T) {
 
 	pMap := make(map[string]models.DeviceProfile, len(dsBeforeAddingToCache)*2)
 	for _, d := range dsBeforeAddingToCache {
-		pMap[d.Profile.Name] = d.Profile
+		dpDeforeAddingToCache, _ := common.DeviceProfileClient.DeviceProfileForName(d.ProfileName, ctx)
+		pMap[d.ProfileName] = dpDeforeAddingToCache
 	}
 	if pl := len(Profiles().All()); pl != len(pMap) {
 		t.Errorf("the expected number of device profiles in cache is %d but got: %d:", len(pMap), pl)

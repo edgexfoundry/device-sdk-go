@@ -129,7 +129,7 @@ func (*Service) ResourceOperation(deviceName string, object string, method strin
 		common.LoggingClient.Error(fmt.Sprintf("retrieving ResourceOperation - Device %s not found", deviceName))
 	}
 
-	ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, object, method)
+	ro, err := cache.Profiles().ResourceOperation(device.ProfileName, object, method)
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
 		return ro, false
@@ -145,7 +145,7 @@ func (*Service) DeviceResource(deviceName string, object string, method string) 
 		common.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))
 	}
 
-	dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, object)
+	dr, ok := cache.Profiles().DeviceResource(device.ProfileName, object)
 	if !ok {
 		return dr, false
 	}
