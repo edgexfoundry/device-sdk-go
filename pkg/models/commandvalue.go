@@ -8,14 +8,15 @@
 package models
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/ugorji/go/codec"
 	"io"
 	"strconv"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // ValueType indicates the type of value being passed back
@@ -59,6 +60,9 @@ const (
 	// Float64 indicates that the value is a float64 that
 	// is stored in CommandValue's NumericRes member.
 	Float64
+	// Binary indicates that the value is a binary payload that
+	// is stored in CommandValue's ByteArrRes member.
+	Binary
 )
 
 type CommandValue struct {
@@ -81,6 +85,11 @@ type CommandValue struct {
 	NumericValue []byte
 	// stringValue is a string value returned as a value by a ProtocolDriver instance.
 	stringValue string
+	// BinValue is a CBOR encoded binary value with a maximum
+	// capacity of 1MB, used to hold binary values returned
+	// by a ProtocolDriver instance. Its decoded value is externally accessed
+	// using BinaryValue() method
+	BinValue []byte
 }
 
 func NewBoolValue(ro *models.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
@@ -167,11 +176,20 @@ func NewFloat64Value(ro *models.ResourceOperation, origin int64, value float64) 
 //NewCommandValue create a CommandValue according to the Type supplied
 func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
-	if t != String {
+	if t == Binary {
+		// assign cv.binValue
+		err = encodeBinaryValue(cv, value)
+	} else if t != String {
 		err = encodeValue(cv, value)
 	} else {
 		cv.stringValue = value.(string)
 	}
+	return
+}
+
+// NewBinaryValue creates a CommandValue with binary payload.
+func NewBinaryValue(ro *models.ResourceOperation, origin int64, value []byte) (cv *CommandValue, err error) {
+	cv = &CommandValue{RO: ro, Origin: origin, Type: Binary, BinValue: value}
 	return
 }
 
@@ -272,6 +290,13 @@ func (cv *CommandValue) ValueToString() (str string) {
 		//binary.Read(reader, binary.BigEndian, &res)
 		//str = strconv.FormatFloat(res, 'f', -1, 64)
 		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+	case Binary:
+		bVal,err := cv.BinaryValue()
+		if err != nil {
+			str = err.Error()
+		}
+		// produce string representation of binary format
+		str = fmt.Sprintf("\n\n% x\n\n\n", bVal)
 	}
 
 	return
@@ -309,6 +334,8 @@ func (cv *CommandValue) String() (str string) {
 		typeStr = "Float32: "
 	case Float64:
 		typeStr = "Float64: "
+	case Binary:
+		typeStr = "Binary: "
 	}
 
 	valueStr := typeStr + cv.ValueToString()
@@ -423,4 +450,33 @@ func (cv *CommandValue) Float64Value() (float64, error) {
 	}
 	err := decodeValue(bytes.NewReader(cv.NumericValue), &value)
 	return value, err
+}
+
+func (cv *CommandValue) BinaryValue() ([]byte, error) {
+	var value []byte
+	if cv.Type != Binary {
+		return value, fmt.Errorf("the CommandValue (%s) data type (%v) is not binary!", cv.String(), cv.Type)
+	}
+	err := decodeBinaryValue(bytes.NewReader(cv.BinValue), &value)
+	return value, err
+}
+
+func encodeBinaryValue(cv *CommandValue, value interface{}) error {
+	buf := new(bytes.Buffer)
+	hCbor := new(codec.CborHandle)
+	enc := codec.NewEncoder(buf, hCbor)
+	err := enc.Encode(value)
+	if err == nil {
+		cv.BinValue = buf.Bytes()
+	}
+	return err
+}
+
+func decodeBinaryValue(reader io.Reader, value interface{}) error {
+	// Provide a buffered reader for go-codec performance
+	var bufReader = bufio.NewReader(reader)
+	var h codec.Handle = new(codec.CborHandle)
+	var dec *codec.Decoder = codec.NewDecoder(bufReader, h)
+	var err error = dec.Decode(value)
+	return err
 }

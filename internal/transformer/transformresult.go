@@ -29,7 +29,7 @@ const (
 )
 
 func TransformReadResult(cv *ds_models.CommandValue, pv models.PropertyValue) error {
-	if cv.Type == ds_models.String || cv.Type == ds_models.Bool {
+	if cv.Type == ds_models.String || cv.Type == ds_models.Bool || cv.Type == ds_models.Binary {
 		return nil // do nothing for String and Bool
 	}
 
