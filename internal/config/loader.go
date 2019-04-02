@@ -123,7 +123,11 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 		confDir = confDir + "/" + profile
 	}
 
-	path := confDir + "/" + common.ConfigFileName
+	appPath, err := os.Getwd()
+	if err != nil {
+		err = fmt.Errorf("could not get application working directory for configuration", err.Error())
+	}
+	path := path.Join(filepath.Dir(appPath), confDir, common.ConfigFileName)
 	_, _ = fmt.Fprintf(os.Stdout, "Loading configuration from: %s\n", path)
 
 	// As the toml package can panic if TOML is invalid,
