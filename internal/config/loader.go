@@ -40,6 +40,9 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 		useRegistry, profile, confDir)
 
 	configuration, err := loadConfigFromFile(profile, confDir)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO: Verify this is correct.
 	stem := common.ConfigRegistryStem + common.ServiceName + "/"
