@@ -124,7 +124,7 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 	} else {
 		dr, ok := cache.Profiles().DeviceResource(profileName, op.Object)
 		if !ok {
-			common.LoggingClient.Error(fmt.Sprintf("can't find Device Object %s to match Resource Operation %v in Device Profile %s", op.Object, op, profileName))
+			common.LoggingClient.Error(fmt.Sprintf("can't find Device Resource %s to match Device Command (Resource Operation) %v in Device Profile %s", op.Object, op, profileName))
 		}
 		desc, err := createDescriptor(op.Parameter, dr)
 		if err != nil {
