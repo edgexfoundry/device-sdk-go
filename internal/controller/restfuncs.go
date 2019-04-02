@@ -99,8 +99,12 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
-		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
-		json.NewEncoder(w).Encode(event)
+		if len(event.Readings[0].BinaryValue) > 0 {
+			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
+		} else {
+			w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
+			json.NewEncoder(w).Encode(event)
+		}
 	}
 }
 
@@ -121,6 +125,7 @@ func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else if len(events) > 0 {
+		// TODO: ... evaluate over range or always use CBOR encoding to handle multiple events?
 		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 		json.NewEncoder(w).Encode(events)
 	}
