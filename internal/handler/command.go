@@ -24,7 +24,7 @@ import (
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func CommandHandler(vars map[string]string, body string, method string) (*models.Event, common.AppError) {
+func CommandHandler(vars map[string]string, body string, method string) (*ds_models.Event, common.AppError) {
 	dKey := vars["id"]
 	cmd := vars["command"]
 
@@ -76,7 +76,7 @@ func CommandHandler(vars map[string]string, body string, method string) (*models
 	}
 }
 
-func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppError) {
+func execReadCmd(device *models.Device, cmd string) (*ds_models.Event, common.AppError) {
 	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
@@ -176,8 +176,9 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 		return nil, common.NewServerError(msg, nil)
 	}
 
-	// create event
-	event := &models.Event{Device: device.Name, Readings: readings}
+	// push to Core Data
+	cevent := models.Event{Device: device.Name, Readings: readings}
+	event := &ds_models.Event{Event: cevent}
 	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
@@ -378,7 +379,7 @@ func createCommandValueForParam(profileName string, ro *models.ResourceOperation
 	return result, err
 }
 
-func CommandAllHandler(cmd string, body string, method string) ([]*models.Event, common.AppError) {
+func CommandAllHandler(cmd string, body string, method string) ([]*ds_models.Event, common.AppError) {
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - CommandAll: execute the %s command %s from all operational devices", method, cmd))
 	devices := filterOperationalDevices(cache.Devices().All())
 
@@ -386,14 +387,14 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(devCount)
 	cmdResults := make(chan struct {
-		event  *models.Event
+		event  *ds_models.Event
 		appErr common.AppError
 	}, devCount)
 
 	for i, _ := range devices {
 		go func(device *models.Device) {
 			defer waitGroup.Done()
-			var event *models.Event = nil
+			var event *ds_models.Event = nil
 			var appErr common.AppError = nil
 			if strings.ToLower(method) == "get" {
 				event, appErr = execReadCmd(device, cmd)
@@ -401,7 +402,7 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 				appErr = execWriteCmd(device, cmd, body)
 			}
 			cmdResults <- struct {
-				event  *models.Event
+				event  *ds_models.Event
 				appErr common.AppError
 			}{event, appErr}
 		}(devices[i])
@@ -410,7 +411,7 @@ func CommandAllHandler(cmd string, body string, method string) ([]*models.Event,
 	close(cmdResults)
 
 	errCount := 0
-	getResults := make([]*models.Event, 0, devCount)
+	getResults := make([]*ds_models.Event, 0, devCount)
 	var appErr common.AppError
 	for r := range cmdResults {
 		if r.appErr != nil {
