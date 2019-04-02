@@ -22,6 +22,10 @@ resources:
             - { operation: "get", object: "SwitchButton", property: "value", parameter: "Switch" }
         set:
             - { operation: "set", object: "SwitchButton", property: "value", parameter: "Switch" }
+    -
+        name: "Image"
+        get:
+          - { operation: "get", object: "SwitchButton", property: "value", parameter: "Image" }
 
 commands:
   -
@@ -48,3 +52,16 @@ commands:
         code: "503"
         description: "service unavailable"
         expectedValues: []
+  -
+    name: "Image"
+    get:
+        path: "/api/v1/device/{deviceId}/Image"
+        responses:
+          -
+            code: "200"
+            description: "CBOR encoded image transmitted as event to Core-Data"
+            expectedValues: ["Switch"]
+          -
+            code: "503"
+            description: "service unavailable"
+            expectedValues: []
