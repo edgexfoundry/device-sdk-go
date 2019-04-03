@@ -35,7 +35,7 @@ test:
 	$(GO) test ./... -cover
 	$(GO) vet ./...
 	gofmt -l .
-	[ "`gofmt -l -w .`" = "" ]
+	[ "`gofmt -l .`" = "" ]
 
 clean:
 	rm -f $(MICROSERVICES)
