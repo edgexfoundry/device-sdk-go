@@ -11,12 +11,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"net/http"
 	"reflect"
 	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
