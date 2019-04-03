@@ -62,6 +62,6 @@ commands:
             description: "CBOR encoded image transmitted as event to Core-Data"
             expectedValues: ["Switch"]
           -
-            code: "503"
-            description: "service unavailable"
+            code: "500"
+            description: "Internal Server Error"
             expectedValues: []
