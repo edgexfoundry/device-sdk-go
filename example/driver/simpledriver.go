@@ -83,7 +83,6 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 		err = fmt.Errorf("SimpleDriver.HandleReadCommands; too many command requests; only one supported")
 		return
 	}
-	// reqs[0].RO.Object == "onvif_profiles"
 	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: protocols: %v operation: %v attributes: %v", protocols, reqs[0].RO.Operation, reqs[0].DeviceResource.Attributes))
 
 	res = make([]*ds_models.CommandValue, 1)
