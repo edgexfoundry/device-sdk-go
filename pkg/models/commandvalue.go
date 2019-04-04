@@ -65,6 +65,11 @@ const (
 	Binary
 )
 
+const (
+	// Policy limits should be located in go-mod-core-contract?
+	MaxBinaryBytes = 1048576
+)
+
 type CommandValue struct {
 	// RO is a pointer to the ResourceOperation that triggered the
 	// CommandResult to be returned from the ProtocolDriver instance.
@@ -187,8 +192,11 @@ func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface
 	return
 }
 
-// NewBinaryValue creates a CommandValue with binary payload.
+// NewBinaryValue creates a CommandValue with binary payload and enforces the memory limit for event readings.
 func NewBinaryValue(ro *models.ResourceOperation, origin int64, value []byte) (cv *CommandValue, err error) {
+	if binary.Size(value) > MaxBinaryBytes {
+		return nil, fmt.Errorf("Requested CommandValue payload exceeds limit for binary readings (%v bytes)", MaxBinaryBytes)
+	}
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Binary, BinValue: value}
 	return
 }
