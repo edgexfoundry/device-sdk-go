@@ -37,7 +37,6 @@ func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.R
 	reading := &models.Reading{Name: cv.RO.Parameter, Device: devName}
 	if cv.Type == ds_models.Binary {
 		reading.BinaryValue = cv.BinValue
-		// reading.Value = "BinaryValue holds this reading"
 	} else {
 		reading.Value = cv.ValueToString()
 	}
@@ -52,27 +51,17 @@ func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.R
 	return reading
 }
 
-func SendEvent(event *models.Event) {
+func SendEvent(event *ds_models.Event) {
 	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
-	ctx = attachContentTypeContext(event, ctx)
-	_, err := EventClient.Add(event, ctx)
+	ct := clients.ContentTypeJSON
+	if event.HasBinaryValue() {
+		ct = clients.ContentTypeCBOR
+	}
+	ctx = context.WithValue(ctx, clients.ContentType, ct)
+	_, err := EventClient.Add(&event.Event, ctx)
 	if err != nil {
 		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
 	}
-}
-
-func attachContentTypeContext(event *models.Event, ctx context.Context) context.Context {
-	ct := clients.ContentTypeJSON
-	// if 1+ readings have binary content we will CBOR encode (or request client to CBOR encode)
-	if len(event.Readings) > 0 {
-		for r := range event.Readings {
-			if len(event.Readings[r].BinaryValue) > 0 /* ds_models.Binary */ {
-				ct = clients.ContentTypeCBOR
-			}
-		}
-	}
-	ctx = context.WithValue(ctx, clients.ContentType, ct)
-	return ctx
 }
 
 func CompareCommands(a []models.Command, b []models.Command) bool {
