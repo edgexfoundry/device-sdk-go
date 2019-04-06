@@ -14,6 +14,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path"
+	"path/filepath"
 	"strconv"
 	"syscall"
 	"time"
@@ -40,6 +42,9 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 		useRegistry, profile, confDir)
 
 	configuration, err := loadConfigFromFile(profile, confDir)
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO: Verify this is correct.
 	stem := common.ConfigRegistryStem + common.ServiceName + "/"
@@ -116,12 +121,13 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 		confDir = common.ConfigDirectory
 	}
 
-	if len(profile) > 0 {
-		confDir = confDir + "/" + profile
+	path := path.Join(confDir, common.ConfigFileName)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		err = fmt.Errorf("Could not create absolute path to load configuration: %s; %v", path, err.Error())
+		return nil, err
 	}
-
-	path := confDir + "/" + common.ConfigFileName
-	_, _ = fmt.Fprintf(os.Stdout, "Loading configuration from: %s\n", path)
+	fmt.Fprintln(os.Stdout, fmt.Sprintf("Loading configuration from: %s\n", absPath))
 
 	// As the toml package can panic if TOML is invalid,
 	// or elements are found that don't match members of
@@ -136,7 +142,7 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 	config = &common.Config{}
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("could not load configuration file (%s): %v", path, err.Error())
+		return nil, fmt.Errorf("Could not load configuration file (%s): %v\nBe sure to change to program folder or set working directory.", path, err.Error())
 	}
 
 	// Decode the configuration from TOML
