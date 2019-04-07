@@ -141,6 +141,8 @@ type DeviceConfig struct {
 	Labels []string
 	// Protocols for the device - stores protocol properties
 	Protocols map[string]models.ProtocolProperties
+	// AutoEvent supports auto-generated events sourced from a device service
+	AutoEvents []models.AutoEvent
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
