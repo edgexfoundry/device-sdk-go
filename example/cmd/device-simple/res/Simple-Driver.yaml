@@ -15,6 +15,15 @@ deviceResources:
             units:
                 { type: "String", readWrite: "R", defaultValue: "On/Off" }
 
+    -
+        name: "Image"
+        description: "Visual representation of Switch On/Off."
+        properties:
+            value:
+                { type: "Binary", readWrite: "R" }
+            units:
+                { type: "Binary", readWrite: "R", defaultValue: "On/Off" }
+
 resources:
     -
         name: "Switch"
@@ -60,7 +69,7 @@ commands:
           -
             code: "200"
             description: "CBOR encoded image transmitted as event to Core-Data"
-            expectedValues: ["Switch"]
+            expectedValues: ["Image"]
           -
             code: "500"
             description: "Internal Server Error"
