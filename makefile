@@ -33,6 +33,9 @@ docker:
 
 test:
 	$(GO) test ./... -cover
+	$(GO) vet ./...
+	gofmt -l .
+	[ "`gofmt -l .`" = "" ]
 
 clean:
 	rm -f $(MICROSERVICES)
