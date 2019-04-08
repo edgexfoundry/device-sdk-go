@@ -91,11 +91,12 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 		cv, _ := ds_models.NewBoolValue(&reqs[0].RO, now, s.switchButton)
 		res[0] = cv
 	} else 	if reqs[0].RO.Parameter == "Image" {
+		// Show a binary/image representation of the switch's on/off value
 		buf := new(bytes.Buffer)
 		if s.switchButton == true {
-			err = getImageBytes("./res/humans.png", buf)
+			err = getImageBytes("./res/on.png", buf)
 		} else {
-			err = getImageBytes("./res/others.jpg", buf)
+			err = getImageBytes("./res/off.jpg", buf)
 		}
 		cvb, _ := ds_models.NewBinaryValue(&reqs[0].RO, now, buf.Bytes())
 		res[0] = cvb
