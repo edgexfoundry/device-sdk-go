@@ -99,13 +99,8 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
-		if event.HasBinaryValue() {
-			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
-			event.CBOR()
-		} else {
-			w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
-			json.NewEncoder(w).Encode(event)
-		}
+		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
+		json.NewEncoder(w).Encode(event)
 	}
 }
 
