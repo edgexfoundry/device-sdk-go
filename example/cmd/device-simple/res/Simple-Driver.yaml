@@ -17,7 +17,7 @@ deviceResources:
 
     -
         name: "Image"
-        description: "Visual representation of Switch On/Off."
+        description: "Visual representation of Switch state."
         properties:
             value:
                 { type: "Binary", readWrite: "R" }
@@ -34,7 +34,7 @@ resources:
     -
         name: "Image"
         get:
-          - { operation: "get", object: "SwitchButton", property: "value", parameter: "Image" }
+          - { operation: "get", object: "Image", property: "value", parameter: "Image" }
 
 commands:
   -
