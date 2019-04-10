@@ -13,10 +13,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/ugorji/go/codec"
 	"io"
 	"strconv"
+
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/ugorji/go/codec"
 )
 
 // ValueType indicates the type of value being passed back
@@ -73,7 +74,7 @@ const (
 type CommandValue struct {
 	// RO is a pointer to the ResourceOperation that triggered the
 	// CommandResult to be returned from the ProtocolDriver instance.
-	RO *models.ResourceOperation
+	RO *contract.ResourceOperation
 	// Origin is an int64 value which indicates the time the reading
 	// contained in the CommandValue was read by the ProtocolDriver
 	// instance.
@@ -97,89 +98,89 @@ type CommandValue struct {
 	BinValue []byte
 }
 
-func NewBoolValue(ro *models.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
+func NewBoolValue(ro *contract.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Bool}
 	err = encodeValue(cv, value)
 	return
 }
 
-func NewStringValue(ro *models.ResourceOperation, origin int64, value string) (cv *CommandValue) {
+func NewStringValue(ro *contract.ResourceOperation, origin int64, value string) (cv *CommandValue) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: String, stringValue: value}
 	return
 }
 
 // NewUint8Value creates a CommandValue of Type Uint8 with the given value.
-func NewUint8Value(ro *models.ResourceOperation, origin int64, value uint8) (cv *CommandValue, err error) {
+func NewUint8Value(ro *contract.ResourceOperation, origin int64, value uint8) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint8}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint16Value creates a CommandValue of Type Uint16 with the given value.
-func NewUint16Value(ro *models.ResourceOperation, origin int64, value uint16) (cv *CommandValue, err error) {
+func NewUint16Value(ro *contract.ResourceOperation, origin int64, value uint16) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint16}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint32Value creates a CommandValue of Type Uint32 with the given value.
-func NewUint32Value(ro *models.ResourceOperation, origin int64, value uint32) (cv *CommandValue, err error) {
+func NewUint32Value(ro *contract.ResourceOperation, origin int64, value uint32) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint32}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint64Value creates a CommandValue of Type Uint64 with the given value.
-func NewUint64Value(ro *models.ResourceOperation, origin int64, value uint64) (cv *CommandValue, err error) {
+func NewUint64Value(ro *contract.ResourceOperation, origin int64, value uint64) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint64}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt8Value creates a CommandValue of Type Int8 with the given value.
-func NewInt8Value(ro *models.ResourceOperation, origin int64, value int8) (cv *CommandValue, err error) {
+func NewInt8Value(ro *contract.ResourceOperation, origin int64, value int8) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Int8}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt16Value creates a CommandValue of Type Int16 with the given value.
-func NewInt16Value(ro *models.ResourceOperation, origin int64, value int16) (cv *CommandValue, err error) {
+func NewInt16Value(ro *contract.ResourceOperation, origin int64, value int16) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Int16}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt32Value creates a CommandValue of Type Int32 with the given value.
-func NewInt32Value(ro *models.ResourceOperation, origin int64, value int32) (cv *CommandValue, err error) {
+func NewInt32Value(ro *contract.ResourceOperation, origin int64, value int32) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Int32}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt64Value creates a CommandValue of Type Int64 with the given value.
-func NewInt64Value(ro *models.ResourceOperation, origin int64, value int64) (cv *CommandValue, err error) {
+func NewInt64Value(ro *contract.ResourceOperation, origin int64, value int64) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Int64}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewFloat32Value creates a CommandValue of Type Float32 with the given value.
-func NewFloat32Value(ro *models.ResourceOperation, origin int64, value float32) (cv *CommandValue, err error) {
+func NewFloat32Value(ro *contract.ResourceOperation, origin int64, value float32) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Float32}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewFloat64Value creates a CommandValue of Type Float64 with the given value.
-func NewFloat64Value(ro *models.ResourceOperation, origin int64, value float64) (cv *CommandValue, err error) {
+func NewFloat64Value(ro *contract.ResourceOperation, origin int64, value float64) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: Float64}
 	err = encodeValue(cv, value)
 	return
 }
 
 //NewCommandValue create a CommandValue according to the Type supplied
-func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
+func NewCommandValue(ro *contract.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
 	if t == Binary {
 		// assign cv.binValue
@@ -193,7 +194,7 @@ func NewCommandValue(ro *models.ResourceOperation, origin int64, value interface
 }
 
 // NewBinaryValue creates a CommandValue with binary payload and enforces the memory limit for event readings.
-func NewBinaryValue(ro *models.ResourceOperation, origin int64, value []byte) (cv *CommandValue, err error) {
+func NewBinaryValue(ro *contract.ResourceOperation, origin int64, value []byte) (cv *CommandValue, err error) {
 	if binary.Size(value) > MaxBinaryBytes {
 		return nil, fmt.Errorf("Requested CommandValue payload exceeds limit for binary readings (%v bytes)", MaxBinaryBytes)
 	}
