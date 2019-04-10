@@ -105,12 +105,12 @@ func profileSliceToMap(profiles []models.DeviceProfile) map[string]models.Device
 }
 
 func CreateDescriptorsFromProfile(profile *models.DeviceProfile) {
-	prs := profile.Resources
-	for _, pr := range prs {
-		for _, op := range pr.Get {
+	dcs := profile.DeviceCommands
+	for _, dc := range dcs {
+		for _, op := range dc.Get {
 			createDescriptorFromResourceOperation(profile.Name, op)
 		}
-		for _, op := range pr.Set {
+		for _, op := range dc.Set {
 			createDescriptorFromResourceOperation(profile.Name, op)
 		}
 	}

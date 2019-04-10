@@ -196,7 +196,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = models.Addressable{
-				BaseObject: models.BaseObject{
+				Timestamps: models.Timestamps{
 					Origin: millis,
 				},
 				Name:       common.ServiceName,

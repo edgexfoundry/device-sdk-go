@@ -141,10 +141,10 @@ func TestProfileCache_DeviceResource(t *testing.T) {
 func TestProfileCache_CommandExists(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.CommandExists(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.Commands[0].Name); err == nil {
+	if _, err := dpc.CommandExists(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if exists, err := dpc.CommandExists(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.Commands[0].Name); err != nil {
+	if exists, err := dpc.CommandExists(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else if !exists {
 		t.Error("DeviceProfileRandomBoolGenerator.Commands[0] exists in cache, the returned value should be true")
@@ -158,22 +158,22 @@ func TestProfileCache_CommandExists(t *testing.T) {
 func TestProfileCache_ResourceOperations(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.Commands[0].Name, getOpsStr); err == nil {
+	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, getOpsStr); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.Commands[0].Name, setOpsStr); err == nil {
+	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, setOpsStr); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
 
-	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.Commands[0].Name, getOpsStr); err != nil {
+	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, getOpsStr); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
-		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.Resources[0].Get, ros)
+		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get, ros)
 	}
-	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.Commands[0].Name, setOpsStr); err != nil {
+	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, setOpsStr); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
-		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.Resources[0].Set, ros)
+		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Set, ros)
 	}
 
 	if _, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", getOpsStr); err == nil {
@@ -184,22 +184,22 @@ func TestProfileCache_ResourceOperations(t *testing.T) {
 func TestProfileCache_ResourceOperation(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.Resources[0].Get[0].Object, getOpsStr); err == nil {
+	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, getOpsStr); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.Resources[0].Get[0].Object, setOpsStr); err == nil {
+	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, setOpsStr); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
 
-	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.Resources[0].Get[0].Object, getOpsStr); err != nil {
+	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, getOpsStr); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
-		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.Resources[0].Get[0], ro)
+		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0], ro)
 	}
-	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.Resources[0].Get[0].Object, getOpsStr); err != nil {
+	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, getOpsStr); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
-		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.Resources[0].Get[0], ro)
+		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0], ro)
 	}
 
 	if _, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", getOpsStr); err == nil {

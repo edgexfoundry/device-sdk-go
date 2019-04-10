@@ -40,9 +40,9 @@ type profileCache struct {
 	dpMap    map[string]models.DeviceProfile // key is DeviceProfile name
 	nameMap  map[string]string               // key is id, and value is DeviceProfile name
 	drMap    map[string]map[string]models.DeviceResource
-	getOpMap map[string]map[string][]models.ResourceOperation
+	dcMap    map[string]map[string][]models.ResourceOperation
 	setOpMap map[string]map[string][]models.ResourceOperation
-	cmdMap   map[string]map[string]models.Command
+	ccMap    map[string]map[string]models.Command
 }
 
 func (p *profileCache) ForName(name string) (models.DeviceProfile, bool) {
@@ -77,8 +77,8 @@ func (p *profileCache) Add(profile models.DeviceProfile) error {
 	p.dpMap[profile.Name] = profile
 	p.nameMap[profile.Id] = profile.Name
 	p.drMap[profile.Name] = deviceResourceSliceToMap(profile.DeviceResources)
-	p.getOpMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.Resources)
-	p.cmdMap[profile.Name] = commandSliceToMap(profile.Commands)
+	p.dcMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.DeviceCommands)
+	p.ccMap[profile.Name] = commandSliceToMap(profile.CoreCommands)
 	return nil
 }
 
@@ -137,9 +137,9 @@ func (p *profileCache) RemoveByName(name string) error {
 	delete(p.dpMap, name)
 	delete(p.nameMap, profile.Id)
 	delete(p.drMap, name)
-	delete(p.getOpMap, name)
+	delete(p.dcMap, name)
 	delete(p.setOpMap, name)
-	delete(p.cmdMap, name)
+	delete(p.ccMap, name)
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 // CommandExists returns a bool indicating whether the specified command exists for the
 // specified (by name) device. If the specified device doesn't exist, an error is returned.
 func (p *profileCache) CommandExists(profileName string, cmd string) (bool, error) {
-	commands, ok := p.cmdMap[profileName]
+	commands, ok := p.ccMap[profileName]
 	if !ok {
 		err := fmt.Errorf("profiles: CommandExists: specified profile: %s not found", profileName)
 		return false, err
@@ -175,7 +175,7 @@ func (p *profileCache) ResourceOperations(profileName string, cmd string, method
 	var rosMap map[string][]models.ResourceOperation
 	var ok bool
 	if strings.ToLower(method) == getOpsStr {
-		if rosMap, ok = p.getOpMap[profileName]; !ok {
+		if rosMap, ok = p.dcMap[profileName]; !ok {
 			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
 		}
 	} else if strings.ToLower(method) == setOpsStr {
@@ -196,7 +196,7 @@ func (p *profileCache) ResourceOperation(profileName string, object string, meth
 	var rosMap map[string][]models.ResourceOperation
 	var ok bool
 	if strings.ToLower(method) == getOpsStr {
-		if rosMap, ok = p.getOpMap[profileName]; !ok {
+		if rosMap, ok = p.dcMap[profileName]; !ok {
 			return ro, fmt.Errorf("profiles: ResourceOperation: specified profile: %s not found", profileName)
 		}
 	} else if strings.ToLower(method) == setOpsStr {
@@ -234,10 +234,10 @@ func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 		dpMap[dp.Name] = dp
 		nameMap[dp.Id] = dp.Name
 		drMap[dp.Name] = deviceResourceSliceToMap(dp.DeviceResources)
-		getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.Resources)
-		cmdMap[dp.Name] = commandSliceToMap(dp.Commands)
+		getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.DeviceCommands)
+		cmdMap[dp.Name] = commandSliceToMap(dp.CoreCommands)
 	}
-	pc = &profileCache{dpMap: dpMap, nameMap: nameMap, drMap: drMap, getOpMap: getOpMap, setOpMap: setOpMap, cmdMap: cmdMap}
+	pc = &profileCache{dpMap: dpMap, nameMap: nameMap, drMap: drMap, dcMap: getOpMap, setOpMap: setOpMap, ccMap: cmdMap}
 	return pc
 }
 
