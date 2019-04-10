@@ -1,3 +1,8 @@
+// -- Mode: Go; indent-tabs-mode: t --
+//
+// Copyright (C) 2019 Intel Ltd
+//
+// SPDX-License-Identifier: Apache-2.0
 package models
 
 import (
