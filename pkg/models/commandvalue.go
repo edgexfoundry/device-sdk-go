@@ -182,13 +182,14 @@ func NewFloat64Value(ro *contract.ResourceOperation, origin int64, value float64
 //NewCommandValue create a CommandValue according to the Type supplied
 func NewCommandValue(ro *contract.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
-	if t == Binary {
-		// assign cv.binValue
-		err = encodeBinaryValue(cv, value)
-	} else if t != String {
-		err = encodeValue(cv, value)
-	} else {
-		cv.stringValue = value.(string)
+	switch t {
+		case Binary:
+			// assign cv.BinValue
+			err = encodeBinaryValue(cv, value)
+		case String:
+			cv.stringValue = value.(string)
+		default:
+			err = encodeValue(cv, value)
 	}
 	return
 }
