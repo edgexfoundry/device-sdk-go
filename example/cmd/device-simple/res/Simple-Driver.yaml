@@ -15,7 +15,7 @@ deviceResources:
             units:
                 { type: "String", readWrite: "R", defaultValue: "On/Off" }
 
-resources:
+deviceCommands:
     -
         name: "Switch"
         get:
@@ -23,7 +23,7 @@ resources:
         set:
             - { operation: "set", object: "SwitchButton", property: "value", parameter: "Switch" }
 
-commands:
+coreCommands:
   -
     name: "Switch"
     get:

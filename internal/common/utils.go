@@ -54,7 +54,7 @@ func SendEvent(event *models.Event) {
 	}
 }
 
-func CompareCommands(a []models.Command, b []models.Command) bool {
+func CompareCoreCommands(a []models.Command, b []models.Command) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -87,9 +87,9 @@ func CompareDevices(a models.Device, b models.Device) bool {
 
 func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool {
 	labelsOk := CompareStrings(a.Labels, b.Labels)
-	cmdsOk := CompareCommands(a.Commands, b.Commands)
+	cmdsOk := CompareCoreCommands(a.CoreCommands, b.CoreCommands)
 	devResourcesOk := CompareDeviceResources(a.DeviceResources, b.DeviceResources)
-	resourcesOk := CompareResources(a.Resources, b.Resources)
+	resourcesOk := CompareDeviceCommands(a.DeviceCommands, b.DeviceCommands)
 
 	// TODO: Objects fields aren't compared as to dr properly
 	// requires introspection as Obects is a slice of interface{}
@@ -130,7 +130,7 @@ func CompareDeviceServices(a models.DeviceService, b models.DeviceService) bool 
 	return a.AdminState == b.AdminState && serviceOk
 }
 
-func CompareResources(a []models.ProfileResource, b []models.ProfileResource) bool {
+func CompareDeviceCommands(a []models.ProfileResource, b []models.ProfileResource) bool {
 	if len(a) != len(b) {
 		return false
 	}
