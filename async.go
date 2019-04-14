@@ -8,15 +8,14 @@
 package device
 
 import (
-	"context"
 	"fmt"
+	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/google/uuid"
 )
 
 // processAsyncResults processes readings that are pushed from
@@ -69,11 +68,9 @@ func processAsyncResults() {
 		}
 
 		// push to Core Data
-		event := &models.Event{Device: acv.DeviceName, Readings: readings}
-		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		_, err := common.EventClient.Add(event, ctx)
-		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Failed to push event %v: %v", event, err))
-		}
+		cevent := models.Event{Device: device.Name, Readings: readings}
+		event := &ds_models.Event{Event: cevent}
+		event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+		common.SendEvent(event)
 	}
 }
