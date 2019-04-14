@@ -301,12 +301,8 @@ func (cv *CommandValue) ValueToString() (str string) {
 		//str = strconv.FormatFloat(res, 'f', -1, 64)
 		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	case Binary:
-		bVal,err := cv.BinaryValue()
-		if err != nil {
-			str = err.Error()
-		}
-		// produce string representation of binary format
-		str = fmt.Sprintf("\n\n% x\n\n\n", bVal)
+		// produce string representation of first 20 bytes of binary value
+		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20]) ))
 	}
 
 	return
