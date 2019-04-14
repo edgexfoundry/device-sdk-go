@@ -99,8 +99,23 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
-		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
-		json.NewEncoder(w).Encode(event)
+		if event.HasBinaryValue() {
+			if len(event.EncodedEvent) <= 0 {
+				var err error
+				event.EncodedEvent, err = event.EncodeBinaryEvent(&event.Event)
+				if err != nil {
+					common.LoggingClient.Error("ERROR encoding binary event!")
+				}
+				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent after CommandHandler returned: %v", string(event.EncodedEvent[:20]) ))
+			}
+			// TODO: Resolve why this header is not included in response from Core-Command to originating caller (while the written body is).
+			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
+			w.Write(event.EncodedEvent)
+		} else {
+			w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
+			json.NewEncoder(w).Encode(event)
+		}
+		//w.Write(event.EncodedEvent) // after handling json path above
 	}
 }
 

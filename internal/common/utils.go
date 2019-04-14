@@ -56,8 +56,23 @@ func SendEvent(event *ds_models.Event) {
 	ct := clients.ContentTypeJSON
 	if event.HasBinaryValue() {
 		ct = clients.ContentTypeCBOR
+		if len(event.EncodedEvent) <= 0 {
+			var err error
+			event.EncodedEvent, err = event.EncodeBinaryEvent(&event.Event)
+			if err != nil {
+				LoggingClient.Error("ERROR encoding binary event!")
+			}
+			LoggingClient.Info(fmt.Sprintf("EncodedEvent within SendEvent: %v", string(event.EncodedEvent[:20]) ))
+		} else {
+			// using existing CBOR encoded event to send over to CoreData...
+			LoggingClient.Info(fmt.Sprintf("EncodedEvent already prepared: %v", string(event.EncodedEvent[:20]) ))
+		}
 	}
 	ctx = context.WithValue(ctx, clients.ContentType, ct)
+	// TODO: EventClient will be updated to expose a method to produce a byte array representing the JSON/CBOR encoded event.
+	//  Alternately, EventClient will support a more generic interface; e.g., accept encoded event []byte and
+	//  allow caller to communicate needed details via Context (such as ContentType, etc.).
+	// _, err := EventClient.Add(&event.EncodedEvent, ctx)
 	_, err := EventClient.Add(&event.Event, ctx)
 	if err != nil {
 		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
