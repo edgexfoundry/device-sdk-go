@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -53,6 +53,7 @@ func createDevice(dc common.DeviceConfig) error {
 		Service:        common.CurrentDeviceService,
 		AdminState:     models.Unlocked,
 		OperatingState: models.Enabled,
+		AutoEvents:     dc.AutoEvents,
 	}
 	device.Origin = millis
 	device.Description = dc.Description

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,19 +10,21 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"runtime"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/handler"
+	"github.com/edgexfoundry/device-sdk-go/internal/handler/callback"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/gorilla/mux"
 )
 
 const (
-	statusOK          string = "OK"
+	statusOK string = "OK"
 )
 
 type ConfigRespMap struct {
@@ -75,7 +77,7 @@ func callbackFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	appErr := handler.CallbackHandler(cbAlert, req.Method)
+	appErr := callback.CallbackHandler(cbAlert, req.Method)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else {
@@ -99,6 +101,9 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
+		// push to Core Data
+		go common.SendEvent(event)
+
 		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 		json.NewEncoder(w).Encode(event)
 	}
@@ -121,6 +126,13 @@ func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else if len(events) > 0 {
+		// push to Core Data
+		for _, event := range events {
+			if event != nil {
+				go common.SendEvent(event)
+			}
+		}
+
 		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 		json.NewEncoder(w).Encode(events)
 	}

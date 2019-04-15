@@ -176,10 +176,9 @@ func execReadCmd(device *models.Device, cmd string) (*models.Event, common.AppEr
 		return nil, common.NewServerError(msg, nil)
 	}
 
-	// push to Core Data
+	// create event
 	event := &models.Event{Device: device.Name, Readings: readings}
 	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
-	go common.SendEvent(event)
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
 	// the rest of the reading JSON + Event JSON length?  Should there be

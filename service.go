@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -108,7 +109,7 @@ func (s *Service) Start(errChan chan error) (err error) {
 	// Setup REST API
 	r := controller.InitRestRoutes()
 
-	//scheduler.StartScheduler()
+	autoevent.GetManager().StartAutoEvents()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
 
 	// TODO: call ListenAndServe in a goroutine
@@ -230,7 +231,7 @@ func makeNewAddressable() (*models.Addressable, error) {
 func (s *Service) Stop(force bool) error {
 	s.stopped = true
 	common.Driver.Stop(force)
-	//scheduler.StopScheduler()
+	autoevent.GetManager().StopAutoEvents()
 	return nil
 }
 

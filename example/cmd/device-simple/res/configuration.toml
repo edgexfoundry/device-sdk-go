@@ -65,3 +65,7 @@ File = "./device-simple.log"
     [DeviceList.Protocols.other]
       Address = "simple01"
       Port = "300"
+  [[DeviceList.AutoEvents]]
+    Frequency = "1s"
+    OnChange = false
+    Resource = "Switch"
