@@ -9,49 +9,54 @@ The SDK is built around the idea of a "Pipeline". A pipeline is a collection of 
 package main
 
 import (
-  "fmt"
-  "github.com/edgexfoundry/app-functions-sdk-go/edgexsdk"
-  "github.com/edgexfoundry/app-functions-sdk-go/excontext"
+	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
+	"os"
 )
+
 func main() {
 
-  // 1) First thing to do is to create an instance of the EdgeX SDK, giving it a service key
-  edgexsdk := &edgexsdk.AppFunctionsSDK{
-    ServiceKey: "SimpleFilterXMLApp" // Key used by Consul
-  }
-  // 2) Next, we need to Initilize the SDK
-  if err := edgexSdk.Initialize(); err != nil {
+	// 1) First thing to do is to create an instance of the EdgeX SDK, giving it a service key
+	edgexSdk := &appsdk.AppFunctionsSDK{
+		ServiceKey: "SimpleFilterXMLApp", // Key used by Consul
+	}
+
+	// 2) Next, we need to initialize the SDK
+	if err := edgexSdk.Initialize(); err != nil {
 		// TODO: Log rather than print
 		fmt.Printf("SDK initialization failed: %v\n", err)
 		os.Exit(-1)
 	}
-  // 2) Since our FilterByDeviceID Function requires the list of DeviceID's we would
-  // like to search for, we'll go ahead and define that now.
-  deviceIDs := []string{"GS1-AC-Drive01"}
-  // 3) This is our pipeline configuration, the collection of functions to
-  // execute everytime an event is triggered.
-  edgexsdk.SetPipeline(
-  	edgexsdk.FilterByDeviceID(deviceIDs),
-  	edgexsdk.TransformToXML(),
-  )
-  
-  // 4) shows how to access the application's specific configuration settings.
-  appSettings:= edgexSdk.ApplicationSettings()
-  if appSettings != nil {
-	appName, ok := appSettings["ApplicationName"]
-	if ok {
-		edgexSdk.LoggingClient.Info(fmt.Sprintf("%s now running...", appName))
-	} else {
-		edgexSdk.LoggingClient.Error("ApplicationName application setting not found")
+
+	// 3) Since our FilterByDeviceID Function requires the list of DeviceID's we would
+	// like to search for, we'll go ahead and define that now.
+	deviceIDs := []string{"GS1-AC-Drive01"}
+
+	// 4) This is our pipeline configuration, the collection of functions to
+	// execute every time an event is triggered.
+	if err := edgexSdk.SetPipeline(edgexSdk.FilterByDeviceID(deviceIDs), edgexSdk.TransformToXML()); err != nil {
+		// TODO: Log rather than print
+		fmt.Printf("SDK SetPipeline failed: %v\n", err)
 		os.Exit(-1)
 	}
-  } else {
-	edgexSdk.LoggingClient.Error("No application settings found")
-	os.Exit(-1)
-  }
-  
-  // 5) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events  // to trigger the pipeline.
-  edgexsdk.MakeItRun()
+
+	// 5) shows how to access the application's specific configuration settings.
+	appSettings := edgexSdk.ApplicationSettings()
+	if appSettings != nil {
+		appName, ok := appSettings["ApplicationName"]
+		if ok {
+			edgexSdk.LoggingClient.Info(fmt.Sprintf("%s now running...", appName))
+		} else {
+			edgexSdk.LoggingClient.Error("ApplicationName application setting not found")
+			os.Exit(-1)
+		}
+	} else {
+		edgexSdk.LoggingClient.Error("No application settings found")
+		os.Exit(-1)
+	}
+
+	// 6) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events to trigger the pipeline.
+	edgexSdk.MakeItRun()
 }
 ```
 
@@ -70,9 +75,9 @@ func printXMLToConsole(edgexcontext *excontext.Context, params ...interface{}) (
 After placing the above function in your code, the next step is to modify the pipeline to call this function:
 
 ```golang
-edgexsdk.SetPipeline(
-  edgexsdk.FilterByDeviceID(deviceIDs),
-  edgexsdk.TransformToXML(),
+edgexSdk.SetPipeline(
+  edgexSdk.FilterByDeviceID(deviceIDs),
+  edgexSdk.TransformToXML(),
   printXMLToConsole //notice this is not a function call, but simply a function pointer. 
 )
 ```
