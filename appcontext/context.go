@@ -31,7 +31,10 @@ type Context struct {
 	LoggingClient logger.LoggingClient
 }
 
-// Complete called when ready to send output and function is finished
+// Complete is optional and provides a way to return the specified data.
+// In the case of an HTTP Trigger, the data will be returned as the http response.
+// In the case of the message bus trigger, the data will be placed on the specifed
+// message bus publish topic and host in the configuration.
 func (context *Context) Complete(output []byte) {
 	context.OutputData = output
 }

@@ -35,14 +35,14 @@ func main() {
 		os.Exit(-1)
 	}
 
-	// 2) Since our FilterByDeviceID Function requires the list of DeviceID's we would
+	// 2) Since our DeviceNameFilter Function requires the list of device names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceIDs := []string{"Random-Integer-Generator02"}
+	deviceNames := []string{"GS1-AC-Drive01"}
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
-	edgexSdk.SetPipeline(
-		edgexSdk.FilterByDeviceID(deviceIDs),
-		edgexSdk.TransformToXML(),
+	edgexSdk.SetFunctionsPipeline(
+		edgexSdk.DeviceNameFilter(deviceNames),
+		edgexSdk.XMLTransform(),
 		edgexSdk.HTTPPostXML("<Your endpoint goes here>"),
 	)
 
