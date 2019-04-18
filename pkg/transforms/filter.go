@@ -54,7 +54,7 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 // This function returns an Event
 func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
 
-	edgexcontext.LoggingClient.Debug("Filter by ValueDescriptorID")
+	edgexcontext.LoggingClient.Debug("Filter by ValueDescriptor")
 
 	if len(params) != 1 {
 		return false, errors.New("No Event Received")
