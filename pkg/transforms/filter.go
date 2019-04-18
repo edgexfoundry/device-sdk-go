@@ -28,9 +28,9 @@ type Filter struct {
 	FilterValues []string
 }
 
-// FilterByDeviceID filters events received from CoreData based off the specified DeviceIDs.
+// FilterByDeviceName filters events received from CoreData based off the specified DeviceIDs.
 // This function returns an Event
-func (f Filter) FilterByDeviceID(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
+func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
 
 	edgexcontext.LoggingClient.Debug("Filter by DeviceID")
 

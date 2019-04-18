@@ -37,9 +37,9 @@ func main() {
 		os.Exit(-1)
 	}
 
-	// 2) Since our FilterByDeviceID Function requires the list of DeviceID's we would
+	// 2) Since our DeviceNameFilter Function requires the list of device names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceIDs := []string{"GS1-AC-Drive01"}
+	deviceNames := []string{"GS1-AC-Drive01"}
 	// Since we are using MQTT, we'll also need to set up the addressable model to
 	// configure it to send to our broker. If you don't have a broker setup you can pull one from docker i.e:
 	// docker run -it -p 1883:1883 -p 9001:9001  eclipse-mosquitto
@@ -54,9 +54,9 @@ func main() {
 	}
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
-	edgexSdk.SetPipeline(
-		edgexSdk.FilterByDeviceID(deviceIDs),
-		edgexSdk.TransformToXML(),
+	edgexSdk.SetFunctionsPipeline(
+		edgexSdk.DeviceNameFilter(deviceNames),
+		edgexSdk.XMLTransform(),
 		printXMLToConsole,
 		edgexSdk.MQTTSend(addressable, "", ""),
 	)

@@ -36,7 +36,7 @@ func init() {
 		LoggingClient: lc,
 	}
 }
-func TestFilterByDeviceIDFound(t *testing.T) {
+func TestFilterByDeviceNameFound(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
 		Device: devID1,
@@ -44,7 +44,7 @@ func TestFilterByDeviceIDFound(t *testing.T) {
 	filter := Filter{
 		FilterValues: []string{"id1"},
 	}
-	continuePipeline, result := filter.FilterByDeviceID(context, eventIn)
+	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
 	if result == nil {
 		t.Fatal("result should not be nil")
 	}
@@ -57,7 +57,7 @@ func TestFilterByDeviceIDFound(t *testing.T) {
 		}
 	}
 }
-func TestFilterByDeviceIDNotFound(t *testing.T) {
+func TestFilterByDeviceNameNotFound(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
 		Device: devID1,
@@ -65,7 +65,7 @@ func TestFilterByDeviceIDNotFound(t *testing.T) {
 	filter := Filter{
 		FilterValues: []string{"id2"},
 	}
-	continuePipeline, result := filter.FilterByDeviceID(context, eventIn)
+	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
 	if result != nil {
 		t.Fatal("result should be nil")
 	}
@@ -73,11 +73,11 @@ func TestFilterByDeviceIDNotFound(t *testing.T) {
 		t.Fatal("Pipeline should stop processing")
 	}
 }
-func TestFilterByDeviceIDNoParameters(t *testing.T) {
+func TestFilterByDeviceNameNoParameters(t *testing.T) {
 	filter := Filter{
 		FilterValues: []string{"id2"},
 	}
-	continuePipeline, result := filter.FilterByDeviceID(context)
+	continuePipeline, result := filter.FilterByDeviceName(context)
 	if result.(error).Error() != "No Event Received" {
 		t.Fatal("Should have an error when no parameter was passed")
 	}

@@ -37,60 +37,60 @@ var lc logger.LoggingClient
 func init() {
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 }
-func TestSetPipelineNoTransforms(t *testing.T) {
+func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
-	err := sdk.SetPipeline()
+	err := sdk.SetFunctionsPipeline()
 	assert.NotNil(t, err, "Should return error")
 	assert.Equal(t, err.Error(), "No transforms provided to pipeline", "Incorrect error message received")
 }
-func TestSetPipelineNoTransformsNil(t *testing.T) {
+func TestSetFunctionsPipelineNoTransformsNil(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		return false, nil
 	}
-	err := sdk.SetPipeline(transform1)
+	err := sdk.SetFunctionsPipeline(transform1)
 	assert.Nil(t, err, "Error should be nil")
 	assert.Equal(t, len(sdk.transforms), 1, "sdk.Transforms should have 1 transform")
 }
 
-func TestFilterByDeviceID(t *testing.T) {
+func TestDeviceNameFilter(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
 	deviceIDs := []string{"GS1-AC-Drive01"}
 
-	trx := sdk.FilterByDeviceID(deviceIDs)
-	assert.NotNil(t, trx, "return result from FilterByDeviceID should not be nil")
+	trx := sdk.DeviceNameFilter(deviceIDs)
+	assert.NotNil(t, trx, "return result from DeviceNameFilter should not be nil")
 }
 
-func TestFilterByValueDescriptor(t *testing.T) {
+func TestValueDescriptorFilter(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
 	valueDescriptors := []string{"GS1-AC-Drive01"}
 
-	trx := sdk.FilterByValueDescriptor(valueDescriptors)
-	assert.NotNil(t, trx, "return result from FilterByValueDescriptor should not be nil")
+	trx := sdk.ValueDescriptorFilter(valueDescriptors)
+	assert.NotNil(t, trx, "return result from ValueDescriptorFilter should not be nil")
 }
 
-func TestTransformToXML(t *testing.T) {
+func TestXMLTransform(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
-	trx := sdk.TransformToXML()
-	assert.NotNil(t, trx, "return result from TransformToXML should not be nil")
+	trx := sdk.XMLTransform()
+	assert.NotNil(t, trx, "return result from XMLTransform should not be nil")
 }
 
-func TestTransformToJSON(t *testing.T) {
+func TestJSONTransform(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 	}
-	trx := sdk.TransformToJSON()
-	assert.NotNil(t, trx, "return result from TransformToJSON should not be nil")
+	trx := sdk.JSONTransform()
+	assert.NotNil(t, trx, "return result from JSONTransform should not be nil")
 }
 
 func TestHTTPPost(t *testing.T) {

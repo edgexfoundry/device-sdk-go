@@ -28,13 +28,13 @@ func main() {
 		os.Exit(-1)
 	}
 
-	// 3) Since our FilterByDeviceID Function requires the list of DeviceID's we would
+	// 3) Since our DeviceNameFilter Function requires the list of Device Names we would
 	// like to search for, we'll go ahead and define that now.
 	deviceIDs := []string{"GS1-AC-Drive01"}
 
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
-	if err := edgexSdk.SetPipeline(edgexSdk.FilterByDeviceID(deviceIDs), edgexSdk.TransformToXML()); err != nil {
+	if err := edgexSdk.SetPipeline(edgexSdk.DeviceNameFilter(deviceIDs), edgexSdk.XMLTransform()); err != nil {
 		// TODO: Log rather than print
 		fmt.Printf("SDK SetPipeline failed: %v\n", err)
 		os.Exit(-1)
@@ -76,8 +76,8 @@ After placing the above function in your code, the next step is to modify the pi
 
 ```golang
 edgexSdk.SetPipeline(
-  edgexSdk.FilterByDeviceID(deviceIDs),
-  edgexSdk.TransformToXML(),
+  edgexSdk.DeviceNameFilter(deviceIDs),
+  edgexSdk.XMLTransform(),
   printXMLToConsole //notice this is not a function call, but simply a function pointer. 
 )
 ```
@@ -133,14 +133,14 @@ Coming soon...
 
 ### Filtering
 There are two basic types of filtering included in the SDK to add to your pipeline. The provided Filter functions return a type of `events.Model`.
- - `FilterByDeviceId([]string deviceIDs)` - This function will filter the event data down to the specified deviceIDs before calling the next function. 
- - `FilterByValueDescriptor([]string valueDescriptors)` - This function will filter the event data down to the specified device value descriptor before calling the next function. 
+ - `DeviceNameFilter([]string deviceNames)` - This function will filter the event data down to the specified device names before calling the next function. 
+ - `ValueDescriptorFilter([]string valueDescriptors)` - This function will filter the event data down to the specified device value descriptor before calling the next function. 
 
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
  
- - `TransformToXML()`  - This function received an `events.Model` type and converts it to XML format. 
- - `TransformToJSON()` - This function received an `events.Model` type and converts it to JSON format. 
+ - `XMLTransform()`  - This function received an `events.Model` type and converts it to XML format. 
+ - `JSONTransform()` - This function received an `events.Model` type and converts it to JSON format. 
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
