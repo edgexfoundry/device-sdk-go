@@ -34,7 +34,7 @@ Using the following setup, this example advanced **App Functions Service** can b
    - [ ] cd to **examples/advanced-filter-convert-publish** folder
    - [ ] run "./**advanced-filter-convert-publish**"
 
-4. Configure and Run **Simple Filter XML Post** App Functions example
+4. Configure and Run **Simple Filter XML** App Functions example
 
    - [ ] cd **examples/simple-filter-xml** folder
 
@@ -43,15 +43,15 @@ Using the following setup, this example advanced **App Functions Service** can b
      ```toml
              [MessageBus]
              Type = 'zero'
-                 [MessageBus.SubscribeHost]
-                     Host = 'localhost'
-                     Port = 5564
-                     Protocol = 'tcp'
                  [MessageBus.PublishHost]
                      Host = '*'
                      Port = 5565
                      Protocol = 'tcp'
-     
+                 [MessageBus.SubscribeHost]
+                     Host = 'localhost'
+                     Port = 5564
+                     Protocol = 'tcp'
+                 
              [Binding]
              Type="messagebus"
              SubscribeTopic="converted"
