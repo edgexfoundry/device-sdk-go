@@ -27,13 +27,13 @@ deviceCommands:
     -
         name: "Switch"
         get:
-            - { operation: "get", object: "SwitchButton", property: "value", parameter: "Switch" }
+            - { operation: "get", object: "SwitchButton", parameter: "Switch" }
         set:
-            - { operation: "set", object: "SwitchButton", property: "value", parameter: "Switch" }
+            - { operation: "set", object: "SwitchButton", parameter: "Switch" }
     -
         name: "Image"
         get:
-          - { operation: "get", object: "Image", property: "value", parameter: "Image" }
+          - { operation: "get", object: "Image", parameter: "Image" }
 
 coreCommands:
   -
