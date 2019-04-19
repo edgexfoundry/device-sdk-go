@@ -12,7 +12,7 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go.Version=$(VERSION)"
 GIT_SHA=$(shell git rev-parse HEAD)
 
 build: $(MICROSERVICES)
-	$(GO) build ./...
+	$(GO) install -tags=safe
 
 example/cmd/device-simple/device-simple:
 	$(GO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple

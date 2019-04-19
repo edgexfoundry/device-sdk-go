@@ -14,6 +14,14 @@ deviceResources:
                 { type: "Bool", readWrite: "RW" }
             units:
                 { type: "String", readWrite: "R", defaultValue: "On/Off" }
+    -
+        name: "Image"
+        description: "Visual representation of Switch state."
+        properties:
+            value:
+                { type: "Binary", readWrite: "R" }
+            units:
+                { type: "Binary", readWrite: "R", defaultValue: "On/Off" }
 
 deviceCommands:
     -
@@ -22,6 +30,10 @@ deviceCommands:
             - { operation: "get", object: "SwitchButton", property: "value", parameter: "Switch" }
         set:
             - { operation: "set", object: "SwitchButton", property: "value", parameter: "Switch" }
+    -
+        name: "Image"
+        get:
+          - { operation: "get", object: "Image", property: "value", parameter: "Image" }
 
 coreCommands:
   -
@@ -48,3 +60,16 @@ coreCommands:
         code: "503"
         description: "service unavailable"
         expectedValues: []
+  -
+    name: "Image"
+    get:
+        path: "/api/v1/device/{deviceId}/Image"
+        responses:
+          -
+            code: "200"
+            description: "CBOR encoded image transmitted as event to Core-Data"
+            expectedValues: ["Image"]
+          -
+            code: "500"
+            description: "Internal Server Error"
+            expectedValues: []

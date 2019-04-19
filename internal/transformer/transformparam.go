@@ -18,8 +18,8 @@ import (
 
 func TransformWriteParameter(cv *ds_models.CommandValue, pv models.PropertyValue) error {
 	var err error
-	if cv.Type == ds_models.String || cv.Type == ds_models.Bool {
-		return nil // do nothing for String and Bool
+	if cv.Type == ds_models.String || cv.Type == ds_models.Bool || cv.Type == ds_models.Binary {
+		return nil // do nothing for String, Bool and Binary
 	}
 
 	value, err := commandValueForTransform(cv)

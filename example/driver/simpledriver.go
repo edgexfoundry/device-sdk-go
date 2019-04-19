@@ -11,7 +11,12 @@
 package driver
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"os"
 	"time"
 
 	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -23,6 +28,38 @@ type SimpleDriver struct {
 	lc           logger.LoggingClient
 	asyncCh      chan<- *ds_models.AsyncValues
 	switchButton bool
+}
+
+func getImageBytes(imgFile string, buf *bytes.Buffer) error {
+	// Read existing image from file
+	img, err := os.Open(imgFile)
+	if err != nil {
+		return err
+	}
+	defer img.Close()
+
+	// TODO: Attach MediaType property, determine if decoding
+	//  early is required (to optimize edge processing)
+
+	// Expect "png" or "jpeg" image type
+	imageData, imageType, err := image.Decode(img)
+	if err != nil {
+		return err
+	}
+	// Finished with file. Reset file pointer
+	img.Seek(0, 0)
+	if imageType == "jpeg" {
+		err = jpeg.Encode(buf, imageData, nil)
+		if err != nil {
+			return err
+		}
+	} else if imageType == "png" {
+		err = png.Encode(buf, imageData)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // DisconnectDevice handles protocol-specific cleanup when a device
@@ -46,14 +83,24 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 		err = fmt.Errorf("SimpleDriver.HandleReadCommands; too many command requests; only one supported")
 		return
 	}
-
 	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: protocols: %v operation: %v attributes: %v", protocols, reqs[0].RO.Operation, reqs[0].DeviceResource.Attributes))
 
 	res = make([]*ds_models.CommandValue, 1)
 	now := time.Now().UnixNano() / int64(time.Millisecond)
-	cv, _ := ds_models.NewBoolValue(&reqs[0].RO, now, s.switchButton)
-	res[0] = cv
-
+	if reqs[0].RO.Parameter == "Switch" {
+		cv, _ := ds_models.NewBoolValue(&reqs[0].RO, now, s.switchButton)
+		res[0] = cv
+	} else 	if reqs[0].RO.Parameter == "Image" {
+		// Show a binary/image representation of the switch's on/off value
+		buf := new(bytes.Buffer)
+		if s.switchButton == true {
+			err = getImageBytes("./res/on.png", buf)
+		} else {
+			err = getImageBytes("./res/off.jpg", buf)
+		}
+		cvb, _ := ds_models.NewBinaryValue(&reqs[0].RO, now, buf.Bytes())
+		res[0] = cvb
+	}
 	return
 }
 

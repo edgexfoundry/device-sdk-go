@@ -12,7 +12,8 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Executor interface {
@@ -22,7 +23,7 @@ type Executor interface {
 
 type executor struct {
 	deviceName   string
-	autoEvent    models.AutoEvent
+	autoEvent    contract.AutoEvent
 	lastReadings map[string]string
 	duration     time.Duration
 	stop         bool
@@ -53,7 +54,12 @@ func (e *executor) Run() {
 				cacheReadings(e, evt.Readings)
 			}
 			common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
-			go common.SendEvent(evt)
+			event := &ds_models.Event{Event: evt.Event}
+			// Attach origin timestamp for readings if none yet specified
+			if event.Origin == 0 {
+				event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+			}
+			go common.SendEvent(event)
 		}
 
 		if evt == nil {
@@ -64,7 +70,7 @@ func (e *executor) Run() {
 	}
 }
 
-func readResource(e *executor) (*models.Event, common.AppError) {
+func readResource(e *executor) (*ds_models.Event, common.AppError) {
 	vars := make(map[string]string, 2)
 	vars[common.NameVar] = e.deviceName
 	vars[common.CommandVar] = e.autoEvent.Resource
@@ -73,13 +79,13 @@ func readResource(e *executor) (*models.Event, common.AppError) {
 	return evt, appErr
 }
 
-func cacheReadings(e *executor, readings []models.Reading) {
+func cacheReadings(e *executor, readings []contract.Reading) {
 	for _, r := range readings {
 		e.lastReadings[r.Name] = r.Value
 	}
 }
 
-func compareReadings(e *executor, readings []models.Reading) bool {
+func compareReadings(e *executor, readings []contract.Reading) bool {
 	for _, r := range readings {
 		v, ok := e.lastReadings[r.Name]
 		if !ok || v != r.Value {
@@ -95,7 +101,7 @@ func (e *executor) Stop() {
 }
 
 // NewExecutor creates an Executor for an AutoEvent
-func NewExecutor(deviceName string, ae models.AutoEvent) (Executor, error) {
+func NewExecutor(deviceName string, ae contract.AutoEvent) (Executor, error) {
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Frequency)
 	if err != nil {
