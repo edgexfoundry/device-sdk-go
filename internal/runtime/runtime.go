@@ -34,7 +34,7 @@ type GolangRuntime struct {
 // ProcessEvent handles processing the event
 func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope *types.MessageEnvelope) error {
 
-	edgexcontext.LoggingClient.Info("Processing Event: " + strconv.Itoa(len(gr.Transforms)) + " Transforms")
+	edgexcontext.LoggingClient.Debug("Processing Event: " + strconv.Itoa(len(gr.Transforms)) + " Transforms")
 	var event models.Event
 
 	if err := json.Unmarshal([]byte(envelope.Payload), &event); err != nil {
