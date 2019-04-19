@@ -67,8 +67,9 @@ const (
 )
 
 const (
-	// Policy limits should be located in go-mod-core-contract?
-	MaxBinaryBytes = 1048576
+	// Policy limits should be located in global config namespace
+	// Currently assigning 16MB (binary), 16 * 2^20 bytes
+	MaxBinaryBytes = 16777216
 )
 
 type CommandValue struct {
