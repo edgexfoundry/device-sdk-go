@@ -12,14 +12,14 @@ import (
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 const Int8Value = int8(123)
 
 type DriverMock struct{}
 
-func (DriverMock) DisconnectDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
+func (DriverMock) DisconnectDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
 	panic("implement me")
 }
 
@@ -27,7 +27,7 @@ func (DriverMock) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.A
 	panic("implement me")
 }
 
-func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
+func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 	res = make([]*dsModels.CommandValue, len(reqs))
 	now := time.Now().UnixNano() / int64(time.Millisecond)
 	var v *dsModels.CommandValue
@@ -44,7 +44,7 @@ func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]mod
 			default:
 				v, _ = dsModels.NewInt8Value(&req.RO, now, Int8Value)
 			case "NoDeviceResourceForResult":
-				ro := models.ResourceOperation{Object: ""}
+				ro := contract.ResourceOperation{Object: ""}
 				v, _ = dsModels.NewInt8Value(&ro, now, Int8Value)
 			case "Error":
 				err = fmt.Errorf("error occurred in HandleReadCommands")
@@ -67,7 +67,7 @@ func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]mod
 	return res, err
 }
 
-func (DriverMock) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []dsModels.CommandRequest, params []*dsModels.CommandValue) error {
+func (DriverMock) HandleWriteCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest, params []*dsModels.CommandValue) error {
 	for _, req := range reqs {
 		if req.RO.Object == "Error" {
 			return fmt.Errorf("error occurred in HandleReadCommands")

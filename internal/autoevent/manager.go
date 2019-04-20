@@ -12,7 +12,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Manager interface {
@@ -55,7 +55,7 @@ func (m *manager) StopAutoEvents() {
 	mutex.Unlock()
 }
 
-func triggerExecutors(deviceName string, autoEvents []models.AutoEvent) []Executor {
+func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent) []Executor {
 	var execs []Executor
 	for _, autoEvent := range autoEvents {
 		exec, err := NewExecutor(deviceName, autoEvent)

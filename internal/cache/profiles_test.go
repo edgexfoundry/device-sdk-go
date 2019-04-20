@@ -1,17 +1,23 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
+//
+// Copyright (C) 2019 IOTech Ltd
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package cache
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-var dps []models.DeviceProfile
+var dps []contract.DeviceProfile
 
 func init() {
 	common.DeviceProfileClient = &mock.DeviceProfileClientMock{}
@@ -20,7 +26,7 @@ func init() {
 }
 
 func TestNewProfileCache(t *testing.T) {
-	dpc := newProfileCache([]models.DeviceProfile{})
+	dpc := newProfileCache([]contract.DeviceProfile{})
 	if _, ok := dpc.(ProfileCache); !ok {
 		t.Error("the newProfileCache function supposed to return a value which holds the ProfileCache type")
 	}
@@ -158,25 +164,25 @@ func TestProfileCache_CommandExists(t *testing.T) {
 func TestProfileCache_ResourceOperations(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, getOpsStr); err == nil {
+	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, common.GetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, setOpsStr); err == nil {
+	if _, err := dpc.ResourceOperations(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, common.SetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
 
-	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, getOpsStr); err != nil {
+	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, common.GetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
 		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get, ros)
 	}
-	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, setOpsStr); err != nil {
+	if ros, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, common.SetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
 		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Set, ros)
 	}
 
-	if _, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", getOpsStr); err == nil {
+	if _, err := dpc.ResourceOperations(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", common.GetCmdMethod); err == nil {
 		t.Error("the input cmd name is not belong to DeviceProfileRandomBoolGenerator, supposed to get an error")
 	}
 }
@@ -184,25 +190,25 @@ func TestProfileCache_ResourceOperations(t *testing.T) {
 func TestProfileCache_ResourceOperation(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, getOpsStr); err == nil {
+	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, common.GetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, setOpsStr); err == nil {
+	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, common.SetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
 
-	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, getOpsStr); err != nil {
+	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, common.GetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
 		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0], ro)
 	}
-	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, getOpsStr); err != nil {
+	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, common.GetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
 		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0], ro)
 	}
 
-	if _, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", getOpsStr); err == nil {
+	if _, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", common.GetCmdMethod); err == nil {
 		t.Error("the input object name of resource operation is not belong to DeviceProfileRandomBoolGenerator, supposed to get an error")
 	}
 }

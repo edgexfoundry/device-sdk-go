@@ -18,22 +18,22 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func CommandHandler(vars map[string]string, body string, method string) (*ds_models.Event, common.AppError) {
-	dKey := vars["id"]
-	cmd := vars["command"]
+func CommandHandler(vars map[string]string, body string, method string) (*dsModels.Event, common.AppError) {
+	dKey := vars[common.IdVar]
+	cmd := vars[common.CommandVar]
 
 	var ok bool
-	var d models.Device
+	var d contract.Device
 	if dKey != "" {
 		d, ok = cache.Devices().ForId(dKey)
 	} else {
-		dKey = vars["name"]
+		dKey = vars[common.NameVar]
 		d, ok = cache.Devices().ForName(dKey)
 	}
 	if !ok {
@@ -42,7 +42,7 @@ func CommandHandler(vars map[string]string, body string, method string) (*ds_mod
 		return nil, common.NewNotFoundError(msg, nil)
 	}
 
-	if d.AdminState == "LOCKED" {
+	if d.AdminState == contract.Locked {
 		msg := fmt.Sprintf("%s is locked; %s", d.Name, method)
 		common.LoggingClient.Error(msg)
 		return nil, common.NewLockedError(msg, nil)
@@ -68,7 +68,7 @@ func CommandHandler(vars map[string]string, body string, method string) (*ds_mod
 		return nil, common.NewNotFoundError(msg, nil)
 	}
 
-	if strings.ToLower(method) == "get" {
+	if strings.ToLower(method) == common.GetCmdMethod {
 		return execReadCmd(&d, cmd)
 	} else {
 		appErr := execWriteCmd(&d, cmd, body)
@@ -76,11 +76,11 @@ func CommandHandler(vars map[string]string, body string, method string) (*ds_mod
 	}
 }
 
-func execReadCmd(device *models.Device, cmd string) (*ds_models.Event, common.AppError) {
-	readings := make([]models.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
+func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.AppError) {
+	readings := make([]contract.Reading, 0, common.CurrentConfig.Device.MaxCmdOps)
 
 	// make ResourceOperations
-	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "get")
+	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, common.GetCmdMethod)
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
 		return nil, common.NewNotFoundError(err.Error(), err)
@@ -93,7 +93,7 @@ func execReadCmd(device *models.Device, cmd string) (*ds_models.Event, common.Ap
 		return nil, common.NewServerError(msg, nil)
 	}
 
-	reqs := make([]ds_models.CommandRequest, len(ros))
+	reqs := make([]dsModels.CommandRequest, len(ros))
 
 	for i, op := range ros {
 		drName := op.Object
@@ -143,7 +143,7 @@ func execReadCmd(device *models.Device, cmd string) (*ds_models.Event, common.Ap
 		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, device)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
-			cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
+			cv = dsModels.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
 		}
 
 		if len(cv.RO.Mappings) > 0 {
@@ -177,8 +177,8 @@ func execReadCmd(device *models.Device, cmd string) (*ds_models.Event, common.Ap
 	}
 
 	// push to Core Data
-	cevent := models.Event{Device: device.Name, Readings: readings}
-	event := &ds_models.Event{Event: cevent}
+	cevent := contract.Event{Device: device.Name, Readings: readings}
+	event := &dsModels.Event{Event: cevent}
 	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
@@ -188,8 +188,8 @@ func execReadCmd(device *models.Device, cmd string) (*ds_models.Event, common.Ap
 	return event, nil
 }
 
-func execWriteCmd(device *models.Device, cmd string, params string) common.AppError {
-	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, "set")
+func execWriteCmd(device *contract.Device, cmd string, params string) common.AppError {
+	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, common.SetCmdMethod)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.Profile.Name, cmd, err)
 		common.LoggingClient.Error(msg)
@@ -212,7 +212,7 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 		return common.NewBadRequestError(msg, err)
 	}
 
-	reqs := make([]ds_models.CommandRequest, len(cvs))
+	reqs := make([]dsModels.CommandRequest, len(cvs))
 	for i, cv := range cvs {
 		drName := cv.RO.Object
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %s", drName))
@@ -251,20 +251,20 @@ func execWriteCmd(device *models.Device, cmd string, params string) common.AppEr
 	return nil
 }
 
-func parseWriteParams(profileName string, roMap map[string]*models.ResourceOperation, params string) ([]*ds_models.CommandValue, error) {
+func parseWriteParams(profileName string, roMap map[string]*contract.ResourceOperation, params string) ([]*dsModels.CommandValue, error) {
 	var paramMap map[string]string
 	err := json.Unmarshal([]byte(params), &paramMap)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Handler - parseWriteParams: parsing Write parameters failed %s, %v", params, err))
-		return []*ds_models.CommandValue{}, err
+		return []*dsModels.CommandValue{}, err
 	}
 
 	if len(paramMap) == 0 {
 		err := fmt.Errorf("no parameters specified")
-		return []*ds_models.CommandValue{}, err
+		return []*dsModels.CommandValue{}, err
 	}
 
-	result := make([]*ds_models.CommandValue, 0, len(paramMap))
+	result := make([]*dsModels.CommandValue, 0, len(paramMap))
 	for k, v := range paramMap {
 		ro, ok := roMap[k]
 		if ok {
@@ -286,26 +286,26 @@ func parseWriteParams(profileName string, roMap map[string]*models.ResourceOpera
 			}
 		} else {
 			err := fmt.Errorf("the parameter %s cannot find the matched ResourceOperation", k)
-			return []*ds_models.CommandValue{}, err
+			return []*dsModels.CommandValue{}, err
 		}
 	}
 
 	return result, nil
 }
 
-func roSliceToMap(ros []models.ResourceOperation) map[string]*models.ResourceOperation {
-	roMap := make(map[string]*models.ResourceOperation, len(ros))
+func roSliceToMap(ros []contract.ResourceOperation) map[string]*contract.ResourceOperation {
+	roMap := make(map[string]*contract.ResourceOperation, len(ros))
 	for i, ro := range ros {
 		roMap[ro.Parameter] = &ros[i]
 	}
 	return roMap
 }
 
-func createCommandValueForParam(profileName string, ro *models.ResourceOperation, v string) (*ds_models.CommandValue, error) {
-	var result *ds_models.CommandValue
+func createCommandValueForParam(profileName string, ro *contract.ResourceOperation, v string) (*dsModels.CommandValue, error) {
+	var result *dsModels.CommandValue
 	var err error
 	var value interface{}
-	var t ds_models.ValueType
+	var t dsModels.ValueType
 
 	dr, ok := cache.Profiles().DeviceResource(profileName, ro.Object)
 	if !ok {
@@ -319,54 +319,54 @@ func createCommandValueForParam(profileName string, ro *models.ResourceOperation
 	switch strings.ToLower(dr.Properties.Value.Type) {
 	case "bool":
 		value, err = strconv.ParseBool(v)
-		t = ds_models.Bool
+		t = dsModels.Bool
 	case "string":
 		value = v
-		t = ds_models.String
+		t = dsModels.String
 	case "uint8":
 		n, e := strconv.ParseUint(v, 10, 8)
 		value = uint8(n)
 		err = e
-		t = ds_models.Uint8
+		t = dsModels.Uint8
 	case "uint16":
 		n, e := strconv.ParseUint(v, 10, 16)
 		value = uint16(n)
 		err = e
-		t = ds_models.Uint16
+		t = dsModels.Uint16
 	case "uint32":
 		n, e := strconv.ParseUint(v, 10, 32)
 		value = uint32(n)
 		err = e
-		t = ds_models.Uint32
+		t = dsModels.Uint32
 	case "uint64":
 		value, err = strconv.ParseUint(v, 10, 64)
-		t = ds_models.Uint64
+		t = dsModels.Uint64
 	case "int8":
 		n, e := strconv.ParseInt(v, 10, 8)
 		value = int8(n)
 		err = e
-		t = ds_models.Int8
+		t = dsModels.Int8
 	case "int16":
 		n, e := strconv.ParseInt(v, 10, 16)
 		value = int16(n)
 		err = e
-		t = ds_models.Int16
+		t = dsModels.Int16
 	case "int32":
 		n, e := strconv.ParseInt(v, 10, 32)
 		value = int32(n)
 		err = e
-		t = ds_models.Int32
+		t = dsModels.Int32
 	case "int64":
 		value, err = strconv.ParseInt(v, 10, 64)
-		t = ds_models.Int64
+		t = dsModels.Int64
 	case "float32":
 		n, e := strconv.ParseFloat(v, 32)
 		value = float32(n)
 		err = e
-		t = ds_models.Float32
+		t = dsModels.Float32
 	case "float64":
 		value, err = strconv.ParseFloat(v, 64)
-		t = ds_models.Float64
+		t = dsModels.Float64
 	}
 
 	if err != nil {
@@ -374,12 +374,12 @@ func createCommandValueForParam(profileName string, ro *models.ResourceOperation
 		return result, err
 	}
 
-	result, err = ds_models.NewCommandValue(ro, origin, value, t)
+	result, err = dsModels.NewCommandValue(ro, origin, value, t)
 
 	return result, err
 }
 
-func CommandAllHandler(cmd string, body string, method string) ([]*ds_models.Event, common.AppError) {
+func CommandAllHandler(cmd string, body string, method string) ([]*dsModels.Event, common.AppError) {
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - CommandAll: execute the %s command %s from all operational devices", method, cmd))
 	devices := filterOperationalDevices(cache.Devices().All())
 
@@ -387,22 +387,22 @@ func CommandAllHandler(cmd string, body string, method string) ([]*ds_models.Eve
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(devCount)
 	cmdResults := make(chan struct {
-		event  *ds_models.Event
+		event  *dsModels.Event
 		appErr common.AppError
 	}, devCount)
 
 	for i, _ := range devices {
-		go func(device *models.Device) {
+		go func(device *contract.Device) {
 			defer waitGroup.Done()
-			var event *ds_models.Event = nil
+			var event *dsModels.Event = nil
 			var appErr common.AppError = nil
-			if strings.ToLower(method) == "get" {
+			if strings.ToLower(method) == common.GetCmdMethod {
 				event, appErr = execReadCmd(device, cmd)
 			} else {
 				appErr = execWriteCmd(device, cmd, body)
 			}
 			cmdResults <- struct {
-				event  *ds_models.Event
+				event  *dsModels.Event
 				appErr common.AppError
 			}{event, appErr}
 		}(devices[i])
@@ -411,7 +411,7 @@ func CommandAllHandler(cmd string, body string, method string) ([]*ds_models.Eve
 	close(cmdResults)
 
 	errCount := 0
-	getResults := make([]*ds_models.Event, 0, devCount)
+	getResults := make([]*dsModels.Event, 0, devCount)
 	var appErr common.AppError
 	for r := range cmdResults {
 		if r.appErr != nil {
@@ -432,10 +432,10 @@ func CommandAllHandler(cmd string, body string, method string) ([]*ds_models.Eve
 
 }
 
-func filterOperationalDevices(devices []models.Device) []*models.Device {
-	result := make([]*models.Device, 0, len(devices))
+func filterOperationalDevices(devices []contract.Device) []*contract.Device {
+	result := make([]*contract.Device, 0, len(devices))
 	for i, d := range devices {
-		if (d.AdminState == models.Locked) || (d.OperatingState == models.Disabled) {
+		if (d.AdminState == contract.Locked) || (d.OperatingState == contract.Disabled) {
 			continue
 		}
 		result = append(result, &devices[i])

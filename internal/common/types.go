@@ -11,7 +11,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	dsModels "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
@@ -140,9 +140,9 @@ type DeviceConfig struct {
 	// Other labels applied to the device to help with searching
 	Labels []string
 	// Protocols for the device - stores protocol properties
-	Protocols map[string]models.ProtocolProperties
+	Protocols map[string]dsModels.ProtocolProperties
 	// AutoEvent supports auto-generated events sourced from a device service
-	AutoEvents []models.AutoEvent
+	AutoEvents []dsModels.AutoEvent
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.

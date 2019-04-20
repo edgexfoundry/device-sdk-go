@@ -1,3 +1,9 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
+//
+// Copyright (C) 2019 IOTech Ltd
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package cache
 
 import (
@@ -6,7 +12,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +34,7 @@ func TestInitCache(t *testing.T) {
 		t.Errorf("the expected number of devices in cache is %d but got: %d:", len(dsBeforeAddingToCache), dl)
 	}
 
-	pMap := make(map[string]models.DeviceProfile, len(dsBeforeAddingToCache)*2)
+	pMap := make(map[string]contract.DeviceProfile, len(dsBeforeAddingToCache)*2)
 	for _, d := range dsBeforeAddingToCache {
 		pMap[d.Profile.Name] = d.Profile
 	}

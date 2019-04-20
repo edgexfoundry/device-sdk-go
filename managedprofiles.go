@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -15,13 +15,13 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
 // AddDeviceProfile adds a new DeviceProfile to the device service and Core Metadata
 // Returns new DeviceProfile id or non-nil error.
-func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err error) {
+func (s *Service) AddDeviceProfile(profile contract.DeviceProfile) (id string, err error) {
 	if p, ok := cache.Profiles().ForName(profile.Name); ok {
 		return p.Id, fmt.Errorf("name conflicted, Profile %s exists", profile.Name)
 	}
@@ -49,7 +49,7 @@ func (s *Service) AddDeviceProfile(profile models.DeviceProfile) (id string, err
 }
 
 // DeviceProfiles return all managed DeviceProfiles from cache
-func (s *Service) DeviceProfiles() []models.DeviceProfile {
+func (s *Service) DeviceProfiles() []contract.DeviceProfile {
 	return cache.Profiles().All()
 }
 
@@ -99,7 +99,7 @@ func (*Service) RemoveDeviceProfileByName(name string) error {
 
 // UpdateDeviceProfile updates the DeviceProfile in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (*Service) UpdateDeviceProfile(profile models.DeviceProfile) error {
+func (*Service) UpdateDeviceProfile(profile contract.DeviceProfile) error {
 	_, ok := cache.Profiles().ForId(profile.Id)
 	if !ok {
 		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", profile.Id)
@@ -123,7 +123,7 @@ func (*Service) UpdateDeviceProfile(profile models.DeviceProfile) error {
 
 // ResourceOperation retrieves the first matched ResourceOpereation instance from cache according to
 // the Device name, Device resource (object) name, and the method (get or set)
-func (*Service) ResourceOperation(deviceName string, object string, method string) (models.ResourceOperation, bool) {
+func (*Service) ResourceOperation(deviceName string, object string, method string) (contract.ResourceOperation, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		common.LoggingClient.Error(fmt.Sprintf("retrieving ResourceOperation - Device %s not found", deviceName))
@@ -139,7 +139,7 @@ func (*Service) ResourceOperation(deviceName string, object string, method strin
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
 // the Device name and Device resource (object) name
-func (*Service) DeviceResource(deviceName string, object string, method string) (models.DeviceResource, bool) {
+func (*Service) DeviceResource(deviceName string, object string, method string) (contract.DeviceResource, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		common.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))

@@ -10,21 +10,21 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
-	DeviceProfileRandomBoolGenerator           = models.DeviceProfile{}
-	DeviceProfileRandomIntegerGenerator        = models.DeviceProfile{}
-	DeviceProfileRandomUnsignedGenerator       = models.DeviceProfile{}
-	DeviceProfileRandomFloatGenerator          = models.DeviceProfile{}
-	DuplicateDeviceProfileRandomFloatGenerator = models.DeviceProfile{}
-	NewDeviceProfile 						   = models.DeviceProfile{}
+	DeviceProfileRandomBoolGenerator           = contract.DeviceProfile{}
+	DeviceProfileRandomIntegerGenerator        = contract.DeviceProfile{}
+	DeviceProfileRandomUnsignedGenerator       = contract.DeviceProfile{}
+	DeviceProfileRandomFloatGenerator          = contract.DeviceProfile{}
+	DuplicateDeviceProfileRandomFloatGenerator = contract.DeviceProfile{}
+	NewDeviceProfile                           = contract.DeviceProfile{}
 )
 
 type DeviceProfileClientMock struct{}
 
-func (DeviceProfileClientMock) Add(dp *models.DeviceProfile, ctx context.Context) (string, error) {
+func (DeviceProfileClientMock) Add(dp *contract.DeviceProfile, ctx context.Context) (string, error) {
 	panic("implement me")
 }
 
@@ -36,13 +36,13 @@ func (DeviceProfileClientMock) DeleteByName(name string, ctx context.Context) er
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) DeviceProfile(id string, ctx context.Context) (models.DeviceProfile, error) {
+func (DeviceProfileClientMock) DeviceProfile(id string, ctx context.Context) (contract.DeviceProfile, error) {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) DeviceProfiles(ctx context.Context) ([]models.DeviceProfile, error) {
+func (DeviceProfileClientMock) DeviceProfiles(ctx context.Context) ([]contract.DeviceProfile, error) {
 	populateDeviceProfileMock()
-	return []models.DeviceProfile{
+	return []contract.DeviceProfile{
 		DeviceProfileRandomBoolGenerator,
 		DeviceProfileRandomIntegerGenerator,
 		DeviceProfileRandomUnsignedGenerator,
@@ -50,11 +50,11 @@ func (DeviceProfileClientMock) DeviceProfiles(ctx context.Context) ([]models.Dev
 	}, nil
 }
 
-func (DeviceProfileClientMock) DeviceProfileForName(name string, ctx context.Context) (models.DeviceProfile, error) {
+func (DeviceProfileClientMock) DeviceProfileForName(name string, ctx context.Context) (contract.DeviceProfile, error) {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) Update(dp models.DeviceProfile, ctx context.Context) error {
+func (DeviceProfileClientMock) Update(dp contract.DeviceProfile, ctx context.Context) error {
 	panic("implement me")
 }
 

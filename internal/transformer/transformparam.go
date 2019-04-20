@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,13 +12,13 @@ import (
 	"strconv"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-func TransformWriteParameter(cv *ds_models.CommandValue, pv models.PropertyValue) error {
+func TransformWriteParameter(cv *dsModels.CommandValue, pv contract.PropertyValue) error {
 	var err error
-	if cv.Type == ds_models.String || cv.Type == ds_models.Bool || cv.Type == ds_models.Binary {
+	if cv.Type == dsModels.String || cv.Type == dsModels.Bool || cv.Type == dsModels.Binary {
 		return nil // do nothing for String, Bool and Binary
 	}
 

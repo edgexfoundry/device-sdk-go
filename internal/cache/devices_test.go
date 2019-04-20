@@ -1,3 +1,9 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
+//
+// Copyright (C) 2019 IOTech Ltd
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package cache
 
 import (
@@ -6,12 +12,12 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-var ds []models.Device
+var ds []contract.Device
 
 func init() {
 	common.ServiceName = "device-cache-test"
@@ -21,7 +27,7 @@ func init() {
 }
 
 func TestNewDeviceCache(t *testing.T) {
-	dc := newDeviceCache([]models.Device{})
+	dc := newDeviceCache([]contract.Device{})
 	if _, ok := dc.(DeviceCache); !ok {
 		t.Error("the newDeviceCache function supposed to return a value which holds the DeviceCache type")
 	}
@@ -126,7 +132,7 @@ func TestDeviceCache_Update(t *testing.T) {
 		t.Error("supposed to get an error when updating a device which doesn't exist in cache")
 	}
 
-	mock.ValidDeviceRandomBoolGenerator.AdminState = models.Locked
+	mock.ValidDeviceRandomBoolGenerator.AdminState = contract.Locked
 	if err := dc.Update(mock.ValidDeviceRandomBoolGenerator); err != nil {
 		t.Error("failed to update device in cache")
 	}
@@ -141,13 +147,13 @@ func TestDeviceCache_Update(t *testing.T) {
 func TestDeviceCache_UpdateAdminState(t *testing.T) {
 	dc := newDeviceCache(ds)
 
-	if err := dc.UpdateAdminState(mock.NewValidDevice.Id, models.Locked); err == nil {
+	if err := dc.UpdateAdminState(mock.NewValidDevice.Id, contract.Locked); err == nil {
 		t.Error("supposed to get an error when updating AdminState of the device which doesn't exist in cache")
 	}
-	if err := dc.UpdateAdminState(mock.ValidDeviceRandomBoolGenerator.Id, models.Locked); err != nil {
+	if err := dc.UpdateAdminState(mock.ValidDeviceRandomBoolGenerator.Id, contract.Locked); err != nil {
 		t.Error("failed to update AdminState")
 	}
-	if ud0, _ := dc.ForId(mock.ValidDeviceRandomBoolGenerator.Id); ud0.AdminState != models.Locked {
+	if ud0, _ := dc.ForId(mock.ValidDeviceRandomBoolGenerator.Id); ud0.AdminState != contract.Locked {
 		t.Error("succeeded in executing UpdateAdminState, but the value of AdminState was not updated")
 	}
 }

@@ -16,7 +16,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
 )
@@ -53,7 +53,7 @@ func LoadProfiles(path string) error {
 	}
 
 	for _, file := range fileInfo {
-		var profile models.DeviceProfile
+		var profile contract.DeviceProfile
 
 		fName := file.Name()
 		lfName := strings.ToLower(fName)
@@ -96,15 +96,15 @@ func LoadProfiles(path string) error {
 	return nil
 }
 
-func profileSliceToMap(profiles []models.DeviceProfile) map[string]models.DeviceProfile {
-	result := make(map[string]models.DeviceProfile, len(profiles))
+func profileSliceToMap(profiles []contract.DeviceProfile) map[string]contract.DeviceProfile {
+	result := make(map[string]contract.DeviceProfile, len(profiles))
 	for _, dp := range profiles {
 		result[dp.Name] = dp
 	}
 	return result
 }
 
-func CreateDescriptorsFromProfile(profile *models.DeviceProfile) {
+func CreateDescriptorsFromProfile(profile *contract.DeviceProfile) {
 	dcs := profile.DeviceCommands
 	for _, dc := range dcs {
 		for _, op := range dc.Get {
@@ -117,7 +117,7 @@ func CreateDescriptorsFromProfile(profile *models.DeviceProfile) {
 
 }
 
-func createDescriptorFromResourceOperation(profileName string, op models.ResourceOperation) {
+func createDescriptorFromResourceOperation(profileName string, op contract.ResourceOperation) {
 	if _, ok := cache.ValueDescriptors().ForName(op.Parameter); ok {
 		// Value Descriptor has been created
 		return
@@ -135,13 +135,13 @@ func createDescriptorFromResourceOperation(profileName string, op models.Resourc
 	}
 }
 
-func createDescriptor(name string, dr models.DeviceResource) (*models.ValueDescriptor, error) {
+func createDescriptor(name string, dr contract.DeviceResource) (*contract.ValueDescriptor, error) {
 	value := dr.Properties.Value
 	units := dr.Properties.Units
 
 	common.LoggingClient.Debug(fmt.Sprintf("ps: createDescriptor: %s, value: %v, units: %v", name, value, units))
 
-	desc := &models.ValueDescriptor{
+	desc := &contract.ValueDescriptor{
 		Name:         name,
 		Min:          value.Minimum,
 		Max:          value.Maximum,

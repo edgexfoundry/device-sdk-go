@@ -16,20 +16,20 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
-func CallbackHandler(cbAlert models.CallbackAlert, method string) common.AppError {
+func CallbackHandler(cbAlert contract.CallbackAlert, method string) common.AppError {
 	if (cbAlert.Id == "") || (cbAlert.ActionType == "") {
 		appErr := common.NewBadRequestError("Missing parameters", nil)
 		common.LoggingClient.Error(fmt.Sprintf("Missing callback parameters"))
 		return appErr
 	}
 
-	if cbAlert.ActionType == models.DEVICE {
+	if cbAlert.ActionType == contract.DEVICE {
 		return handleDevice(method, cbAlert.Id)
-	} else if cbAlert.ActionType == models.PROFILE {
+	} else if cbAlert.ActionType == contract.PROFILE {
 		return handleProfile(method, cbAlert.Id)
 	}
 
