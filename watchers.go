@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
+// Copyright (C) 2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,11 +10,11 @@ package device
 import (
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Watchers struct {
-	devices map[string]models.Device
+	devices map[string]contract.Device
 }
 
 var (

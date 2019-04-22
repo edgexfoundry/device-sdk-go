@@ -19,7 +19,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler/callback"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/gorilla/mux"
 )
 
@@ -68,7 +68,7 @@ func callbackFunc(w http.ResponseWriter, req *http.Request) {
 
 	defer req.Body.Close()
 	dec := json.NewDecoder(req.Body)
-	cbAlert := models.CallbackAlert{}
+	cbAlert := contract.CallbackAlert{}
 
 	err := dec.Decode(&cbAlert)
 	if err != nil {
@@ -108,7 +108,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 				if err != nil {
 					common.LoggingClient.Error("ERROR encoding binary event!")
 				}
-				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent after CommandHandler returned: %v", string(event.EncodedEvent[:20]) ))
+				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent after CommandHandler returned: %v", string(event.EncodedEvent[:20])))
 			}
 			// TODO: Resolve why this header is not included in response from Core-Command to originating caller (while the written body is).
 			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
@@ -123,7 +123,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 
 func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	common.LoggingClient.Debug(fmt.Sprintf("Controller - Command: execute the Get command %s from all operational devices", vars["command"]))
+	common.LoggingClient.Debug(fmt.Sprintf("Controller - Command: execute the Get command %s from all operational devices", vars[common.CommandVar]))
 
 	if checkServiceLocked(w, req) {
 		return
@@ -134,7 +134,7 @@ func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	events, appErr := handler.CommandAllHandler(vars["command"], body, req.Method)
+	events, appErr := handler.CommandAllHandler(vars[common.CommandVar], body, req.Method)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else if len(events) > 0 {

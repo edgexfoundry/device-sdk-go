@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -14,8 +14,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // processAsyncResults processes readings that are pushed from
@@ -24,7 +24,7 @@ import (
 func processAsyncResults() {
 	for !svc.stopped {
 		acv := <-svc.asyncCh
-		readings := make([]models.Reading, 0, len(acv.CommandValues))
+		readings := make([]contract.Reading, 0, len(acv.CommandValues))
 
 		device, ok := cache.Devices().ForName(acv.DeviceName)
 		if !ok {
@@ -44,14 +44,14 @@ func processAsyncResults() {
 				err := transformer.TransformReadResult(cv, dr.Properties.Value)
 				if err != nil {
 					common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
-					cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
+					cv = dsModels.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
 				}
 			}
 
 			err := transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, &device)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Assertion failed for device resource: %s, with value: %s and assertion: %s, %v", cv.RO.Object, cv.String(), dr.Properties.Value.Assertion, err))
-				cv = ds_models.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
+				cv = dsModels.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
 			}
 
 			if len(cv.RO.Mappings) > 0 {
@@ -68,8 +68,8 @@ func processAsyncResults() {
 		}
 
 		// push to Core Data
-		cevent := models.Event{Device: device.Name, Readings: readings}
-		event := &ds_models.Event{Event: cevent}
+		cevent := contract.Event{Device: device.Name, Readings: readings}
+		event := &dsModels.Event{Event: cevent}
 		event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
 		common.SendEvent(event)
 	}

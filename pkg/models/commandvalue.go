@@ -184,13 +184,13 @@ func NewFloat64Value(ro *contract.ResourceOperation, origin int64, value float64
 func NewCommandValue(ro *contract.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
 	switch t {
-		case Binary:
-			// assign cv.BinValue
-			err = encodeBinaryValue(cv, value)
-		case String:
-			cv.stringValue = value.(string)
-		default:
-			err = encodeValue(cv, value)
+	case Binary:
+		// assign cv.BinValue
+		err = encodeBinaryValue(cv, value)
+	case String:
+		cv.stringValue = value.(string)
+	default:
+		err = encodeValue(cv, value)
 	}
 	return
 }
@@ -303,7 +303,7 @@ func (cv *CommandValue) ValueToString() (str string) {
 		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	case Binary:
 		// produce string representation of first 20 bytes of binary value
-		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20]) ))
+		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20])))
 	}
 
 	return

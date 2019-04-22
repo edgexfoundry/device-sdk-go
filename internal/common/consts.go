@@ -32,9 +32,11 @@ const (
 	APIDiscoveryRoute       = APIv1Prefix + "/discovery"
 	APIPingRoute            = APIv1Prefix + "/ping"
 
+	IdVar        string = "id"
 	NameVar      string = "name"
 	CommandVar   string = "command"
 	GetCmdMethod string = "get"
+	SetCmdMethod string = "set"
 
 	CorrelationHeader = clients.CorrelationHeader
 )

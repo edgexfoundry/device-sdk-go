@@ -14,7 +14,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -45,14 +45,14 @@ func createDevice(dc common.DeviceConfig) error {
 	}
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
-	device := &models.Device{
+	device := &contract.Device{
 		Name:           dc.Name,
 		Profile:        prf,
 		Protocols:      dc.Protocols,
 		Labels:         dc.Labels,
 		Service:        common.CurrentDeviceService,
-		AdminState:     models.Unlocked,
-		OperatingState: models.Enabled,
+		AdminState:     contract.Unlocked,
+		OperatingState: contract.Enabled,
 		AutoEvents:     dc.AutoEvents,
 	}
 	device.Origin = millis

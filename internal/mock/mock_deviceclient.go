@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,7 +12,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 const (
@@ -22,17 +22,17 @@ const (
 )
 
 var (
-	ValidDeviceRandomBoolGenerator            = models.Device{}
-	ValidDeviceRandomIntegerGenerator         = models.Device{}
-	ValidDeviceRandomUnsignedIntegerGenerator = models.Device{}
-	ValidDeviceRandomFloatGenerator           = models.Device{}
-	DuplicateDeviceRandomFloatGenerator       = models.Device{}
-	NewValidDevice                            = models.Device{}
+	ValidDeviceRandomBoolGenerator            = contract.Device{}
+	ValidDeviceRandomIntegerGenerator         = contract.Device{}
+	ValidDeviceRandomUnsignedIntegerGenerator = contract.Device{}
+	ValidDeviceRandomFloatGenerator           = contract.Device{}
+	DuplicateDeviceRandomFloatGenerator       = contract.Device{}
+	NewValidDevice                            = contract.Device{}
 )
 
 type DeviceClientMock struct{}
 
-func (dc *DeviceClientMock) Add(dev *models.Device, ctx context.Context) (string, error) {
+func (dc *DeviceClientMock) Add(dev *contract.Device, ctx context.Context) (string, error) {
 	panic("implement me")
 }
 
@@ -44,19 +44,19 @@ func (dc *DeviceClientMock) DeleteByName(name string, ctx context.Context) error
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) CheckForDevice(token string, ctx context.Context) (models.Device, error) {
+func (dc *DeviceClientMock) CheckForDevice(token string, ctx context.Context) (contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) Device(id string, ctx context.Context) (models.Device, error) {
+func (dc *DeviceClientMock) Device(id string, ctx context.Context) (contract.Device, error) {
 	if id == InvalidDeviceId {
-		return models.Device{}, fmt.Errorf("invalid id")
+		return contract.Device{}, fmt.Errorf("invalid id")
 	}
-	return models.Device{}, nil
+	return contract.Device{}, nil
 }
 
-func (dc *DeviceClientMock) DeviceForName(name string, ctx context.Context) (models.Device, error) {
-	var device = models.Device{Id: "5b977c62f37ba10e36673802", Name: name}
+func (dc *DeviceClientMock) DeviceForName(name string, ctx context.Context) (contract.Device, error) {
+	var device = contract.Device{Id: "5b977c62f37ba10e36673802", Name: name}
 	var err error = nil
 	if name == "" {
 		err = errors.New("Item not found")
@@ -65,29 +65,29 @@ func (dc *DeviceClientMock) DeviceForName(name string, ctx context.Context) (mod
 	return device, err
 }
 
-func (dc *DeviceClientMock) Devices(ctx context.Context) ([]models.Device, error) {
+func (dc *DeviceClientMock) Devices(ctx context.Context) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesByLabel(label string, ctx context.Context) ([]models.Device, error) {
+func (dc *DeviceClientMock) DevicesByLabel(label string, ctx context.Context) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForProfile(profileid string, ctx context.Context) ([]models.Device, error) {
+func (dc *DeviceClientMock) DevicesForProfile(profileid string, ctx context.Context) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForProfileByName(profileName string, ctx context.Context) ([]models.Device, error) {
+func (dc *DeviceClientMock) DevicesForProfileByName(profileName string, ctx context.Context) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForService(serviceid string, ctx context.Context) ([]models.Device, error) {
+func (dc *DeviceClientMock) DevicesForService(serviceid string, ctx context.Context) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string, ctx context.Context) ([]models.Device, error) {
+func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string, ctx context.Context) ([]contract.Device, error) {
 	populateDeviceMock()
-	return []models.Device{
+	return []contract.Device{
 		ValidDeviceRandomBoolGenerator,
 		ValidDeviceRandomIntegerGenerator,
 		ValidDeviceRandomUnsignedIntegerGenerator,
@@ -95,7 +95,7 @@ func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string, ctx cont
 	}, nil
 }
 
-func (dc *DeviceClientMock) Update(dev models.Device, ctx context.Context) error {
+func (dc *DeviceClientMock) Update(dev contract.Device, ctx context.Context) error {
 	return nil
 }
 

@@ -26,9 +26,9 @@ import (
 	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -39,12 +39,12 @@ var (
 // A Service listens for requests and routes them to the right command
 type Service struct {
 	svcInfo      *common.ServiceInfo
-	discovery    ds_models.ProtocolDiscovery
+	discovery    dsModels.ProtocolDiscovery
 	initAttempts int
 	initialized  bool
 	stopped      bool
 	cw           *Watchers
-	asyncCh      chan *ds_models.AsyncValues
+	asyncCh      chan *dsModels.AsyncValues
 	startTime    time.Time
 }
 
@@ -56,7 +56,7 @@ func (s *Service) Version() string {
 	return common.ServiceVersion
 }
 
-func (s *Service) Discovery() ds_models.ProtocolDiscovery {
+func (s *Service) Discovery() dsModels.ProtocolDiscovery {
 	return s.discovery
 }
 
@@ -98,7 +98,7 @@ func (s *Service) Start(errChan chan error) (err error) {
 
 	// initialize driver
 	if common.CurrentConfig.Service.EnableAsyncReadings {
-		s.asyncCh = make(chan *ds_models.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
+		s.asyncCh = make(chan *dsModels.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
 		go processAsyncResults()
 	}
 	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
@@ -152,15 +152,15 @@ func selfRegister() error {
 	return nil
 }
 
-func createNewDeviceService() (models.DeviceService, error) {
+func createNewDeviceService() (contract.DeviceService, error) {
 	addr, err := makeNewAddressable()
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
-		return models.DeviceService{}, err
+		return contract.DeviceService{}, err
 	}
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
-	ds := models.DeviceService{
-		Service: models.Service{
+	ds := contract.DeviceService{
+		Service: contract.Service{
 			Name:           common.ServiceName,
 			Labels:         svc.svcInfo.Labels,
 			OperatingState: "ENABLED",
@@ -174,10 +174,10 @@ func createNewDeviceService() (models.DeviceService, error) {
 	id, err := common.DeviceServiceClient.Add(&ds, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
-		return models.DeviceService{}, err
+		return contract.DeviceService{}, err
 	}
 	if err = common.VerifyIdFormat(id, "Device Service"); err != nil {
-		return models.DeviceService{}, err
+		return contract.DeviceService{}, err
 	}
 
 	// NOTE - this differs from Addressable and Device objects,
@@ -188,7 +188,7 @@ func createNewDeviceService() (models.DeviceService, error) {
 	return ds, nil
 }
 
-func makeNewAddressable() (*models.Addressable, error) {
+func makeNewAddressable() (*contract.Addressable, error) {
 	// check whether there has been an existing addressable
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	addr, err := common.AddressableClient.AddressableForName(common.ServiceName, ctx)
@@ -196,8 +196,8 @@ func makeNewAddressable() (*models.Addressable, error) {
 		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
-			addr = models.Addressable{
-				Timestamps: models.Timestamps{
+			addr = contract.Addressable{
+				Timestamps: contract.Timestamps{
 					Origin: millis,
 				},
 				Name:       common.ServiceName,
@@ -239,7 +239,7 @@ func (s *Service) Stop(force bool) error {
 // version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will always return an error.
-func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry bool, proto ds_models.ProtocolDriver) (*Service, error) {
+func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry bool, proto dsModels.ProtocolDriver) (*Service, error) {
 	startTime := time.Now()
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")

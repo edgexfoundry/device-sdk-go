@@ -8,16 +8,17 @@ package mock
 
 import (
 	"context"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type EventClientMock struct{}
 
-func (EventClientMock) Events(ctx context.Context) ([]models.Event, error) {
+func (EventClientMock) Events(ctx context.Context) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) Event(id string, ctx context.Context) (models.Event, error) {
+func (EventClientMock) Event(id string, ctx context.Context) (contract.Event, error) {
 	panic("implement me")
 }
 
@@ -29,19 +30,19 @@ func (EventClientMock) EventCountForDevice(deviceId string, ctx context.Context)
 	panic("implement me")
 }
 
-func (EventClientMock) EventsForDevice(id string, limit int, ctx context.Context) ([]models.Event, error) {
+func (EventClientMock) EventsForDevice(id string, limit int, ctx context.Context) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventsForInterval(start int, end int, limit int, ctx context.Context) ([]models.Event, error) {
+func (EventClientMock) EventsForInterval(start int, end int, limit int, ctx context.Context) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventsForDeviceAndValueDescriptor(deviceId string, vd string, limit int, ctx context.Context) ([]models.Event, error) {
+func (EventClientMock) EventsForDeviceAndValueDescriptor(deviceId string, vd string, limit int, ctx context.Context) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) Add(event *models.Event, ctx context.Context) (string, error) {
+func (EventClientMock) Add(event *contract.Event, ctx context.Context) (string, error) {
 	return "", nil
 }
 

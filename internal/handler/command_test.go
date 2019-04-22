@@ -15,7 +15,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	"github.com/edgexfoundry/device-sdk-go/pkg/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
@@ -147,52 +147,52 @@ func TestCreateCommandValueForParam(t *testing.T) {
 		valueType   string
 		op          *contract.ResourceOperation
 		v           string
-		parseCheck  models.ValueType
+		parseCheck  dsModels.ValueType
 		expectErr   bool
 	}{
-		{"DeviceResourceNotFound", profileNameRandomBooleanGenerator, typeBool, &contract.ResourceOperation{}, "", models.Bool, true},
-		{"BoolTruePass", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "true", models.Bool, false},
-		{"BoolFalsePass", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "false", models.Bool, false},
-		{"BoolTrueFail", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "error", models.Bool, true},
-		{"Int8Pass", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "12", models.Int8, false},
-		{"Int8NegativePass", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "-12", models.Int8, false},
-		{"Int8WordFail", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "hello", models.Int8, true},
-		{"Int8OverflowFail", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "9999999999", models.Int8, true},
-		{"Int16Pass", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "12", models.Int16, false},
-		{"Int16NegativePass", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "-12", models.Int16, false},
-		{"Int16WordFail", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "hello", models.Int16, true},
-		{"Int16OverflowFail", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "9999999999", models.Int16, true},
-		{"Int32Pass", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "12", models.Int32, false},
-		{"Int32NegativePass", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "-12", models.Int32, false},
-		{"Int32WordFail", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "hello", models.Int32, true},
-		{"Int32OverflowFail", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "9999999999", models.Int32, true},
-		{"Int64Pass", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "12", models.Int64, false},
-		{"Int64NegativePass", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "-12", models.Int64, false},
-		{"Int64WordFail", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "hello", models.Int64, true},
-		{"Int64OverflowFail", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "99999999999999999999", models.Int64, true},
-		{"Uint8Pass", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "12", models.Uint8, false},
-		{"Uint8NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "-12", models.Uint8, true},
-		{"Uint8WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "hello", models.Uint8, true},
-		{"Uint8OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "9999999999", models.Uint8, true},
-		{"Uint16Pass", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "12", models.Uint16, false},
-		{"Uint16NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "-12", models.Uint16, true},
-		{"Uint16WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "hello", models.Uint16, true},
-		{"Uint16OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "9999999999", models.Uint16, true},
-		{"Uint32Pass", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "12", models.Uint32, false},
-		{"Uint32NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "-12", models.Uint32, true},
-		{"Uint32WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "hello", models.Uint32, true},
-		{"Uint32OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "9999999999", models.Uint32, true},
-		{"Uint64Pass", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "12", models.Uint64, false},
-		{"Uint64NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "-12", models.Uint64, true},
-		{"Uint64WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "hello", models.Uint64, true},
-		{"Uint64OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "99999999999999999999", models.Uint64, true},
-		{"Float32Pass", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "12.000", models.Float32, false},
-		{"Float32PassNegativePass", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "-12.000", models.Float32, false},
-		{"Float32PassWordFail", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "hello", models.Float32, true},
-		{"Float32PassOverflowFail", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "440282346638528859811704183484516925440.0000000000000000", models.Float32, true},
-		{"Float64Pass", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "12.000", models.Float64, false},
-		{"Float64PassNegativePass", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "-12.000", models.Float64, false},
-		{"Float64PassWordFail", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "hello", models.Float64, true},
+		{"DeviceResourceNotFound", profileNameRandomBooleanGenerator, typeBool, &contract.ResourceOperation{}, "", dsModels.Bool, true},
+		{"BoolTruePass", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "true", dsModels.Bool, false},
+		{"BoolFalsePass", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "false", dsModels.Bool, false},
+		{"BoolTrueFail", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "error", dsModels.Bool, true},
+		{"Int8Pass", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "12", dsModels.Int8, false},
+		{"Int8NegativePass", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "-12", dsModels.Int8, false},
+		{"Int8WordFail", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "hello", dsModels.Int8, true},
+		{"Int8OverflowFail", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "9999999999", dsModels.Int8, true},
+		{"Int16Pass", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "12", dsModels.Int16, false},
+		{"Int16NegativePass", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "-12", dsModels.Int16, false},
+		{"Int16WordFail", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "hello", dsModels.Int16, true},
+		{"Int16OverflowFail", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "9999999999", dsModels.Int16, true},
+		{"Int32Pass", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "12", dsModels.Int32, false},
+		{"Int32NegativePass", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "-12", dsModels.Int32, false},
+		{"Int32WordFail", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "hello", dsModels.Int32, true},
+		{"Int32OverflowFail", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "9999999999", dsModels.Int32, true},
+		{"Int64Pass", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "12", dsModels.Int64, false},
+		{"Int64NegativePass", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "-12", dsModels.Int64, false},
+		{"Int64WordFail", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "hello", dsModels.Int64, true},
+		{"Int64OverflowFail", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "99999999999999999999", dsModels.Int64, true},
+		{"Uint8Pass", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "12", dsModels.Uint8, false},
+		{"Uint8NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "-12", dsModels.Uint8, true},
+		{"Uint8WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "hello", dsModels.Uint8, true},
+		{"Uint8OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "9999999999", dsModels.Uint8, true},
+		{"Uint16Pass", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "12", dsModels.Uint16, false},
+		{"Uint16NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "-12", dsModels.Uint16, true},
+		{"Uint16WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "hello", dsModels.Uint16, true},
+		{"Uint16OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "9999999999", dsModels.Uint16, true},
+		{"Uint32Pass", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "12", dsModels.Uint32, false},
+		{"Uint32NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "-12", dsModels.Uint32, true},
+		{"Uint32WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "hello", dsModels.Uint32, true},
+		{"Uint32OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "9999999999", dsModels.Uint32, true},
+		{"Uint64Pass", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "12", dsModels.Uint64, false},
+		{"Uint64NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "-12", dsModels.Uint64, true},
+		{"Uint64WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "hello", dsModels.Uint64, true},
+		{"Uint64OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "99999999999999999999", dsModels.Uint64, true},
+		{"Float32Pass", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "12.000", dsModels.Float32, false},
+		{"Float32PassNegativePass", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "-12.000", dsModels.Float32, false},
+		{"Float32PassWordFail", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "hello", dsModels.Float32, true},
+		{"Float32PassOverflowFail", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "440282346638528859811704183484516925440.0000000000000000", dsModels.Float32, true},
+		{"Float64Pass", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "12.000", dsModels.Float64, false},
+		{"Float64PassNegativePass", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "-12.000", dsModels.Float64, false},
+		{"Float64PassWordFail", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "hello", dsModels.Float64, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
@@ -206,32 +206,32 @@ func TestCreateCommandValueForParam(t *testing.T) {
 				return
 			}
 			if cv != nil {
-				var check models.ValueType
+				var check dsModels.ValueType
 				switch strings.ToLower(tt.valueType) {
 				case "bool":
-					check = models.Bool
+					check = dsModels.Bool
 				case "string":
-					check = models.String
+					check = dsModels.String
 				case "uint8":
-					check = models.Uint8
+					check = dsModels.Uint8
 				case "uint16":
-					check = models.Uint16
+					check = dsModels.Uint16
 				case "uint32":
-					check = models.Uint32
+					check = dsModels.Uint32
 				case "uint64":
-					check = models.Uint64
+					check = dsModels.Uint64
 				case "int8":
-					check = models.Int8
+					check = dsModels.Int8
 				case "int16":
-					check = models.Int16
+					check = dsModels.Int16
 				case "int32":
-					check = models.Int32
+					check = dsModels.Int32
 				case "int64":
-					check = models.Int64
+					check = dsModels.Int64
 				case "float32":
-					check = models.Float32
+					check = dsModels.Float32
 				case "float64":
-					check = models.Float64
+					check = dsModels.Float64
 				}
 				if cv.Type != check {
 					t.Errorf("%s incorrect parsing. valueType: %s result: %v", tt.testName, tt.valueType, cv.Type)

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -18,13 +18,13 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
 // AddDevice adds a new Device to the device service and Core Metadata
 // Returns new Device id or non-nil error.
-func (s *Service) AddDevice(device models.Device) (id string, err error) {
+func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
 		return d.Id, fmt.Errorf("name conflicted, Device %s exists", device.Name)
 	}
@@ -60,17 +60,17 @@ func (s *Service) AddDevice(device models.Device) (id string, err error) {
 }
 
 // Devices return all managed Devices from cache
-func (s *Service) Devices() []models.Device {
+func (s *Service) Devices() []contract.Device {
 	return cache.Devices().All()
 }
 
 // GetDeviceByName returns device if it exists in EdgeX registration cache.
-func (s *Service) GetDeviceByName(name string) (models.Device, error) {
+func (s *Service) GetDeviceByName(name string) (contract.Device, error) {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", name)
 		common.LoggingClient.Info(msg)
-		return models.Device{}, fmt.Errorf(msg)
+		return contract.Device{}, fmt.Errorf(msg)
 	}
 	return device, nil
 }
@@ -121,7 +121,7 @@ func (s *Service) RemoveDeviceByName(name string) error {
 
 // UpdateDevice updates the Device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *Service) UpdateDevice(device models.Device) error {
+func (s *Service) UpdateDevice(device contract.Device) error {
 	_, ok := cache.Devices().ForId(device.Id)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", device.Id)

@@ -30,7 +30,7 @@ func (e Event) HasBinaryValue() bool {
 	return false
 }
 
-// TODO: Add as method of dsModel.event or contract.event/client
+// TODO: Add as method of dsModels.event or contract.event/client
 func (e Event) EncodeBinaryEvent(ev *contract.Event) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	hCbor := new(codec.CborHandle)
@@ -41,4 +41,3 @@ func (e Event) EncodeBinaryEvent(ev *contract.Event) ([]byte, error) {
 	}
 	return nil, err
 }
-

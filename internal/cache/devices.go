@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,7 @@ package cache
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
@@ -18,47 +18,47 @@ var (
 )
 
 type DeviceCache interface {
-	ForName(name string) (models.Device, bool)
-	ForId(id string) (models.Device, bool)
-	All() []models.Device
-	Add(device models.Device) error
-	Update(device models.Device) error
+	ForName(name string) (contract.Device, bool)
+	ForId(id string) (contract.Device, bool)
+	All() []contract.Device
+	Add(device contract.Device) error
+	Update(device contract.Device) error
 	Remove(id string) error
 	RemoveByName(name string) error
-	UpdateAdminState(id string, state models.AdminState) error
+	UpdateAdminState(id string, state contract.AdminState) error
 }
 
 type deviceCache struct {
-	dMap    map[string]*models.Device // key is Device name
-	nameMap map[string]string         // key is id, and value is Device name
+	dMap    map[string]*contract.Device // key is Device name
+	nameMap map[string]string           // key is id, and value is Device name
 }
 
 // ForName returns a Device with the given name.
-func (d *deviceCache) ForName(name string) (models.Device, bool) {
+func (d *deviceCache) ForName(name string) (contract.Device, bool) {
 	if device, ok := d.dMap[name]; ok {
 		return *device, ok
 	} else {
-		return models.Device{}, ok
+		return contract.Device{}, ok
 	}
 }
 
 // ForId returns a device with the given device id.
-func (d *deviceCache) ForId(id string) (models.Device, bool) {
+func (d *deviceCache) ForId(id string) (contract.Device, bool) {
 	name, ok := d.nameMap[id]
 	if !ok {
-		return models.Device{}, ok
+		return contract.Device{}, ok
 	}
 
 	if device, ok := d.dMap[name]; ok {
 		return *device, ok
 	} else {
-		return models.Device{}, ok
+		return contract.Device{}, ok
 	}
 }
 
 // All() returns the current list of devices in the cache.
-func (d *deviceCache) All() []models.Device {
-	devices := make([]models.Device, len(d.dMap))
+func (d *deviceCache) All() []contract.Device {
+	devices := make([]contract.Device, len(d.dMap))
 	i := 0
 	for _, device := range d.dMap {
 		devices[i] = *device
@@ -70,7 +70,7 @@ func (d *deviceCache) All() []models.Device {
 // Adds a new device to the cache. This method is used to populate the
 // devices cache with pre-existing devices from Core Metadata, as well
 // as create new devices returned in a ScanList during discovery.
-func (d *deviceCache) Add(device models.Device) error {
+func (d *deviceCache) Add(device contract.Device) error {
 	if _, ok := d.dMap[device.Name]; ok {
 		return fmt.Errorf("device %s has already existed in cache", device.Name)
 	}
@@ -80,7 +80,7 @@ func (d *deviceCache) Add(device models.Device) error {
 }
 
 // Update updates the device in the cache
-func (d *deviceCache) Update(device models.Device) error {
+func (d *deviceCache) Update(device contract.Device) error {
 	if err := d.Remove(device.Id); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (d *deviceCache) RemoveByName(name string) error {
 // UpdateAdminState updates the device admin state in cache by id. This method
 // is used by the UpdateHandler to trigger update device admin state that's been
 // updated directly to Core Metadata.
-func (d *deviceCache) UpdateAdminState(id string, state models.AdminState) error {
+func (d *deviceCache) UpdateAdminState(id string, state contract.AdminState) error {
 	name, ok := d.nameMap[id]
 	if !ok {
 		return fmt.Errorf("device %s cannot be found in cache", id)
@@ -122,9 +122,9 @@ func (d *deviceCache) UpdateAdminState(id string, state models.AdminState) error
 	return nil
 }
 
-func newDeviceCache(devices []models.Device) DeviceCache {
+func newDeviceCache(devices []contract.Device) DeviceCache {
 	defaultSize := len(devices) * 2
-	dMap := make(map[string]*models.Device, defaultSize)
+	dMap := make(map[string]*contract.Device, defaultSize)
 	nameMap := make(map[string]string, defaultSize)
 	for i, d := range devices {
 		dMap[d.Name] = &devices[i]
