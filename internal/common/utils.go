@@ -83,7 +83,7 @@ func CompareCoreCommands(a []contract.Command, b []contract.Command) bool {
 	}
 
 	for i := range a {
-		if a[i] != b[i] {
+		if a[i].String() != b[i].String() {
 			return false
 		}
 	}
@@ -149,7 +149,7 @@ func CompareDeviceResources(a []contract.DeviceResource, b []contract.DeviceReso
 }
 
 func CompareDeviceServices(a contract.DeviceService, b contract.DeviceService) bool {
-	serviceOk := CompareServices(a.Service, b.Service)
+	serviceOk := CompareServices(a, b)
 	return a.AdminState == b.AdminState && serviceOk
 }
 
@@ -193,7 +193,7 @@ func CompareResourceOperations(a []contract.ResourceOperation, b []contract.Reso
 	return true
 }
 
-func CompareServices(a contract.Service, b contract.Service) bool {
+func CompareServices(a contract.DeviceService, b contract.DeviceService) bool {
 	labelsOk := CompareStrings(a.Labels, b.Labels)
 
 	return a.DescribedObject == b.DescribedObject &&
