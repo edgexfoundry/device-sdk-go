@@ -160,15 +160,13 @@ func createNewDeviceService() (contract.DeviceService, error) {
 	}
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	ds := contract.DeviceService{
-		Service: contract.Service{
-			Name:           common.ServiceName,
-			Labels:         svc.svcInfo.Labels,
-			OperatingState: "ENABLED",
-			Addressable:    *addr,
-		},
-		AdminState: "UNLOCKED",
+		Name:           common.ServiceName,
+		Labels:         svc.svcInfo.Labels,
+		OperatingState: "ENABLED",
+		Addressable:    *addr,
+		AdminState:     "UNLOCKED",
 	}
-	ds.Service.Origin = millis
+	ds.Origin = millis
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err := common.DeviceServiceClient.Add(&ds, ctx)
@@ -182,8 +180,8 @@ func createNewDeviceService() (contract.DeviceService, error) {
 
 	// NOTE - this differs from Addressable and Device objects,
 	// neither of which require the '.Service'prefix
-	ds.Service.Id = id
-	common.LoggingClient.Debug("New deviceservice Id: " + ds.Service.Id)
+	ds.Id = id
+	common.LoggingClient.Debug("New deviceservice Id: " + ds.Id)
 
 	return ds, nil
 }
