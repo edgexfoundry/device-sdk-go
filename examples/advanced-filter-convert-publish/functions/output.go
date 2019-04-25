@@ -33,7 +33,7 @@ func PrintFloatValuesToConsole(edgexcontext *appcontext.Context, params ...inter
 	event := params[0].(models.Event)
 
 	for _, eventReading := range event.Readings {
-		fmt.Printf("%s readable value from %s is '%s\n", eventReading.Name, event.Device, eventReading.Value)
+		fmt.Printf("%s readable value from %s is %s\n", eventReading.Name, event.Device, eventReading.Value)
 	}
 
 	return true, event

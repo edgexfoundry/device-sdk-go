@@ -21,9 +21,13 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"strconv"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
+
+var precision = 4
 
 func ConvertToReadableFloatValues(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 
@@ -44,23 +48,24 @@ func ConvertToReadableFloatValues(edgexcontext *appcontext.Context, params ...in
 			edgexcontext.LoggingClient.Error(fmt.Sprintf("Unable to Base 64 decode float32/64 value ('%s'): %s", eventReading.Value, err.Error()))
 		}
 
-		if eventReading.Name == "RandomValue_Float32" {
+		switch eventReading.Name {
+		case "RandomValue_Float32":
 			var value float32
 			err = binary.Read(bytes.NewReader(data), binary.BigEndian, &value)
 			if err != nil {
 				edgexcontext.LoggingClient.Error("Unable to decode float32 value bytes" + err.Error())
 			}
 
-			eventReading.Value = fmt.Sprintf("%.4f", value)
+			eventReading.Value = strconv.FormatFloat(float64(value), 'f', precision, 32)
 
-		} else { // RandomValue_Float64
+		case "RandomValue_Float64":
 			var value float64
 			err := binary.Read(bytes.NewReader(data), binary.BigEndian, &value)
 			if err != nil {
 				edgexcontext.LoggingClient.Error("Unable to decode float64 value bytes: " + err.Error())
 			}
 
-			eventReading.Value = fmt.Sprintf("%.4f", value)
+			eventReading.Value = strconv.FormatFloat(value, 'f', precision, 64)
 		}
 
 		edgexcontext.LoggingClient.Debug(fmt.Sprintf("Converted Event Reading for %s: %s is '%s'", event.Device, eventReading.Name, eventReading.Value))
