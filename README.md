@@ -4,7 +4,7 @@ Welcome the App Functions SDK for EdgeX. This sdk is meant to provide all the pl
 
 ## Getting Started
 
-The SDK is built around the idea of a "Pipeline". A pipeline is a collection of various functions that process the data in the order that you've specified. The pipeline is executed by the specified [trigger](#triggers) in the `configuration.toml` . The first function of each pipeline is called with the event that triggered the pipeline (ex. `events.Model`). Each successive call in the pipeline is called with the return result of the previous function. Let's take a look at a simple example that creates a pipeline to filter particular device ids and subsequently transform the data to XML:
+The SDK is built around the idea of a "Functions Pipeline". A functions pipeline is a collection of various functions that process the data in the order that you've specified. The functions pipeline is executed by the specified [trigger](#triggers) in the `configuration.toml` . The first function in the pipeline is called with the event that triggered the pipeline (ex. `events.Model`). Each successive call in the pipeline is called with the return result of the previous function. Let's take a look at a simple example that creates a pipeline to filter particular device ids and subsequently transform the data to XML:
 ```golang
 package main
 
@@ -18,13 +18,12 @@ func main() {
 
 	// 1) First thing to do is to create an instance of the EdgeX SDK, giving it a service key
 	edgexSdk := &appsdk.AppFunctionsSDK{
-		ServiceKey: "SimpleFilterXMLApp", // Key used by Consul
+		ServiceKey: "SimpleFilterXMLApp", // Key used by Rigistry (Aka Consul)
 	}
 
 	// 2) Next, we need to initialize the SDK
 	if err := edgexSdk.Initialize(); err != nil {
-		// TODO: Log rather than print
-		fmt.Printf("SDK initialization failed: %v\n", err)
+		edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK initialization failed: %v\n", err))
 		os.Exit(-1)
 	}
 
@@ -35,8 +34,7 @@ func main() {
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	if err := edgexSdk.SetPipeline(edgexSdk.DeviceNameFilter(deviceIDs), edgexSdk.XMLTransform()); err != nil {
-		// TODO: Log rather than print
-		fmt.Printf("SDK SetPipeline failed: %v\n", err)
+		edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK SetPipeline failed: %v\n", err))
 		os.Exit(-1)
 	}
 
@@ -88,11 +86,11 @@ Up until this point, the pipeline has been [triggered](#triggers) by an event ov
 
 ## Triggers
 
-Triggers determine how the the app functions pipeline begins execution. In the simple example provided above, an HTTP trigger is used. The trigger is determine by the `configuration.toml` file located in the `/res` directory under a section called `[Binding]`. Check out the [Configuration Section](#configuration) for more information about the toml file.
+Triggers determine how the app functions pipeline begins execution. In the simple example provided above, an HTTP trigger is used. The trigger is determine by the `configuration.toml` file located in the `/res` directory under a section called `[Binding]`. Check out the [Configuration Section](#configuration) for more information about the toml file.
 
 ### Message Bus Trigger
 
-A message bus trigger will execute the pipeline everytime data is received off of the configured topic.  
+A message bus trigger will execute the pipeline every time data is received off of the configured topic.  
 
 #### Type and Topic configuration 
 Here's an example:
@@ -118,7 +116,7 @@ Type = 'zero' #specifies of message bus (i.e zero for ZMQ)
         Protocol = 'tcp'
 ```
 By default, `EdgeX Core Data` publishes data to the `events`  topic on port 5563. The publish host is used if publishing data back to the message bus. 
->**Important Note:** Publish Host **MUST** be different for every topic you wish to publish to since the SDK will bind to the specific port. 5563 for example cannot be used to publish since `EdgeX Core Data` has bound to that port. Similiarly, you cannot have two separate instances of the app functions SDK running publishing to the same port. 
+>**Important Note:** Publish Host **MUST** be different for every topic you wish to publish to since the SDK will bind to the specific port. 5563 for example cannot be used to publish since `EdgeX Core Data` has bound to that port. Similarly, you cannot have two separate instances of the app functions SDK running publishing to the same port. 
 
 ### HTTP Trigger
 
