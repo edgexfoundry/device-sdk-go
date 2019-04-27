@@ -39,7 +39,7 @@ func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue) e
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformReadBase(newValue, pv.Base)
 		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.RO.Object))
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
 		} else if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue) e
 	if pv.Scale != "" && pv.Scale != defaultScale {
 		newValue, err = transformReadScale(newValue, pv.Scale)
 		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.RO.Object))
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
 		} else if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue) e
 	if pv.Offset != "" && pv.Offset != defaultOffset {
 		newValue, err = transformReadOffset(newValue, pv.Offset)
 		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource: %v", cv.RO.Object))
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource: %v", cv.DeviceResourceName))
 		} else if err != nil {
 			return err
 		}
@@ -506,12 +506,11 @@ func CheckAssertion(cv *dsModels.CommandValue, assertion string, device *contrac
 	return nil
 }
 
-func MapCommandValue(value *dsModels.CommandValue) (*dsModels.CommandValue, bool) {
-	mappings := value.RO.Mappings
+func MapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
 	newValue, ok := mappings[value.ValueToString()]
 	var result *dsModels.CommandValue
 	if ok {
-		result = dsModels.NewStringValue(value.RO, value.Origin, newValue)
+		result = dsModels.NewStringValue(value.DeviceResourceName, value.Origin, newValue)
 	}
 	return result, ok
 }
