@@ -117,7 +117,8 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 			json.NewEncoder(w).Encode(event)
 		}
-		//w.Write(event.EncodedEvent) // after handling json path above
+		// push to Core Data
+		go common.SendEvent(event)
 	}
 }
 
