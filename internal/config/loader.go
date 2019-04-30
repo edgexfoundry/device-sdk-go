@@ -121,6 +121,10 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 		confDir = common.ConfigDirectory
 	}
 
+	if len(profile) > 0 {
+		confDir = confDir + "/" + profile
+	}
+
 	path := path.Join(confDir, common.ConfigFileName)
 	absPath, err := filepath.Abs(path)
 	if err != nil {
