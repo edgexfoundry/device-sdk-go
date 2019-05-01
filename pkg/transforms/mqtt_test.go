@@ -15,7 +15,7 @@ import (
 var addr models.Addressable
 
 func init() {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "TRACE")
 	addr = models.Addressable{
 		Address:   "localhost",
 		Port:      1883,

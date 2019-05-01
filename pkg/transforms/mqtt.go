@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"strconv"
 	"strings"
 
@@ -57,7 +58,8 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 			return false, token.Error()
 		}
 		edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
-		edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data to MQTT Broker: %X", ([]byte)(data)))
+		edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
+
 		return true, nil
 
 	}
