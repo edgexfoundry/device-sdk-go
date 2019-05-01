@@ -18,13 +18,15 @@ package messagebus
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/messaging"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // Trigger implements Trigger to support MessageBusData
@@ -57,7 +59,7 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 			case msgErr := <-messageErrors:
 				logger.Error(fmt.Sprintf("Failed to receive ZMQ Message, %v", msgErr))
 			case msgs := <-trigger.topics[0].Messages:
-				logger.Debug("Received message from bus")
+				logger.Trace("Received message from bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
 
 				edgexContext := &appcontext.Context{
 					Configuration: trigger.Configuration,
@@ -73,10 +75,11 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 					}
 					err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Binding.PublishTopic)
 					if err != nil {
-						logger.Error(fmt.Sprintf("Failed to publish ZMQ Message, %v", err))
+						logger.Error(fmt.Sprintf("Failed to publish Message to bus, %v", err))
 					}
-				}
 
+					logger.Trace("Published message to bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
+				}
 			}
 		}
 	}()

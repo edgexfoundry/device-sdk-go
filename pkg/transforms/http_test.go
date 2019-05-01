@@ -23,14 +23,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
 var lc logger.LoggingClient
 
 func init() {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "TRACE")
 	context = &appcontext.Context{
 		LoggingClient: lc,
 	}
@@ -40,6 +41,8 @@ func TestHTTPPost(t *testing.T) {
 		msgStr = "test message"
 		path   = "/somepath/foo"
 	)
+
+	context.CorrelationID = "123"
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

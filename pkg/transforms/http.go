@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"io/ioutil"
 	"net/http"
 
@@ -55,6 +56,9 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 		if errReadingBody != nil {
 			return false, errReadingBody
 		}
+
+		edgexcontext.LoggingClient.Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, edgexcontext.CorrelationID)
+
 		// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
 		return response.StatusCode >= 200 && response.StatusCode < 300, bodyBytes
 	}

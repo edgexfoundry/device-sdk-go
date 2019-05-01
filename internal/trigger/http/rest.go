@@ -20,12 +20,12 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"net/http"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -69,6 +69,8 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 		CorrelationID: correlationID,
 	}
 
+	trigger.logging.Trace("Received message from http", clients.CorrelationHeader, correlationID)
+
 	data, err := json.Marshal(event)
 	if err != nil {
 		trigger.logging.Error("Error marshaling data to []byte")
@@ -82,6 +84,10 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 
 	trigger.Runtime.ProcessEvent(edgexContext, envelope)
 	writer.Write(edgexContext.OutputData)
+
+	if edgexContext.OutputData != nil {
+		trigger.logging.Trace("Sent http response message", clients.CorrelationHeader, correlationID)
+	}
 
 	trigger.outputData = nil
 }
