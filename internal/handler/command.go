@@ -111,8 +111,9 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 			return nil, common.NewServerError(msg, nil)
 		}
 
-		reqs[i].RO = op
-		reqs[i].DeviceResource = dr
+		reqs[i].DeviceResourceName = dr.Name
+		reqs[i].Attributes = dr.Attributes
+		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
 	}
 
 	results, err := common.Driver.HandleReadCommands(device.Name, device.Protocols, reqs)
@@ -125,9 +126,9 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 
 	for _, cv := range results {
 		// get the device resource associated with the rsp.RO
-		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.RO.Object)
+		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.DeviceResourceName)
 		if !ok {
-			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s in Command Result %v", cv.RO.Object, device.Name, cv)
+			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s in Command Result %v", cv.DeviceResourceName, device.Name, cv)
 			common.LoggingClient.Error(msg)
 			return nil, common.NewServerError(msg, nil)
 		}
@@ -143,15 +144,21 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, device)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
-			cv = dsModels.NewStringValue(cv.RO, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
+			cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
 		}
 
-		if len(cv.RO.Mappings) > 0 {
-			newCV, ok := transformer.MapCommandValue(cv)
+		ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
+		if err != nil {
+			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: getting resource operation failed: %s", err.Error()))
+			transformsOK = false
+		}
+
+		if len(ro.Mappings) > 0 {
+			newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
 			if ok {
 				cv = newCV
 			} else {
-				common.LoggingClient.Warn(fmt.Sprintf("Handler - execReadCmd: Resource Operation (%v) mapping value (%s) failed with the mapping table: %v", cv.RO, cv.String(), cv.RO.Mappings))
+				common.LoggingClient.Warn(fmt.Sprintf("Handler - execReadCmd: Resource Operation (%s) mapping value (%s) failed with the mapping table: %v", ro.Resource, cv.String(), ro.Mappings))
 				//transformsOK = false  // issue #89 will discuss how to handle there is no mapping matched
 			}
 		}
@@ -166,7 +173,7 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 		reading := common.CommandValueToReading(cv, device.Name)
 		readings = append(readings, *reading)
 
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s RO: %v reading: %v", device.Name, cv.RO, reading))
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: %v", device.Name, cv.DeviceResourceName, reading))
 	}
 
 	if !transformsOK {
@@ -214,7 +221,7 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 
 	reqs := make([]dsModels.CommandRequest, len(cvs))
 	for i, cv := range cvs {
-		drName := cv.RO.Object
+		drName := cv.DeviceResourceName
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %s", drName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
@@ -229,8 +236,9 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 			return common.NewServerError(msg, nil)
 		}
 
-		reqs[i].RO = *cv.RO
-		reqs[i].DeviceResource = dr
+		reqs[i].DeviceResourceName = cv.DeviceResourceName
+		reqs[i].Attributes = dr.Attributes
+		reqs[i].Type = cv.Type
 
 		if common.CurrentConfig.Device.DataTransform {
 			err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
@@ -374,7 +382,7 @@ func createCommandValueForParam(profileName string, ro *contract.ResourceOperati
 		return result, err
 	}
 
-	result, err = dsModels.NewCommandValue(ro, origin, value, t)
+	result, err = dsModels.NewCommandValue(dr.Name, origin, value, t)
 
 	return result, err
 }

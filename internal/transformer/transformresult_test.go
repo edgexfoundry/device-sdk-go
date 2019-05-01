@@ -28,7 +28,7 @@ func TestTransformReadResult_base_unt8(t *testing.T) {
 	base := "2"
 	expected := uint8(100)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -54,7 +54,7 @@ func TestTransformReadResult_base_unt8_overflow(t *testing.T) {
 	val := uint8(10)
 	base := "3"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -74,7 +74,7 @@ func TestTransformReadResult_scale_unt8(t *testing.T) {
 	scale := "5"
 	expected := uint8(math.MaxUint8)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -100,7 +100,7 @@ func TestTransformReadResult_scale_unt8_overflow(t *testing.T) {
 	val := uint8(math.MaxUint8 / 5)
 	scale := "6"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -120,7 +120,7 @@ func TestTransformReadResult_offset_unt8(t *testing.T) {
 	offset := "1"
 	expected := uint8(math.MaxUint8)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -146,7 +146,7 @@ func TestTransformReadResult_offset_unt8_overflow(t *testing.T) {
 	val := uint8(math.MaxUint8)
 	offset := "1"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -166,7 +166,7 @@ func TestTransformReadResult_base_unt16(t *testing.T) {
 	base := "2"
 	expected := uint16(40000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint16Value(&ro, 0, val)
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -192,7 +192,7 @@ func TestTransformReadResult_base_uint16_overflow(t *testing.T) {
 	val := uint16(200)
 	base := "3"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint16Value(&ro, 0, val)
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -212,7 +212,7 @@ func TestTransformReadResult_scale_uint16(t *testing.T) {
 	scale := "5"
 	expected := uint16(math.MaxUint16)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint16Value(&ro, 0, val)
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -238,7 +238,7 @@ func TestTransformReadResult_scale_uint16_overflow(t *testing.T) {
 	val := uint16(math.MaxUint16 / 5)
 	scale := "6"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint16Value(&ro, 0, val)
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -258,7 +258,7 @@ func TestTransformReadResult_offset_uint16(t *testing.T) {
 	offset := "1"
 	expected := uint16(math.MaxUint16)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint16Value(&ro, 0, val)
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -284,7 +284,7 @@ func TestTransformReadResult_offset_uint16_overflow(t *testing.T) {
 	val := uint16(math.MaxUint16)
 	offset := "1"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint16Value(&ro, 0, val)
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -304,7 +304,7 @@ func TestTransformReadResult_base_uint32(t *testing.T) {
 	base := "2"
 	expected := uint32(400000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint32Value(&ro, 0, val)
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -330,7 +330,7 @@ func TestTransformReadResult_base_uint32_overflow(t *testing.T) {
 	val := uint32(4000000)
 	base := "1000"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint32Value(&ro, 0, val)
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -350,7 +350,7 @@ func TestTransformReadResult_scale_uint32(t *testing.T) {
 	scale := "5"
 	expected := uint32(math.MaxUint32)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint32Value(&ro, 0, val)
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -376,7 +376,7 @@ func TestTransformReadResult_scale_uint32_overflow(t *testing.T) {
 	val := uint32(math.MaxUint32 / 5)
 	scale := "6"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint32Value(&ro, 0, val)
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -396,7 +396,7 @@ func TestTransformReadResult_offset_uint32(t *testing.T) {
 	offset := "1"
 	expected := uint32(math.MaxUint32)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint32Value(&ro, 0, val)
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -422,7 +422,7 @@ func TestTransformReadResult_offset_uint32_overflow(t *testing.T) {
 	val := uint32(math.MaxUint32)
 	offset := "1"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint32Value(&ro, 0, val)
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -442,7 +442,7 @@ func TestTransformReadResult_base_uint64(t *testing.T) {
 	base := "2"
 	expected := uint64(400000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint64Value(&ro, 0, val)
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -469,7 +469,7 @@ func TestTransformReadResult_scale_uint64(t *testing.T) {
 	scale := "20000"
 	expected := uint64(400000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint64Value(&ro, 0, val)
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -496,7 +496,7 @@ func TestTransformReadResult_offset_uint64(t *testing.T) {
 	offset := "1"
 	expected := uint64(math.MaxUint64)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint64Value(&ro, 0, val)
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -523,7 +523,7 @@ func TestTransformReadResult_base_int8(t *testing.T) {
 	base := "2"
 	expected := int8(100)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt8Value(&ro, 0, val)
+	cv, err := dsModels.NewInt8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -549,7 +549,7 @@ func TestTransformReadResult_base_int8_overflow(t *testing.T) {
 	val := int8(10)
 	base := "3"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt8Value(&ro, 0, val)
+	cv, err := dsModels.NewInt8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -569,7 +569,7 @@ func TestTransformReadResult_scale_int8(t *testing.T) {
 	scale := "10"
 	expected := int8(100)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt8Value(&ro, 0, val)
+	cv, err := dsModels.NewInt8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -595,7 +595,7 @@ func TestTransformReadResult_scale_int8_overflow(t *testing.T) {
 	val := uint8(10)
 	scale := "30"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewUint8Value(&ro, 0, val)
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -615,7 +615,7 @@ func TestTransformReadResult_offset_int8(t *testing.T) {
 	offset := "1"
 	expected := int8(math.MaxInt8)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt8Value(&ro, 0, val)
+	cv, err := dsModels.NewInt8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -641,7 +641,7 @@ func TestTransformReadResult_offset_int8_overflow(t *testing.T) {
 	val := int8(math.MaxInt8)
 	offset := "1"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt8Value(&ro, 0, val)
+	cv, err := dsModels.NewInt8Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -661,7 +661,7 @@ func TestTransformReadResult_base_int16(t *testing.T) {
 	base := "2"
 	expected := int16(10000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt16Value(&ro, 0, val)
+	cv, err := dsModels.NewInt16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -687,7 +687,7 @@ func TestTransformReadResult_base_int16_overflow(t *testing.T) {
 	val := int16(100)
 	base := "3"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt16Value(&ro, 0, val)
+	cv, err := dsModels.NewInt16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -707,7 +707,7 @@ func TestTransformReadResult_scale_int16(t *testing.T) {
 	scale := "3"
 	expected := int16(30000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt16Value(&ro, 0, val)
+	cv, err := dsModels.NewInt16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -733,7 +733,7 @@ func TestTransformReadResult_scale_int16_overflow(t *testing.T) {
 	val := int16(10000)
 	scale := "4"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt16Value(&ro, 0, val)
+	cv, err := dsModels.NewInt16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -753,7 +753,7 @@ func TestTransformReadResult_offset_int16(t *testing.T) {
 	offset := "1"
 	expected := int16(math.MaxInt16)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt16Value(&ro, 0, val)
+	cv, err := dsModels.NewInt16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -779,7 +779,7 @@ func TestTransformReadResult_offset_int16_overflow(t *testing.T) {
 	val := int16(math.MaxInt16)
 	offset := "1"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt16Value(&ro, 0, val)
+	cv, err := dsModels.NewInt16Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -799,7 +799,7 @@ func TestTransformReadResult_base_int32(t *testing.T) {
 	base := "2"
 	expected := int32(400000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt32Value(&ro, 0, val)
+	cv, err := dsModels.NewInt32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -825,7 +825,7 @@ func TestTransformReadResult_base_int32_overflow(t *testing.T) {
 	val := int32(20000)
 	base := "3"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt32Value(&ro, 0, val)
+	cv, err := dsModels.NewInt32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -845,7 +845,7 @@ func TestTransformReadResult_scale_int32(t *testing.T) {
 	scale := "10"
 	expected := int32(2000000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt32Value(&ro, 0, val)
+	cv, err := dsModels.NewInt32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -871,7 +871,7 @@ func TestTransformReadResult_scale_int32_overflow(t *testing.T) {
 	val := int32(200000000)
 	scale := "15"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt32Value(&ro, 0, val)
+	cv, err := dsModels.NewInt32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -891,7 +891,7 @@ func TestTransformReadResult_offset_int32(t *testing.T) {
 	offset := "1"
 	expected := int32(math.MaxInt32)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt32Value(&ro, 0, val)
+	cv, err := dsModels.NewInt32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -917,7 +917,7 @@ func TestTransformReadResult_offset_int32_overflow(t *testing.T) {
 	val := int32(math.MaxInt32)
 	offset := "1"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt32Value(&ro, 0, val)
+	cv, err := dsModels.NewInt32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -937,7 +937,7 @@ func TestTransformReadResult_base_int64(t *testing.T) {
 	base := "2"
 	expected := int64(400000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt64Value(&ro, 0, val)
+	cv, err := dsModels.NewInt64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -964,7 +964,7 @@ func TestTransformReadResult_scale_int64(t *testing.T) {
 	scale := "20000"
 	expected := int64(400000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt64Value(&ro, 0, val)
+	cv, err := dsModels.NewInt64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -991,7 +991,7 @@ func TestTransformReadResult_offset_int64(t *testing.T) {
 	offset := "1"
 	expected := int64(math.MaxInt64)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewInt64Value(&ro, 0, val)
+	cv, err := dsModels.NewInt64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -1018,7 +1018,7 @@ func TestTransformReadResult_base_float32(t *testing.T) {
 	base := "2"
 	expected := float32(1.21)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -1044,7 +1044,7 @@ func TestTransformReadResult_base_float32_overflow(t *testing.T) {
 	val := float32(math.MaxFloat32)
 	base := "2"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -1064,7 +1064,7 @@ func TestTransformReadResult_scale_float32(t *testing.T) {
 	scale := "10"
 	expected := float32(121)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -1090,7 +1090,7 @@ func TestTransformReadResult_scale_float32_overflow(t *testing.T) {
 	val := float32(math.MaxFloat32 / 2)
 	scale := "3"
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -1110,7 +1110,7 @@ func TestTransformReadResult_offset_float32(t *testing.T) {
 	offset := "1"
 	expected := float32(2.1)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -1136,7 +1136,7 @@ func TestTransformReadResult_offset_float32_overflow(t *testing.T) {
 	val := float32(math.MaxFloat32)
 	offset := fmt.Sprintf("%v", math.MaxFloat32)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
@@ -1156,7 +1156,7 @@ func TestTransformReadResult_base_float64(t *testing.T) {
 	base := "2"
 	expected := float64(121)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat64Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Base: base,
 	}
@@ -1183,7 +1183,7 @@ func TestTransformReadResult_scale_float64(t *testing.T) {
 	scale := "10"
 	expected := float32(2000000000)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat32Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat32Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Scale: scale,
 	}
@@ -1210,7 +1210,7 @@ func TestTransformReadResult_offset_float64(t *testing.T) {
 	offset := "1"
 	expected := float64(2.1)
 	ro := contract.ResourceOperation{Object: "test-object"}
-	cv, err := dsModels.NewFloat64Value(&ro, 0, val)
+	cv, err := dsModels.NewFloat64Value(ro.Object, 0, val)
 	pv := contract.PropertyValue{
 		Offset: offset,
 	}
