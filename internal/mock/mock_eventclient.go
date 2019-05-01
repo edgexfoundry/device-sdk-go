@@ -14,6 +14,14 @@ import (
 
 type EventClientMock struct{}
 
+func (EventClientMock) AddBytes(event []byte, ctx context.Context) (string, error) {
+	panic("implement me")
+}
+
+func (EventClientMock) MarshalEvent(e contract.Event) ([]byte, error) {
+	panic("implement me")
+}
+
 func (EventClientMock) Events(ctx context.Context) ([]contract.Event, error) {
 	panic("implement me")
 }
