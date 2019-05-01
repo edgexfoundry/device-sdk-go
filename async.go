@@ -69,7 +69,7 @@ func processAsyncResults() {
 				}
 			}
 
-			reading := common.CommandValueToReading(cv)
+			reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.FloatEncoding)
 			readings = append(readings, *reading)
 		}
 

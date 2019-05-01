@@ -142,14 +142,16 @@ func createDescriptor(name string, dr contract.DeviceResource) (*contract.ValueD
 	common.LoggingClient.Debug(fmt.Sprintf("ps: createDescriptor: %s, value: %v, units: %v", name, value, units))
 
 	desc := &contract.ValueDescriptor{
-		Name:         name,
-		Min:          value.Minimum,
-		Max:          value.Maximum,
-		Type:         value.Type,
-		UomLabel:     units.DefaultValue,
-		DefaultValue: value.DefaultValue,
-		Formatting:   "%s",
-		Description:  dr.Description,
+		Name:          name,
+		Min:           value.Minimum,
+		Max:           value.Maximum,
+		Type:          value.Type,
+		UomLabel:      units.DefaultValue,
+		DefaultValue:  value.DefaultValue,
+		Formatting:    "%s",
+		Description:   dr.Description,
+		FloatEncoding: value.FloatEncoding,
+		MediaType:     value.MediaType,
 	}
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
