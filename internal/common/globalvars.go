@@ -1,27 +1,27 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package common
 
 import (
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
 	ServiceName           string
 	ServiceVersion        string
 	CurrentConfig         *Config
-	CurrentDeviceService  models.DeviceService
+	CurrentDeviceService  contract.DeviceService
 	UseRegistry           bool
 	ServiceLocked         bool
-	Driver                ds_models.ProtocolDriver
+	Driver                dsModels.ProtocolDriver
 	EventClient           coredata.EventClient
 	AddressableClient     metadata.AddressableClient
 	DeviceClient          metadata.DeviceClient

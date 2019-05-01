@@ -1,18 +1,17 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
+// Copyright (C) 2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package models
 
-import "github.com/edgexfoundry/go-mod-core-contracts/models"
-
 type CommandRequest struct {
-	// RO is a ResourceOperation
-	RO models.ResourceOperation
-	// DeviceResource represents the device resource
-	// to be read or set. It can be used to access the attributes map,
-	// PropertyValue, and PropertyUnit structs.
-	DeviceResource models.DeviceResource
+	// DeviceResourceName is the name of Device Resource for this command
+	DeviceResourceName string
+	// Attributes is a key/value map to represent the attributes of the Device Resource
+	Attributes map[string]string
+	// Type is the data type of the Device Resource
+	Type ValueType
 }

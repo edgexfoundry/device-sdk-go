@@ -16,8 +16,8 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -28,8 +28,8 @@ const (
 	defaultOffset string = "0.0"
 )
 
-func TransformReadResult(cv *ds_models.CommandValue, pv models.PropertyValue) error {
-	if cv.Type == ds_models.String || cv.Type == ds_models.Bool || cv.Type == ds_models.Binary {
+func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue) error {
+	if cv.Type == dsModels.String || cv.Type == dsModels.Bool || cv.Type == dsModels.Binary {
 		return nil // do nothing for String, Bool and Binary
 	}
 
@@ -39,7 +39,7 @@ func TransformReadResult(cv *ds_models.CommandValue, pv models.PropertyValue) er
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformReadBase(newValue, pv.Base)
 		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.RO.Object))
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
 		} else if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func TransformReadResult(cv *ds_models.CommandValue, pv models.PropertyValue) er
 	if pv.Scale != "" && pv.Scale != defaultScale {
 		newValue, err = transformReadScale(newValue, pv.Scale)
 		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.RO.Object))
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
 		} else if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func TransformReadResult(cv *ds_models.CommandValue, pv models.PropertyValue) er
 	if pv.Offset != "" && pv.Offset != defaultOffset {
 		newValue, err = transformReadOffset(newValue, pv.Offset)
 		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource: %v", cv.RO.Object))
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource: %v", cv.DeviceResourceName))
 		} else if err != nil {
 			return err
 		}
@@ -422,56 +422,56 @@ func transformReadOffset(value interface{}, offset string) (interface{}, error) 
 	return value, nil
 }
 
-func commandValueForTransform(cv *ds_models.CommandValue) (interface{}, error) {
+func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, error) {
 	var v interface{}
 	var err error = nil
 	switch cv.Type {
-	case ds_models.Uint8:
+	case dsModels.Uint8:
 		v, err = cv.Uint8Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Uint16:
+	case dsModels.Uint16:
 		v, err = cv.Uint16Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Uint32:
+	case dsModels.Uint32:
 		v, err = cv.Uint32Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Uint64:
+	case dsModels.Uint64:
 		v, err = cv.Uint64Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Int8:
+	case dsModels.Int8:
 		v, err = cv.Int8Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Int16:
+	case dsModels.Int16:
 		v, err = cv.Int16Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Int32:
+	case dsModels.Int32:
 		v, err = cv.Int32Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Int64:
+	case dsModels.Int64:
 		v, err = cv.Int64Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Float32:
+	case dsModels.Float32:
 		v, err = cv.Float32Value()
 		if err != nil {
 			return 0, err
 		}
-	case ds_models.Float64:
+	case dsModels.Float64:
 		v, err = cv.Float64Value()
 		if err != nil {
 			return 0, err
@@ -482,7 +482,7 @@ func commandValueForTransform(cv *ds_models.CommandValue) (interface{}, error) {
 	return v, nil
 }
 
-func replaceNewCommandValue(cv *ds_models.CommandValue, newValue interface{}) error {
+func replaceNewCommandValue(cv *dsModels.CommandValue, newValue interface{}) error {
 	buf := new(bytes.Buffer)
 	err := binary.Write(buf, binary.BigEndian, newValue)
 	if err != nil {
@@ -493,12 +493,12 @@ func replaceNewCommandValue(cv *ds_models.CommandValue, newValue interface{}) er
 	return err
 }
 
-func CheckAssertion(cv *ds_models.CommandValue, assertion string, device *models.Device) error {
+func CheckAssertion(cv *dsModels.CommandValue, assertion string, device *contract.Device) error {
 	if assertion != "" && cv.ValueToString() != assertion {
-		device.OperatingState = models.Disabled
+		device.OperatingState = contract.Disabled
 		cache.Devices().Update(*device)
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		go common.DeviceClient.UpdateOpStateByName(device.Name, models.Disabled, ctx)
+		go common.DeviceClient.UpdateOpStateByName(device.Name, contract.Disabled, ctx)
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		common.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
@@ -506,12 +506,11 @@ func CheckAssertion(cv *ds_models.CommandValue, assertion string, device *models
 	return nil
 }
 
-func MapCommandValue(value *ds_models.CommandValue) (*ds_models.CommandValue, bool) {
-	mappings := value.RO.Mappings
+func MapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
 	newValue, ok := mappings[value.ValueToString()]
-	var result *ds_models.CommandValue
+	var result *dsModels.CommandValue
 	if ok {
-		result = ds_models.NewStringValue(value.RO, value.Origin, newValue)
+		result = dsModels.NewStringValue(value.DeviceResourceName, value.Origin, newValue)
 	}
 	return result, ok
 }

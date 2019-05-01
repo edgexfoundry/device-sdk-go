@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,32 +10,32 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
-	ValueDescriptorEnableRandomization = models.ValueDescriptor{}
-	ValueDescriptorBool                = models.ValueDescriptor{}
-	ValueDescriptorInt8                = models.ValueDescriptor{}
-	ValueDescriptorInt16               = models.ValueDescriptor{}
-	ValueDescriptorInt32               = models.ValueDescriptor{}
-	ValueDescriptorInt64               = models.ValueDescriptor{}
-	ValueDescriptorUint8               = models.ValueDescriptor{}
-	ValueDescriptorUint16              = models.ValueDescriptor{}
-	ValueDescriptorUint32              = models.ValueDescriptor{}
-	ValueDescriptorUint64              = models.ValueDescriptor{}
-	ValueDescriptorFloat32             = models.ValueDescriptor{}
-	ValueDescriptorFloat64             = models.ValueDescriptor{}
-	//ValueDescriptorString              = models.ValueDescriptor{}
-	NewValueDescriptor            = models.ValueDescriptor{}
-	DuplicateValueDescriptorInt16 = models.ValueDescriptor{}
+	ValueDescriptorEnableRandomization = contract.ValueDescriptor{}
+	ValueDescriptorBool                = contract.ValueDescriptor{}
+	ValueDescriptorInt8                = contract.ValueDescriptor{}
+	ValueDescriptorInt16               = contract.ValueDescriptor{}
+	ValueDescriptorInt32               = contract.ValueDescriptor{}
+	ValueDescriptorInt64               = contract.ValueDescriptor{}
+	ValueDescriptorUint8               = contract.ValueDescriptor{}
+	ValueDescriptorUint16              = contract.ValueDescriptor{}
+	ValueDescriptorUint32              = contract.ValueDescriptor{}
+	ValueDescriptorUint64              = contract.ValueDescriptor{}
+	ValueDescriptorFloat32             = contract.ValueDescriptor{}
+	ValueDescriptorFloat64             = contract.ValueDescriptor{}
+	//ValueDescriptorString              = contract.ValueDescriptor{}
+	NewValueDescriptor            = contract.ValueDescriptor{}
+	DuplicateValueDescriptorInt16 = contract.ValueDescriptor{}
 )
 
 type ValueDescriptorMock struct{}
 
-func (ValueDescriptorMock) ValueDescriptors(ctx context.Context) ([]models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptors(ctx context.Context) ([]contract.ValueDescriptor, error) {
 	populateValueDescriptorMock()
-	return []models.ValueDescriptor{
+	return []contract.ValueDescriptor{
 		ValueDescriptorEnableRandomization,
 		ValueDescriptorBool,
 		ValueDescriptorInt8,
@@ -52,35 +52,35 @@ func (ValueDescriptorMock) ValueDescriptors(ctx context.Context) ([]models.Value
 	}, nil
 }
 
-func (ValueDescriptorMock) ValueDescriptor(id string, ctx context.Context) (models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptor(id string, ctx context.Context) (contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorForName(name string, ctx context.Context) (models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorForName(name string, ctx context.Context) (contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsByLabel(label string, ctx context.Context) ([]models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsByLabel(label string, ctx context.Context) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsForDevice(deviceId string, ctx context.Context) ([]models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsForDevice(deviceId string, ctx context.Context) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsForDeviceByName(deviceName string, ctx context.Context) ([]models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsForDeviceByName(deviceName string, ctx context.Context) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsByUomLabel(uomLabel string, ctx context.Context) ([]models.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsByUomLabel(uomLabel string, ctx context.Context) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) Add(vdr *models.ValueDescriptor, ctx context.Context) (string, error) {
+func (ValueDescriptorMock) Add(vdr *contract.ValueDescriptor, ctx context.Context) (string, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) Update(vdr *models.ValueDescriptor, ctx context.Context) error {
+func (ValueDescriptorMock) Update(vdr *contract.ValueDescriptor, ctx context.Context) error {
 	panic("implement me")
 }
 

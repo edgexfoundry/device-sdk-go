@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,14 +11,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"reflect"
 	"time"
 
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
 
@@ -33,9 +31,9 @@ func BuildAddr(host string, port string) string {
 	return buffer.String()
 }
 
-func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.Reading {
-	reading := &models.Reading{Name: cv.RO.Parameter, Device: devName}
-	if cv.Type == ds_models.Binary {
+func CommandValueToReading(cv *dsModels.CommandValue, devName string) *contract.Reading {
+	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName}
+	if cv.Type == dsModels.Binary {
 		reading.BinaryValue = cv.BinValue
 	} else {
 		reading.Value = cv.ValueToString()
@@ -51,7 +49,7 @@ func CommandValueToReading(cv *ds_models.CommandValue, devName string) *models.R
 	return reading
 }
 
-func SendEvent(event *ds_models.Event) {
+func SendEvent(event *dsModels.Event) {
 	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
 	ct := clients.ContentTypeJSON
 	if event.HasBinaryValue() {
@@ -62,10 +60,10 @@ func SendEvent(event *ds_models.Event) {
 			if err != nil {
 				LoggingClient.Error("ERROR encoding binary event!")
 			}
-			LoggingClient.Info(fmt.Sprintf("EncodedEvent within SendEvent: %v", string(event.EncodedEvent[:20]) ))
+			LoggingClient.Info(fmt.Sprintf("EncodedEvent within SendEvent: %v", string(event.EncodedEvent[:20])))
 		} else {
 			// using existing CBOR encoded event to send over to CoreData...
-			LoggingClient.Info(fmt.Sprintf("EncodedEvent already prepared: %v", string(event.EncodedEvent[:20]) ))
+			LoggingClient.Info(fmt.Sprintf("EncodedEvent already prepared: %v", string(event.EncodedEvent[:20])))
 		}
 	}
 	ctx = context.WithValue(ctx, clients.ContentType, ct)
@@ -79,13 +77,13 @@ func SendEvent(event *ds_models.Event) {
 	}
 }
 
-func CompareCoreCommands(a []models.Command, b []models.Command) bool {
+func CompareCoreCommands(a []contract.Command, b []contract.Command) bool {
 	if len(a) != len(b) {
 		return false
 	}
 
 	for i := range a {
-		if a[i] != b[i] {
+		if a[i].String() != b[i].String() {
 			return false
 		}
 	}
@@ -93,7 +91,7 @@ func CompareCoreCommands(a []models.Command, b []models.Command) bool {
 	return true
 }
 
-func CompareDevices(a models.Device, b models.Device) bool {
+func CompareDevices(a contract.Device, b contract.Device) bool {
 	labelsOk := CompareStrings(a.Labels, b.Labels)
 	profileOk := CompareDeviceProfiles(a.Profile, b.Profile)
 	serviceOk := CompareDeviceServices(a.Service, b.Service)
@@ -110,7 +108,7 @@ func CompareDevices(a models.Device, b models.Device) bool {
 		serviceOk
 }
 
-func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool {
+func CompareDeviceProfiles(a contract.DeviceProfile, b contract.DeviceProfile) bool {
 	labelsOk := CompareStrings(a.Labels, b.Labels)
 	cmdsOk := CompareCoreCommands(a.CoreCommands, b.CoreCommands)
 	devResourcesOk := CompareDeviceResources(a.DeviceResources, b.DeviceResources)
@@ -130,7 +128,7 @@ func CompareDeviceProfiles(a models.DeviceProfile, b models.DeviceProfile) bool 
 		resourcesOk
 }
 
-func CompareDeviceResources(a []models.DeviceResource, b []models.DeviceResource) bool {
+func CompareDeviceResources(a []contract.DeviceResource, b []contract.DeviceResource) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -150,12 +148,12 @@ func CompareDeviceResources(a []models.DeviceResource, b []models.DeviceResource
 	return true
 }
 
-func CompareDeviceServices(a models.DeviceService, b models.DeviceService) bool {
-	serviceOk := CompareServices(a.Service, b.Service)
+func CompareDeviceServices(a contract.DeviceService, b contract.DeviceService) bool {
+	serviceOk := CompareServices(a, b)
 	return a.AdminState == b.AdminState && serviceOk
 }
 
-func CompareDeviceCommands(a []models.ProfileResource, b []models.ProfileResource) bool {
+func CompareDeviceCommands(a []contract.ProfileResource, b []contract.ProfileResource) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -172,7 +170,7 @@ func CompareDeviceCommands(a []models.ProfileResource, b []models.ProfileResourc
 	return true
 }
 
-func CompareResourceOperations(a []models.ResourceOperation, b []models.ResourceOperation) bool {
+func CompareResourceOperations(a []contract.ResourceOperation, b []contract.ResourceOperation) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -195,7 +193,7 @@ func CompareResourceOperations(a []models.ResourceOperation, b []models.Resource
 	return true
 }
 
-func CompareServices(a models.Service, b models.Service) bool {
+func CompareServices(a contract.DeviceService, b contract.DeviceService) bool {
 	labelsOk := CompareStrings(a.Labels, b.Labels)
 
 	return a.DescribedObject == b.DescribedObject &&
@@ -234,38 +232,6 @@ func CompareStrStrMap(a map[string]string, b map[string]string) bool {
 	}
 
 	return true
-}
-
-func MakeAddressable(name string, addr *models.Addressable) (*models.Addressable, error) {
-	// check whether there has been an existing addressable
-	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
-	addressable, err := AddressableClient.AddressableForName(name, ctx)
-	if err != nil {
-		if errsc, ok := err.(*types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
-			LoggingClient.Debug(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", addr.Name))
-			millis := time.Now().UnixNano() / int64(time.Millisecond)
-			addressable = *addr
-			addressable.Name = name
-			addressable.Origin = millis
-			LoggingClient.Debug(fmt.Sprintf("Adding Addressable: %v", addressable))
-			id, err := AddressableClient.Add(&addressable, ctx)
-			if err != nil {
-				LoggingClient.Error(fmt.Sprintf("Add Addressable failed %v, error: %v", addr, err))
-				return nil, err
-			}
-			if err = VerifyIdFormat(id, "Addressable"); err != nil {
-				return nil, err
-			}
-			addressable.Id = id
-		} else {
-			LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
-			return nil, err
-		}
-	} else {
-		LoggingClient.Debug(fmt.Sprintf("Addressable %s exists, using the existing one", addressable.Name))
-	}
-
-	return &addressable, nil
 }
 
 func VerifyIdFormat(id string, drName string) error {

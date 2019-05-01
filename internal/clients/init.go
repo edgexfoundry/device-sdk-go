@@ -9,6 +9,11 @@ package clients
 
 import (
 	"fmt"
+	"net"
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
@@ -17,10 +22,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	"net"
-	"net/http"
-	"sync"
-	"time"
 )
 
 const clientCount int = 8

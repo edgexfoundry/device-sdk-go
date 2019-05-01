@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,13 +9,10 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"strings"
-)
 
-const (
-	getOpsStr string = "get"
-	setOpsStr string = "set"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
@@ -23,45 +20,45 @@ var (
 )
 
 type ProfileCache interface {
-	ForName(name string) (models.DeviceProfile, bool)
-	ForId(id string) (models.DeviceProfile, bool)
-	All() []models.DeviceProfile
-	Add(profile models.DeviceProfile) error
-	Update(profile models.DeviceProfile) error
+	ForName(name string) (contract.DeviceProfile, bool)
+	ForId(id string) (contract.DeviceProfile, bool)
+	All() []contract.DeviceProfile
+	Add(profile contract.DeviceProfile) error
+	Update(profile contract.DeviceProfile) error
 	Remove(id string) error
 	RemoveByName(name string) error
-	DeviceResource(profileName string, resourceName string) (models.DeviceResource, bool)
+	DeviceResource(profileName string, resourceName string) (contract.DeviceResource, bool)
 	CommandExists(profileName string, cmd string) (bool, error)
-	ResourceOperations(profileName string, cmd string, method string) ([]models.ResourceOperation, error)
-	ResourceOperation(profileName string, object string, method string) (models.ResourceOperation, error)
+	ResourceOperations(profileName string, cmd string, method string) ([]contract.ResourceOperation, error)
+	ResourceOperation(profileName string, object string, method string) (contract.ResourceOperation, error)
 }
 
 type profileCache struct {
-	dpMap    map[string]models.DeviceProfile // key is DeviceProfile name
-	nameMap  map[string]string               // key is id, and value is DeviceProfile name
-	drMap    map[string]map[string]models.DeviceResource
-	dcMap    map[string]map[string][]models.ResourceOperation
-	setOpMap map[string]map[string][]models.ResourceOperation
-	ccMap    map[string]map[string]models.Command
+	dpMap    map[string]contract.DeviceProfile // key is DeviceProfile name
+	nameMap  map[string]string                 // key is id, and value is DeviceProfile name
+	drMap    map[string]map[string]contract.DeviceResource
+	dcMap    map[string]map[string][]contract.ResourceOperation
+	setOpMap map[string]map[string][]contract.ResourceOperation
+	ccMap    map[string]map[string]contract.Command
 }
 
-func (p *profileCache) ForName(name string) (models.DeviceProfile, bool) {
+func (p *profileCache) ForName(name string) (contract.DeviceProfile, bool) {
 	dp, ok := p.dpMap[name]
 	return dp, ok
 }
 
-func (p *profileCache) ForId(id string) (models.DeviceProfile, bool) {
+func (p *profileCache) ForId(id string) (contract.DeviceProfile, bool) {
 	name, ok := p.nameMap[id]
 	if !ok {
-		return models.DeviceProfile{}, ok
+		return contract.DeviceProfile{}, ok
 	}
 
 	dp, ok := p.dpMap[name]
 	return dp, ok
 }
 
-func (p *profileCache) All() []models.DeviceProfile {
-	ps := make([]models.DeviceProfile, len(p.dpMap))
+func (p *profileCache) All() []contract.DeviceProfile {
+	ps := make([]contract.DeviceProfile, len(p.dpMap))
 	i := 0
 	for _, profile := range p.dpMap {
 		ps[i] = profile
@@ -70,7 +67,7 @@ func (p *profileCache) All() []models.DeviceProfile {
 	return ps
 }
 
-func (p *profileCache) Add(profile models.DeviceProfile) error {
+func (p *profileCache) Add(profile contract.DeviceProfile) error {
 	if _, ok := p.dpMap[profile.Name]; ok {
 		return fmt.Errorf("device profile %s has already existed in cache", profile.Name)
 	}
@@ -82,17 +79,17 @@ func (p *profileCache) Add(profile models.DeviceProfile) error {
 	return nil
 }
 
-func deviceResourceSliceToMap(deviceResources []models.DeviceResource) map[string]models.DeviceResource {
-	result := make(map[string]models.DeviceResource, len(deviceResources))
+func deviceResourceSliceToMap(deviceResources []contract.DeviceResource) map[string]contract.DeviceResource {
+	result := make(map[string]contract.DeviceResource, len(deviceResources))
 	for _, dr := range deviceResources {
 		result[dr.Name] = dr
 	}
 	return result
 }
 
-func profileResourceSliceToMaps(profileResources []models.ProfileResource) (map[string][]models.ResourceOperation, map[string][]models.ResourceOperation) {
-	getResult := make(map[string][]models.ResourceOperation, len(profileResources))
-	setResult := make(map[string][]models.ResourceOperation, len(profileResources))
+func profileResourceSliceToMaps(profileResources []contract.ProfileResource) (map[string][]contract.ResourceOperation, map[string][]contract.ResourceOperation) {
+	getResult := make(map[string][]contract.ResourceOperation, len(profileResources))
+	setResult := make(map[string][]contract.ResourceOperation, len(profileResources))
 	for _, pr := range profileResources {
 		if len(pr.Get) > 0 {
 			getResult[pr.Name] = pr.Get
@@ -104,15 +101,15 @@ func profileResourceSliceToMaps(profileResources []models.ProfileResource) (map[
 	return getResult, setResult
 }
 
-func commandSliceToMap(commands []models.Command) map[string]models.Command {
-	result := make(map[string]models.Command, len(commands))
+func commandSliceToMap(commands []contract.Command) map[string]contract.Command {
+	result := make(map[string]contract.Command, len(commands))
 	for _, cmd := range commands {
 		result[cmd.Name] = cmd
 	}
 	return result
 }
 
-func (p *profileCache) Update(profile models.DeviceProfile) error {
+func (p *profileCache) Update(profile contract.DeviceProfile) error {
 	if err := p.Remove(profile.Id); err != nil {
 		return err
 	}
@@ -143,10 +140,10 @@ func (p *profileCache) RemoveByName(name string) error {
 	return nil
 }
 
-func (p *profileCache) DeviceResource(profileName string, resourceName string) (models.DeviceResource, bool) {
+func (p *profileCache) DeviceResource(profileName string, resourceName string) (contract.DeviceResource, bool) {
 	drs, ok := p.drMap[profileName]
 	if !ok {
-		return models.DeviceResource{}, ok
+		return contract.DeviceResource{}, ok
 	}
 
 	dr, ok := drs[resourceName]
@@ -170,15 +167,15 @@ func (p *profileCache) CommandExists(profileName string, cmd string) (bool, erro
 }
 
 // Get ResourceOperations
-func (p *profileCache) ResourceOperations(profileName string, cmd string, method string) ([]models.ResourceOperation, error) {
-	var resOps []models.ResourceOperation
-	var rosMap map[string][]models.ResourceOperation
+func (p *profileCache) ResourceOperations(profileName string, cmd string, method string) ([]contract.ResourceOperation, error) {
+	var resOps []contract.ResourceOperation
+	var rosMap map[string][]contract.ResourceOperation
 	var ok bool
-	if strings.ToLower(method) == getOpsStr {
+	if strings.ToLower(method) == common.GetCmdMethod {
 		if rosMap, ok = p.dcMap[profileName]; !ok {
 			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
 		}
-	} else if strings.ToLower(method) == setOpsStr {
+	} else if strings.ToLower(method) == common.SetCmdMethod {
 		if rosMap, ok = p.setOpMap[profileName]; !ok {
 			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
 		}
@@ -191,15 +188,15 @@ func (p *profileCache) ResourceOperations(profileName string, cmd string, method
 }
 
 // Return the first matched ResourceOperation
-func (p *profileCache) ResourceOperation(profileName string, object string, method string) (models.ResourceOperation, error) {
-	var ro models.ResourceOperation
-	var rosMap map[string][]models.ResourceOperation
+func (p *profileCache) ResourceOperation(profileName string, object string, method string) (contract.ResourceOperation, error) {
+	var ro contract.ResourceOperation
+	var rosMap map[string][]contract.ResourceOperation
 	var ok bool
-	if strings.ToLower(method) == getOpsStr {
+	if strings.ToLower(method) == common.GetCmdMethod {
 		if rosMap, ok = p.dcMap[profileName]; !ok {
 			return ro, fmt.Errorf("profiles: ResourceOperation: specified profile: %s not found", profileName)
 		}
-	} else if strings.ToLower(method) == setOpsStr {
+	} else if strings.ToLower(method) == common.SetCmdMethod {
 		if rosMap, ok = p.setOpMap[profileName]; !ok {
 			return ro, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
 		}
@@ -211,7 +208,7 @@ func (p *profileCache) ResourceOperation(profileName string, object string, meth
 	return ro, nil
 }
 
-func retrieveFirstRObyObject(rosMap map[string][]models.ResourceOperation, object string) (models.ResourceOperation, bool) {
+func retrieveFirstRObyObject(rosMap map[string][]contract.ResourceOperation, object string) (contract.ResourceOperation, bool) {
 	for _, ros := range rosMap {
 		for _, ro := range ros {
 			if ro.Object == object {
@@ -219,17 +216,17 @@ func retrieveFirstRObyObject(rosMap map[string][]models.ResourceOperation, objec
 			}
 		}
 	}
-	return models.ResourceOperation{}, false
+	return contract.ResourceOperation{}, false
 }
 
-func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
+func newProfileCache(profiles []contract.DeviceProfile) ProfileCache {
 	defaultSize := len(profiles) * 2
-	dpMap := make(map[string]models.DeviceProfile, defaultSize)
+	dpMap := make(map[string]contract.DeviceProfile, defaultSize)
 	nameMap := make(map[string]string, defaultSize)
-	drMap := make(map[string]map[string]models.DeviceResource, defaultSize)
-	getOpMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
-	setOpMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
-	cmdMap := make(map[string]map[string]models.Command, defaultSize)
+	drMap := make(map[string]map[string]contract.DeviceResource, defaultSize)
+	getOpMap := make(map[string]map[string][]contract.ResourceOperation, defaultSize)
+	setOpMap := make(map[string]map[string][]contract.ResourceOperation, defaultSize)
+	cmdMap := make(map[string]map[string]contract.Command, defaultSize)
 	for _, dp := range profiles {
 		dpMap[dp.Name] = dp
 		nameMap[dp.Id] = dp.Name

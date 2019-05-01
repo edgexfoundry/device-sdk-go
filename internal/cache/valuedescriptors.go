@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,7 +9,8 @@ package cache
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var (
@@ -17,26 +18,26 @@ var (
 )
 
 type ValueDescriptorCache interface {
-	ForName(name string) (models.ValueDescriptor, bool)
-	All() []models.ValueDescriptor
-	Add(descriptor models.ValueDescriptor) error
-	Update(descriptor models.ValueDescriptor) error
+	ForName(name string) (contract.ValueDescriptor, bool)
+	All() []contract.ValueDescriptor
+	Add(descriptor contract.ValueDescriptor) error
+	Update(descriptor contract.ValueDescriptor) error
 	Remove(id string) error
 	RemoveByName(name string) error
 }
 
 type valueDescriptorCache struct {
-	vdMap   map[string]models.ValueDescriptor // key is ValueDescriptor name
-	nameMap map[string]string                 // key is id, and value is ValueDescriptor name
+	vdMap   map[string]contract.ValueDescriptor // key is ValueDescriptor name
+	nameMap map[string]string                   // key is id, and value is ValueDescriptor name
 }
 
-func (v *valueDescriptorCache) ForName(name string) (models.ValueDescriptor, bool) {
+func (v *valueDescriptorCache) ForName(name string) (contract.ValueDescriptor, bool) {
 	vd, ok := v.vdMap[name]
 	return vd, ok
 }
 
-func (v *valueDescriptorCache) All() []models.ValueDescriptor {
-	vds := make([]models.ValueDescriptor, len(v.vdMap))
+func (v *valueDescriptorCache) All() []contract.ValueDescriptor {
+	vds := make([]contract.ValueDescriptor, len(v.vdMap))
 	i := 0
 	for _, vd := range v.vdMap {
 		vds[i] = vd
@@ -45,7 +46,7 @@ func (v *valueDescriptorCache) All() []models.ValueDescriptor {
 	return vds
 }
 
-func (v *valueDescriptorCache) Add(descriptor models.ValueDescriptor) error {
+func (v *valueDescriptorCache) Add(descriptor contract.ValueDescriptor) error {
 	_, ok := v.vdMap[descriptor.Name]
 	if ok {
 		return fmt.Errorf("value descriptor %s has already existed in cache", descriptor.Name)
@@ -55,7 +56,7 @@ func (v *valueDescriptorCache) Add(descriptor models.ValueDescriptor) error {
 	return nil
 }
 
-func (v *valueDescriptorCache) Update(descriptor models.ValueDescriptor) error {
+func (v *valueDescriptorCache) Update(descriptor contract.ValueDescriptor) error {
 	if err := v.Remove(descriptor.Id); err != nil {
 		return err
 	}
@@ -81,9 +82,9 @@ func (v *valueDescriptorCache) RemoveByName(name string) error {
 	return nil
 }
 
-func newValueDescriptorCache(descriptors []models.ValueDescriptor) ValueDescriptorCache {
+func newValueDescriptorCache(descriptors []contract.ValueDescriptor) ValueDescriptorCache {
 	defaultSize := len(descriptors) * 2
-	vdMap := make(map[string]models.ValueDescriptor, defaultSize)
+	vdMap := make(map[string]contract.ValueDescriptor, defaultSize)
 	nameMap := make(map[string]string, defaultSize)
 	for _, vd := range descriptors {
 		vdMap[vd.Name] = vd

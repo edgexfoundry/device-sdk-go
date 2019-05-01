@@ -12,7 +12,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
-	ds_models "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -54,7 +54,7 @@ func (e *executor) Run() {
 				cacheReadings(e, evt.Readings)
 			}
 			common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
-			event := &ds_models.Event{Event: evt.Event}
+			event := &dsModels.Event{Event: evt.Event}
 			// Attach origin timestamp for readings if none yet specified
 			if event.Origin == 0 {
 				event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
@@ -70,7 +70,7 @@ func (e *executor) Run() {
 	}
 }
 
-func readResource(e *executor) (*ds_models.Event, common.AppError) {
+func readResource(e *executor) (*dsModels.Event, common.AppError) {
 	vars := make(map[string]string, 2)
 	vars[common.NameVar] = e.deviceName
 	vars[common.CommandVar] = e.autoEvent.Resource

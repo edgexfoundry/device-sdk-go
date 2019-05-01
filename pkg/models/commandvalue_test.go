@@ -19,7 +19,7 @@ import (
 // Test NewBoolValue function.
 func TestNewBoolValue(t *testing.T) {
 	var value bool
-	cv, _ := NewBoolValue(nil, 0, value)
+	cv, _ := NewBoolValue("resource", 0, value)
 	if cv.Type != Bool {
 		t.Errorf("NewBoolValue: invalid Type: %v", cv.Type)
 	}
@@ -38,7 +38,7 @@ func TestNewBoolValue(t *testing.T) {
 	}
 
 	value = true
-	cv, _ = NewBoolValue(nil, 0, value)
+	cv, _ = NewBoolValue("resource", 0, value)
 	if cv.Type != Bool {
 		t.Errorf("NewBoolValue: invalid Type: %v #2", cv.Type)
 	}
@@ -60,7 +60,7 @@ func TestNewBoolValue(t *testing.T) {
 // Test NewStringValue function.
 func TestNewStringValue(t *testing.T) {
 	var value string
-	cv := NewStringValue(nil, 0, value)
+	cv := NewStringValue("resource", 0, value)
 	if cv.Type != String {
 		t.Errorf("NewStringValue: invalid Type: %v", cv.Type)
 	}
@@ -73,7 +73,7 @@ func TestNewStringValue(t *testing.T) {
 	}
 
 	value = "this is a real string"
-	cv = NewStringValue(nil, 0, value)
+	cv = NewStringValue("resource", 0, value)
 	if cv.Type != String {
 		t.Errorf("NewStringValue: invalid Type: %v #2", cv.Type)
 	}
@@ -95,7 +95,7 @@ func TestNewStringValue(t *testing.T) {
 // Test NewUint8Value function.
 func TestNewUint8Value(t *testing.T) {
 	var value uint8
-	cv, _ := NewUint8Value(nil, 0, value)
+	cv, _ := NewUint8Value("resource", 0, value)
 	if cv.Type != Uint8 {
 		t.Errorf("NewUint8Value: invalid Type: %v", cv.Type)
 	}
@@ -114,7 +114,7 @@ func TestNewUint8Value(t *testing.T) {
 	}
 
 	value = 42
-	cv, _ = NewUint8Value(nil, 0, value)
+	cv, _ = NewUint8Value("resource", 0, value)
 	if cv.Type != Uint8 {
 		t.Errorf("NewUint8Value: invalid Type: %v #3", cv.Type)
 	}
@@ -139,7 +139,7 @@ func TestNewUint8Value(t *testing.T) {
 // Test NewUint16Value function.
 func TestNewUint16Value(t *testing.T) {
 	var value uint16
-	cv, _ := NewUint16Value(nil, 0, value)
+	cv, _ := NewUint16Value("resource", 0, value)
 	if cv.Type != Uint16 {
 		t.Errorf("NewUint16Value: invalid Type: %v", cv.Type)
 	}
@@ -158,7 +158,7 @@ func TestNewUint16Value(t *testing.T) {
 	}
 
 	value = 65535
-	cv, _ = NewUint16Value(nil, 0, value)
+	cv, _ = NewUint16Value("resource", 0, value)
 	if cv.Type != Uint16 {
 		t.Errorf("NewUint16Value: invalid Type: %v #3", cv.Type)
 	}
@@ -183,7 +183,7 @@ func TestNewUint16Value(t *testing.T) {
 // Test NewUint32Value function.
 func TestNewUint32Value(t *testing.T) {
 	var value uint32
-	cv, _ := NewUint32Value(nil, 0, value)
+	cv, _ := NewUint32Value("resource", 0, value)
 	if cv.Type != Uint32 {
 		t.Errorf("NewUint32Value: invalid Type: %v", cv.Type)
 	}
@@ -202,7 +202,7 @@ func TestNewUint32Value(t *testing.T) {
 	}
 
 	value = 4294967295
-	cv, _ = NewUint32Value(nil, 0, value)
+	cv, _ = NewUint32Value("resource", 0, value)
 	if cv.Type != Uint32 {
 		t.Errorf("NewUint32Value: invalid Type: %v #3", cv.Type)
 	}
@@ -229,7 +229,7 @@ func TestNewUint32Value(t *testing.T) {
 func TestNewUint64Value(t *testing.T) {
 	var value uint64
 	var origin int64 = 42
-	cv, _ := NewUint64Value(nil, origin, value)
+	cv, _ := NewUint64Value("resource", origin, value)
 	if cv.Type != Uint64 {
 		t.Errorf("NewUint64Value: invalid Type: %v", cv.Type)
 	}
@@ -251,7 +251,7 @@ func TestNewUint64Value(t *testing.T) {
 	}
 
 	value = 18446744073709551615
-	cv, _ = NewUint64Value(nil, 0, value)
+	cv, _ = NewUint64Value("resource", 0, value)
 	if cv.Type != Uint64 {
 		t.Errorf("NewUint64Value: invalid Type: %v #3", cv.Type)
 	}
@@ -276,7 +276,7 @@ func TestNewUint64Value(t *testing.T) {
 // Test NewInt8Value function.
 func TestNewInt8Value(t *testing.T) {
 	var value int8 = -128
-	cv, _ := NewInt8Value(nil, 0, value)
+	cv, _ := NewInt8Value("resource", 0, value)
 	if cv.Type != Int8 {
 		t.Errorf("NewInt8Value: invalid Type: %v", cv.Type)
 	}
@@ -299,7 +299,7 @@ func TestNewInt8Value(t *testing.T) {
 	}
 
 	value = 127
-	cv, _ = NewInt8Value(nil, 0, value)
+	cv, _ = NewInt8Value("resource", 0, value)
 	if cv.Type != Int8 {
 		t.Errorf("NewInt8Value: invalid Type: %v #3", cv.Type)
 	}
@@ -324,7 +324,7 @@ func TestNewInt8Value(t *testing.T) {
 // Test NewInt16Value function.
 func TestNewInt16Value(t *testing.T) {
 	var value int16 = -32768
-	cv, _ := NewInt16Value(nil, 0, value)
+	cv, _ := NewInt16Value("resource", 0, value)
 	if cv.Type != Int16 {
 		t.Errorf("NewInt16Value: invalid Type: %v", cv.Type)
 	}
@@ -346,7 +346,7 @@ func TestNewInt16Value(t *testing.T) {
 	}
 
 	value = 32767
-	cv, _ = NewInt16Value(nil, 0, value)
+	cv, _ = NewInt16Value("resource", 0, value)
 	if cv.Type != Int16 {
 		t.Errorf("NewInt16Value: invalid Type: %v #3", cv.Type)
 	}
@@ -371,7 +371,7 @@ func TestNewInt16Value(t *testing.T) {
 // Test NewInt32Value function.
 func TestNewInt32Value(t *testing.T) {
 	var value int32 = -2147483648
-	cv, _ := NewInt32Value(nil, 0, value)
+	cv, _ := NewInt32Value("resource", 0, value)
 	if cv.Type != Int32 {
 		t.Errorf("NewInt32Value: invalid Type: %v", cv.Type)
 	}
@@ -393,7 +393,7 @@ func TestNewInt32Value(t *testing.T) {
 	}
 
 	value = 2147483647
-	cv, _ = NewInt32Value(nil, 0, value)
+	cv, _ = NewInt32Value("resource", 0, value)
 	if cv.Type != Int32 {
 		t.Errorf("NewInt32Value: invalid Type: %v #3", cv.Type)
 	}
@@ -419,7 +419,7 @@ func TestNewInt32Value(t *testing.T) {
 func TestNewInt64Value(t *testing.T) {
 	var value int64 = -9223372036854775808
 	var origin int64 = 42
-	cv, _ := NewInt64Value(nil, origin, value)
+	cv, _ := NewInt64Value("resource", origin, value)
 	if cv.Type != Int64 {
 		t.Errorf("NewInt64Value: invalid Type: %v", cv.Type)
 	}
@@ -444,7 +444,7 @@ func TestNewInt64Value(t *testing.T) {
 	}
 
 	value = 9223372036854775807
-	cv, _ = NewInt64Value(nil, 0, value)
+	cv, _ = NewInt64Value("resource", 0, value)
 	if cv.Type != Int64 {
 		t.Errorf("NewInt64Value: invalid Type: %v #3", cv.Type)
 	}
@@ -470,7 +470,7 @@ func TestNewInt64Value(t *testing.T) {
 func TestNewFloat32Value(t *testing.T) {
 	var value float32 = math.SmallestNonzeroFloat32
 	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
-	cv, _ := NewFloat32Value(nil, origin, value)
+	cv, _ := NewFloat32Value("resource", origin, value)
 	if cv.Type != Float32 {
 		t.Errorf("NewFloat32Value: invalid Type: %v", cv.Type)
 	}
@@ -495,7 +495,7 @@ func TestNewFloat32Value(t *testing.T) {
 	}
 
 	value = math.MaxFloat32
-	cv, _ = NewFloat32Value(nil, 0, value)
+	cv, _ = NewFloat32Value("resource", 0, value)
 	if cv.Type != Float32 {
 		t.Errorf("NewFloat32Value: invalid Type: %v #3", cv.Type)
 	}
@@ -521,7 +521,7 @@ func TestNewFloat32Value(t *testing.T) {
 func TestNewFloat64Value(t *testing.T) {
 	var value float64 = math.SmallestNonzeroFloat64
 	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
-	cv, _ := NewFloat64Value(nil, origin, value)
+	cv, _ := NewFloat64Value("resource", origin, value)
 	if cv.Type != Float64 {
 		t.Errorf("NewFloat64Value: invalid Type: %v", cv.Type)
 	}
@@ -546,7 +546,7 @@ func TestNewFloat64Value(t *testing.T) {
 	}
 
 	value = math.MaxFloat64
-	cv, _ = NewFloat64Value(nil, 0, value)
+	cv, _ = NewFloat64Value("resource", 0, value)
 	if cv.Type != Float64 {
 		t.Errorf("NewFloat64Value: invalid Type: %v #3", cv.Type)
 	}

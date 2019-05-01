@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/ugorji/go/codec"
 )
 
@@ -72,10 +72,44 @@ const (
 	MaxBinaryBytes = 16777216
 )
 
+// ParseValueType could get ValueType from type name in string format
+// if the type name cannot be parsed correctly, return String ValueType
+func ParseValueType(typeName string) ValueType {
+	switch strings.ToUpper(typeName) {
+	case "BOOL":
+		return Bool
+	case "STRING":
+		return String
+	case "UINT8":
+		return Uint8
+	case "UINT16":
+		return Uint16
+	case "UINT32":
+		return Uint32
+	case "UINT64":
+		return Uint64
+	case "INT8":
+		return Int8
+	case "INT16":
+		return Int16
+	case "INT32":
+		return Int32
+	case "INT64":
+		return Int64
+	case "FLOAT32":
+		return Float32
+	case "FLOAT64":
+		return Float64
+	case "BINARY":
+		return Binary
+	default:
+		return String
+	}
+}
+
 type CommandValue struct {
-	// RO is a pointer to the ResourceOperation that triggered the
-	// CommandResult to be returned from the ProtocolDriver instance.
-	RO *contract.ResourceOperation
+	// DeviceResourceName is the name of Device Resource for this command
+	DeviceResourceName string
 	// Origin is an int64 value which indicates the time the reading
 	// contained in the CommandValue was read by the ProtocolDriver
 	// instance.
@@ -99,108 +133,108 @@ type CommandValue struct {
 	BinValue []byte
 }
 
-func NewBoolValue(ro *contract.ResourceOperation, origin int64, value bool) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Bool}
+func NewBoolValue(DeviceResourceName string, origin int64, value bool) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Bool}
 	err = encodeValue(cv, value)
 	return
 }
 
-func NewStringValue(ro *contract.ResourceOperation, origin int64, value string) (cv *CommandValue) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: String, stringValue: value}
+func NewStringValue(DeviceResourceName string, origin int64, value string) (cv *CommandValue) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: String, stringValue: value}
 	return
 }
 
 // NewUint8Value creates a CommandValue of Type Uint8 with the given value.
-func NewUint8Value(ro *contract.ResourceOperation, origin int64, value uint8) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint8}
+func NewUint8Value(DeviceResourceName string, origin int64, value uint8) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Uint8}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint16Value creates a CommandValue of Type Uint16 with the given value.
-func NewUint16Value(ro *contract.ResourceOperation, origin int64, value uint16) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint16}
+func NewUint16Value(DeviceResourceName string, origin int64, value uint16) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Uint16}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint32Value creates a CommandValue of Type Uint32 with the given value.
-func NewUint32Value(ro *contract.ResourceOperation, origin int64, value uint32) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint32}
+func NewUint32Value(DeviceResourceName string, origin int64, value uint32) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Uint32}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewUint64Value creates a CommandValue of Type Uint64 with the given value.
-func NewUint64Value(ro *contract.ResourceOperation, origin int64, value uint64) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Uint64}
+func NewUint64Value(DeviceResourceName string, origin int64, value uint64) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Uint64}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt8Value creates a CommandValue of Type Int8 with the given value.
-func NewInt8Value(ro *contract.ResourceOperation, origin int64, value int8) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Int8}
+func NewInt8Value(DeviceResourceName string, origin int64, value int8) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Int8}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt16Value creates a CommandValue of Type Int16 with the given value.
-func NewInt16Value(ro *contract.ResourceOperation, origin int64, value int16) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Int16}
+func NewInt16Value(DeviceResourceName string, origin int64, value int16) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Int16}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt32Value creates a CommandValue of Type Int32 with the given value.
-func NewInt32Value(ro *contract.ResourceOperation, origin int64, value int32) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Int32}
+func NewInt32Value(DeviceResourceName string, origin int64, value int32) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Int32}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewInt64Value creates a CommandValue of Type Int64 with the given value.
-func NewInt64Value(ro *contract.ResourceOperation, origin int64, value int64) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Int64}
+func NewInt64Value(DeviceResourceName string, origin int64, value int64) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Int64}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewFloat32Value creates a CommandValue of Type Float32 with the given value.
-func NewFloat32Value(ro *contract.ResourceOperation, origin int64, value float32) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Float32}
+func NewFloat32Value(DeviceResourceName string, origin int64, value float32) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Float32}
 	err = encodeValue(cv, value)
 	return
 }
 
 // NewFloat64Value creates a CommandValue of Type Float64 with the given value.
-func NewFloat64Value(ro *contract.ResourceOperation, origin int64, value float64) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Float64}
+func NewFloat64Value(DeviceResourceName string, origin int64, value float64) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Float64}
 	err = encodeValue(cv, value)
 	return
 }
 
 //NewCommandValue create a CommandValue according to the Type supplied
-func NewCommandValue(ro *contract.ResourceOperation, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
-	cv = &CommandValue{RO: ro, Origin: origin, Type: t}
+func NewCommandValue(DeviceResourceName string, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: t}
 	switch t {
-		case Binary:
-			// assign cv.BinValue
-			err = encodeBinaryValue(cv, value)
-		case String:
-			cv.stringValue = value.(string)
-		default:
-			err = encodeValue(cv, value)
+	case Binary:
+		// assign cv.BinValue
+		err = encodeBinaryValue(cv, value)
+	case String:
+		cv.stringValue = value.(string)
+	default:
+		err = encodeValue(cv, value)
 	}
 	return
 }
 
 // NewBinaryValue creates a CommandValue with binary payload and enforces the memory limit for event readings.
-func NewBinaryValue(ro *contract.ResourceOperation, origin int64, value []byte) (cv *CommandValue, err error) {
+func NewBinaryValue(DeviceResourceName string, origin int64, value []byte) (cv *CommandValue, err error) {
 	if binary.Size(value) > MaxBinaryBytes {
 		return nil, fmt.Errorf("Requested CommandValue payload exceeds limit for binary readings (%v bytes)", MaxBinaryBytes)
 	}
-	cv = &CommandValue{RO: ro, Origin: origin, Type: Binary, BinValue: value}
+	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Binary, BinValue: value}
 	return
 }
 
@@ -303,7 +337,7 @@ func (cv *CommandValue) ValueToString() (str string) {
 		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 	case Binary:
 		// produce string representation of first 20 bytes of binary value
-		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20]) ))
+		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20])))
 	}
 
 	return

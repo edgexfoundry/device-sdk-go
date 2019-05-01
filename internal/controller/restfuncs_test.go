@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +10,6 @@ package controller
 import (
 	"bytes"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,7 +17,8 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	logger "github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
 )
 
@@ -118,57 +118,3 @@ func TestCommandNoDevice(t *testing.T) {
 		t.Errorf("No Device: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
 	}
 }
-
-// TestCommandNoDevice tests the command REST call when the device specified
-// by deviceId is locked.
-//func TestCommandDeviceLocked(t *testing.T) {
-//	lc := logger.NewClient("command_test", false, "./command_test.log")
-//	common.LoggingClient = lc
-//r := InitRestRoutes()
-// Empty cache will by default have no devices.
-//dc = &deviceCache{}
-
-/* TODO: adding a device to the devices cache requires a live metadata instance. We need
- * create interfaces for all of the caches, so that they can be mocked in unit tests.
-
-millis := time.Now().UnixNano() * int64(time.Nanosecond) / int64(time.Microsecond)
-
-// TODO: does HTTPMethod need to be specified?
-addr = models.Addressable{
-	BaseObject: models.BaseObject{
-		Origin: millis,
-	},
-	name:       s.Config.ServiceName,
-	HTTPMethod: "POST",
-	Protocol:   "HTTP",
-	Address:    "localhost",
-	Port:       "2112",
-	Path:       "/api/v1/callback",
-}
-addr.Origin = millis
-
-// Create a locked Device
-d := &models.Device{name: "DummyDevice", AdminState: "LOCKED", OperatingState: "ENABLED"}
-d.Id = testDeviceId
-
-s.cd.Add(d)
-
-req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", v1Device, testDeviceId, testCmd), nil)
-req = mux.SetURLVars(req, map[string]string{"deviceId": testDeviceId, "cmd": testCmd})
-
-rr := httptest.NewRecorder()
-svc.r.ServeHTTP(rr, req)
-
-if status := rr.Code; status != http.StatusLocked {
-	t.Errorf("NoDevice: handler returned wrong status code: got %v want %v",
-		status, http.StatusLocked)
-}
-
-body := strings.TrimSpace(rr.Body.String())
-expected := "device: " + testDeviceId + " locked; GET " + v1Device + "/" + testDeviceId + "/" + testCmd
-
-if body != expected {
-	t.Errorf("DeviceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
-}
-*/
-//}
