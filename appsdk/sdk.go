@@ -149,8 +149,12 @@ func (sdk *AppFunctionsSDK) HTTPPostXML(url string) func(*appcontext.Context, ..
 // MQTTSend sends data from the previous function to the specified MQTT broker.
 // If no previous function exists, then the event that triggered the pipeline will be used.
 // This function is a configuration function and returns a function pointer.
-func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key string) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
-	sender := transforms.NewMQTTSender(sdk.LoggingClient, addr, cert, key)
+func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
+	mqttconfig := transforms.NewMqttConfig()
+	mqttconfig.SetQos(qos)
+	mqttconfig.SetRetain(retain)
+	mqttconfig.SetAutoreconnect(autoreconnect)
+	sender := transforms.NewMQTTSender(sdk.LoggingClient, addr, cert, key, mqttconfig)
 	return sender.MQTTSend
 }
 
