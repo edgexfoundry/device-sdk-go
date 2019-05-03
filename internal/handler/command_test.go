@@ -287,7 +287,8 @@ func TestParseWriteParams(t *testing.T) {
 		return
 	}
 	roMap := roSliceToMap(profile.DeviceCommands[0].Set)
-	roMapTestMapping := roSliceToMap(profile.DeviceCommands[8].Set)
+	roMapTestMappingPass := roSliceToMap(profile.DeviceCommands[7].Set)
+	roMapTestMappingFail := roSliceToMap(profile.DeviceCommands[8].Set)
 	tests := []struct {
 		testName    string
 		profile     string
@@ -298,9 +299,9 @@ func TestParseWriteParams(t *testing.T) {
 		{"ValidWriteParam", profileName, roMap, `{"RandomValue_Int8":"123"}`, false},
 		{"InvalidWriteParam", profileName, roMap, `{"NotFound":"true"}`, true},
 		{"InvalidWriteParamType", profileName, roMap, `{"RandomValue_Int8":"abc"}`, true},
-		{"ValueMappingPass", profileName, roMapTestMapping, `{"RandomValue_Int8":"Pass"}`, false},
+		{"ValueMappingPass", profileName, roMapTestMappingPass, `{"ResourceTestMapping_Pass":"Pass"}`, false},
 		//The expectErr on the test below is false because parseWriteParams does NOT throw an error when there is no mapping value matched
-		{"ValueMappingFail", profileName, roMapTestMapping, `{"RandomValue_Int8":"123"}`, false},
+		{"ValueMappingFail", profileName, roMapTestMappingFail, `{"ResourceTestMapping_Fail":"123"}`, false},
 		{"ParseParamsFail", profileName, roMap, ``, true},
 		{"NoParams", profileName, roMap, `{}`, true},
 	}
@@ -365,7 +366,10 @@ func TestExecReadCmd(t *testing.T) {
 				t.Errorf("%s expect data assertion failed", tt.testName)
 			}
 			// issue #89 will discuss how to handle there is no mapping matched
-			if tt.testName == "ValueMappingFail" && !(v.Readings[0].Value == strconv.Itoa(int(mock.Int8Value))) {
+			if tt.testName == "ValueMappingPass" && v.Readings[0].Value == strconv.Itoa(int(mock.Int8Value)) {
+				t.Errorf("%s expect data mapping pass", tt.testName)
+			}
+			if tt.testName == "ValueMappingFail" && v.Readings[0].Value != strconv.Itoa(int(mock.Int8Value)) {
 				t.Errorf("%s expect data mapping failed", tt.testName)
 			}
 		})
