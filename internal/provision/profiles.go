@@ -118,7 +118,7 @@ func CreateDescriptorsFromProfile(profile *contract.DeviceProfile) {
 }
 
 func createDescriptorFromResourceOperation(profileName string, op contract.ResourceOperation) {
-	if _, ok := cache.ValueDescriptors().ForName(op.Parameter); ok {
+	if _, ok := cache.ValueDescriptors().ForName(op.Object); ok {
 		// Value Descriptor has been created
 		return
 	} else {
@@ -126,7 +126,7 @@ func createDescriptorFromResourceOperation(profileName string, op contract.Resou
 		if !ok {
 			common.LoggingClient.Error(fmt.Sprintf("can't find Device Resource %s to match Device Command (Resource Operation) %v in Device Profile %s", op.Object, op, profileName))
 		}
-		desc, err := createDescriptor(op.Parameter, dr)
+		desc, err := createDescriptor(op.Object, dr)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
 		} else {
