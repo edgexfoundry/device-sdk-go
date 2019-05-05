@@ -196,7 +196,7 @@ func TestCreateCommandValueForParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			cv, err := createCommandValueForParam(tt.profileName, tt.op, tt.v)
+			cv, err := createCommandValueFromRO(tt.profileName, tt.op, tt.v)
 			if !tt.expectErr && err != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, err)
 				return
