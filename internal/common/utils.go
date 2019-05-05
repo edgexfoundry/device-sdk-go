@@ -31,8 +31,8 @@ func BuildAddr(host string, port string) string {
 	return buffer.String()
 }
 
-func CommandValueToReading(cv *dsModels.CommandValue, devName string) *contract.Reading {
-	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName}
+func CommandValueToReading(cv *dsModels.CommandValue) *contract.Reading {
+	reading := &contract.Reading{Name: cv.DeviceResourceName}
 	if cv.Type == dsModels.Binary {
 		reading.BinaryValue = cv.BinValue
 	} else {

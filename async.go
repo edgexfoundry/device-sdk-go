@@ -69,7 +69,7 @@ func processAsyncResults() {
 				}
 			}
 
-			reading := common.CommandValueToReading(cv, device.Name)
+			reading := common.CommandValueToReading(cv)
 			readings = append(readings, *reading)
 		}
 
