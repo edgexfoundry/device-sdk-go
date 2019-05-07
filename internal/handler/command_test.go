@@ -243,9 +243,9 @@ func TestCreateCommandValueForParam(t *testing.T) {
 
 func TestResourceOpSliceToMap(t *testing.T) {
 	var ops []contract.ResourceOperation
-	ops = append(ops, contract.ResourceOperation{Parameter: "first"})
-	ops = append(ops, contract.ResourceOperation{Parameter: "second"})
-	ops = append(ops, contract.ResourceOperation{Parameter: "third"})
+	ops = append(ops, contract.ResourceOperation{Object: "first"})
+	ops = append(ops, contract.ResourceOperation{Object: "second"})
+	ops = append(ops, contract.ResourceOperation{Object: "third"})
 
 	mapped := roSliceToMap(ops)
 

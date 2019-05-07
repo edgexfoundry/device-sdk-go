@@ -304,7 +304,7 @@ func parseWriteParams(profileName string, roMap map[string]*contract.ResourceOpe
 func roSliceToMap(ros []contract.ResourceOperation) map[string]*contract.ResourceOperation {
 	roMap := make(map[string]*contract.ResourceOperation, len(ros))
 	for i, ro := range ros {
-		roMap[ro.Parameter] = &ros[i]
+		roMap[ro.Object] = &ros[i]
 	}
 	return roMap
 }
