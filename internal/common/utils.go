@@ -31,12 +31,12 @@ func BuildAddr(host string, port string) string {
 	return buffer.String()
 }
 
-func CommandValueToReading(cv *dsModels.CommandValue) *contract.Reading {
-	reading := &contract.Reading{Name: cv.DeviceResourceName}
+func CommandValueToReading(cv *dsModels.CommandValue, devName string, encoding string) *contract.Reading {
+	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName}
 	if cv.Type == dsModels.Binary {
 		reading.BinaryValue = cv.BinValue
 	} else {
-		reading.Value = cv.ValueToString()
+		reading.Value = cv.ValueToString(encoding)
 	}
 
 	// if value has a non-zero Origin, use it

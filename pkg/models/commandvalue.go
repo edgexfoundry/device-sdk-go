@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/ugorji/go/codec"
 )
 
@@ -70,6 +71,9 @@ const (
 	// Policy limits should be located in global config namespace
 	// Currently assigning 16MB (binary), 16 * 2^20 bytes
 	MaxBinaryBytes = 16777216
+	// DefaultFoloatEncoding indicates the representation of floating value of reading.
+	// It would be configurable in system level in the future
+	DefaultFloatEncoding = contract.Base64Encoding
 )
 
 // ParseValueType could get ValueType from type name in string format
@@ -253,7 +257,7 @@ func decodeValue(reader io.Reader, value interface{}) error {
 }
 
 //ValueToString returns the string format of the value
-func (cv *CommandValue) ValueToString() (str string) {
+func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 	if cv.Type == String {
 		str = cv.stringValue
 		return
@@ -326,21 +330,43 @@ func (cv *CommandValue) ValueToString() (str string) {
 		}
 		str = strconv.FormatInt(res, 10)
 	case Float32:
-		//var res float32
-		//binary.Read(reader, binary.BigEndian, &res)
-		//str = strconv.FormatFloat(float64(res), 'f', -1, 32)
-		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+		floatEncoding := getFloatEncoding(encoding)
+
+		if floatEncoding == contract.ENotation {
+			var res float32
+			binary.Read(reader, binary.BigEndian, &res)
+			str = fmt.Sprintf("%e", res)
+		} else if floatEncoding == contract.Base64Encoding {
+			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+		}
 	case Float64:
-		//var res float64
-		//binary.Read(reader, binary.BigEndian, &res)
-		//str = strconv.FormatFloat(res, 'f', -1, 64)
-		str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+		floatEncoding := getFloatEncoding(encoding)
+
+		if floatEncoding == contract.ENotation {
+			var res float64
+			binary.Read(reader, binary.BigEndian, &res)
+			str = fmt.Sprintf("%e", res)
+		} else if floatEncoding == contract.Base64Encoding {
+			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+		}
 	case Binary:
 		// produce string representation of first 20 bytes of binary value
 		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20])))
 	}
 
 	return
+}
+
+func getFloatEncoding(encoding []string) string {
+	if len(encoding) > 0 {
+		if encoding[0] == contract.Base64Encoding {
+			return contract.Base64Encoding
+		} else if encoding[0] == contract.ENotation {
+			return contract.ENotation
+		}
+	}
+
+	return DefaultFloatEncoding
 }
 
 // String returns a string representation of a CommandValue instance.

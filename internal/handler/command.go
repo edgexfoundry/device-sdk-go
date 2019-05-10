@@ -170,7 +170,7 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 		// been implemened in gxds. TBD at the devices f2f whether this
 		// be killed completely.
 
-		reading := common.CommandValueToReading(cv)
+		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.FloatEncoding)
 		readings = append(readings, *reading)
 
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: %v", device.Name, cv.DeviceResourceName, reading))
