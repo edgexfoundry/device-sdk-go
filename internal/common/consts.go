@@ -26,6 +26,7 @@ const (
 	ConfigFileName     = "configuration.toml"
 	ConfigRegistryStem = "edgex/devices/1.0/"
 	WritableKey        = "/Writable"
+	RegistryFailLimit  = 3
 
 	APICallbackRoute        = APIv1Prefix + "/callback"
 	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"

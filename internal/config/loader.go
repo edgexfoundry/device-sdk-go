@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/signal"
 	"path"
@@ -33,35 +34,33 @@ var (
 // LoadConfig loads the local configuration file based upon the
 // specified parameters and returns a pointer to the global Config
 // struct which holds all of the local configuration settings for
-// the DS. The bool useRegisty indicates whether the registry
-// should be used to read config settings. This also controls
-// whether the service registers itself the registry. The profile and confDir
-// are used to locate the local TOML config file.
-func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Config, error) {
+// the DS. The string useRegisty indicates whether the registry
+// should be used to read config settings, and it might contain the registry path.
+// This also controls whether the service registers itself the registry.
+// The profile and confDir are used to locate the local TOML config file.
+func LoadConfig(useRegistry string, profile string, confDir string) (configuration *common.Config, err error) {
 	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
 
-	configuration, err := loadConfigFromFile(profile, confDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: Verify this is correct.
-	stem := common.ConfigRegistryStem + common.ServiceName + "/"
-
 	var registryMsg string
-	if useRegistry {
+	if useRegistry != "" {
+		configuration = &common.Config{}
+		err = parseRegistryPath(useRegistry, configuration)
+		if err != nil {
+			return
+		}
+
+		// TODO: Verify this is correct.
+		stem := common.ConfigRegistryStem + common.ServiceName + "/"
+
 		registryMsg = "Register in registry..."
 		registryConfig := types.Config{
-			Host:          configuration.Registry.Host,
-			Port:          configuration.Registry.Port,
-			Type:          configuration.Registry.Type,
-			Stem:          stem,
-			CheckInterval: configuration.Registry.CheckInterval,
-			CheckRoute:    common.APIPingRoute,
-			ServiceKey:    common.ServiceName,
-			ServiceHost:   configuration.Service.Host,
-			ServicePort:   configuration.Service.Port,
+			Host:       configuration.Registry.Host,
+			Port:       configuration.Registry.Port,
+			Type:       configuration.Registry.Type,
+			Stem:       stem,
+			CheckRoute: common.APIPingRoute,
+			ServiceKey: common.ServiceName,
 		}
 
 		RegistryClient, err = registry.NewRegistryClient(registryConfig)
@@ -72,12 +71,6 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 		// Check if registry service is running
 		if err := checkRegistryUp(configuration); err != nil {
 			return nil, err
-		}
-
-		// Register the service with Registry for discovery and health checks
-		err = RegistryClient.Register()
-		if err != nil {
-			return nil, fmt.Errorf("could not register service with Registry: %v", err.Error())
 		}
 
 		hasConfiguration, err := RegistryClient.HasConfiguration()
@@ -102,18 +95,72 @@ func LoadConfig(useRegistry bool, profile string, confDir string) (*common.Confi
 			// Self bootstrap the Registry with the device service's configuration
 			fmt.Fprintln(os.Stdout, "Pushing configuration into Registry...")
 
+			configuration, err = loadConfigFromFile(profile, confDir)
+			if err != nil {
+				return nil, err
+			}
+
 			err := RegistryClient.PutConfiguration(*configuration, true)
 			if err != nil {
 				return nil, fmt.Errorf("could not push configuration to Registry: %v", err.Error())
 			}
 		}
+
+		// recreate a registry client because the CheckInterval and Service related config should be loaded from
+		// the registry before self-registration
+		registryConfig = types.Config{
+			Host:          configuration.Registry.Host,
+			Port:          configuration.Registry.Port,
+			Type:          configuration.Registry.Type,
+			Stem:          stem,
+			CheckInterval: configuration.Registry.CheckInterval,
+			CheckRoute:    common.APIPingRoute,
+			ServiceKey:    common.ServiceName,
+			ServiceHost:   configuration.Service.Host,
+			ServicePort:   configuration.Service.Port,
+		}
+
+		RegistryClient, err = registry.NewRegistryClient(registryConfig)
+		if err != nil {
+			return nil, fmt.Errorf("connection to Registry could not be made: %v", err.Error())
+		}
+
+		// Register the service with Registry for discovery and health checks
+		err = RegistryClient.Register()
+		if err != nil {
+			return nil, fmt.Errorf("could not register service with Registry: %v", err.Error())
+		}
 	} else {
 		registryMsg = "Bypassing registration in registry..."
+		configuration, err = loadConfigFromFile(profile, confDir)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	fmt.Println(registryMsg)
-
 	return configuration, nil
+}
+
+// parseRegistryPath parses the useRegistry from flag to set the url of registry, if it is valid.
+// if it is invalid, return an error don't override anything by ending this func.
+func parseRegistryPath(registryUrl string, config *common.Config) error {
+	u, err := url.Parse(registryUrl)
+	if err != nil {
+		fmt.Fprintln(os.Stdout, "The format of Registry path from argument is wrong: ", err.Error())
+		return err
+	}
+
+	port, err := strconv.Atoi(u.Port())
+	if err != nil {
+		fmt.Fprintln(os.Stdout, "The port format of Registry path from argument is wrong: ", err.Error())
+		return err
+	}
+
+	config.Registry.Type = u.Scheme
+	config.Registry.Host = u.Hostname()
+	config.Registry.Port = port
+	return nil
 }
 
 func loadConfigFromFile(profile string, confDir string) (config *common.Config, err error) {
@@ -164,6 +211,7 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 func checkRegistryUp(config *common.Config) error {
 	registryUrl := common.BuildAddr(config.Registry.Host, strconv.Itoa(config.Registry.Port))
 	fmt.Println("Check registry is up...", registryUrl)
+	config.Registry.FailLimit = common.RegistryFailLimit
 	fails := 0
 	for fails < config.Registry.FailLimit {
 		if RegistryClient.IsAlive() {

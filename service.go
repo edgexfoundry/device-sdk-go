@@ -240,7 +240,7 @@ func (s *Service) Stop(force bool) error {
 // version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will always return an error.
-func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry bool, proto dsModels.ProtocolDriver) (*Service, error) {
+func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry string, proto dsModels.ProtocolDriver) (*Service, error) {
 	startTime := time.Now()
 	if svc != nil {
 		err := fmt.Errorf("NewService: service already exists!\n")
