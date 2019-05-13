@@ -26,15 +26,14 @@ func (s *Service) AddDeviceProfile(profile contract.DeviceProfile) (id string, e
 		return p.Id, fmt.Errorf("name conflicted, Profile %s exists", profile.Name)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Adding managed Profile: : %v\n", profile))
+	common.LoggingClient.Debug(fmt.Sprintf("Adding managed Profile: : %s", profile.Name))
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	profile.Origin = millis
-	common.LoggingClient.Debug(fmt.Sprintf("Adding Profile: %v", profile))
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err = common.DeviceProfileClient.Add(&profile, ctx)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Add Profile failed %v, error: %v", profile, err))
+		common.LoggingClient.Error(fmt.Sprintf("Add Profile failed %s, error: %v", profile.Name, err))
 		return "", err
 	}
 	if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
@@ -63,7 +62,7 @@ func (s *Service) RemoveDeviceProfile(id string) error {
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %v\n", profile))
+	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %s", profile.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := common.DeviceProfileClient.Delete(id, ctx)
 	if err != nil {
@@ -85,7 +84,7 @@ func (*Service) RemoveDeviceProfileByName(name string) error {
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %v\n", profile))
+	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %s", profile.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := common.DeviceProfileClient.DeleteByName(name, ctx)
 	if err != nil {
@@ -107,7 +106,7 @@ func (*Service) UpdateDeviceProfile(profile contract.DeviceProfile) error {
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Updating managed DeviceProfile: : %v\n", profile))
+	common.LoggingClient.Debug(fmt.Sprintf("Updating managed DeviceProfile: : %s", profile.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := common.DeviceProfileClient.Update(profile, ctx)
 	if err != nil {
