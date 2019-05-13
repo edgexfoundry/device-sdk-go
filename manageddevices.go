@@ -29,11 +29,11 @@ func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 		return d.Id, fmt.Errorf("name conflicted, Device %s exists", device.Name)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Adding managed device: : %v\n", device))
+	common.LoggingClient.Debug(fmt.Sprintf("Adding managed device: : %s\n", device.Name))
 
 	prf, ok := cache.Profiles().ForName(device.Profile.Name)
 	if !ok {
-		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %v", device.Profile.Name, device)
+		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %s", device.Profile.Name, device.Name)
 		common.LoggingClient.Error(errMsg)
 		return "", fmt.Errorf(errMsg)
 	}
@@ -42,12 +42,12 @@ func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 	device.Origin = millis
 	device.Service = common.CurrentDeviceService
 	device.Profile = prf
-	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
+	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %s", device.Name))
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err = common.DeviceClient.Add(&device, ctx)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
+		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %s, error: %v", device.Name, err))
 		return "", err
 	}
 	if err = common.VerifyIdFormat(id, "Device"); err != nil {
@@ -85,7 +85,7 @@ func (s *Service) RemoveDevice(id string) error {
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %v\n", device))
+	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %s\n", device.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := common.DeviceClient.Delete(id, ctx)
 	if err != nil {
@@ -107,7 +107,7 @@ func (s *Service) RemoveDeviceByName(name string) error {
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %v\n", device))
+	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %s\n", device.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := common.DeviceClient.DeleteByName(name, ctx)
 	if err != nil {
@@ -129,7 +129,7 @@ func (s *Service) UpdateDevice(device contract.Device) error {
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device: : %v\n", device))
+	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device: : %s\n", device.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := common.DeviceClient.Update(device, ctx)
 	if err != nil {

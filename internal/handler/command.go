@@ -104,7 +104,7 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 		// instead of a device resource (see BoschXDK for reference).
 
 		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %v", dr))
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", drName))
 		if !ok {
 			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
 			common.LoggingClient.Error(msg)
@@ -229,7 +229,7 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 		// instead of a device resource (see BoschXDK for reference).
 
 		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %v", dr))
+		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %s", drName))
 		if !ok {
 			msg := fmt.Sprintf("Handler - execWriteCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
 			common.LoggingClient.Error(msg)
@@ -281,7 +281,7 @@ func parseWriteParams(profileName string, roMap map[string]*contract.ResourceOpe
 				if ok {
 					v = newV
 				} else {
-					msg := fmt.Sprintf("Handler - parseWriteParams: Resource Operation (%v) mapping value (%s) failed with the mapping table: %v", ro, v, ro.Mappings)
+					msg := fmt.Sprintf("Handler - parseWriteParams: Resource (%s) mapping value (%s) failed with the mapping table: %v", ro.Object, v, ro.Mappings)
 					common.LoggingClient.Warn(msg)
 					//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
 				}

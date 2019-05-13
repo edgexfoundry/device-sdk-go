@@ -146,7 +146,7 @@ func selfRegister() error {
 		common.LoggingClient.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %v", ds))
+	common.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %s", ds.Name))
 	common.CurrentDeviceService = ds
 	svc.initialized = true
 	return nil
@@ -207,7 +207,7 @@ func makeNewAddressable() (*contract.Addressable, error) {
 			}
 			id, err := common.AddressableClient.Add(&addr, ctx)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %v, error: %v", addr, err))
+				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %s, error: %v", addr.Name, err))
 				return nil, err
 			}
 			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {

@@ -19,7 +19,7 @@ import (
 )
 
 func LoadDevices(deviceList []common.DeviceConfig) error {
-	common.LoggingClient.Debug(fmt.Sprintf("Loading pre-define Devices from configuration: %v", deviceList))
+	common.LoggingClient.Debug("Loading pre-define Devices from configuration")
 	for _, d := range deviceList {
 		if _, ok := cache.Devices().ForName(d.Name); ok {
 			common.LoggingClient.Debug(fmt.Sprintf("Device %s exists, using the existing one", d.Name))
@@ -28,7 +28,7 @@ func LoadDevices(deviceList []common.DeviceConfig) error {
 			common.LoggingClient.Debug(fmt.Sprintf("Device %s doesn't exist, creating a new one", d.Name))
 			err := createDevice(d)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("creating Device from config failed: %v", d))
+				common.LoggingClient.Error(fmt.Sprintf("creating Device from config failed: %s", d.Name))
 				return err
 			}
 		}
@@ -39,7 +39,7 @@ func LoadDevices(deviceList []common.DeviceConfig) error {
 func createDevice(dc common.DeviceConfig) error {
 	prf, ok := cache.Profiles().ForName(dc.Profile)
 	if !ok {
-		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %v", dc.Profile, dc)
+		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %s", dc.Profile, dc.Name)
 		common.LoggingClient.Error(errMsg)
 		return fmt.Errorf(errMsg)
 	}
@@ -61,7 +61,7 @@ func createDevice(dc common.DeviceConfig) error {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err := common.DeviceClient.Add(device, ctx)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %v, error: %v", device, err))
+		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %s, error: %v", device.Name, err))
 		return err
 	}
 	if err = common.VerifyIdFormat(id, "Device"); err != nil {
