@@ -18,12 +18,13 @@ package runtime
 
 import (
 	"encoding/json"
+	"github.com/ugorji/go/codec"
 	"strconv"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // GolangRuntime represents the golang runtime environment
@@ -37,8 +38,31 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 	edgexcontext.LoggingClient.Debug("Processing Event: " + strconv.Itoa(len(gr.Transforms)) + " Transforms")
 	var event models.Event
 
-	if err := json.Unmarshal([]byte(envelope.Payload), &event); err != nil {
-		edgexcontext.LoggingClient.Error("Expected JSON EdgeX Event: " + err.Error())
+	switch envelope.ContentType {
+	case clients.ContentTypeJSON:
+		if err := json.Unmarshal([]byte(envelope.Payload), &event); err != nil {
+			edgexcontext.LoggingClient.Error("Unable to JSON unmarshal  EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+			return nil
+		}
+
+		// Needed for Marking event as handled
+		edgexcontext.EventId = event.ID
+
+	case clients.ContentTypeCBOR:
+		event := models.Event{}
+
+		x := codec.CborHandle{}
+		err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&event)
+		if err != nil {
+			edgexcontext.LoggingClient.Error("Unable to CBOR unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+			return nil
+		}
+
+		// Needed for Marking event as handled
+		edgexcontext.EventChecksum = envelope.Checksum
+
+	default:
+		edgexcontext.LoggingClient.Error("'"+envelope.ContentType+"' content type for EdgeX Event not unsupported: ", clients.CorrelationHeader, envelope.CorrelationID)
 		return nil
 	}
 

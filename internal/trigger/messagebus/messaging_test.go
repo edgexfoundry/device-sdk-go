@@ -18,10 +18,10 @@ package messagebus
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
@@ -116,7 +116,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 			Type: "zero",
 			PublishHost: types.HostInfo{
 				Host:     "*",
-				Port:     5564,
+				Port:     5566,
 				Protocol: "tcp",
 			},
 			SubscribeHost: types.HostInfo{
@@ -127,7 +127,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 		},
 	}
 
-	expectedCorreleationID := "123"
+	expectedCorrelationID := "123"
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 	var expectedEvent models.Event
@@ -149,12 +149,33 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	trigger.Initialize(logClient)
 
 	message := types.MessageEnvelope{
-		CorrelationID: expectedCorreleationID, Payload: expectedPayload,
+		CorrelationID: expectedCorrelationID,
+		Payload:       expectedPayload,
+		ContentType:   clients.ContentTypeJSON,
 	}
+
+	testClientConfig := types.MessageBusConfig{
+		PublishHost: types.HostInfo{
+			Host:     "*",
+			Port:     5564,
+			Protocol: "tcp",
+		},
+		Type: "zero",
+	}
+
+	testClient, err := messaging.NewMessageClient(testClientConfig)
+	if !assert.NoError(t, err, "Unable to create to publisher") {
+		t.Fatal()
+	}
+
 	assert.False(t, transformWasCalled)
-	trigger.client.Publish(message, "") //transform1 should be called after this executes
+	err = testClient.Publish(message, "") //transform1 should be called after this executes
+	if !assert.NoError(t, err, "Failed to publish message") {
+		t.Fatal()
+	}
+
 	time.Sleep(3 * time.Second)
-	assert.True(t, transformWasCalled)
+	assert.True(t, transformWasCalled, "Transform never called")
 
 }
 
@@ -170,18 +191,18 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 			Type: "zero",
 			PublishHost: types.HostInfo{
 				Host:     "*",
-				Port:     5565,
+				Port:     5586,
 				Protocol: "tcp",
 			},
 			SubscribeHost: types.HostInfo{
 				Host:     "localhost",
-				Port:     5565,
+				Port:     5584,
 				Protocol: "tcp",
 			},
 		},
 	}
 
-	expectedCorreleationID := "123"
+	expectedCorrelationID := "123"
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 	var expectedEvent models.Event
@@ -202,11 +223,24 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	trigger := Trigger{Configuration: config, Runtime: runtime}
 
-	testClient, err := messaging.NewMessageClient(trigger.Configuration.MessageBus) //new client to subscribe to the messagebus
-
-	if err != nil {
-		fmt.Print(err)
+	testClientConfig := types.MessageBusConfig{
+		SubscribeHost: types.HostInfo{
+			Host:     "localhost",
+			Port:     5586,
+			Protocol: "tcp",
+		},
+		PublishHost: types.HostInfo{
+			Host:     "*",
+			Port:     5584,
+			Protocol: "tcp",
+		},
+		Type: "zero",
 	}
+	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
+	if !assert.NoError(t, err, "Failed to create test client") {
+		t.Fatal()
+	}
+
 	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan *types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
@@ -215,13 +249,20 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	trigger.Initialize(logClient)
 
 	message := types.MessageEnvelope{
-		CorrelationID: expectedCorreleationID, Payload: expectedPayload,
+		CorrelationID: expectedCorrelationID,
+		Payload:       expectedPayload,
+		ContentType:   clients.ContentTypeJSON,
 	}
 
 	assert.False(t, transformWasCalled)
-	trigger.client.Publish(message, "SubscribeTopic")
+	err = testClient.Publish(message, "SubscribeTopic")
+	if !assert.NoError(t, err, "Failed to publish message") {
+		t.Fatal()
+	}
 	time.Sleep(3 * time.Second)
-	assert.True(t, transformWasCalled)
+	if !assert.True(t, transformWasCalled, "Transform never called") {
+		t.Fatal()
+	}
 
 	receiveMessage := true
 
