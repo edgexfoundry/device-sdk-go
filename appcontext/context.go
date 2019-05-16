@@ -24,6 +24,8 @@ import (
 
 // Context ...
 type Context struct {
+	EventId       string
+	EventChecksum string
 	CorrelationID string
 	OutputData    []byte
 	Trigger       trigger.Trigger

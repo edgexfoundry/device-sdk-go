@@ -16,13 +16,17 @@
 package runtime
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/stretchr/testify/assert"
+	"github.com/ugorji/go/codec"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
@@ -49,6 +53,7 @@ func TestProcessEventNoTransforms(t *testing.T) {
 	envelope := &types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
+		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
 		LoggingClient: lc,
@@ -70,6 +75,7 @@ func TestProcessEventOneCustomTransform(t *testing.T) {
 	envelope := &types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
+		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
 		LoggingClient: lc,
@@ -112,6 +118,7 @@ func TestProcessEventTwoCustomTransforms(t *testing.T) {
 	envelope := &types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
+		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
 		LoggingClient: lc,
@@ -168,6 +175,7 @@ func TestProcessEventThreeCustomTransformsOneFail(t *testing.T) {
 	envelope := &types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
+		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
 		LoggingClient: lc,
@@ -225,5 +233,129 @@ func TestProcessEventThreeCustomTransformsOneFail(t *testing.T) {
 	}
 	if transform3WasCalled == true {
 		t.Fatal("transform3 should NOT have been called")
+	}
+}
+
+func TestProcessEventJSON(t *testing.T) {
+	// Event from device 1
+	expectedEventId := "1234"
+	expectedCorrelationID := "123-234-345-456"
+	eventIn := models.Event{
+		ID:     expectedEventId,
+		Device: devID1,
+	}
+
+	transform1WasCalled := false
+
+	eventInBytes, _ := json.Marshal(eventIn)
+	envelope := &types.MessageEnvelope{
+		CorrelationID: expectedCorrelationID,
+		Payload:       eventInBytes,
+		ContentType:   clients.ContentTypeJSON,
+	}
+
+	context := &appcontext.Context{
+		LoggingClient: lc,
+	}
+
+	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		transform1WasCalled = true
+
+		if !assert.Equal(t, expectedEventId, edgexcontext.EventId, "Context doesn't contain expected EventId") {
+			t.Fatal()
+		}
+
+		if !assert.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID") {
+			t.Fatal()
+		}
+
+		if result, ok := params[0].(*models.Event); ok {
+			if !assert.True(t, ok, "Should have received CoreData event") {
+				t.Fatal()
+			}
+
+			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
+			assert.Equal(t, expectedEventId, result.ID, "Did not receive expected CoreData event, wrong ID")
+		}
+
+		return false, nil
+	}
+
+	runtime := GolangRuntime{
+		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1},
+	}
+
+	result := runtime.ProcessEvent(context, envelope)
+	if !assert.Nil(t, result, "result should be null") {
+		t.Fatal()
+	}
+
+	if !assert.True(t, transform1WasCalled, "transform1 should have been called") {
+		t.Fatal()
+	}
+}
+
+func TestProcessEventCBOR(t *testing.T) {
+	// Event from device 1
+	expectedEventId := "6789"
+	expectedCorrelationID := "123-234-345-456"
+	expectedChecksum := "1234567890"
+	eventIn := models.Event{
+		ID:     expectedEventId,
+		Device: devID1,
+	}
+
+	transform1WasCalled := false
+
+	buffer := new(bytes.Buffer)
+	handle := new(codec.CborHandle)
+	encoder := codec.NewEncoder(buffer, handle)
+	encoder.Encode(eventIn)
+
+	envelope := &types.MessageEnvelope{
+		CorrelationID: expectedCorrelationID,
+		Payload:       buffer.Bytes(),
+		ContentType:   clients.ContentTypeCBOR,
+		Checksum:      expectedChecksum,
+	}
+
+	context := &appcontext.Context{
+		LoggingClient: lc,
+	}
+
+	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		transform1WasCalled = true
+
+		if !assert.Equal(t, expectedChecksum, edgexcontext.EventChecksum, "Context doesn't contain expected EventChecksum") {
+			t.Fatal()
+		}
+
+		if !assert.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID") {
+			t.Fatal()
+		}
+
+		if result, ok := params[0].(*models.Event); ok {
+			if !assert.True(t, ok, "Should have received CoreData event") {
+				t.Fatal()
+			}
+
+			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
+			assert.Equal(t, expectedEventId, result.ID, "Did not receive expected CoreData event, wrong ID")
+		}
+
+		return false, nil
+	}
+
+	runtime := GolangRuntime{
+		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1},
+	}
+
+	result := runtime.ProcessEvent(context, envelope)
+	if !assert.Nil(t, result, "result should be null") {
+		t.Fatal()
+	}
+
+	if !assert.True(t, transform1WasCalled, "transform1 should have been called") {
+		t.Fatal()
 	}
 }
