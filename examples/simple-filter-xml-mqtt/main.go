@@ -52,13 +52,14 @@ func main() {
 		Password:  "",
 		Topic:     "sampleTopic",
 	}
+
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetFunctionsPipeline(
 		edgexSdk.DeviceNameFilter(deviceNames),
 		edgexSdk.XMLTransform(),
 		printXMLToConsole,
-		edgexSdk.MQTTSend(addressable, "", ""),
+		edgexSdk.MQTTSend(addressable, "", "", 0, false, false),
 	)
 
 	// 4) shows how to access the application's specific configuration settings.

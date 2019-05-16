@@ -92,7 +92,7 @@ func TestNewMQTTSender(t *testing.T) {
 		Password:  "password",
 		Topic:     "testMQTTTopic",
 	}
-	sender := NewMQTTSender(lc, addr1, "", "")
+	sender := NewMQTTSender(lc, addr1, "", "", NewMqttConfig())
 	assert.NotNil(t, sender.client, "Client should not be nil")
 	opts := sender.client.OptionsReader()
 	assert.Equal(t, "testMQTTTopic", sender.topic, "Topic should be set to testMQTTTopic")

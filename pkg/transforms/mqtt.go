@@ -31,10 +31,42 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-// MQTTSender ...
+// MqttConfig contains mqtt client parameters
+type MqttConfig struct {
+	qos           byte
+	retain        bool
+	autoreconnect bool
+}
+
 type MQTTSender struct {
 	client MQTT.Client
 	topic  string
+	opts   MqttConfig
+}
+
+// NewMqttConfig returns a new MqttConfig with default values
+func NewMqttConfig() *MqttConfig {
+	mqttConfig := new(MqttConfig)
+	mqttConfig.qos = 0
+	mqttConfig.retain = false
+	mqttConfig.autoreconnect = false
+
+	return mqttConfig
+}
+
+// SetRetain enables or disables mqtt retain option
+func (mqttConfig MqttConfig) SetRetain(retain bool) {
+	mqttConfig.retain = retain
+}
+
+// SetQos changes mqtt qos(0,1,2) for all messages
+func (mqttConfig MqttConfig) SetQos(qos byte) {
+	mqttConfig.qos = qos
+}
+
+// SetAutoreconnect enables or disables the automatic client reconnection to broker
+func (mqttConfig MqttConfig) SetAutoreconnect(reconnect bool) {
+	mqttConfig.autoreconnect = reconnect
 }
 
 // MQTTSend ...
@@ -51,7 +83,7 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 		edgexcontext.LoggingClient.Info("Connected to mqtt server")
 	}
 	if data, ok := params[0].(string); ok {
-		token := sender.client.Publish(sender.topic, 0, false, ([]byte)(data))
+		token := sender.client.Publish(sender.topic, sender.opts.qos, sender.opts.retain, ([]byte)(data))
 		// FIXME: could be removed? set of tokens?
 		token.Wait()
 		if token.Error() != nil {
@@ -67,7 +99,7 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 }
 
 // NewMQTTSender - create new mqtt sender
-func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, certFile string, key string) *MQTTSender {
+func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, certFile string, key string, config *MqttConfig) *MQTTSender {
 	protocol := strings.ToLower(addr.Protocol)
 
 	opts := MQTT.NewClientOptions()
@@ -76,7 +108,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, certFi
 	opts.SetClientID(addr.Publisher)
 	opts.SetUsername(addr.User)
 	opts.SetPassword(addr.Password)
-	opts.SetAutoReconnect(false)
+	opts.SetAutoReconnect(config.autoreconnect)
 
 	if protocol == "tcps" || protocol == "ssl" || protocol == "tls" {
 		cert, err := tls.LoadX509KeyPair(certFile, key)
@@ -99,6 +131,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, certFi
 	sender := &MQTTSender{
 		client: MQTT.NewClient(opts),
 		topic:  addr.Topic,
+		opts:   *config,
 	}
 
 	return sender
