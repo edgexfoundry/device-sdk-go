@@ -111,6 +111,8 @@ func ParseValueType(typeName string) ValueType {
 	}
 }
 
+// CommandValue is the struct to represent the reading value of a Get command coming
+// from ProtocolDrivers or the parameter of a Put command sending to ProtocolDrivers.
 type CommandValue struct {
 	// DeviceResourceName is the name of Device Resource for this command
 	DeviceResourceName string
@@ -137,12 +139,14 @@ type CommandValue struct {
 	BinValue []byte
 }
 
+// NewBoolValue creates a CommandValue of Type Bool with the given value.
 func NewBoolValue(DeviceResourceName string, origin int64, value bool) (cv *CommandValue, err error) {
 	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: Bool}
 	err = encodeValue(cv, value)
 	return
 }
 
+// NewStringValue creates a CommandValue of Type string with the given value.
 func NewStringValue(DeviceResourceName string, origin int64, value string) (cv *CommandValue) {
 	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: String, stringValue: value}
 	return
@@ -218,7 +222,7 @@ func NewFloat64Value(DeviceResourceName string, origin int64, value float64) (cv
 	return
 }
 
-//NewCommandValue create a CommandValue according to the Type supplied
+//NewCommandValue create a CommandValue according to the Type supplied.
 func NewCommandValue(DeviceResourceName string, origin int64, value interface{}, t ValueType) (cv *CommandValue, err error) {
 	cv = &CommandValue{DeviceResourceName: DeviceResourceName, Origin: origin, Type: t}
 	switch t {
@@ -256,7 +260,7 @@ func decodeValue(reader io.Reader, value interface{}) error {
 	return err
 }
 
-//ValueToString returns the string format of the value
+//ValueToString returns the string format of the value.
 func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 	if cv.Type == String {
 		str = cv.stringValue
@@ -412,6 +416,7 @@ func (cv *CommandValue) String() (str string) {
 	return
 }
 
+// BoolValue returns the value in bool data type, and returns error if the Type is not Bool.
 func (cv *CommandValue) BoolValue() (bool, error) {
 	var value bool
 	if cv.Type != Bool {
@@ -421,6 +426,7 @@ func (cv *CommandValue) BoolValue() (bool, error) {
 	return value, err
 }
 
+// StringValue returns the value in string data type, and returns error if the Type is not String.
 func (cv *CommandValue) StringValue() (string, error) {
 	value := cv.stringValue
 	if cv.Type != String {
@@ -429,6 +435,7 @@ func (cv *CommandValue) StringValue() (string, error) {
 	return value, nil
 }
 
+// Uint8Value returns the value in uint8 data type, and returns error if the Type is not Uint8.
 func (cv *CommandValue) Uint8Value() (uint8, error) {
 	var value uint8
 	if cv.Type != Uint8 {
@@ -438,6 +445,7 @@ func (cv *CommandValue) Uint8Value() (uint8, error) {
 	return value, err
 }
 
+// Uint16Value returns the value in uint16 data type, and returns error if the Type is not Uint16.
 func (cv *CommandValue) Uint16Value() (uint16, error) {
 	var value uint16
 	if cv.Type != Uint16 {
@@ -447,6 +455,7 @@ func (cv *CommandValue) Uint16Value() (uint16, error) {
 	return value, err
 }
 
+// Uint32Value returns the value in uint21 data type, and returns error if the Type is not Uint32.
 func (cv *CommandValue) Uint32Value() (uint32, error) {
 	var value uint32
 	if cv.Type != Uint32 {
@@ -456,6 +465,7 @@ func (cv *CommandValue) Uint32Value() (uint32, error) {
 	return value, err
 }
 
+// Uint64Value returns the value in uint64 data type, and returns error if the Type is not Uint64.
 func (cv *CommandValue) Uint64Value() (uint64, error) {
 	var value uint64
 	if cv.Type != Uint64 {
@@ -465,6 +475,7 @@ func (cv *CommandValue) Uint64Value() (uint64, error) {
 	return value, err
 }
 
+// Int8Value returns the value in int8 data type, and returns error if the Type is not Int8.
 func (cv *CommandValue) Int8Value() (int8, error) {
 	var value int8
 	if cv.Type != Int8 {
@@ -474,6 +485,7 @@ func (cv *CommandValue) Int8Value() (int8, error) {
 	return value, err
 }
 
+// Int16Value returns the value in int16 data type, and returns error if the Type is not Int16.
 func (cv *CommandValue) Int16Value() (int16, error) {
 	var value int16
 	if cv.Type != Int16 {
@@ -483,6 +495,7 @@ func (cv *CommandValue) Int16Value() (int16, error) {
 	return value, err
 }
 
+// Int32Value returns the value in int32 data type, and returns error if the Type is not Int32.
 func (cv *CommandValue) Int32Value() (int32, error) {
 	var value int32
 	if cv.Type != Int32 {
@@ -492,6 +505,7 @@ func (cv *CommandValue) Int32Value() (int32, error) {
 	return value, err
 }
 
+// Int64Value returns the value in int64 data type, and returns error if the Type is not Int64.
 func (cv *CommandValue) Int64Value() (int64, error) {
 	var value int64
 	if cv.Type != Int64 {
@@ -501,6 +515,7 @@ func (cv *CommandValue) Int64Value() (int64, error) {
 	return value, err
 }
 
+// Float32Value returns the value in float32 data type, and returns error if the Type is not Float32.
 func (cv *CommandValue) Float32Value() (float32, error) {
 	var value float32
 	if cv.Type != Float32 {
@@ -510,6 +525,7 @@ func (cv *CommandValue) Float32Value() (float32, error) {
 	return value, err
 }
 
+// Float64Value returns the value in float64 data type, and returns error if the Type is not Float64.
 func (cv *CommandValue) Float64Value() (float64, error) {
 	var value float64
 	if cv.Type != Float64 {
@@ -519,6 +535,7 @@ func (cv *CommandValue) Float64Value() (float64, error) {
 	return value, err
 }
 
+// BinaryValue returns the value in []byte data type, and returns error if the Type is not Binary.
 func (cv *CommandValue) BinaryValue() ([]byte, error) {
 	var value []byte
 	if cv.Type != Binary {

@@ -24,7 +24,7 @@ var (
 	useRegistry bool
 )
 
-// Bootstrap the Device Service in a default way
+// Bootstrap starts the Device Service in a default way
 func Bootstrap(serviceName string, serviceVersion string, driver dsModels.ProtocolDriver) {
 	//flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError) // clean up existing flag defined by other code
 	flag.BoolVar(&useRegistry, "registry", false, "Indicates the service should use the registry.")
