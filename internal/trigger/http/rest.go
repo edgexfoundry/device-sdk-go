@@ -17,14 +17,11 @@
 package http
 
 import (
-	"bytes"
-	"encoding/gob"
-	"encoding/json"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"io/ioutil"
 	"net/http"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
@@ -42,7 +39,7 @@ type Trigger struct {
 	Webserver     *webserver.WebServer
 }
 
-// Initialize ...
+// Initialize initializes the Trigger for logging and REST route
 func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 	trigger.logging = logger
 	trigger.logging.Info("Initializing HTTP Trigger")
@@ -51,34 +48,41 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 
 	return nil
 }
+
 func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var event models.Event
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&event)
-	if err != nil {
-		trigger.logging.Debug("HTTP Body not an Edgex Event")
+	contentType := r.Header.Get(clients.ContentType)
+
+	if contentType != clients.ContentTypeJSON && contentType != clients.ContentTypeCBOR {
+		trigger.logging.Debug("HTTP content type not supported", clients.ContentType, contentType)
 		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	correlationID := r.Header.Get("X-Correlation-ID")
-	edgexContext := &appcontext.Context{Configuration: trigger.Configuration,
-		Trigger:       trigger,
-		LoggingClient: trigger.logging,
-		CorrelationID: correlationID,
-	}
 
-	trigger.logging.Trace("Received message from http", clients.CorrelationHeader, correlationID)
-
-	data, err := json.Marshal(event)
+	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		trigger.logging.Error("Error marshaling data to []byte")
-		writer.WriteHeader(http.StatusInternalServerError)
+		trigger.logging.Debug("Error reading HTTP Body", "error", err)
+		writer.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	trigger.logging.Debug("Request Body read", "byte count", len(data))
+
+	correlationID := r.Header.Get("X-Correlation-ID")
+
+	trigger.logging.Trace("Received message from http", clients.CorrelationHeader, correlationID)
+	trigger.logging.Debug("Received message from http", clients.ContentType, contentType)
+
+	edgexContext := &appcontext.Context{
+		Configuration: trigger.Configuration,
+		Trigger:       trigger,
+		LoggingClient: trigger.logging,
+	}
+
 	envelope := &types.MessageEnvelope{
-		CorrelationID: edgexContext.CorrelationID,
+		CorrelationID: correlationID,
+		ContentType:   contentType,
 		Payload:       data,
 	}
 
@@ -90,13 +94,4 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 	}
 
 	trigger.outputData = nil
-}
-func getBytes(key interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(key)
-	if err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
 }

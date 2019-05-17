@@ -18,13 +18,14 @@ package runtime
 
 import (
 	"encoding/json"
-	"github.com/ugorji/go/codec"
 	"strconv"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	"github.com/ugorji/go/codec"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
 // GolangRuntime represents the golang runtime environment
@@ -49,8 +50,6 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 		edgexcontext.EventId = event.ID
 
 	case clients.ContentTypeCBOR:
-		event := models.Event{}
-
 		x := codec.CborHandle{}
 		err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&event)
 		if err != nil {
