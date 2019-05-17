@@ -241,7 +241,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 		t.Fatal()
 	}
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan *types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus

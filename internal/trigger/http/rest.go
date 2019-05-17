@@ -80,7 +80,7 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 		LoggingClient: trigger.logging,
 	}
 
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: correlationID,
 		ContentType:   contentType,
 		Payload:       data,

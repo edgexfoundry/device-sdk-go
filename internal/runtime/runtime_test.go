@@ -50,7 +50,7 @@ func TestProcessEventNoTransforms(t *testing.T) {
 		Device: devID1,
 	}
 	eventInBytes, _ := json.Marshal(eventIn)
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
 		ContentType:   clients.ContentTypeJSON,
@@ -72,7 +72,7 @@ func TestProcessEventOneCustomTransform(t *testing.T) {
 		Device: devID1,
 	}
 	eventInBytes, _ := json.Marshal(eventIn)
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
 		ContentType:   clients.ContentTypeJSON,
@@ -115,7 +115,7 @@ func TestProcessEventTwoCustomTransforms(t *testing.T) {
 		Device: devID1,
 	}
 	eventInBytes, _ := json.Marshal(eventIn)
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
 		ContentType:   clients.ContentTypeJSON,
@@ -172,7 +172,7 @@ func TestProcessEventThreeCustomTransformsOneFail(t *testing.T) {
 		Device: devID1,
 	}
 	eventInBytes, _ := json.Marshal(eventIn)
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       eventInBytes,
 		ContentType:   clients.ContentTypeJSON,
@@ -248,7 +248,7 @@ func TestProcessEventJSON(t *testing.T) {
 	transform1WasCalled := false
 
 	eventInBytes, _ := json.Marshal(eventIn)
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       eventInBytes,
 		ContentType:   clients.ContentTypeJSON,
@@ -312,7 +312,7 @@ func TestProcessEventCBOR(t *testing.T) {
 	encoder := codec.NewEncoder(buffer, handle)
 	encoder.Encode(eventIn)
 
-	envelope := &types.MessageEnvelope{
+	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       buffer.Bytes(),
 		ContentType:   clients.ContentTypeCBOR,
