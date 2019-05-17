@@ -26,6 +26,8 @@ const (
 	defaultBase   string = "0"
 	defaultScale  string = "1.0"
 	defaultOffset string = "0.0"
+	defaultMask   string = "0"
+	defaultShift  string = "0"
 )
 
 func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue) error {
@@ -35,6 +37,24 @@ func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue) e
 
 	value, err := commandValueForTransform(cv)
 	newValue := value
+
+	if pv.Mask != "" && pv.Mask != defaultMask &&
+		(cv.Type == dsModels.Uint8 || cv.Type == dsModels.Uint16 || cv.Type == dsModels.Uint32 || cv.Type == dsModels.Uint64) {
+		newValue, err = transformReadMask(newValue, pv.Mask)
+		if err != nil {
+			return err
+		}
+	}
+
+	if pv.Shift != "" && pv.Shift != defaultShift &&
+		(cv.Type == dsModels.Uint8 || cv.Type == dsModels.Uint16 || cv.Type == dsModels.Uint32 || cv.Type == dsModels.Uint64) {
+		newValue, err = transformReadShift(newValue, pv.Shift)
+		if overflowError, ok := err.(OverflowError); ok {
+			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
+		} else if err != nil {
+			return err
+		}
+	}
 
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformReadBase(newValue, pv.Base)
@@ -420,6 +440,89 @@ func transformReadOffset(value interface{}, offset string) (interface{}, error) 
 	}
 
 	return value, nil
+}
+
+func transformReadMask(value interface{}, mask string) (interface{}, error) {
+	nv, err := strconv.ParseUint(fmt.Sprintf("%v", value), 10, 64)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("the value %s cannot be parsed to uint64: %v", value, err))
+		return value, err
+	}
+	m, err := strconv.ParseUint(mask, 10, 64)
+	if err != nil {
+		return value, fmt.Errorf("invalid mask value, the mask %s should be unsigned and parsed to %T. %v", mask, m, err)
+	}
+
+	transformedValue := nv & m
+
+	switch value.(type) {
+	case uint8:
+		value = uint8(transformedValue)
+	case uint16:
+		value = uint16(transformedValue)
+	case uint32:
+		value = uint32(transformedValue)
+	case uint64:
+		value = uint64(transformedValue)
+	}
+
+	return value, err
+}
+
+func transformReadShift(value interface{}, shift string) (interface{}, error) {
+	nv, err := strconv.ParseUint(fmt.Sprintf("%v", value), 10, 64)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("the value %s cannot be parsed to uint64: %v", value, err))
+		return value, err
+	}
+	signed, err := isSignedNumber(shift)
+	if err != nil {
+		return value, err
+	}
+
+	var transformedValue uint64
+	if signed {
+		signedShift, err := strconv.ParseInt(shift, 10, 64)
+		if err != nil {
+			common.LoggingClient.Error(fmt.Sprintf("the shift %s of PropertyValue cannot be parsed to %T: %v", shift, signedShift, err))
+			return value, err
+		}
+		s := uint64(-signedShift)
+		transformedValue = nv >> s
+	} else {
+		s, err := strconv.ParseUint(shift, 10, 64)
+		if err != nil {
+			common.LoggingClient.Error(fmt.Sprintf("the shift %s of PropertyValue cannot be parsed to %T: %v", shift, s, err))
+			return value, err
+		}
+		transformedValue = nv << s
+	}
+
+	inRange := checkTransformedValueInRange(value, float64(transformedValue))
+	if !inRange {
+		return value, NewOverflowError(value, float64(transformedValue))
+	}
+
+	switch value.(type) {
+	case uint8:
+		value = uint8(transformedValue)
+	case uint16:
+		value = uint16(transformedValue)
+	case uint32:
+		value = uint32(transformedValue)
+	case uint64:
+		value = uint64(transformedValue)
+	}
+
+	return value, err
+}
+
+func isSignedNumber(shift string) (bool, error) {
+	s, err := strconv.ParseFloat(shift, 64)
+	if err != nil {
+		return false, fmt.Errorf("invalid shift value, the shift %v should be parsed to float64 for checking the sign of the number. %v", shift, err)
+	}
+	return math.Signbit(s), nil
 }
 
 func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, error) {
