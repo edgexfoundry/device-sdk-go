@@ -5,7 +5,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/eclipse/paho.mqtt.golang v1.1.1
 	github.com/edgexfoundry/go-mod-core-contracts v0.0.0-20190515170337-eeea036f04bd
-	github.com/edgexfoundry/go-mod-messaging v0.0.0-20190507192740-04f9582c7a08
+	github.com/edgexfoundry/go-mod-messaging v0.0.0
 	github.com/edgexfoundry/go-mod-registry v0.0.0-20190401195203-552208258719
 	github.com/globalsign/mgo v0.0.0-20181015135952-eeefdecb41b8 // indirect
 	github.com/gorilla/mux v1.7.0

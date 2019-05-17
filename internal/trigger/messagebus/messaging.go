@@ -48,7 +48,7 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 	if err != nil {
 		return err
 	}
-	trigger.topics = []types.TopicChannel{{Topic: trigger.Configuration.Binding.SubscribeTopic, Messages: make(chan *types.MessageEnvelope)}}
+	trigger.topics = []types.TopicChannel{{Topic: trigger.Configuration.Binding.SubscribeTopic, Messages: make(chan types.MessageEnvelope)}}
 	messageErrors := make(chan error)
 
 	trigger.client.Subscribe(trigger.topics, messageErrors)
