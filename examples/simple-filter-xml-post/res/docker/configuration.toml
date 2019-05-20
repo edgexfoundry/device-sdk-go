@@ -16,6 +16,12 @@ Timeout = 5000
 Port = 8500
 Type = 'consul'
 
+[Clients]
+  [Clients.CoreData]
+  Protocol = 'http'
+  Host = 'edgex-core-data'
+  Port = 48080
+
 [MessageBus]
 Type = 'zero'
     [MessageBus.PublishHost]

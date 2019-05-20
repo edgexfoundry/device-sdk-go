@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 )
 
 // HTTPSender ...
@@ -60,7 +60,14 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 		edgexcontext.LoggingClient.Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, edgexcontext.CorrelationID)
 
 		// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
-		return response.StatusCode >= 200 && response.StatusCode < 300, bodyBytes
+		isSuccessfulPost := response.StatusCode >= 200 && response.StatusCode < 300
+		if isSuccessfulPost == true {
+			err = edgexcontext.MarkAsPushed()
+			if err != nil {
+				edgexcontext.LoggingClient.Error(err.Error())
+			}
+		}
+		return isSuccessfulPost, bodyBytes
 	}
 
 	return false, errors.New("Unexpected type received")

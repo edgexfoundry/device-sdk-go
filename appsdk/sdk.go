@@ -20,28 +20,29 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
-
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	coreTypes "github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/edgexfoundry/go-mod-registry/pkg/types"
+	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
@@ -58,6 +59,7 @@ type AppFunctionsSDK struct {
 	httpErrors     chan error
 	webserver      *webserver.WebServer
 	registryClient registry.Client
+	eventClient    coredata.EventClient
 	config         common.ConfigurationStruct
 	LoggingClient  logger.LoggingClient
 }
@@ -203,10 +205,10 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruc
 	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
 		sdk.LoggingClient.Info("HTTP trigger selected")
-		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver}
+		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EventClient: sdk.eventClient}
 	case "MESSAGEBUS":
 		sdk.LoggingClient.Info("MessageBus trigger selected")
-		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime}
+		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EventClient: sdk.eventClient}
 	}
 
 	return trigger
@@ -246,7 +248,15 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	if sdk.useRegistry {
 		go sdk.listenForConfigChanges()
 	}
-
+	//Setup eventClient
+	params := coreTypes.EndpointParams{
+		ServiceKey:  clients.CoreDataServiceKey,
+		Path:        clients.ApiEventRoute,
+		UseRegistry: sdk.useRegistry,
+		Url:         sdk.config.Clients["CoreData"].Url() + clients.ApiEventRoute,
+		Interval:    sdk.config.Service.ClientMonitor,
+	}
+	sdk.eventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
 	// Handles SIGINT/SIGTERM and exits gracefully
 	sdk.listenForInterrupts()
 
@@ -266,7 +276,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 	sdk.config = *configuration
 
 	if sdk.useRegistry {
-		registryConfig := types.Config{
+		registryConfig := registryTypes.Config{
 			Host:          sdk.config.Registry.Host,
 			Port:          sdk.config.Registry.Port,
 			Type:          sdk.config.Registry.Type,

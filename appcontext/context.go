@@ -17,20 +17,26 @@
 package appcontext
 
 import (
+	syscontext "context"
+	"errors"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 // Context ...
 type Context struct {
-	EventId       string
+	EventID       string
 	EventChecksum string
 	CorrelationID string
 	OutputData    []byte
 	Trigger       trigger.Trigger
 	Configuration common.ConfigurationStruct
 	LoggingClient logger.LoggingClient
+	EventClient   coredata.EventClient
 }
 
 // Complete is optional and provides a way to return the specified data.
@@ -39,4 +45,15 @@ type Context struct {
 // message bus publish topic and host in the configuration.
 func (context *Context) Complete(output []byte) {
 	context.OutputData = output
+}
+
+// MarkAsPushed ...
+func (context *Context) MarkAsPushed() error {
+	if context.EventID != "" {
+		return context.EventClient.MarkPushed(context.EventID, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
+	} else if context.EventChecksum != "" {
+		return context.EventClient.MarkPushedByChecksum(context.EventChecksum, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
+	} else {
+		return errors.New("No EventID or EventChecksum Provided")
+	}
 }

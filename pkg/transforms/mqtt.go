@@ -20,14 +20,13 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"strconv"
 	"strings"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
 	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -91,7 +90,10 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 		}
 		edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
 		edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
-
+		err := edgexcontext.MarkAsPushed()
+		if err != nil {
+			edgexcontext.LoggingClient.Error(err.Error())
+		}
 		return true, nil
 
 	}

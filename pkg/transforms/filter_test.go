@@ -19,9 +19,6 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -30,12 +27,6 @@ const (
 	descriptor2 = "Descriptor2"
 )
 
-func init() {
-	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
-	context = &appcontext.Context{
-		LoggingClient: lc,
-	}
-}
 func TestFilterByDeviceNameFound(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
