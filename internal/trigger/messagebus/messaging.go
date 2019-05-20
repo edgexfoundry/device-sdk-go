@@ -18,15 +18,15 @@ package messagebus
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/messaging"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // Trigger implements Trigger to support MessageBusData
@@ -36,6 +36,7 @@ type Trigger struct {
 	logging       logger.LoggingClient
 	client        messaging.MessageClient
 	topics        []types.TopicChannel
+	EventClient   coredata.EventClient
 }
 
 // Initialize ...
@@ -66,6 +67,7 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 					Trigger:       trigger,
 					LoggingClient: trigger.logging,
 					CorrelationID: msgs.CorrelationID,
+					EventClient:   trigger.EventClient,
 				}
 				trigger.Runtime.ProcessEvent(edgexContext, msgs)
 				if edgexContext.OutputData != nil {

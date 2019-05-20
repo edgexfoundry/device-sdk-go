@@ -20,14 +20,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // Trigger implements Trigger to support Triggers
@@ -37,6 +37,7 @@ type Trigger struct {
 	outputData    []byte
 	logging       logger.LoggingClient
 	Webserver     *webserver.WebServer
+	EventClient   coredata.EventClient
 }
 
 // Initialize initializes the Trigger for logging and REST route
@@ -70,15 +71,16 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 	trigger.logging.Debug("Request Body read", "byte count", len(data))
 
 	correlationID := r.Header.Get("X-Correlation-ID")
-
-	trigger.logging.Trace("Received message from http", clients.CorrelationHeader, correlationID)
-	trigger.logging.Debug("Received message from http", clients.ContentType, contentType)
-
 	edgexContext := &appcontext.Context{
 		Configuration: trigger.Configuration,
 		Trigger:       trigger,
 		LoggingClient: trigger.logging,
+		CorrelationID: correlationID,
+		EventClient:   trigger.EventClient,
 	}
+
+	trigger.logging.Trace("Received message from http", clients.CorrelationHeader, correlationID)
+	trigger.logging.Debug("Received message from http", clients.ContentType, contentType)
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: correlationID,

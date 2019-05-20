@@ -261,7 +261,7 @@ func TestProcessEventJSON(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		if !assert.Equal(t, expectedEventId, edgexcontext.EventId, "Context doesn't contain expected EventId") {
+		if !assert.Equal(t, expectedEventId, edgexcontext.EventID, "Context doesn't contain expected EventID") {
 			t.Fatal()
 		}
 

@@ -16,11 +16,30 @@
 
 package common
 
-import "github.com/edgexfoundry/go-mod-messaging/pkg/types"
+import (
+	"fmt"
+
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+)
 
 // WritableInfo ...
 type WritableInfo struct {
 	LogLevel string
+}
+
+// ClientInfo provides the host and port of another service in the eco-system.
+type ClientInfo struct {
+	// Host is the hostname or IP address of a service.
+	Host string
+	// Port defines the port on which to access a given service
+	Port int
+	// Protocol indicates the protocol to use when accessing a given service
+	Protocol string
+}
+
+func (c ClientInfo) Url() string {
+	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
+	return url
 }
 
 // ConfigurationStruct ...
@@ -32,6 +51,7 @@ type ConfigurationStruct struct {
 	MessageBus          types.MessageBusConfig
 	Binding             BindingInfo
 	ApplicationSettings map[string]string
+	Clients             map[string]ClientInfo
 }
 
 // RegistryInfo ...

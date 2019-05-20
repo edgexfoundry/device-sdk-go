@@ -19,14 +19,19 @@ package transforms
 import (
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var context *appcontext.Context
+var lc logger.LoggingClient
 
 const (
 	devID1        = "id1"
@@ -37,8 +42,19 @@ const (
 
 func init() {
 	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	//Setup eventClient
+	params := types.EndpointParams{
+		ServiceKey:  clients.CoreDataServiceKey,
+		Path:        clients.ApiEventRoute,
+		UseRegistry: false,
+		Url:         "http://test" + clients.ApiEventRoute,
+		Interval:    1000,
+	}
+	eventClient := coredata.NewEventClient(params, startup.Endpoint{RegistryClient: nil})
+
 	context = &appcontext.Context{
 		LoggingClient: lc,
+		EventClient:   eventClient,
 	}
 }
 func TestTransformToXML(t *testing.T) {

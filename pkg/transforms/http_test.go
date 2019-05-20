@@ -22,20 +22,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
-var lc logger.LoggingClient
-
-func init() {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "TRACE")
-	context = &appcontext.Context{
-		LoggingClient: lc,
-	}
-}
 func TestHTTPPost(t *testing.T) {
 	const (
 		msgStr = "test message"
@@ -51,7 +39,6 @@ func TestHTTPPost(t *testing.T) {
 		r.Body.Close()
 		if strings.Compare((string)(readMsg), msgStr) != 0 {
 			t.Errorf("Invalid msg received %v, expected %v", readMsg, msgStr)
-
 		}
 
 		if r.Header.Get("Content-type") != "application/json" {
@@ -61,7 +48,6 @@ func TestHTTPPost(t *testing.T) {
 			t.Errorf("Invalid path received %s, expected %s",
 				r.URL.EscapedPath(), path)
 		}
-
 	}
 
 	// create test server with handler

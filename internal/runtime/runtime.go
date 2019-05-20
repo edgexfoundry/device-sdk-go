@@ -20,12 +20,11 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 	"github.com/ugorji/go/codec"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
 // GolangRuntime represents the golang runtime environment
@@ -42,14 +41,16 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 	switch envelope.ContentType {
 	case clients.ContentTypeJSON:
 		if err := json.Unmarshal([]byte(envelope.Payload), &event); err != nil {
-			edgexcontext.LoggingClient.Error("Unable to JSON unmarshal  EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+			edgexcontext.LoggingClient.Error("Unable to JSON unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
 			return nil
 		}
 
 		// Needed for Marking event as handled
-		edgexcontext.EventId = event.ID
+		edgexcontext.EventID = event.ID
 
 	case clients.ContentTypeCBOR:
+		event := models.Event{}
+
 		x := codec.CborHandle{}
 		err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&event)
 		if err != nil {
@@ -66,6 +67,7 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 	}
 
 	edgexcontext.CorrelationID = envelope.CorrelationID
+	edgexcontext.EventID = event.ID
 	var result interface{}
 	var continuePipeline = true
 	for _, trxFunc := range gr.Transforms {

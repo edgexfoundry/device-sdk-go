@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +13,6 @@ import (
 var addr models.Addressable
 
 func init() {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "TRACE")
 	addr = models.Addressable{
 		Address:   "localhost",
 		Port:      1883,
@@ -23,9 +20,6 @@ func init() {
 		Publisher: "",
 		Password:  "",
 		Topic:     "testMQTTTopic",
-	}
-	context = &appcontext.Context{
-		LoggingClient: lc,
 	}
 }
 
