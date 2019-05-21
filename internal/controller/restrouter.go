@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2019 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/controller/correlation"
 	"github.com/gorilla/mux"
 )
 
@@ -36,6 +37,10 @@ func InitRestRoutes() *mux.Router {
 	common.LoggingClient.Debug("init the metrics and config rest controller each")
 	r.HandleFunc("/metrics", metricsHandler).Methods(http.MethodGet)
 	r.HandleFunc("/config", configHandler).Methods(http.MethodGet)
+
+	r.Use(correlation.ManageHeader)
+	r.Use(correlation.OnResponseComplete)
+	r.Use(correlation.OnRequestBegin)
 
 	return r
 }
