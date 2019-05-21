@@ -62,12 +62,6 @@ func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 	return nil
 }
 
-// DisconnectDevice handles protocol-specific cleanup when a device
-// is removed.
-func (s *SimpleDriver) DisconnectDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
-	return nil
-}
-
 // Initialize performs protocol-specific initialization for the device
 // service.
 func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues) error {
