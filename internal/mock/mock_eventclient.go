@@ -65,7 +65,9 @@ func (EventClientMock) DeleteOld(age int, ctx context.Context) error {
 func (EventClientMock) Delete(id string, ctx context.Context) error {
 	panic("implement me")
 }
-
 func (EventClientMock) MarkPushed(id string, ctx context.Context) error {
+	panic("implement me")
+}
+func (EventClientMock) MarkPushedByChecksum(id string, ctx context.Context) error {
 	panic("implement me")
 }
