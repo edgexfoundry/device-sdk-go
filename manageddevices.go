@@ -5,10 +5,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// This package provides management of device service related
-// objects that may be distributed across one or more EdgeX
-// core microservices.
-//
 package device
 
 import (
@@ -22,7 +18,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// AddDevice adds a new Device to the device service and Core Metadata
+// AddDevice adds a new Device to the Device Service and Core Metadata
 // Returns new Device id or non-nil error.
 func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
@@ -64,7 +60,7 @@ func (s *Service) Devices() []contract.Device {
 	return cache.Devices().All()
 }
 
-// GetDeviceByName returns device if it exists in EdgeX registration cache.
+// GetDeviceByName returns the Device by its name if it exists in the cache, or returns an error.
 func (s *Service) GetDeviceByName(name string) (contract.Device, error) {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {

@@ -48,10 +48,12 @@ type Service struct {
 	startTime    time.Time
 }
 
+// Name returns the name of this Device Service
 func (s *Service) Name() string {
 	return common.ServiceName
 }
 
+// Version returns the version number of this Device Service
 func (s *Service) Version() string {
 	return common.ServiceVersion
 }
@@ -60,11 +62,12 @@ func (s *Service) Discovery() dsModels.ProtocolDiscovery {
 	return s.discovery
 }
 
+// AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *Service) AsyncReadings() bool {
 	return common.CurrentConfig.Service.EnableAsyncReadings
 }
 
-// Start the device service.
+// Start the Device Service.
 func (s *Service) Start(errChan chan error) (err error) {
 	err = clients.InitDependencyClients()
 	if err != nil {
@@ -233,7 +236,7 @@ func (s *Service) Stop(force bool) error {
 	return nil
 }
 
-// NewService create a new device service instance with the given
+// NewService creates a new Device Service instance with the given
 // version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
 // it will always return an error.

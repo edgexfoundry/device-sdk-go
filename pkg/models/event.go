@@ -3,6 +3,7 @@
 // Copyright (C) 2019 Intel Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
+
 package models
 
 import (
@@ -12,6 +13,7 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
+// Event is a wrapper of contract.Event to provide more Binary related operation in Device Service.
 type Event struct {
 	contract.Event
 	EncodedEvent []byte

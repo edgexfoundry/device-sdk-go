@@ -19,7 +19,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// AddDeviceProfile adds a new DeviceProfile to the device service and Core Metadata
+// AddDeviceProfile adds a new DeviceProfile to the Device Service and Core Metadata
 // Returns new DeviceProfile id or non-nil error.
 func (s *Service) AddDeviceProfile(profile contract.DeviceProfile) (id string, err error) {
 	if p, ok := cache.Profiles().ForName(profile.Name); ok {
@@ -121,7 +121,7 @@ func (*Service) UpdateDeviceProfile(profile contract.DeviceProfile) error {
 }
 
 // ResourceOperation retrieves the first matched ResourceOpereation instance from cache according to
-// the Device name, Device resource (object) name, and the method (get or set)
+// the Device name, Device Resource (object) name, and the method (get or set).
 func (*Service) ResourceOperation(deviceName string, object string, method string) (contract.ResourceOperation, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
@@ -137,7 +137,7 @@ func (*Service) ResourceOperation(deviceName string, object string, method strin
 }
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
-// the Device name and Device resource (object) name
+// the Device name and Device Resource (object) name
 func (*Service) DeviceResource(deviceName string, object string, method string) (contract.DeviceResource, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {

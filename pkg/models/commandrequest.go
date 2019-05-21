@@ -7,6 +7,7 @@
 
 package models
 
+// CommandRequest is the struct for requesting a command to ProtocolDrivers
 type CommandRequest struct {
 	// DeviceResourceName is the name of Device Resource for this command
 	DeviceResourceName string
