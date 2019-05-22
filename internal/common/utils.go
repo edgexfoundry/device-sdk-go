@@ -11,11 +11,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"reflect"
 	"time"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
@@ -50,30 +50,31 @@ func CommandValueToReading(cv *dsModels.CommandValue, devName string, encoding s
 }
 
 func SendEvent(event *dsModels.Event) {
-	ctx := context.WithValue(context.Background(), CorrelationHeader, uuid.New().String())
-	ct := clients.ContentTypeJSON
+	correlation := uuid.New().String()
+	ctx := context.WithValue(context.Background(), CorrelationHeader, correlation)
 	if event.HasBinaryValue() {
-		ct = clients.ContentTypeCBOR
-		if len(event.EncodedEvent) <= 0 {
-			var err error
-			event.EncodedEvent, err = event.EncodeBinaryEvent(&event.Event)
-			if err != nil {
-				LoggingClient.Error("ERROR encoding binary event!")
-			}
-			LoggingClient.Info(fmt.Sprintf("EncodedEvent within SendEvent: %v", string(event.EncodedEvent[:20])))
-		} else {
-			// using existing CBOR encoded event to send over to CoreData...
-			LoggingClient.Info(fmt.Sprintf("EncodedEvent already prepared: %v", string(event.EncodedEvent[:20])))
-		}
+		ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeCBOR)
+	} else {
+		ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeJSON)
 	}
-	ctx = context.WithValue(ctx, clients.ContentType, ct)
-	// TODO: EventClient will be updated to expose a method to produce a byte array representing the JSON/CBOR encoded event.
-	//  Alternately, EventClient will support a more generic interface; e.g., accept encoded event []byte and
-	//  allow caller to communicate needed details via Context (such as ContentType, etc.).
-	// _, err := EventClient.Add(&event.EncodedEvent, ctx)
-	_, err := EventClient.Add(&event.Event, ctx)
-	if err != nil {
-		LoggingClient.Error(fmt.Sprintf("Failed to push event for device %s: %v", event.Device, err))
+	// Call MarshalEvent to encode as byte array whether event contains binary or JSON readings
+	var err error
+	if len(event.EncodedEvent) <= 0 {
+		event.EncodedEvent, err = event.GetEncodedEvent(&event.Event)
+		if err != nil {
+			LoggingClient.Error(fmt.Sprintf("SendEvent [correlationid %s] Error encoding event for device %s: %v", correlation, event.Device, err))
+		} else {
+			LoggingClient.Info(fmt.Sprintf("SendEvent [correlationid %s] EventClient.MarshalEvent encoded event: %v", correlation, string(event.EncodedEvent[:200])))
+		}
+	} else {
+		LoggingClient.Info(fmt.Sprintf("SendEvent [correlationid %s] EncodedEvent already prepared: %v", correlation, string(event.EncodedEvent[:200])))
+	}
+	// Call AddBytes to post event to core data
+	responseBody, errPost := EventClient.AddBytes(event.EncodedEvent, ctx)
+	if errPost != nil {
+		LoggingClient.Error(fmt.Sprintf("SendEvent Failed to push event for device %s. Response [%s]: %v", event.Device, responseBody, errPost))
+		// TODO: Increase resilience - retry with alternate interface?
+		//  _, err = EventClient.Add(&event.Event, ctx)
 	}
 }
 

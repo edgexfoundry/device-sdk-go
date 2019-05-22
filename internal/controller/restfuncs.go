@@ -102,13 +102,18 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
 		if event.HasBinaryValue() {
+			// TODO: Add conditional toggle in case caller of command does not require this response.
+			// Encode response as application/CBOR.
 			if len(event.EncodedEvent) <= 0 {
 				var err error
-				event.EncodedEvent, err = event.EncodeBinaryEvent(&event.Event)
+				event.EncodedEvent, err = event.GetEncodedEvent(&event.Event)
 				if err != nil {
-					common.LoggingClient.Error("ERROR encoding binary event!")
+					common.LoggingClient.Error(fmt.Sprintf("Error encoding event for device %s: %v", event.Device, err))
+				} else {
+					common.LoggingClient.Info(fmt.Sprintf("EventClient.MarshalEvent encoded event after CommandHandler returned: %v", string(event.EncodedEvent[:200])))
 				}
-				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent after CommandHandler returned: %v", string(event.EncodedEvent[:20])))
+			} else {
+				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent is already prepared: %v", string(event.EncodedEvent[:200])))
 			}
 			// TODO: Resolve why this header is not included in response from Core-Command to originating caller (while the written body is).
 			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
