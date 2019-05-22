@@ -60,21 +60,19 @@ func SendEvent(event *dsModels.Event) {
 	// Call MarshalEvent to encode as byte array whether event contains binary or JSON readings
 	var err error
 	if len(event.EncodedEvent) <= 0 {
-		event.EncodedEvent, err = event.GetEncodedEvent(&event.Event)
+		event.EncodedEvent, err = EventClient.MarshalEvent(event.Event)
 		if err != nil {
 			LoggingClient.Error(fmt.Sprintf("SendEvent [correlationid %s] Error encoding event for device %s: %v", correlation, event.Device, err))
 		} else {
-			LoggingClient.Info(fmt.Sprintf("SendEvent [correlationid %s] EventClient.MarshalEvent encoded event: %v", correlation, string(event.EncodedEvent[:200])))
+			LoggingClient.Info(fmt.Sprintf("SendEvent [correlationid %s] EventClient.MarshalEvent encoded event: %.200v", correlation, event))
 		}
 	} else {
-		LoggingClient.Info(fmt.Sprintf("SendEvent [correlationid %s] EncodedEvent already prepared: %v", correlation, string(event.EncodedEvent[:200])))
+		LoggingClient.Info(fmt.Sprintf("SendEvent [correlationid %s] EncodedEvent already prepared: %.200v", correlation, event))
 	}
 	// Call AddBytes to post event to core data
 	responseBody, errPost := EventClient.AddBytes(event.EncodedEvent, ctx)
 	if errPost != nil {
 		LoggingClient.Error(fmt.Sprintf("SendEvent Failed to push event for device %s. Response [%s]: %v", event.Device, responseBody, errPost))
-		// TODO: Increase resilience - retry with alternate interface?
-		//  _, err = EventClient.Add(&event.Event, ctx)
 	}
 }
 

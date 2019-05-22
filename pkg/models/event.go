@@ -7,7 +7,6 @@
 package models
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -28,13 +27,4 @@ func (e Event) HasBinaryValue() bool {
 		}
 	}
 	return false
-}
-
-func (e Event) GetEncodedEvent(ev *contract.Event) ([]byte, error) {
-	var err error
-	var ec coredata.EventClient
-	if len(e.EncodedEvent) <= 0 {
-		e.EncodedEvent, err = ec.MarshalEvent(e.Event)
-	}
-	return e.EncodedEvent, err
 }

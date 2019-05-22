@@ -106,14 +106,14 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 			// Encode response as application/CBOR.
 			if len(event.EncodedEvent) <= 0 {
 				var err error
-				event.EncodedEvent, err = event.GetEncodedEvent(&event.Event)
+				event.EncodedEvent, err = common.EventClient.MarshalEvent(event.Event)
 				if err != nil {
 					common.LoggingClient.Error(fmt.Sprintf("Error encoding event for device %s: %v", event.Device, err))
 				} else {
-					common.LoggingClient.Info(fmt.Sprintf("EventClient.MarshalEvent encoded event after CommandHandler returned: %v", string(event.EncodedEvent[:200])))
+					common.LoggingClient.Info(fmt.Sprintf("EventClient.MarshalEvent encoded event for device %s: %.200v", event.Device, event))
 				}
 			} else {
-				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent is already prepared: %v", string(event.EncodedEvent[:200])))
+				common.LoggingClient.Info(fmt.Sprintf("EncodedEvent was already prepared for device %s: %.200v", event.Device, event))
 			}
 			// TODO: Resolve why this header is not included in response from Core-Command to originating caller (while the written body is).
 			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
