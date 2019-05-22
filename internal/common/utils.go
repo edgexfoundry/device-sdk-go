@@ -11,12 +11,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"reflect"
 	"time"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/google/uuid"
 )
 
