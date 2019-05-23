@@ -108,12 +108,12 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 				var err error
 				event.EncodedEvent, err = common.EventClient.MarshalEvent(event.Event)
 				if err != nil {
-					common.LoggingClient.Error(fmt.Sprintf("DeviceCommand: Error encoding event", "device", event.Device, "error", err))
+					common.LoggingClient.Error("DeviceCommand: Error encoding event", "device", event.Device, "error", err)
 				} else {
-					common.LoggingClient.Trace(fmt.Sprintf("DeviceCommand: EventClient.MarshalEvent encoded event", "device", event.Device, "event", event))
+					common.LoggingClient.Trace("DeviceCommand: EventClient.MarshalEvent encoded event", "device", event.Device, "event", event)
 				}
 			} else {
-				common.LoggingClient.Trace(fmt.Sprintf("DeviceCommand: EventClient.MarshalEvent passed through encoded event", "device", event.Device, "event", event))
+				common.LoggingClient.Trace("DeviceCommand: EventClient.MarshalEvent passed through encoded event", "device", event.Device, "event", event)
 			}
 			// TODO: Resolve why this header is not included in response from Core-Command to originating caller (while the written body is).
 			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)

@@ -62,20 +62,20 @@ func SendEvent(event *dsModels.Event) {
 	if len(event.EncodedEvent) <= 0 {
 		event.EncodedEvent, err = EventClient.MarshalEvent(event.Event)
 		if err != nil {
-			LoggingClient.Error(fmt.Sprintf("SendEvent: Error encoding event", "device", event.Device, clients.CorrelationHeader, correlation, "error", err))
+			LoggingClient.Error("SendEvent: Error encoding event", "device", event.Device, clients.CorrelationHeader, correlation, "error", err)
 		} else {
-			LoggingClient.Debug(fmt.Sprintf("SendEvent: EventClient.MarshalEvent encoded event", clients.CorrelationHeader, correlation))
+			LoggingClient.Debug("SendEvent: EventClient.MarshalEvent encoded event", clients.CorrelationHeader, correlation)
 		}
 	} else {
-		LoggingClient.Debug(fmt.Sprintf("SendEvent: EventClient.MarshalEvent passed through encoded event", clients.CorrelationHeader, correlation))
+		LoggingClient.Debug("SendEvent: EventClient.MarshalEvent passed through encoded event", clients.CorrelationHeader, correlation)
 	}
 	// Call AddBytes to post event to core data
 	responseBody, errPost := EventClient.AddBytes(event.EncodedEvent, ctx)
 	if errPost != nil {
-		LoggingClient.Error(fmt.Sprintf("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost))
+		LoggingClient.Error("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost)
 	} else {
-		LoggingClient.Info(fmt.Sprintf("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation))
-		LoggingClient.Trace(fmt.Sprintf("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation, "event", event))
+		LoggingClient.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation)
+		LoggingClient.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation, "event", event)
 	}
 }
 
