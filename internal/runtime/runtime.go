@@ -49,8 +49,6 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 		edgexcontext.EventID = event.ID
 
 	case clients.ContentTypeCBOR:
-		event := models.Event{}
-
 		x := codec.CborHandle{}
 		err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&event)
 		if err != nil {
