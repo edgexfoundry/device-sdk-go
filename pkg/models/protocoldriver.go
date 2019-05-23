@@ -21,14 +21,6 @@ import (
 // by other components of an EdgeX Device Service to interact with
 // a specific class of devices.
 type ProtocolDriver interface {
-
-	// DisconnectDevice is when a device is removed from the device
-	// service. This function allows for protocol specific disconnection
-	// logic to be performed.  Device services which don't require this
-	// function should just return 'nil'.
-	//
-	DisconnectDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error
-
 	// Initialize performs protocol-specific initialization for the device
 	// service. The given *AsyncValues channel can be used to push asynchronous
 	// events and readings to Core Data.
