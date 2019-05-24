@@ -26,7 +26,9 @@ docker:
 		.
 
 test:
-	$(GO) test ./... -cover
+	$(GO) vet ./...
+	gofmt -l .
+	$(GO) test -coverprofile=coverage.out ./...
 
 clean:
 	rm -f $(MICROSERVICES)

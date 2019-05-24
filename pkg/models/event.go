@@ -7,10 +7,7 @@
 package models
 
 import (
-	"bytes"
-
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/ugorji/go/codec"
 )
 
 // Event is a wrapper of contract.Event to provide more Binary related operation in Device Service.
@@ -30,16 +27,4 @@ func (e Event) HasBinaryValue() bool {
 		}
 	}
 	return false
-}
-
-// TODO: Add as method of dsModels.event or contract.event/client
-func (e Event) EncodeBinaryEvent(ev *contract.Event) ([]byte, error) {
-	buf := new(bytes.Buffer)
-	hCbor := new(codec.CborHandle)
-	enc := codec.NewEncoder(buf, hCbor)
-	err := enc.Encode(ev)
-	if err == nil {
-		return buf.Bytes(), nil
-	}
-	return nil, err
 }

@@ -87,7 +87,7 @@ func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource
 	var reqs []dsModels.CommandRequest
 	var req dsModels.CommandRequest
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", dr.Name))
-	
+
 	req.DeviceResourceName = dr.Name
 	req.Attributes = dr.Attributes
 	req.Type = dsModels.ParseValueType(dr.Properties.Value.Type)
