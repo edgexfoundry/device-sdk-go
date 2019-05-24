@@ -12,10 +12,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"math/rand"
+	"reflect"
 	"testing"
 	"time"
 
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/ugorji/go/codec"
 )
 
 // Test NewBoolValue function.
@@ -567,5 +570,132 @@ func TestNewFloat64Value(t *testing.T) {
 	}
 	if cv.ValueToString(contract.Base64Encoding) != "f+////////8=" {
 		t.Errorf("NewFloat64Value #2: invalid reading Value: %s", cv.ValueToString())
+	}
+}
+
+// encodeMockEvent accepts a contract.Event and returns a CBOR encoded byte array
+func encodeMockEvent(e contract.Event) ([]byte, error) {
+	var handle codec.CborHandle
+	var byteBuffer = make([]byte, 0, 64)
+	enc := codec.NewEncoderBytes(&byteBuffer, &handle)
+	err := enc.Encode(e)
+	if err != nil {
+		return []byte{}, err
+	}
+	return byteBuffer, nil
+}
+
+func createMockPayload(size int) ([]byte, error) {
+	token := make([]byte, size)
+	_, err := rand.Read(token)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+// Test NewBinaryValue function and associated methods for binary encode/decode.
+func TestNewBinaryValue(t *testing.T) {
+	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	// assign instance of mockStructB as a CBOR encoded CommandValue payload
+	var mock1 contract.Event
+	var mock2 contract.Event
+	mock1.Device = "Device01234567890"
+	mock1.Created = origin
+	mock1.ID = "MyStringIdentifier"
+	mock1.Modified = origin + 123
+	mock1.Pushed = 12345
+	// To extend coverage cborMock1 becomes encoded byte array.
+	// We will then confirm CommandValue particulars of binary payload are valid
+	cborMock1, err := encodeMockEvent(mock1)
+	if err != nil {
+		t.Errorf("NewBinaryValue: Error encoding struct as binary value")
+	}
+	cv, errAssign := NewBinaryValue("resource", origin, cborMock1)
+	if errAssign != nil {
+		t.Errorf("NewBinaryValue: Error invoking NewBinaryValue [%v]", errAssign)
+	}
+	// Confirm CommandValue particulars
+	if cv.Type != Binary {
+		t.Errorf("Expected Binary type! invalid Type: %v", cv.Type)
+	}
+	if cv.Origin != origin {
+		t.Errorf("Expected matching value! invalid Origin: %d != %d", cv.Origin, origin)
+	}
+	// Populate cv.BinValue as CBOR encoded CommandValue and decode back
+	err1 := encodeBinaryValue(cv, mock1)
+	if err1 != nil {
+		t.Errorf("NewBinaryValue: Error encoding binary value")
+	}
+	// decode the original encoded value, compare original raw struct to decoded mock2 and mock3
+	mock2 = contract.Event{}
+	err2 := decodeBinaryValue(bytes.NewReader(cborMock1), &mock2)
+	if err2 != nil {
+		t.Errorf("NewBinaryValue: Error decoding binary value")
+	}
+	if !reflect.DeepEqual(mock1, mock2) {
+		t.Errorf("NewBinaryValue: cv.BinValue: %v doesn't match value: %v", mock2, mock1)
+	}
+
+	mock3 := contract.Event{}
+	err3 := decodeBinaryValue(bytes.NewReader(cv.BinValue), &mock3)
+	if err3 != nil {
+		t.Errorf("NewBinaryValue: Error decoding binary value")
+	}
+	if !reflect.DeepEqual(mock2, mock3) {
+		t.Errorf("NewBinaryValue: cv.BinValue: %v doesn't match value: %v", mock2, mock3)
+	}
+}
+
+// Test NewBinaryValueConstraints function and associated methods for binary encode/decode.
+func TestNewBinaryValueWithinConstraints(t *testing.T) {
+	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	// Confirm we receive error if arbitrary binary value exceeds policy limit (currently 16MB)
+	payloadLimit := MaxBinaryBytes
+	payloadSize := MaxBinaryBytes
+	mock4, errCreate4 := createMockPayload(payloadSize)
+	if errCreate4 != nil {
+		t.Errorf("NewBinaryValue: createMockPayload: Could not create payload size: %v", payloadSize)
+	}
+	if binary.Size(mock4) != payloadSize {
+		t.Errorf("NewBinaryValue: createMockPayload: Could not create requested payload size: %v != %v", payloadSize, binary.Size(mock4))
+	}
+	cv2, errAssign2 := NewBinaryValue("resource", origin, mock4)
+	if errAssign2 == nil {
+		// Requested CommandValue payload within limit for binary readings (16777216 bytes)
+		if cv2 == nil {
+			t.Errorf("NewBinaryValue: Empty CommandValue returned by NewBinaryValue!")
+		} else if !bytes.Equal(cv2.BinValue, mock4) {
+			t.Errorf("NewBinaryValue: Value assigned differs from value read!")
+		}
+		// PASS
+	} else {
+		t.Errorf("NewBinaryValue: Error occurred when assigning valid payload size! bytes [%v] > limit [%v] - %v", payloadSize, payloadLimit, errAssign2)
+	}
+}
+
+// Test NewBinaryValueConstraints function and associated methods for binary encode/decode.
+func TestNewBinaryValueExceedsConstraints(t *testing.T) {
+	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	// Confirm we receive error if arbitrary binary value exceeds policy limit (currently 16MB)
+	payloadLimit := MaxBinaryBytes
+	payloadSize := MaxBinaryBytes + 1
+	mock4, errCreate4 := createMockPayload(payloadSize)
+	if errCreate4 != nil {
+		t.Errorf("NewBinaryValue: createMockPayload: Could not create payload size: %v", payloadSize)
+	}
+	if binary.Size(mock4) != payloadSize {
+		t.Errorf("NewBinaryValue: createMockPayload: Could not create requested payload size: %v != %v", payloadSize, binary.Size(mock4))
+	}
+	cv2, errAssign2 := NewBinaryValue("resource", origin, mock4)
+	if errAssign2 == nil {
+		t.Errorf("NewBinaryValue: Accepted invalid payload size! bytes [%v] > limit [%v]", payloadSize, payloadLimit)
+		// FAIL
+	} else {
+		// Requested CommandValue payload exceeds limit for binary readings (16777216 bytes)
+		if cv2 != nil {
+			t.Errorf("NewBinaryValue: Empty CommandValue returned by NewBinaryValue!")
+		}
+		// PASS
 	}
 }
