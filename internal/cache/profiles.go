@@ -155,7 +155,7 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 func (p *profileCache) CommandExists(profileName string, cmd string) (bool, error) {
 	commands, ok := p.ccMap[profileName]
 	if !ok {
-		err := fmt.Errorf("profiles: CommandExists: specified profile: %s not found", profileName)
+		err := fmt.Errorf("specified profile: %s not found", profileName)
 		return false, err
 	}
 
@@ -173,16 +173,16 @@ func (p *profileCache) ResourceOperations(profileName string, cmd string, method
 	var ok bool
 	if strings.ToLower(method) == common.GetCmdMethod {
 		if rosMap, ok = p.dcMap[profileName]; !ok {
-			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
+			return nil, fmt.Errorf("specified profile: %s not found", profileName)
 		}
 	} else if strings.ToLower(method) == common.SetCmdMethod {
 		if rosMap, ok = p.setOpMap[profileName]; !ok {
-			return nil, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
+			return nil, fmt.Errorf("specified profile: %s not found", profileName)
 		}
 	}
 
 	if resOps, ok = rosMap[cmd]; !ok {
-		return nil, fmt.Errorf("profiles: ResourceOperations: specified cmd: %s not found", cmd)
+		return nil, fmt.Errorf("specified cmd: %s not found", cmd)
 	}
 	return resOps, nil
 }
@@ -194,16 +194,16 @@ func (p *profileCache) ResourceOperation(profileName string, object string, meth
 	var ok bool
 	if strings.ToLower(method) == common.GetCmdMethod {
 		if rosMap, ok = p.dcMap[profileName]; !ok {
-			return ro, fmt.Errorf("profiles: ResourceOperation: specified profile: %s not found", profileName)
+			return ro, fmt.Errorf("specified profile: %s not found", profileName)
 		}
 	} else if strings.ToLower(method) == common.SetCmdMethod {
 		if rosMap, ok = p.setOpMap[profileName]; !ok {
-			return ro, fmt.Errorf("profiles: ResourceOperations: specified profile: %s not found", profileName)
+			return ro, fmt.Errorf("specified profile: %s not found", profileName)
 		}
 	}
 
 	if ro, ok = retrieveFirstRObyObject(rosMap, object); !ok {
-		return ro, fmt.Errorf("profiles: specified ResourceOperation by object %s not found", object)
+		return ro, fmt.Errorf("specified ResourceOperation by object %s not found", object)
 	}
 	return ro, nil
 }

@@ -36,12 +36,12 @@ func LoadProfiles(path string) error {
 		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v", path, err))
 		return err
 	}
-	common.LoggingClient.Debug(fmt.Sprintf("profiles: created absolute path for loading pre-defined Device Profiles: %s", absPath))
+	common.LoggingClient.Debug(fmt.Sprintf("created absolute path for loading pre-defined Device Profiles: %s", absPath))
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	profiles, err := common.DeviceProfileClient.DeviceProfiles(ctx)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read Device Profile from Core Metadata: %v", err))
+		common.LoggingClient.Error(fmt.Sprintf("couldn't read Device Profile from Core Metadata: %v", err))
 		return err
 	}
 	pMap := profileSliceToMap(profiles)
@@ -67,7 +67,7 @@ func LoadProfiles(path string) error {
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("profiles: invalid Device Profile: %s; %v", fullPath, err))
+				common.LoggingClient.Error(fmt.Sprintf("invalid Device Profile: %s; %v", fullPath, err))
 				continue
 			}
 
@@ -81,7 +81,7 @@ func LoadProfiles(path string) error {
 			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 			id, err := common.DeviceProfileClient.Add(&profile, ctx)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("profiles: Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
+				common.LoggingClient.Error(fmt.Sprintf("Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
 			}
 			if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
