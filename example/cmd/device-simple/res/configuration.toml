@@ -66,6 +66,10 @@ File = "./device-simple.log"
       Address = "simple01"
       Port = "300"
   [[DeviceList.AutoEvents]]
-    Frequency = "1s"
+    Frequency = "10s"
     OnChange = false
     Resource = "Switch"
+  [[DeviceList.AutoEvents]]
+    Frequency = "30s"
+    OnChange = false
+    Resource = "Image"
