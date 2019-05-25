@@ -1231,3 +1231,359 @@ func TestTransformReadResult_offset_float64(t *testing.T) {
 		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float64)
 	}
 }
+
+func TestTransformReadResult_mask_uint8(t *testing.T) {
+	val := uint8(math.MaxUint8)
+	mask := "15"
+	expected := uint8(15)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Mask: mask,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint8Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	}
+}
+
+func TestTransformReadResult_mask_uint16(t *testing.T) {
+	val := uint16(math.MaxUint16)
+	mask := "256"
+	expected := uint16(256)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Mask: mask,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint16Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	}
+}
+
+func TestTransformReadResult_mask_uint32(t *testing.T) {
+	val := uint32(math.MaxUint32)
+	mask := "256"
+	expected := uint32(256)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Mask: mask,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint32Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	}
+}
+
+func TestTransformReadResult_mask_uint64(t *testing.T) {
+	val := uint64(math.MaxUint64)
+	mask := "256"
+	expected := uint64(256)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Mask: mask,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint64Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	}
+}
+
+func TestTransformReadResult_mask_should_be_unsigned(t *testing.T) {
+	val := uint64(math.MaxUint64)
+	mask := "-256"
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Mask: mask,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err == nil || err.Error() != "invalid mask value, the mask -256 should be unsigned and parsed to uint64. strconv.ParseUint: parsing \"-256\": invalid syntax" {
+		t.Fatalf("Unexpected test result, transform function should throw the correct error. %v", err)
+	}
+}
+
+func TestTransformReadResult_shift_uint8(t *testing.T) {
+	val := uint8(6)
+	shift := "5"
+	expected := uint8(192)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint8Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	}
+}
+
+func TestTransformReadResult_signedShift_uint8(t *testing.T) {
+	val := uint8(96)
+	shift := "-4"
+	expected := uint8(6)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint8Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint8Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	}
+}
+
+func TestTransformReadResult_shift_uint16(t *testing.T) {
+	val := uint16(128)
+	shift := "8"
+	expected := uint16(32768)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint16Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	}
+}
+
+func TestTransformReadResult_signedShift_uint16(t *testing.T) {
+	val := uint16(32768)
+	shift := "-8"
+	expected := uint16(128)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint16Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint16Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	}
+}
+
+func TestTransformReadResult_shift_uint32(t *testing.T) {
+	val := uint32(120000)
+	shift := "3"
+	expected := uint32(960000)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint32Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	}
+}
+
+func TestTransformReadResult_signedShift_uint32(t *testing.T) {
+	val := uint32(120000)
+	shift := "-2"
+	expected := uint32(30000)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint32Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint32Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	}
+}
+
+func TestTransformReadResult_shift_uint64(t *testing.T) {
+	val := uint64(1000000000)
+	shift := "4"
+	expected := uint64(16000000000)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint64Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	}
+}
+
+func TestTransformReadResult_signedShift_uint64(t *testing.T) {
+	val := uint64(1000000000)
+	shift := "-4"
+	expected := uint64(62500000)
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	result, err := cv.Uint64Value()
+	if err != nil {
+		t.Fatalf("Fail to transform read result, error: %v", err)
+	}
+	if result != expected {
+		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
+	}
+	if cv.Type != dsModels.Uint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	}
+}
+
+func TestTransformReadResult_shift_should_be_valid(t *testing.T) {
+	val := uint64(1000000000)
+	shift := "-+4"
+	ro := contract.ResourceOperation{Object: "test-object"}
+	cv, err := dsModels.NewUint64Value(ro.Object, 0, val)
+	pv := contract.PropertyValue{
+		Shift: shift,
+	}
+
+	err = TransformReadResult(cv, pv)
+
+	if err == nil || err.Error() != "invalid shift value, the shift -+4 should be parsed to float64 for checking the sign of the number. strconv.ParseFloat: parsing \"-+4\": invalid syntax" {
+		t.Fatalf("Unexpected test result, transform function should throw the correct error. %v", err)
+	}
+}
