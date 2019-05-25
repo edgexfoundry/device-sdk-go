@@ -129,7 +129,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 
 func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
-	common.LoggingClient.Debug(fmt.Sprintf("Controller - Command: execute the Get command %s from all operational devices", vars[common.CommandVar]))
+	common.LoggingClient.Debug(fmt.Sprintf("execute the Get command %s from all operational devices", vars[common.CommandVar]))
 
 	if checkServiceLocked(w, req) {
 		return
@@ -169,7 +169,7 @@ func readBodyAsString(w http.ResponseWriter, req *http.Request) (string, bool) {
 	defer req.Body.Close()
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		msg := fmt.Sprintf("commandFunc: error reading request body for: %s %s", req.Method, req.URL)
+		msg := fmt.Sprintf("error reading request body for: %s %s", req.Method, req.URL)
 		common.LoggingClient.Error(msg)
 		return "", false
 	}
