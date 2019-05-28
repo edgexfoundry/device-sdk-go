@@ -184,6 +184,8 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 		sdk.LoggingClient.Error(err.Error())
 	}
 
+	sdk.LoggingClient.Info(sdk.config.Service.StartupMsg)
+
 	signals := make(chan os.Signal)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
