@@ -58,4 +58,5 @@ func main() {
 
 	// Do any required cleanup here
 
-	os.Exit(0)}
+	os.Exit(0)
+}
