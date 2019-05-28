@@ -79,7 +79,15 @@ func main() {
 
 	// 5) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events
 	// to trigger the pipeline.
-	edgexSdk.MakeItRun()
+	err := edgexSdk.MakeItRun()
+	if err != nil {
+		edgexSdk.LoggingClient.Error("MakeItRun returned error: ", err.Error())
+		os.Exit(-1)
+	}
+
+	// Do any required cleanup here
+
+	os.Exit(0)
 }
 
 func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {

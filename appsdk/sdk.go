@@ -163,7 +163,7 @@ func (sdk *AppFunctionsSDK) MQTTSend(addr models.Addressable, cert string, key s
 // MakeItRun will initialize and start the trigger as specifed in the
 // configuration. It will also configure the webserver and start listening on
 // the specified port.
-func (sdk *AppFunctionsSDK) MakeItRun() {
+func (sdk *AppFunctionsSDK) MakeItRun() error {
 	httpErrors := make(chan error)
 	defer close(httpErrors)
 
@@ -184,12 +184,22 @@ func (sdk *AppFunctionsSDK) MakeItRun() {
 		sdk.LoggingClient.Error(err.Error())
 	}
 
+	signals := make(chan os.Signal)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+
 	sdk.webserver.StartHTTPServer(sdk.httpErrors)
-	c := <-sdk.httpErrors
 
-	sdk.LoggingClient.Warn(fmt.Sprintf("Terminating: %v", c))
-	os.Exit(0)
+	select {
+	case httpError := <-sdk.httpErrors:
+		sdk.LoggingClient.Info("Terminating: ", httpError.Error())
+		return httpError
 
+	case signalReceived := <-signals:
+		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
+
+	}
+
+	return nil
 }
 
 // ApplicationSettings returns the values specifed in the custom configuration section.
@@ -257,8 +267,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		Interval:    sdk.config.Service.ClientMonitor,
 	}
 	sdk.eventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
-	// Handles SIGINT/SIGTERM and exits gracefully
-	sdk.listenForInterrupts()
 
 	go telemetry.StartCpuUsageAverage()
 
@@ -376,16 +384,4 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 			// TODO: Deal with pub/sub topics may have changed. Save copy of writeable so that we can determine what if anything changed?
 		}
 	}
-}
-
-func (sdk *AppFunctionsSDK) listenForInterrupts() {
-	sdk.LoggingClient.Info("Listening for interrupts")
-	go func() {
-		signals := make(chan os.Signal)
-		signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-		signalReceived := <-signals
-		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
-		os.Exit(0)
-	}()
 }
