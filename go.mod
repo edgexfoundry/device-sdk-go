@@ -1,8 +1,8 @@
 module github.com/edgexfoundry/device-sdk-go
 
 require (
-	github.com/edgexfoundry/go-mod-core-contracts v0.0.0-20190521133417-c7e6b0d
-	github.com/edgexfoundry/go-mod-registry v0.0.0-20190401195203-552208258719
+	github.com/edgexfoundry/go-mod-core-contracts v0.1.0
+	github.com/edgexfoundry/go-mod-registry v0.1.0
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/context v0.0.0-20181012153548-51ce91d2eadd // indirect
 	github.com/gorilla/mux v1.6.2
