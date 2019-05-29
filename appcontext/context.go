@@ -28,11 +28,17 @@ import (
 
 // Context ...
 type Context struct {
-	EventID       string
+	// ID of the EdgeX Event -- will be filled for a received JSON Event
+	EventID string
+	// Checksum of the EdgeX Event -- will be filled for a received CBOR Event
 	EventChecksum string
+	// This is the ID used to track the EdgeX event through entire EdgeX framework.
 	CorrelationID string
-	OutputData    []byte
+	// OutputData is used for specifying the data that is to be outputted. Leverage the .Complete() function to set.
+	OutputData []byte
+	// This holds the configuration for your service. This is the preferred way to access your custom application settings that have been set in the configuration.
 	Configuration common.ConfigurationStruct
+	// This is exposed to allow logging following the preferred logging strategy within EdgeX.
 	LoggingClient logger.LoggingClient
 	EventClient   coredata.EventClient
 }

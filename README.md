@@ -1,4 +1,4 @@
-# App Functions SDK (Golang) - WORK IN PROGRESS
+# App Functions SDK (Golang) - Beta
 
 Welcome the App Functions SDK for EdgeX. This sdk is meant to provide all the plumbing necessary for developers to get started in processing/transforming/exporting data out of EdgeX. 
 
@@ -84,6 +84,7 @@ After making the above modifications, you should now see data printing out to th
 
 Up until this point, the pipeline has been [triggered](#triggers) by an event over HTTP and the data at the end of that pipeline lands in the last function specified. In the example, data ends up printed to the console. Perhaps we'd like to send the data back to where it came from. In the case of an HTTP trigger, this would be the HTTP response. In the case of a message bus, this could be a new topic to send the data back to for other applications that wish to receive it. To do this, simply call `edgexcontext.Complete([]byte outputData)` passing in the data you wish to "respond" with. In the above `printXMLToConsole(...)` function, replace `println(params[0].(string))` with `edgexcontext.Complete([]byte(params[0].(string)))`. You should now see the response in your postman window when testing the pipeline.
 
+
 ## Triggers
 
 Triggers determine how the app functions pipeline begins execution. In the simple example provided above, an HTTP trigger is used. The trigger is determine by the `configuration.toml` file located in the `/res` directory under a section called `[Binding]`. Check out the [Configuration Section](#configuration) for more information about the toml file.
@@ -100,7 +101,7 @@ SubscribeTopic="events"
 PublishTopic=""
 ```
 The `Type=` is set to "messagebus". [EdgeX Core Data]() is publishing data to the `events` topic. So to receive data from core data, you can set your `SubscribeTopic=` either to `""` or `"events"`. You may also designate a `PublishTopic=` if you wish to publish data back to the message bus.
-`edgexcontext.complete([]byte outputData)` - Will send data back to back to the message bus with the topic specified in the `PublishTopic=` property
+`edgexcontext.Complete([]byte outputData)` - Will send data back to back to the message bus with the topic specified in the `PublishTopic=` property
 #### Message bus connection configuration
 The other piece of configuration required are the connection settings:
 ```toml
@@ -122,10 +123,30 @@ By default, `EdgeX Core Data` publishes data to the `events`  topic on port 5563
 
 Designating an HTTP trigger will allow the pipeline to be triggered by a RESTful `POST` call to `http://[host]:[port]/trigger/`. The body of the POST must be an EdgeX event. 
 
-`edgexcontext.complete([]byte outputData)` - Will send the specified data as the response to the request that originally triggered the HTTP Request. 
+`edgexcontext.Complete([]byte outputData)` - Will send the specified data as the response to the request that originally triggered the HTTP Request. 
 
-### Timer Based Trigger
-Coming soon...
+## Context API
+
+The context parameter passed to each function/transform provides operations and data associated with each execution of the pipeline. Let's take a look at a few of the properties that are available:
+```golang
+type Context struct {
+	EventID       string // ID of the EdgeX Event -- will be filled for a received JSON Event
+	EventChecksum string // Checksum of the EdgeX Event -- will be filled for a received CBOR Event
+	CorrelationID string // This is the ID used to track the EdgeX event through entire EdgeX framework. 
+	Configuration common.ConfigurationStruct // This holds the configuration for your service. This is the preferred way to access your custom application settings that have been set in the configuration. 
+	LoggingClient logger.LoggingClient // This is exposed to allow logging following the preferred logging strategy within EdgeX. 
+}
+```
+
+### Logging
+
+The `LoggingClient` exposed on the context is available to leverage logging libraries/service leveraged throughout the EdgeX framework. The SDK has initialized everything so it can be used to log `Trace`, `Debug`, `Warn`, `Info`, and `Error` messages as appopriate. See `examples/simple-filter-xml/main.go` for an example of how to use the `LoggingClient`.
+
+### .MarkAsPushed()
+`.MarkAsPushed()` is used to indicate to EdgeX Core Data that an event has been "pushed" and is no longer required to be stored. The scheduler service will purge all events that have been marked as pushed based on the configured schedule. By default, it is once daily at midnight. If you leverage the built in export functions (i.e. HTTP Export, or MQTT Export), then the event will automatically be marked as pushed upon a successful export. 
+
+### .Complete()
+`.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
 
 ## Built-In Transforms/Functions 
 
@@ -143,8 +164,8 @@ There are two conversions included in the SDK that can be added to your pipeline
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
 	
-- `HTTPPost(string url)` - This function requires an endpoint be passed in order to configure the URL to `POST` data to. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. 
-- `MQTTPublish()` - Coming Soon
+- `HTTPPost(string url, mimeType string)` - This function requires an endpoint be passed in order to configure the URL to `POST` data to as well as the mime type. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If will be `POST`ing JSON or XML you can leverage the `HTTPPostJSON(url string)` or `HTTPPostXML(url string)` respectively as shortcuts so you don't have to specify mimeType yourself. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+- `MQTTSend(addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool)` - This function will send data from the previous function in the pipeline to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline will be used. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
 
 
 ## Configuration

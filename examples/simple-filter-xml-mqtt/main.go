@@ -96,7 +96,8 @@ func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) 
 		return false, nil
 	}
 
-	println(params[0].(string))
+	// Leverage the built in logging service in EdgeX
+	edgexcontext.LoggingClient.Debug(params[0].(string))
 	edgexcontext.Complete(([]byte)(params[0].(string)))
 	return true, params[0].(string)
 }
