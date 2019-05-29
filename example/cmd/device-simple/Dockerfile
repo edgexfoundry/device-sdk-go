@@ -38,4 +38,4 @@ WORKDIR /
 COPY --from=builder /go/src/github.com/edgexfoundry/device-sdk-go/example/cmd/device-simple/device-simple /usr/local/bin/device-simple
 COPY --from=builder /go/src/github.com/edgexfoundry/device-sdk-go/example/cmd/device-simple/res/docker/configuration.toml /res/docker/configuration.toml
 
-CMD [ "/usr/local/bin/device-simple","--registry","--profile=docker","--confdir=/res"]
+CMD [ "/usr/local/bin/device-simple","--profile=docker","--confdir=/res"]
