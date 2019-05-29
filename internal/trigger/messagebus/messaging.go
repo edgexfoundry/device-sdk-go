@@ -64,7 +64,6 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 
 				edgexContext := &appcontext.Context{
 					Configuration: trigger.Configuration,
-					Trigger:       trigger,
 					LoggingClient: trigger.logging,
 					CorrelationID: msgs.CorrelationID,
 					EventClient:   trigger.EventClient,

@@ -21,7 +21,6 @@ import (
 	"errors"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -33,7 +32,6 @@ type Context struct {
 	EventChecksum string
 	CorrelationID string
 	OutputData    []byte
-	Trigger       trigger.Trigger
 	Configuration common.ConfigurationStruct
 	LoggingClient logger.LoggingClient
 	EventClient   coredata.EventClient

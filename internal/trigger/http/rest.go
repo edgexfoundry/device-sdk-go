@@ -73,7 +73,6 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 	correlationID := r.Header.Get("X-Correlation-ID")
 	edgexContext := &appcontext.Context{
 		Configuration: trigger.Configuration,
-		Trigger:       trigger,
 		LoggingClient: trigger.logging,
 		CorrelationID: correlationID,
 		EventClient:   trigger.EventClient,
