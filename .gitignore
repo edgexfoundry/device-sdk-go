@@ -7,6 +7,7 @@ examples/advanced-filter-convert-publish/advanced-filter-convert-publish
 examples/simple-filter-xml-post/simple-filter-xml-post
 examples/simple-filter-xml-mqtt/simple-filter-xml-mqtt
 examples/simple-filter-xml/simple-filter-xml
+examples/simple-cbor-filter/simple-cbor-filter
 go.sum
 *.log
 *.txt

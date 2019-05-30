@@ -1,0 +1,115 @@
+{
+	"info": {
+		"_postman_id": "7c5f760b-8466-46a1-afde-f2c7c0227620",
+		"name": "Device Simple Switch commands",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Switch status",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://localhost:48082/api/v1/device/name/Simple-Device01/command/Switch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "48082",
+					"path": [
+						"api",
+						"v1",
+						"device",
+						"name",
+						"Simple-Device01",
+						"command",
+						"Switch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Turn Switch on",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"SwitchButton\": \"true\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:48082/api/v1/device/name/Simple-Device01/command/Switch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "48082",
+					"path": [
+						"api",
+						"v1",
+						"device",
+						"name",
+						"Simple-Device01",
+						"command",
+						"Switch"
+					]
+				},
+				"description": "Sends Switch command to turn on the switch"
+			},
+			"response": []
+		},
+		{
+			"name": "Turn Switch off",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"SwitchButton\": \"false\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:48082/api/v1/device/name/Simple-Device01/command/Switch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "48082",
+					"path": [
+						"api",
+						"v1",
+						"device",
+						"name",
+						"Simple-Device01",
+						"command",
+						"Switch"
+					]
+				},
+				"description": "Sends Switch command to turn off the switch"
+			},
+			"response": []
+		}
+	]
+}
