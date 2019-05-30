@@ -2,7 +2,7 @@
 
 GO=CGO_ENABLED=1 GO111MODULE=on go
 
-MICROSERVICES=examples/simple-filter-xml/simple-filter-xml examples/simple-filter-xml-mqtt/simple-filter-xml-mqtt examples/simple-filter-xml-post/simple-filter-xml-post examples/advanced-filter-convert-publish/advanced-filter-convert-publish
+MICROSERVICES=examples/simple-filter-xml/simple-filter-xml examples/simple-cbor-filter/simple-cbor-filter examples/simple-filter-xml-mqtt/simple-filter-xml-mqtt examples/simple-filter-xml-post/simple-filter-xml-post examples/advanced-filter-convert-publish/advanced-filter-convert-publish
 .PHONY: $(MICROSERVICES)
 
 VERSION=$(shell cat ./VERSION)
@@ -16,6 +16,9 @@ build: $(MICROSERVICES)
 
 examples/simple-filter-xml/simple-filter-xml:
 	$(GO) build $(GOFLAGS) -o $@ ./examples/simple-filter-xml
+
+examples/simple-cbor-filter/simple-cbor-filter:
+	$(GO) build $(GOFLAGS) -o $@ ./examples/simple-cbor-filter
 
 examples/simple-filter-xml-mqtt/simple-filter-xml-mqtt:
 	$(GO) build $(GOFLAGS) -o $@ ./examples/simple-filter-xml-mqtt
