@@ -34,9 +34,6 @@ type ServiceInfo struct {
 	Labels []string
 	// OpenMsg specifies a string logged on DS startup.
 	OpenMsg string
-	// ReadMaxLimit specifies the maximum size list supported
-	// in response to REST calls to other services.
-	ReadMaxLimit int
 	// Timeout (in milliseconds) specifies both
 	// - timeout for processing REST calls and
 	// - interval time the DS will wait between each retry call.
