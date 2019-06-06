@@ -43,7 +43,7 @@ func CommandValueToReading(cv *dsModels.CommandValue, devName string, encoding s
 	if cv.Origin > 0 {
 		reading.Origin = cv.Origin
 	} else {
-		reading.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+		reading.Origin = time.Now().UnixNano()
 	}
 
 	return reading

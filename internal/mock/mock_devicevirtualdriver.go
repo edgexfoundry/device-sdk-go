@@ -29,7 +29,7 @@ func (DriverMock) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.A
 
 func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 	res = make([]*dsModels.CommandValue, len(reqs))
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	var v *dsModels.CommandValue
 	for i, req := range reqs {
 		switch deviceName {

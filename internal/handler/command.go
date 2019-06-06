@@ -169,7 +169,7 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 	// push to Core Data
 	cevent := contract.Event{Device: device.Name, Readings: readings}
 	event := &dsModels.Event{Event: cevent}
-	event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+	event.Origin = time.Now().UnixNano()
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
 	// the rest of the reading JSON + Event JSON length?  Should there be
@@ -403,7 +403,7 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 	var err error
 	var value interface{}
 	var t dsModels.ValueType
-	origin := time.Now().UnixNano() / int64(time.Millisecond)
+	origin := time.Now().UnixNano()
 
 	switch strings.ToLower(dr.Properties.Value.Type) {
 	case "bool":
