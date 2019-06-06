@@ -474,7 +474,7 @@ func TestNewInt64Value(t *testing.T) {
 // Test NewFloat32Value function.
 func TestNewFloat32Value(t *testing.T) {
 	var value float32 = math.SmallestNonzeroFloat32
-	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	var origin int64 = time.Now().UnixNano()
 	cv, _ := NewFloat32Value("resource", origin, value)
 	if cv.Type != Float32 {
 		t.Errorf("NewFloat32Value: invalid Type: %v", cv.Type)
@@ -525,7 +525,7 @@ func TestNewFloat32Value(t *testing.T) {
 // Test NewFloat64Value function.
 func TestNewFloat64Value(t *testing.T) {
 	var value float64 = math.SmallestNonzeroFloat64
-	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	var origin int64 = time.Now().UnixNano()
 	cv, _ := NewFloat64Value("resource", origin, value)
 	if cv.Type != Float64 {
 		t.Errorf("NewFloat64Value: invalid Type: %v", cv.Type)
@@ -596,7 +596,7 @@ func createMockPayload(size int) ([]byte, error) {
 
 // Test NewBinaryValue function and associated methods for binary encode/decode.
 func TestNewBinaryValue(t *testing.T) {
-	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	var origin int64 = time.Now().UnixNano()
 	// assign instance of mockStructB as a CBOR encoded CommandValue payload
 	var mock1 contract.Event
 	var mock2 contract.Event
@@ -649,7 +649,7 @@ func TestNewBinaryValue(t *testing.T) {
 
 // Test NewBinaryValueConstraints function and associated methods for binary encode/decode.
 func TestNewBinaryValueWithinConstraints(t *testing.T) {
-	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	var origin int64 = time.Now().UnixNano()
 	// Confirm we receive error if arbitrary binary value exceeds policy limit (currently 16MB)
 	payloadLimit := MaxBinaryBytes
 	payloadSize := MaxBinaryBytes
@@ -676,7 +676,7 @@ func TestNewBinaryValueWithinConstraints(t *testing.T) {
 
 // Test NewBinaryValueConstraints function and associated methods for binary encode/decode.
 func TestNewBinaryValueExceedsConstraints(t *testing.T) {
-	var origin int64 = time.Now().UnixNano() / int64(time.Millisecond)
+	var origin int64 = time.Now().UnixNano()
 	// Confirm we receive error if arbitrary binary value exceeds policy limit (currently 16MB)
 	payloadLimit := MaxBinaryBytes
 	payloadSize := MaxBinaryBytes + 1

@@ -57,7 +57,7 @@ func (e *executor) Run() {
 			event := &dsModels.Event{Event: evt.Event}
 			// Attach origin timestamp for readings if none yet specified
 			if event.Origin == 0 {
-				event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+				event.Origin = time.Now().UnixNano()
 			}
 			go common.SendEvent(event)
 		}

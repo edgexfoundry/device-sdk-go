@@ -76,7 +76,7 @@ func processAsyncResults() {
 		// push to Core Data
 		cevent := contract.Event{Device: device.Name, Readings: readings}
 		event := &dsModels.Event{Event: cevent}
-		event.Origin = time.Now().UnixNano() / int64(time.Millisecond)
+		event.Origin = time.Now().UnixNano()
 		common.SendEvent(event)
 	}
 }

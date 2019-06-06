@@ -80,7 +80,7 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes))
 
 	res = make([]*dsModels.CommandValue, 1)
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+	now := time.Now().UnixNano()
 	if reqs[0].DeviceResourceName == "SwitchButton" {
 		cv, _ := dsModels.NewBoolValue(reqs[0].DeviceResourceName, now, s.switchButton)
 		res[0] = cv
