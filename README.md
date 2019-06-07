@@ -29,7 +29,7 @@ func main() {
 
 	// 3) Since our DeviceNameFilter Function requires the list of Device Names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceIDs := []string{"GS1-AC-Drive01"}
+	deviceIDs := []string{"Random-Float-Device"}
 
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
