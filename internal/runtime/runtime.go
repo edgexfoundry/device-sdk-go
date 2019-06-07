@@ -60,7 +60,7 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 		edgexcontext.EventChecksum = envelope.Checksum
 
 	default:
-		edgexcontext.LoggingClient.Error("'"+envelope.ContentType+"' content type for EdgeX Event not unsupported: ", clients.CorrelationHeader, envelope.CorrelationID)
+		edgexcontext.LoggingClient.Error("'"+envelope.ContentType+"' content type for EdgeX Event not supported: ", clients.CorrelationHeader, envelope.CorrelationID)
 		return nil
 	}
 

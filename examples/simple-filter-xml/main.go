@@ -40,7 +40,7 @@ func main() {
 
 	// 2) Since our DeviceNameFilter Function requires the list of device names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceNames := []string{"Random-Float-Generator01"}
+	deviceNames := []string{"Random-Float-Device"}
 
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
@@ -83,8 +83,11 @@ func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) 
 		// We didn't receive a result
 		return false, nil
 	}
+
+	fmt.Println(params[0].(string))
+
 	// Leverage the built in logging service in EdgeX
-	edgexcontext.LoggingClient.Debug(params[0].(string))
+	edgexcontext.LoggingClient.Debug("XML printed to console")
 
 	edgexcontext.Complete([]byte(params[0].(string)))
 	return false, nil

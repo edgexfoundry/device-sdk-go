@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	serviceKey = "sampleFilterXml"
+	serviceKey = "sampleCborFilter"
 )
 
 var counter int = 0

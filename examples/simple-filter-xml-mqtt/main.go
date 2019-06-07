@@ -39,7 +39,7 @@ func main() {
 
 	// 2) Since our DeviceNameFilter Function requires the list of device names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceNames := []string{"Random-Float-Generator01"}
+	deviceNames := []string{"Random-Float-Device"}
 	// Since we are using MQTT, we'll also need to set up the addressable model to
 	// configure it to send to our broker. If you don't have a broker setup you can pull one from docker i.e:
 	// docker run -it -p 1883:1883 -p 9001:9001  eclipse-mosquitto
