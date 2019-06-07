@@ -37,7 +37,7 @@ func main() {
 
 	// 2) Since our DeviceNameFilter Function requires the list of device names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceNames := []string{"Random-Float-Generator01"}
+	deviceNames := []string{"Random-Float-Device"}
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetFunctionsPipeline(
