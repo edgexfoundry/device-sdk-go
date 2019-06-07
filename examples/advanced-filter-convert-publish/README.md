@@ -62,8 +62,6 @@ Using the following setup, this example advanced **App Functions Service** can b
 
 5. Run **Device Virtual** service
 
-   This example expects the float encoding for all random floats to be `Base64` and needs to restrict the range of values that are generated so they are easy to read. By default the device-virtual is using `Base64` for Float32 & `eNotation` for Float64 and doesn't see and range limits. Below are instructions on how to change the configuration  to meet these needs.
-
    - [ ] Clone **<https://github.com/edgexfoundry/device-virtual-go>** repo
 
    - [ ] run "**make build**"
@@ -72,7 +70,7 @@ Using the following setup, this example advanced **App Functions Service** can b
 
    - [ ] Edit the `device.virtual.float.yaml` file
    
-      This app functions example expects the float encoding for all random floats to be `Base64` and needs to restrict the range of values that are generated so they are easy to read. By default the device-virtual is using `Base64` for Float32 & `eNotation` for Float64 and doesn't see and range limits. Make the following changes to the `deviceResources` section to meet these needs.
+      This app functions example expects the float encoding for all random floats to be `Base64` and needs to restrict the range of values that are generated so they are easy to read. By default the device-virtual is using `Base64` for Float32 & `eNotation` for Float64 and doesn't set any range limits. Make the following changes to the `deviceResources` section to meet these needs.
    
       For `RandomValue_Float32` change the `value` property to:
 
