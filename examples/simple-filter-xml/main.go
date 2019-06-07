@@ -89,7 +89,6 @@ func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) 
 	// Leverage the built in logging service in EdgeX
 	edgexcontext.LoggingClient.Debug("XML printed to console")
 
-
 	edgexcontext.Complete([]byte(params[0].(string)))
 	return false, nil
 }
