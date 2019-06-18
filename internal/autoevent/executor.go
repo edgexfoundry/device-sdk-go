@@ -8,6 +8,7 @@ package autoevent
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -27,6 +28,7 @@ type executor struct {
 	lastReadings map[string]string
 	duration     time.Duration
 	stop         bool
+	rwmutex      sync.RWMutex
 }
 
 // Run triggers this Executor executes the handler for the resource periodically
@@ -80,12 +82,16 @@ func readResource(e *executor) (*dsModels.Event, common.AppError) {
 }
 
 func cacheReadings(e *executor, readings []contract.Reading) {
+	e.rwmutex.Lock()
+	defer e.rwmutex.Unlock()
 	for _, r := range readings {
 		e.lastReadings[r.Name] = r.Value
 	}
 }
 
 func compareReadings(e *executor, readings []contract.Reading) bool {
+	e.rwmutex.RLock()
+	defer e.rwmutex.RUnlock()
 	for _, r := range readings {
 		v, ok := e.lastReadings[r.Name]
 		if !ok || v != r.Value {
