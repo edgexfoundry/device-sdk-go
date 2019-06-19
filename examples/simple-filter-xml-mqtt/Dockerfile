@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-FROM golang:1.11-alpine AS builder
+FROM golang:1.12-alpine AS builder
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
@@ -22,7 +22,6 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
 
 # add git for go modules
 RUN apk update && apk add --no-cache make git gcc libc-dev libsodium-dev zeromq-dev
-ENV GO111MODULE=on
 WORKDIR /go/src/github.com/edgexfoundry/app-functions-sdk-go
 
 COPY go.mod .
