@@ -120,6 +120,20 @@ func (sdk *AppFunctionsSDK) HTTPPostXML(url string) func(*appcontext.Context, ..
 	return sdk.HTTPPost(url, "application/xml")
 }
 
+// GZIPTransform compresses data received as either a string,[]byte, or json.Marshaler using gzip algorithm and returns a base64 encoded string as a []byte.
+// This function is a configuration function and returns a function pointer.
+func (sdk *AppFunctionsSDK) GZIPTransform() func(*appcontext.Context, ...interface{}) (bool, interface{}) {
+	transforms := transforms.Compression{}
+	return transforms.GZIPTransform
+}
+
+// ZLIBTransform compresses data received as either a string,[]byte, or json.Marshaler using zlib algorithm and returns a base64 encoded string as a []byte.
+// This function is a configuration function and returns a function pointer.
+func (sdk *AppFunctionsSDK) ZLIBTransform() func(*appcontext.Context, ...interface{}) (bool, interface{}) {
+	transforms := transforms.Compression{}
+	return transforms.ZLIBTransform
+}
+
 // MQTTSend sends data from the previous function to the specified MQTT broker.
 // If no previous function exists, then the event that triggered the pipeline will be used.
 // This function is a configuration function and returns a function pointer.

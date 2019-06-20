@@ -163,8 +163,15 @@ There is one encryption transform included in the SDK that can be added to your 
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
  
- - `XMLTransform()`  - This function received an `events.Model` type and converts it to XML format. 
- - `JSONTransform()` - This function received an `events.Model` type and converts it to JSON format. 
+ - `XMLTransform()`  - This function receives an `events.Model` type and converts it to XML format. 
+ - `JSONTransform()` - This function receives an `events.Model` type and converts it to JSON format. 
+
+ ### Compressions
+There are two compression types included in the SDK that can be added to your pipeline. These transforms return a `[]byte`.
+ 
+ - `GZIPTransform()`  - This function receives either a `string`,`[]byte`, or `json.Marshaler` type and converts it to base64 encoded string returned as a `[]byte`.
+ - `ZLIBTransform()` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type and converts it to base64 encoded string returned as a `[]byte`.
+
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
