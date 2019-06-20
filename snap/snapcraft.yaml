@@ -1,0 +1,133 @@
+name: edgex-device-simple
+# The snap to derive the runtime rootfs from, here core18 corresponds to a 
+# minimal Ubuntu 18.04 Server rootfs
+base: core18
+license: Apache-2.0
+version: "replace-me"
+# Replace the version using the VERSION file, the date, and the git SHA for 
+# easy introspection via the version of a snap for what git commit it was 
+# built from
+version-script: |
+  echo $(cat VERSION)-$(date +%Y%m%d)+$(git rev-parse --short HEAD)
+summary: Demonstrate the Device SDK go in EdgeX using device-simple
+title: EdgeX Simple Device Service
+description: |
+  device-simple is an example EdgeX Device Service built using the 
+  device-sdk-go.
+
+# What architectures to build the snap on
+architectures:
+  - build-on: amd64
+  - build-on: arm64
+
+# The "stability" of the snap and what users can expect from it
+# Note that "devel" grade cannot be released to stable or candidate channels
+grade: stable
+confinement: strict
+
+# edinburgh release is epoch 1
+epoch: 2
+
+apps:
+  device-simple:
+    # `adapter` specifies what kind of environment variables need to be setup
+    # for the app, since our app is a statically compiled go app, we don't 
+    # need any of the env vars, but if this was a c program or used cgo, we 
+    # would need adapter: full
+    adapter: none
+    command: bin/device-simple -confdir $SNAP_DATA/config/device-simple -profile res --registry $CONSUL_ADDR
+    # Since we can't include the colon ':' characters in the command above,
+    # we need to specify the consul address in an env var like so
+    # see https://bugs.launchpad.net/snapd/+bug/1827392 for more details
+    environment:
+      CONSUL_ADDR: "consul://localhost:8500"
+    # The service is a simple service that is directly exec'd and expected to
+    # always run in a single long-lived process
+    daemon: simple
+    # Use network and network-bind plugs to access the network and bind to 
+    # ports on network interfaces
+    plugs: [network, network-bind]
+
+parts:
+  # This go part is necessary because it's expected that this snapcraft.yaml
+  # will be build on Linux Foundation infrastructure and as such runs in a 
+  # docker container. Since this may be run in a docker container, we can't 
+  # use the default (and convenient) `build-snaps: [go/1.12]` inside the 
+  # device-simple part which requires a working snapd which isn't available
+  # inside a docker container
+  go:
+    plugin: nil
+    source: snap/local
+    build-packages: [curl]
+    override-build: |
+      # Use `dpkg architecture` to figure out our target arch rather than 
+      # using `arch` because this allows cross compiling from arm64 to target
+      # armhf, etc.
+      case "$(dpkg --print-architecture)" in
+        amd64)
+          FILE_NAME=go1.11.9.linux-amd64.tar.gz
+          FILE_HASH=e88aa3e39104e3ba6a95a4e05629348b4a1ec82791fb3c941a493ca349730608
+          ;;
+        arm64)
+          FILE_NAME=go1.11.9.linux-arm64.tar.gz
+          FILE_HASH=892ab6c2510c4caa5905b3b1b6a1d4c6f04e384841fec50881ca2be7e8accf05
+          ;;
+        armhf)
+          FILE_NAME=go1.11.9.linux-armv6l.tar.gz
+          FILE_HASH=f0d7b039cae61efdc346669f3459460e3dc03b6c6de528ca107fc53970cba0d1
+          ;;
+        i386)
+          FILE_NAME=go1.11.9.linux-386.tar.gz
+          FILE_HASH=0fa4001fcf1ef0644e261bf6dde02fc9f10ae4df6d74fda61fc4d3c3cbef1d79
+          ;;
+      esac
+      # Download the archive, failing on ssl cert problems.
+      curl https://dl.google.com/go/$FILE_NAME -O
+      echo "$FILE_HASH $FILE_NAME" > sha256
+      sha256sum -c sha256 | grep OK
+      tar -C $SNAPCRAFT_STAGE -xf go*.tar.gz --strip-components=1
+    # Don't include any of the files from the go part in the final snap.
+    prime:
+      - "-*"
+
+  device-simple:
+    source: .
+    plugin: make
+    build-packages: [git]
+    after: [go]
+    override-build: |
+      # Build device-simple first
+      cd $SNAPCRAFT_PART_SRC
+      make build
+
+      # Copy the resulting binary into $SNAPCRAFT_PART_INSTALL in the build
+      # environment, which snapcraft will pack into $SNAP when the build is
+      # done.
+      install -DT "./example/cmd/device-simple/device-simple" \
+        "$SNAPCRAFT_PART_INSTALL/bin/device-simple"
+      
+      install -d "$SNAPCRAFT_PART_INSTALL/config/device-simple/res/"
+
+      # "ProfilesDir" in combination with the confdir and profile command-line
+      # options are sufficient to not need to cd before exec'ing the binary.
+      # Change "ProfilesDir" to be under $SNAP_DATA which is writable and 
+      # where the install hook copies the config files and device profiles to
+      # when the snap is first installed 
+      cat "./example/cmd/device-simple/res/configuration.toml" | \
+        sed -e s:\"./device-simple.log\":\'\$SNAP_COMMON/device-simple.log\': \
+          -e s:'ProfilesDir = \"./res\"':'ProfilesDir = \"\$SNAP_DATA/config/device-simple/res\"': > \
+        "$SNAPCRAFT_PART_INSTALL/config/device-simple/res/configuration.toml"
+
+      # Install the example Simpler.Driver device profile
+      cp "./example/cmd/device-simple/res/Simple-Driver.yaml" \
+        "$SNAPCRAFT_PART_INSTALL/config/device-simple/res/Simple-Driver.yaml"
+
+      # Also install the Attribution.txt and LICENSE files into the snap at 
+      # usr/share/doc/device-simple which is a debian standard location for
+      # licenses in the snap.
+      # Note also if the license is changed that the license key in the
+      # metadata for the snap at the top of this file should be updated too.
+      install -DT "./Attribution.txt" \
+         "$SNAPCRAFT_PART_INSTALL/usr/share/doc/device-simple/Attribution.txt"
+      install -DT "./LICENSE" \
+         "$SNAPCRAFT_PART_INSTALL/usr/share/doc/device-simple/LICENSE"
