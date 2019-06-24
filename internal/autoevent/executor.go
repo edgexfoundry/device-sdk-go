@@ -57,9 +57,9 @@ func (e *executor) Run() {
 			}
 			common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
 			event := &dsModels.Event{Event: evt.Event}
-			// Attach origin timestamp for readings if none yet specified
+			// Attach origin timestamp for events if none yet specified
 			if event.Origin == 0 {
-				event.Origin = time.Now().UnixNano()
+				event.Origin = common.GetUniqueOrigin()
 			}
 			go common.SendEvent(event)
 		}

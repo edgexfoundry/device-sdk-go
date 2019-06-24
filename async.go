@@ -9,7 +9,6 @@ package device
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -76,7 +75,7 @@ func processAsyncResults() {
 		// push to Core Data
 		cevent := contract.Event{Device: device.Name, Readings: readings}
 		event := &dsModels.Event{Event: cevent}
-		event.Origin = time.Now().UnixNano()
+		event.Origin = common.GetUniqueOrigin()
 		common.SendEvent(event)
 	}
 }

@@ -76,3 +76,12 @@ func TestCompareStrStrMap(t *testing.T) {
 		t.Error("Maps with different content are OK!")
 	}
 }
+
+func TestGetUniqueOrigin(t *testing.T) {
+	origin1 := GetUniqueOrigin()
+	origin2 := GetUniqueOrigin()
+
+	if origin1 >= origin2 {
+		t.Errorf("origin1: %d should <= origin2: %d", origin1, origin2)
+	}
+}

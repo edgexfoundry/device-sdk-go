@@ -169,7 +169,7 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 	// push to Core Data
 	cevent := contract.Event{Device: device.Name, Readings: readings}
 	event := &dsModels.Event{Event: cevent}
-	event.Origin = time.Now().UnixNano()
+	event.Origin = common.GetUniqueOrigin()
 
 	// TODO: enforce config.MaxCmdValueLen; need to include overhead for
 	// the rest of the reading JSON + Event JSON length?  Should there be

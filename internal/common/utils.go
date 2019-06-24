@@ -12,12 +12,18 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
+)
+
+var (
+	previousOrigin int64
+	originMutex    sync.Mutex
 )
 
 func BuildAddr(host string, port string) string {
@@ -243,4 +249,15 @@ func VerifyIdFormat(id string, drName string) error {
 		return fmt.Errorf(errMsg)
 	}
 	return nil
+}
+
+func GetUniqueOrigin() int64 {
+	originMutex.Lock()
+	defer originMutex.Unlock()
+	now := time.Now().UnixNano()
+	if now <= previousOrigin {
+		now = previousOrigin + 1
+	}
+	previousOrigin = now
+	return now
 }
