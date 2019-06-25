@@ -21,7 +21,7 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
 
 # add git for go modules
 RUN apk update && apk add --no-cache make git gcc libc-dev libsodium-dev zeromq-dev
-WORKDIR /go/src/github.com/edgexfoundry/app-functions-sdk-go
+WORKDIR /app-functions-sdk-go
 
 COPY go.mod .
 
@@ -39,7 +39,7 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2019: Intel'
 
 RUN apk --no-cache add zeromq
-COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml/res/docker /res/docker
-COPY --from=builder /go/src/github.com/edgexfoundry/app-functions-sdk-go/examples/simple-filter-xml/simple-filter-xml /simple-filter-xml
+COPY --from=builder /app-functions-sdk-go/examples/simple-filter-xml/res/docker /res/docker
+COPY --from=builder /app-functions-sdk-go/examples/simple-filter-xml/simple-filter-xml /simple-filter-xml
 
 CMD [ "/simple-filter-xml" ,"--registry","--profile=docker","--confdir=/res"]
