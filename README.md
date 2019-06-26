@@ -2,6 +2,23 @@
 
 Welcome the App Functions SDK for EdgeX. This sdk is meant to provide all the plumbing necessary for developers to get started in processing/transforming/exporting data out of EdgeX. 
 
+Table of contents
+=================
+
+<!--ts-->
+   * [Getting Started](#getting-started)
+   * [Triggers](#triggers)
+   * [Context API](#context-api)
+   * [Built-In Functions](#built-in-transformsfunctions)
+      * [Filtering](#filtering)
+      * [Encryption](#encryption)
+      * [Conversion](#conversion)
+      * [Compressions](#compressions)
+      * [Export Functions](#export-functions)    
+   * [Configuration](#configuration)
+   * [Error Handling](#error-handling)
+<!--te-->
+
 ## Getting Started
 
 The SDK is built around the idea of a "Functions Pipeline". A functions pipeline is a collection of various functions that process the data in the order that you've specified. The functions pipeline is executed by the specified [trigger](#triggers) in the `configuration.toml` . The first function in the pipeline is called with the event that triggered the pipeline (ex. `events.Model`). Each successive call in the pipeline is called with the return result of the previous function. Let's take a look at a simple example that creates a pipeline to filter particular device ids and subsequently transform the data to XML:
