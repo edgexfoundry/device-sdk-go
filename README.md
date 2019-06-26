@@ -155,6 +155,11 @@ There are two basic types of filtering included in the SDK to add to your pipeli
  - `DeviceNameFilter([]string deviceNames)` - This function will filter the event data down to the specified device names before calling the next function. 
  - `ValueDescriptorFilter([]string valueDescriptors)` - This function will filter the event data down to the specified device value descriptor before calling the next function. 
 
+### Encryption
+There is one encryption transform included in the SDK that can be added to your pipeline. 
+
+- `AESTransform` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte`.
+
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
  

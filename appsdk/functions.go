@@ -65,6 +65,17 @@ func (sdk *AppFunctionsSDK) ValueDescriptorFilter(valueIDs []string) func(*appco
 	return transforms.FilterByValueDescriptor
 }
 
+// AESTransform encrypts either a string, []byte, or json.Marshaller type using AES encryption.
+// It will return a byte[] of the encrypted data.
+// This function is a configuration function and returns a function pointer.
+func (sdk *AppFunctionsSDK) AESTransform(encryptionDetails models.EncryptionDetails) func(*appcontext.Context, ...interface{}) (bool, interface{}) {
+	transforms := transforms.Encryption{
+		Key:                 encryptionDetails.Key,
+		IntializationVector: encryptionDetails.InitVector,
+	}
+	return transforms.AESTransform
+}
+
 // XMLTransform transforms an EdgeX event to XML.
 // It will return an error and stop the pipeline if a non-edgex
 // event is received or if no data is recieved.
