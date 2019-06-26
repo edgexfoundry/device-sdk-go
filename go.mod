@@ -1,5 +1,7 @@
 module github.com/edgexfoundry/app-functions-sdk-go
 
+go 1.12
+
 require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
 	github.com/BurntSushi/toml v0.3.1
