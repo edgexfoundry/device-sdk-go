@@ -43,8 +43,11 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 		useRegistry, profile, confDir)
 
 	var registryMsg string
+
+	e := NewEnvironment()
 	if useRegistry != "" {
 		configuration = &common.Config{}
+		useRegistry = e.OverrideUseRegistryFromEnvironment(useRegistry)
 		err = parseRegistryPath(useRegistry, configuration)
 		if err != nil {
 			return
@@ -95,14 +98,19 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 			// Self bootstrap the Registry with the device service's configuration
 			fmt.Fprintln(os.Stdout, "Pushing configuration into Registry...")
 
-			configuration, err = loadConfigFromFile(profile, confDir)
+			_, configTree, err := loadConfigFromFile(profile, confDir)
 			if err != nil {
 				return nil, err
 			}
 
-			err := RegistryClient.PutConfiguration(*configuration, true)
+			err = RegistryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), true)
 			if err != nil {
 				return nil, fmt.Errorf("could not push configuration to Registry: %v", err.Error())
+			}
+
+			err = configTree.Unmarshal(configuration)
+			if err != nil {
+				return nil, fmt.Errorf("could not marshal configTree to configuration: %v", err.Error())
 			}
 		}
 
@@ -132,7 +140,7 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 		}
 	} else {
 		registryMsg = "Bypassing registration in registry..."
-		configuration, err = loadConfigFromFile(profile, confDir)
+		configuration, _, err = loadConfigFromFile(profile, confDir)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +171,7 @@ func parseRegistryPath(registryUrl string, config *common.Config) error {
 	return nil
 }
 
-func loadConfigFromFile(profile string, confDir string) (config *common.Config, err error) {
+func loadConfigFromFile(profile string, confDir string) (config *common.Config, tree *toml.Tree, err error) {
 	if len(confDir) == 0 {
 		confDir = common.ConfigDirectory
 	}
@@ -176,7 +184,7 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		err = fmt.Errorf("Could not create absolute path to load configuration: %s; %v", path, err.Error())
-		return nil, err
+		return nil, nil, err
 	}
 	fmt.Fprintln(os.Stdout, fmt.Sprintf("Loading configuration from: %s\n", absPath))
 
@@ -193,7 +201,7 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 	config = &common.Config{}
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("Could not load configuration file (%s): %v\nBe sure to change to program folder or set working directory.", path, err.Error())
+		return nil, nil, fmt.Errorf("Could not load configuration file (%s): %v\nBe sure to change to program folder or set working directory.", path, err.Error())
 	}
 
 	// Decode the configuration from TOML
@@ -202,10 +210,15 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 	//       - test missing keys, keys with wrong type, ...
 	err = toml.Unmarshal(contents, config)
 	if err != nil {
-		return nil, fmt.Errorf("unable to parse configuration file (%s): %v", path, err.Error())
+		return nil, nil, fmt.Errorf("unable to unmarshal configuration struct (%s): %v", path, err.Error())
 	}
 
-	return config, nil
+	tree, err = toml.LoadBytes(contents)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to unmarshal configuration tree (%s): %v", path, err.Error())
+	}
+
+	return config, tree, nil
 }
 
 func checkRegistryUp(config *common.Config) error {
