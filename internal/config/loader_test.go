@@ -110,7 +110,7 @@ func TestLoadDriverConfigFromFile(t *testing.T) {
 	expectedProperty2 := "Port"
 	expectedValue2 := "1883"
 
-	config, err := loadConfigFromFile("", "./test")
+	config, _, err := loadConfigFromFile("", "./test")
 
 	if err != nil {
 		t.Errorf("Fail to load config from file, %v", err)
