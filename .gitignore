@@ -6,3 +6,6 @@ vendor
 .idea
 go.sum
 coverage.out
+*.snap
+prime/
+squashfs-root/
