@@ -39,7 +39,7 @@ docker:
 		.
 
 test:
-	$(GO) test ./... -cover
+	$(GO) test ./... -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l .
 	[ "`gofmt -l .`" = "" ]
