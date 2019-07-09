@@ -33,7 +33,7 @@ import (
 // Trigger implements Trigger to support Triggers
 type Trigger struct {
 	Configuration common.ConfigurationStruct
-	Runtime       runtime.GolangRuntime
+	Runtime       *runtime.GolangRuntime
 	outputData    []byte
 	logging       logger.LoggingClient
 	Webserver     *webserver.WebServer

@@ -17,10 +17,12 @@
 package appsdk
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"strings"
 	"syscall"
 	"time"
@@ -35,30 +37,37 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	coreTypes "github.com/edgexfoundry/go-mod-core-contracts/clients/types"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 )
+
+// ProfileSuffixPlaceholder is used to create unique names for profiles
+const ProfileSuffixPlaceholder = "<profile>"
 
 // AppFunctionsSDK provides the necessary struct to create an instance of the Application Functions SDK. Be sure and provide a ServiceKey
 // when creating an instance of the SDK. After creating an instance, you'll first want to call .Initialize(), to start up the SDK. Secondly,
 // provide the desired transforms for your pipeline by calling .SetFunctionsPipeline(). Lastly, call .MakeItRun() to start listening for events based on
 // your configured trigger.
 type AppFunctionsSDK struct {
-	transforms     []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{})
-	ServiceKey     string
-	configProfile  string
-	configDir      string
-	useRegistry    bool
-	httpErrors     chan error
-	webserver      *webserver.WebServer
-	registryClient registry.Client
-	eventClient    coredata.EventClient
-	config         common.ConfigurationStruct
-	LoggingClient  logger.LoggingClient
+	transforms                []appcontext.AppFunction
+	ServiceKey                string
+	configProfile             string
+	configDir                 string
+	useRegistry               bool
+	usingConfigurablePipeline bool
+	httpErrors                chan error
+	runtime                   *runtime.GolangRuntime
+	webserver                 *webserver.WebServer
+	registryClient            registry.Client
+	eventClient               coredata.EventClient
+	config                    common.ConfigurationStruct
+	LoggingClient             logger.LoggingClient
 }
 
 // MakeItRun will initialize and start the trigger as specifed in the
@@ -68,8 +77,8 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	httpErrors := make(chan error)
 	defer close(httpErrors)
 
-	runtime := runtime.GolangRuntime{Transforms: sdk.transforms}
-
+	sdk.runtime = &runtime.GolangRuntime{} //Transforms: sdk.transforms
+	sdk.runtime.SetTransforms(sdk.transforms)
 	sdk.webserver = &webserver.WebServer{
 		Config:        &sdk.config,
 		LoggingClient: sdk.LoggingClient,
@@ -77,7 +86,7 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	sdk.webserver.ConfigureStandardRoutes()
 
 	// determine input type and create trigger for it
-	trigger := sdk.setupTrigger(sdk.config, runtime)
+	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
 	err := trigger.Initialize(sdk.LoggingClient)
@@ -105,13 +114,77 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	return nil
 }
 
+// LoadConfigurablePipeline ...
+func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction, error) {
+	var pipeline []appcontext.AppFunction
+
+	sdk.usingConfigurablePipeline = true
+
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: sdk,
+	}
+	valueOfType := reflect.ValueOf(configurable)
+	pipelineConfig := sdk.config.Writable.Pipeline
+	executionOrder := util.DeleteEmptyAndTrim(strings.FieldsFunc(pipelineConfig.ExecutionOrder, util.SplitComma))
+
+	if len(executionOrder) <= 0 {
+		return nil, errors.New("Execution Order has 0 functions specified. You must have a least one function in the pipeline")
+	}
+	sdk.LoggingClient.Debug("Execution Order", "Functions", strings.Join(executionOrder, ","))
+
+	for _, functionName := range executionOrder {
+		functionName = strings.TrimSpace(functionName)
+		configuration, ok := pipelineConfig.Functions[functionName]
+		if !ok {
+			return nil, fmt.Errorf("Function %s configuration not found in Pipeline.Functions section", functionName)
+		}
+
+		result := valueOfType.MethodByName(functionName)
+		if result.Kind() == reflect.Invalid {
+			return nil, fmt.Errorf("Function %s is not a built in SDK function", functionName)
+		} else if result.IsNil() {
+			return nil, fmt.Errorf("Invalid/Missing configuration for %s", functionName)
+		}
+
+		//determine number of parameters required for function call
+		inputParameters := make([]reflect.Value, result.Type().NumIn())
+		//set keys to be all lowercase to avoid casing issues from configuration
+		for key := range configuration.Parameters {
+			configuration.Parameters[strings.ToLower(key)] = configuration.Parameters[key]
+		}
+		for index := range inputParameters {
+			parameter := result.Type().In(index)
+
+			switch parameter {
+			case reflect.TypeOf(map[string]string{}):
+				inputParameters[index] = reflect.ValueOf(configuration.Parameters)
+
+			case reflect.TypeOf(models.Addressable{}):
+				inputParameters[index] = reflect.ValueOf(configuration.Addressable)
+
+			default:
+				return nil, fmt.Errorf("Function %s has an unsupported parameter type: %s", functionName, parameter.String())
+			}
+		}
+
+		function, ok := result.Call(inputParameters)[0].Interface().(appcontext.AppFunction)
+		if !ok {
+			return nil, fmt.Errorf("Failed to cast function %s as AppFunction type", functionName)
+		}
+		pipeline = append(pipeline, function)
+		configurable.Sdk.LoggingClient.Debug(fmt.Sprintf("%s function added to configurable pipeline", functionName))
+	}
+
+	return pipeline, nil
+}
+
 // ApplicationSettings returns the values specifed in the custom configuration section.
 func (sdk *AppFunctionsSDK) ApplicationSettings() map[string]string {
 	return sdk.config.ApplicationSettings
 }
 
 // setupTrigger configures the appropriate trigger as specified by configuration.
-func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime runtime.GolangRuntime) trigger.Trigger {
+func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
 	var trigger trigger.Trigger
 	// Need to make dynamic, search for the binding that is input
 
@@ -128,7 +201,7 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruc
 }
 
 // Initialize will parse command line flags, register for interrupts,
-// initalize the logging system, and ingest configuration.
+// initialize the logging system, and ingest configuration.
 func (sdk *AppFunctionsSDK) Initialize() error {
 
 	flag.BoolVar(&sdk.useRegistry, "registry", false, "Indicates the service should use the registry.")
@@ -141,6 +214,22 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	flag.StringVar(&sdk.configDir, "c", "", "Specify an alternate configuration directory.")
 
 	flag.Parse()
+
+	// Service keys must be unique. If an executable is run multiple times, it must have a different
+	// profile for each instance, thus adding the profile to the base key will make it unique.
+	// This requires services that are expected to have multiple instances running, such as the Configurable App Service,
+	// add the ProfileSuffixPlaceholder placeholder in the service key.
+	//
+	// The Dockerfile must also take this into account and set the profile appropriately, i.e. not just "docker"
+	//
+
+	if strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
+		if sdk.configProfile == "" {
+			sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "", 1)
+		} else {
+			sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "-"+sdk.configProfile, 1)
+		}
+	}
 
 	now := time.Now()
 	until := now.Add(time.Millisecond * time.Duration(internal.BootTimeoutDefault))
@@ -201,35 +290,35 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 		client, err := registry.NewRegistryClient(registryConfig)
 		if err != nil {
-			return fmt.Errorf("connection to Registry could not be made: %v", err)
+			return fmt.Errorf("Connection to Registry could not be made: %v", err)
 		}
 		//set registryClient
 		sdk.registryClient = client
 
 		if !sdk.registryClient.IsAlive() {
-			return fmt.Errorf("registry (%s) is not running", registryConfig.Type)
+			return fmt.Errorf("Registry (%s) is not running", registryConfig.Type)
 		}
 
 		// Register the service with Registry
 		err = sdk.registryClient.Register()
 		if err != nil {
-			return fmt.Errorf("could not register service with Registry: %v", err)
+			return fmt.Errorf("Could not register service with Registry: %v", err)
 		}
 
 		hasConfig, err := sdk.registryClient.HasConfiguration()
 		if err != nil {
-			return fmt.Errorf("could not determine if registry has configuration: %v", err)
+			return fmt.Errorf("Could not determine if registry has configuration: %v", err)
 		}
 
 		if hasConfig {
 			rawConfig, err := sdk.registryClient.GetConfiguration(configuration)
 			if err != nil {
-				return fmt.Errorf("could not get configuration from Registry: %v", err)
+				return fmt.Errorf("Could not get configuration from Registry: %v", err)
 			}
 
 			actual, ok := rawConfig.(*common.ConfigurationStruct)
 			if !ok {
-				return fmt.Errorf("configuration from Registry failed type check")
+				return fmt.Errorf("Configuration from Registry failed type check")
 			}
 
 			sdk.config = *actual
@@ -238,13 +327,13 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 				sdk.LoggingClient.Error("Error reading from registry")
 			}
 
-			fmt.Println("Configuration loaded from registry")
+			fmt.Println("Configuration loaded from registry with service key: " + sdk.ServiceKey)
 		} else {
 			err := sdk.registryClient.PutConfiguration(sdk.config, true)
 			if err != nil {
-				return fmt.Errorf("could not push configuration into registry: %v", err)
+				return fmt.Errorf("Could not push configuration into registry: %v", err)
 			}
-			fmt.Println("Configuration pushed to registry")
+			fmt.Println("Configuration pushed to registry with service key: " + sdk.ServiceKey)
 		}
 
 	}
@@ -279,10 +368,31 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 				return
 			}
 
-			sdk.config.Writable = *actual
+			previousLogLevel := sdk.config.Writable.LogLevel
 
-			sdk.LoggingClient.Info("Writeable configuration has been updated from Registry")
+			sdk.config.Writable = *actual
 			sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
+			sdk.LoggingClient.Info("Writable configuration has been updated from Registry")
+
+			if previousLogLevel != sdk.config.Writable.LogLevel {
+				// Log level changed, not Pipeline, so skip updating the pipeline
+				continue
+			}
+
+			if sdk.usingConfigurablePipeline {
+				transforms, err := sdk.LoadConfigurablePipeline()
+				if err != nil {
+					sdk.LoggingClient.Error("unable to reload Configurable Pipeline from Registry: " + err.Error())
+					continue
+				}
+				err = sdk.SetFunctionsPipeline(transforms...)
+				if err != nil {
+					sdk.LoggingClient.Error("unable to set Configurable Pipeline from Registry: " + err.Error())
+					continue
+				}
+
+				sdk.LoggingClient.Info("ReLoaded Configurable Pipeline from Registry")
+			}
 
 			// TODO: Deal with pub/sub topics may have changed. Save copy of writeable so that we can determine what if anything changed?
 		}

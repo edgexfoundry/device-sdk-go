@@ -199,7 +199,7 @@ There are two export functions included in the SDK that can be added to your pip
 
 ## Configuration
 
-Similar to other EdgeX services, configuration is first determined by the `configuration.toml` file in the `/res` folder. If `-r` is passed to the application on startup, the SDK will leverage the provided registry (i.e Consul) to push configuration from the file into the registry and monitor configuration from there. There are two primary sections in the `configuration.toml` file that will need to be set that are specific to the AppFunctionsSDK.
+Similar to other EdgeX services, configuration is first determined by the `configuration.toml` file in the `/res` folder. If `-r` is passed to the application on startup, the SDK will leverage the provided registry (i.e Consul) to push configuration from the file into the registry and monitor configuration from there. You will find the configuration under the `edgex/appservices/1.0/` key. There are two primary sections in the `configuration.toml` file that will need to be set that are specific to the AppFunctionsSDK. 
   1) `[Binding]` - This specifies the [trigger](#triggers) type and associated data required to configurate a trigger. 
   ```toml
   [Binding]

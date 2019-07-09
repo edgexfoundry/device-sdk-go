@@ -37,8 +37,10 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 	if len(params) != 1 {
 		return false, errors.New("No Event Received")
 	}
+
 	deviceIDs := f.FilterValues
 	event := params[0].(models.Event)
+
 	for _, devID := range deviceIDs {
 		if event.Device == devID {
 			// LoggingClient.Debug(fmt.Sprintf("Event accepted: %s", event.Device))

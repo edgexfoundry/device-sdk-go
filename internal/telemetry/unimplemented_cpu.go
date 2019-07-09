@@ -25,7 +25,7 @@ var LoggingClient logger.LoggingClient
 
 func PollCpu() (cpuSnapshot CpuUsage) {
 	if LoggingClient != nil {
-		LoggingClient.Debug("could not poll CPU usage", "reason", "OS not compatible with metrics service")
+		LoggingClient.Debug("Could not poll CPU usage", "reason", "OS not compatible with metrics service")
 	}
 
 	return cpuSnapshot
@@ -33,7 +33,7 @@ func PollCpu() (cpuSnapshot CpuUsage) {
 
 func AvgCpuUsage(init, final CpuUsage) (avg float64) {
 	if LoggingClient != nil {
-		LoggingClient.Debug("could not average CPU usage", "reason", "OS not compatible with metrics service")
+		LoggingClient.Debug("Could not average CPU usage", "reason", "OS not compatible with metrics service")
 	}
 
 	return -1

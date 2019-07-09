@@ -36,10 +36,10 @@ func (e Endpoint) Monitor(params types.EndpointParams, ch chan string) {
 		if e.RegistryClient != nil {
 			endpoint, err = (*e.RegistryClient).GetServiceEndpoint(params.ServiceKey)
 			if err != nil {
-				err = fmt.Errorf("unable to get Service endpoint for %s: %s", params.ServiceKey, err.Error())
+				err = fmt.Errorf("Unable to get Service endpoint for %s: %s", params.ServiceKey, err.Error())
 			}
 		} else {
-			err = fmt.Errorf("unable to get Service endpoint for %s: Registry client is nil", params.ServiceKey)
+			err = fmt.Errorf("Unable to get Service endpoint for %s: Registry client is nil", params.ServiceKey)
 		}
 
 		if err != nil {

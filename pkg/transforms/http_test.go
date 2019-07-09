@@ -22,6 +22,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHTTPPost(t *testing.T) {
@@ -69,22 +71,18 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 
 	sender := HTTPSender{}
 	continuePipeline, result := sender.HTTPPost(context)
-	if continuePipeline != false {
-		t.Fatal("Pipeline should stop")
-	}
-	if result.(error).Error() != "No Data Received" {
-		t.Fatal("Should have an error when no parameter was passed")
-	}
+
+	assert.False(t, continuePipeline, "Pipeline should stop")
+	assert.Error(t, result.(error), "Result should be an error")
+	assert.Equal(t, result.(error).Error(), "No Data Received")
 }
 func TestHTTPPostInvalidParameter(t *testing.T) {
 
 	sender := HTTPSender{}
-	data := "HELLO"
-	continuePipeline, result := sender.HTTPPost(context, ([]byte)(data))
-	if continuePipeline != false {
-		t.Fatal("Pipeline should stop")
-	}
-	if result.(error).Error() != "Unexpected type received" {
-		t.Fatal("Should have an error when no parameter was passed")
-	}
+	data := 25
+	continuePipeline, result := sender.HTTPPost(context, data)
+
+	assert.False(t, continuePipeline, "Pipeline should stop")
+	assert.Error(t, result.(error), "Result should be an error")
+	assert.Equal(t, result.(error).Error(), "passed in data must be of type []byte, string or implement json.Marshaler")
 }

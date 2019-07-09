@@ -97,9 +97,8 @@ func TestProcessEventOneCustomTransform(t *testing.T) {
 		transform1WasCalled = true
 		return true, "Hello"
 	}
-	runtime := GolangRuntime{
-		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1},
-	}
+	runtime := GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	result := runtime.ProcessEvent(context, envelope)
 	if result != nil {
 		t.Fatal("result should be null")
@@ -151,9 +150,9 @@ func TestProcessEventTwoCustomTransforms(t *testing.T) {
 		}
 		return true, "Hello"
 	}
-	runtime := GolangRuntime{
-		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1, transform2},
-	}
+	runtime := GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2})
+
 	result := runtime.ProcessEvent(context, envelope)
 	if result != nil {
 		t.Fatal("result should be null")
@@ -217,9 +216,8 @@ func TestProcessEventThreeCustomTransformsOneFail(t *testing.T) {
 		}
 		return true, "Hello"
 	}
-	runtime := GolangRuntime{
-		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1, transform2, transform3},
-	}
+	runtime := GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2, transform3})
 
 	result := runtime.ProcessEvent(context, envelope)
 	if result != nil {
@@ -238,10 +236,10 @@ func TestProcessEventThreeCustomTransformsOneFail(t *testing.T) {
 
 func TestProcessEventJSON(t *testing.T) {
 	// Event from device 1
-	expectedEventId := "1234"
+	expectedEventID := "1234"
 	expectedCorrelationID := "123-234-345-456"
 	eventIn := models.Event{
-		ID:     expectedEventId,
+		ID:     expectedEventID,
 		Device: devID1,
 	}
 
@@ -261,7 +259,7 @@ func TestProcessEventJSON(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		if !assert.Equal(t, expectedEventId, edgexcontext.EventID, "Context doesn't contain expected EventID") {
+		if !assert.Equal(t, expectedEventID, edgexcontext.EventID, "Context doesn't contain expected EventID") {
 			t.Fatal()
 		}
 
@@ -275,15 +273,14 @@ func TestProcessEventJSON(t *testing.T) {
 			}
 
 			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
-			assert.Equal(t, expectedEventId, result.ID, "Did not receive expected CoreData event, wrong ID")
+			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
 		}
 
 		return false, nil
 	}
 
-	runtime := GolangRuntime{
-		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1},
-	}
+	runtime := GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessEvent(context, envelope)
 	if !assert.Nil(t, result, "result should be null") {
@@ -297,11 +294,11 @@ func TestProcessEventJSON(t *testing.T) {
 
 func TestProcessEventCBOR(t *testing.T) {
 	// Event from device 1
-	expectedEventId := "6789"
+	expectedEventID := "6789"
 	expectedCorrelationID := "123-234-345-456"
 	expectedChecksum := "1234567890"
 	eventIn := models.Event{
-		ID:     expectedEventId,
+		ID:     expectedEventID,
 		Device: devID1,
 	}
 
@@ -340,15 +337,14 @@ func TestProcessEventCBOR(t *testing.T) {
 			}
 
 			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
-			assert.Equal(t, expectedEventId, result.ID, "Did not receive expected CoreData event, wrong ID")
+			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
 		}
 
 		return false, nil
 	}
 
-	runtime := GolangRuntime{
-		Transforms: []func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}){transform1},
-	}
+	runtime := GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessEvent(context, envelope)
 	if !assert.Nil(t, result, "result should be null") {

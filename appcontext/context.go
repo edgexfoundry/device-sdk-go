@@ -26,6 +26,9 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
+// AppFunction is a type alias for func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{})
+type AppFunction = func(edgexcontext *Context, params ...interface{}) (bool, interface{})
+
 // Context ...
 type Context struct {
 	// ID of the EdgeX Event -- will be filled for a received JSON Event
