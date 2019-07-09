@@ -150,7 +150,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			fmt.Printf("failed to initialize Registry: %v\n", err)
 		} else {
 			//initialize logger
-			sdk.LoggingClient = logger.NewClient("AppFunctionsSDK", false, "./test.txt", sdk.config.Writable.LogLevel)
+			sdk.LoggingClient = logger.NewClient("AppFunctionsSDK", sdk.config.Logging.EnableRemote, sdk.config.Logging.File, sdk.config.Writable.LogLevel)
 			sdk.LoggingClient.Info("Configuration and logger successfully initialized")
 			break
 		}
