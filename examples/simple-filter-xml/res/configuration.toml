@@ -49,5 +49,3 @@ File = './logs/simple-filter-xml.log'
 
 [ApplicationSettings]
 ApplicationName = "simple-filter-xml"
-
-

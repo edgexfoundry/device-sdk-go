@@ -23,10 +23,9 @@ import (
 	"crypto/cipher"
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/json"
-	"errors"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
 
 type Encryption struct {
@@ -44,24 +43,9 @@ func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 }
 
 func (aesData Encryption) AESTransform(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	var data []byte
-	var err error
-	switch params[0].(type) {
-	case string:
-		input := params[0].(string)
-		data = []byte(input)
-
-	case []byte:
-		data = params[0].([]byte)
-
-	case json.Marshaler:
-		marshaler := params[0].(json.Marshaler)
-		data, err = marshaler.MarshalJSON()
-		if err != nil {
-			return false, errors.New("Marshaling input data to JSON failed")
-		}
-	default:
-		return false, errors.New("Unexpected type received - passed in data must be of type []byte, string or implement json.Marshaler")
+	data, err := util.CoerceType(params[0])
+	if err != nil {
+		return false, err
 	}
 
 	iv := make([]byte, blockSize)

@@ -25,6 +25,7 @@ import (
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -81,23 +82,23 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 		}
 		edgexcontext.LoggingClient.Info("Connected to mqtt server")
 	}
-	if data, ok := params[0].(string); ok {
-		token := sender.client.Publish(sender.topic, sender.opts.qos, sender.opts.retain, ([]byte)(data))
-		// FIXME: could be removed? set of tokens?
-		token.Wait()
-		if token.Error() != nil {
-			return false, token.Error()
-		}
-		edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
-		edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
-		err := edgexcontext.MarkAsPushed()
-		if err != nil {
-			edgexcontext.LoggingClient.Error(err.Error())
-		}
-		return true, nil
-
+	data, err := util.CoerceType(params[0])
+	if err != nil {
+		return false, err
 	}
-	return false, errors.New("Unexpected type received")
+	token := sender.client.Publish(sender.topic, sender.opts.qos, sender.opts.retain, data)
+	// FIXME: could be removed? set of tokens?
+	token.Wait()
+	if token.Error() != nil {
+		return false, token.Error()
+	}
+	edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
+	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
+	err = edgexcontext.MarkAsPushed()
+	if err != nil {
+		edgexcontext.LoggingClient.Error(err.Error())
+	}
+	return true, nil
 }
 
 // NewMQTTSender - create new mqtt sender

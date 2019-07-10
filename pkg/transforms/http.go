@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 )
@@ -42,33 +44,35 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 	if sender.MimeType == "" {
 		sender.MimeType = "application/json"
 	}
-	if result, ok := params[0].(string); ok {
-		edgexcontext.LoggingClient.Info("POSTing data")
-		response, err := http.Post(sender.URL, sender.MimeType, bytes.NewReader(([]byte)(result)))
-		if err != nil {
-			//LoggingClient.Error(err.Error())
-			return false, err
-		}
-		defer response.Body.Close()
-		edgexcontext.LoggingClient.Info(fmt.Sprintf("Response: %s", response.Status))
-		edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data: %s", result))
-		bodyBytes, errReadingBody := ioutil.ReadAll(response.Body)
-		if errReadingBody != nil {
-			return false, errReadingBody
-		}
-
-		edgexcontext.LoggingClient.Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, edgexcontext.CorrelationID)
-
-		// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
-		isSuccessfulPost := response.StatusCode >= 200 && response.StatusCode < 300
-		if isSuccessfulPost == true {
-			err = edgexcontext.MarkAsPushed()
-			if err != nil {
-				edgexcontext.LoggingClient.Error(err.Error())
-			}
-		}
-		return isSuccessfulPost, bodyBytes
+	data, err := util.CoerceType(params[0])
+	if err != nil {
+		return false, err
 	}
 
-	return false, errors.New("Unexpected type received")
+	edgexcontext.LoggingClient.Info("POSTing data")
+	response, err := http.Post(sender.URL, sender.MimeType, bytes.NewReader(data))
+	if err != nil {
+		//LoggingClient.Error(err.Error())
+		return false, err
+	}
+	defer response.Body.Close()
+	edgexcontext.LoggingClient.Info(fmt.Sprintf("Response: %s", response.Status))
+	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data: %s", string(data)))
+	bodyBytes, errReadingBody := ioutil.ReadAll(response.Body)
+	if errReadingBody != nil {
+		return false, errReadingBody
+	}
+
+	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, edgexcontext.CorrelationID)
+
+	// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
+	isSuccessfulPost := response.StatusCode >= 200 && response.StatusCode < 300
+	if isSuccessfulPost == true {
+		err = edgexcontext.MarkAsPushed()
+		if err != nil {
+			edgexcontext.LoggingClient.Error(err.Error())
+		}
+	}
+	return isSuccessfulPost, bodyBytes
+
 }

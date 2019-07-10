@@ -28,7 +28,7 @@ const (
 	serviceKey = "sampleFilterXml"
 )
 
-var counter int = 0
+var counter int
 
 func main() {
 	// 1) First thing to do is to create an instance of the EdgeX SDK and initialize it.

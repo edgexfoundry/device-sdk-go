@@ -19,12 +19,14 @@ package common
 import (
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // WritableInfo ...
 type WritableInfo struct {
 	LogLevel string
+	Pipeline PipeLineInfo
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
@@ -86,4 +88,15 @@ type BindingInfo struct {
 	Name           string
 	SubscribeTopic string
 	PublishTopic   string
+}
+
+type PipeLineInfo struct {
+	ExecutionOrder string
+	Functions      map[string]PipelineFunction
+}
+
+type PipelineFunction struct {
+	// Name	string
+	Parameters  map[string]string
+	Addressable models.Addressable
 }

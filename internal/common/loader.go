@@ -18,7 +18,6 @@ package common
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -39,15 +38,11 @@ func LoadFromFile(profile string, configDir string, configuration interface{}) e
 	if len(profile) > 0 {
 		fileName = path + "/" + profile + "/" + internal.ConfigFileName
 	}
-	contents, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		return fmt.Errorf("could not load configuration file (%s): %v", fileName, err.Error())
-	}
 
 	// Decode the configuration from TOML
-	err = toml.Unmarshal(contents, configuration)
+	_, err := toml.DecodeFile(fileName, configuration)
 	if err != nil {
-		return fmt.Errorf("unable to parse configuration file (%s): %v", fileName, err.Error())
+		return fmt.Errorf("Unable to parse configuration file (%s): %v", fileName, err.Error())
 	}
 
 	return nil

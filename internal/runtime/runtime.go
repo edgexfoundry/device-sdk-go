@@ -19,6 +19,7 @@ package runtime
 import (
 	"encoding/json"
 	"strconv"
+	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
@@ -29,13 +30,14 @@ import (
 
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
-	Transforms []func(*appcontext.Context, ...interface{}) (bool, interface{})
+	transforms    []appcontext.AppFunction
+	isBusyCopying sync.Mutex
 }
 
 // ProcessEvent handles processing the event
-func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) error {
+func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) error {
 
-	edgexcontext.LoggingClient.Debug("Processing Event: " + strconv.Itoa(len(gr.Transforms)) + " Transforms")
+	edgexcontext.LoggingClient.Debug("Processing Event: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
 	var event models.Event
 
 	switch envelope.ContentType {
@@ -68,7 +70,12 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 	edgexcontext.EventID = event.ID
 	var result interface{}
 	var continuePipeline = true
-	for _, trxFunc := range gr.Transforms {
+	// Make copy of transform functions to avoid disruption of pipeline when updating the pipeline from registry
+	gr.isBusyCopying.Lock()
+	transforms := make([]appcontext.AppFunction, len(gr.transforms))
+	copy(transforms, gr.transforms)
+	gr.isBusyCopying.Unlock()
+	for _, trxFunc := range transforms {
 		if result != nil {
 			continuePipeline, result = trxFunc(edgexcontext, result)
 		} else {
@@ -83,5 +90,13 @@ func (gr GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope 
 			break
 		}
 	}
+
 	return nil
+}
+
+// SetTransforms is thread safe to set transforms
+func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
+	gr.isBusyCopying.Lock()
+	gr.transforms = transforms
+	gr.isBusyCopying.Unlock()
 }

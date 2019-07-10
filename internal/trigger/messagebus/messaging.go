@@ -32,7 +32,7 @@ import (
 // Trigger implements Trigger to support MessageBusData
 type Trigger struct {
 	Configuration common.ConfigurationStruct
-	Runtime       runtime.GolangRuntime
+	Runtime       *runtime.GolangRuntime
 	logging       logger.LoggingClient
 	client        messaging.MessageClient
 	topics        []types.TopicChannel
@@ -42,7 +42,7 @@ type Trigger struct {
 // Initialize ...
 func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 	trigger.logging = logger
-	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger. Subscribing to topic: %s, Publish Topic: %s", trigger.Configuration.Binding.SubscribeTopic, trigger.Configuration.Binding.PublishTopic))
+	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger. Subscribing to topic: %s on port %d , Publish Topic: %s on port %d", trigger.Configuration.Binding.SubscribeTopic, trigger.Configuration.MessageBus.SubscribeHost.Port, trigger.Configuration.Binding.PublishTopic, trigger.Configuration.MessageBus.PublishHost.Port))
 	var err error
 	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
 
@@ -60,28 +60,30 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 			case msgErr := <-messageErrors:
 				logger.Error(fmt.Sprintf("Failed to receive ZMQ Message, %v", msgErr))
 			case msgs := <-trigger.topics[0].Messages:
-				logger.Trace("Received message from bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
+				go func() {
+					logger.Trace("Received message from bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
 
-				edgexContext := &appcontext.Context{
-					Configuration: trigger.Configuration,
-					LoggingClient: trigger.logging,
-					CorrelationID: msgs.CorrelationID,
-					EventClient:   trigger.EventClient,
-				}
-				trigger.Runtime.ProcessEvent(edgexContext, msgs)
-				if edgexContext.OutputData != nil {
-					outputEnvelope := types.MessageEnvelope{
-						CorrelationID: edgexContext.CorrelationID,
-						Payload:       edgexContext.OutputData,
-						ContentType:   clients.ContentTypeJSON,
+					edgexContext := &appcontext.Context{
+						Configuration: trigger.Configuration,
+						LoggingClient: trigger.logging,
+						CorrelationID: msgs.CorrelationID,
+						EventClient:   trigger.EventClient,
 					}
-					err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Binding.PublishTopic)
-					if err != nil {
-						logger.Error(fmt.Sprintf("Failed to publish Message to bus, %v", err))
-					}
+					trigger.Runtime.ProcessEvent(edgexContext, msgs)
+					if edgexContext.OutputData != nil {
+						outputEnvelope := types.MessageEnvelope{
+							CorrelationID: edgexContext.CorrelationID,
+							Payload:       edgexContext.OutputData,
+							ContentType:   clients.ContentTypeJSON,
+						}
+						err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Binding.PublishTopic)
+						if err != nil {
+							logger.Error(fmt.Sprintf("Failed to publish Message to bus, %v", err))
+						}
 
-					logger.Trace("Published message to bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
-				}
+						logger.Trace("Published message to bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
+					}
+				}()
 			}
 		}
 	}()

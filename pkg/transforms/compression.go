@@ -22,10 +22,10 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
 
 type Compression struct {
@@ -39,24 +39,9 @@ func (compression *Compression) GZIPTransform(edgexcontext *appcontext.Context, 
 		return false, errors.New("No Data Received")
 	}
 	edgexcontext.LoggingClient.Debug("Compression with GZIP")
-	var data []byte
-	var err error
-	switch params[0].(type) {
-	case string:
-		input := params[0].(string)
-		data = []byte(input)
-
-	case []byte:
-		data = params[0].([]byte)
-
-	case json.Marshaler:
-		marshaler := params[0].(json.Marshaler)
-		data, err = marshaler.MarshalJSON()
-		if err != nil {
-			return false, errors.New("Marshaling input data to JSON failed")
-		}
-	default:
-		return false, errors.New("Unexpected type received - passed in data must be of type []byte, string or implement json.Marshaler")
+	data, err := util.CoerceType(params[0])
+	if err != nil {
+		return false, err
 	}
 	var buf bytes.Buffer
 
@@ -79,24 +64,9 @@ func (compression *Compression) ZLIBTransform(edgexcontext *appcontext.Context, 
 		return false, errors.New("No Data Received")
 	}
 	edgexcontext.LoggingClient.Debug("Compression with ZLIB")
-	var data []byte
-	var err error
-	switch params[0].(type) {
-	case string:
-		input := params[0].(string)
-		data = []byte(input)
-
-	case []byte:
-		data = params[0].([]byte)
-
-	case json.Marshaler:
-		marshaler := params[0].(json.Marshaler)
-		data, err = marshaler.MarshalJSON()
-		if err != nil {
-			return false, errors.New("Marshaling input data to JSON failed")
-		}
-	default:
-		return false, errors.New("Unexpected type received - passed in data must be of type []byte, string or implement json.Marshaler")
+	data, err := util.CoerceType(params[0])
+	if err != nil {
+		return false, err
 	}
 	var buf bytes.Buffer
 

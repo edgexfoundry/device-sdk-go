@@ -21,16 +21,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,7 +62,7 @@ func TestInitialize(t *testing.T) {
 		},
 	}
 
-	runtime := runtime.GolangRuntime{}
+	runtime := &runtime.GolangRuntime{}
 
 	trigger := Trigger{Configuration: config, Runtime: runtime}
 	trigger.Initialize(logClient)
@@ -97,7 +96,7 @@ func TestInitializeBadConfiguration(t *testing.T) {
 		},
 	}
 
-	runtime := runtime.GolangRuntime{}
+	runtime := &runtime.GolangRuntime{}
 
 	trigger := Trigger{Configuration: config, Runtime: runtime}
 	err := trigger.Initialize(logClient)
@@ -139,12 +138,10 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 		transformWasCalled = true
 		assert.Equal(t, expectedEvent, params[0])
 		return false, nil
-
 	}
 
-	runtime := runtime.GolangRuntime{}
-	runtime.Transforms = []func(*appcontext.Context, ...interface{}) (bool, interface{}){transform1}
-
+	runtime := &runtime.GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	trigger := Trigger{Configuration: config, Runtime: runtime}
 	trigger.Initialize(logClient)
 
@@ -218,9 +215,8 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	}
 
-	runtime := runtime.GolangRuntime{}
-	runtime.Transforms = []func(*appcontext.Context, ...interface{}) (bool, interface{}){transform1}
-
+	runtime := &runtime.GolangRuntime{}
+	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	trigger := Trigger{Configuration: config, Runtime: runtime}
 
 	testClientConfig := types.MessageBusConfig{
