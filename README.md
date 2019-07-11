@@ -35,7 +35,7 @@ func main() {
 
 	// 1) First thing to do is to create an instance of the EdgeX SDK, giving it a service key
 	edgexSdk := &appsdk.AppFunctionsSDK{
-		ServiceKey: "SimpleFilterXMLApp", // Key used by Rigistry (Aka Consul)
+		ServiceKey: "SimpleFilterXMLApp", // Key used by Registry (Aka Consul)
 	}
 
 	// 2) Next, we need to initialize the SDK
