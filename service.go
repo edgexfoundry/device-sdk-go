@@ -87,6 +87,18 @@ func (s *Service) Start(errChan chan error) (err error) {
 
 	// initialize devices, objects & profiles
 	cache.InitCache()
+
+	// initialize driver
+	if common.CurrentConfig.Service.EnableAsyncReadings {
+		s.asyncCh = make(chan *dsModels.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
+		go processAsyncResults()
+	}
+	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
+	if err != nil {
+		return fmt.Errorf("Driver.Initialize failure: %v", err)
+	}
+
+	// create pre-defined Profiles and Devices
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to create the pre-defined Device Profiles")
@@ -98,16 +110,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 	}
 
 	s.cw = newWatchers()
-
-	// initialize driver
-	if common.CurrentConfig.Service.EnableAsyncReadings {
-		s.asyncCh = make(chan *dsModels.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
-		go processAsyncResults()
-	}
-	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
-	if err != nil {
-		return fmt.Errorf("Driver.Initialize failure: %v", err)
-	}
 
 	// Setup REST API
 	r := controller.InitRestRoutes()
