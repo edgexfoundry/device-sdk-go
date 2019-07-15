@@ -21,10 +21,7 @@ import (
 )
 
 const (
-	envKeyPrefix = "edgex_registry_"
-	envKeyHost   = envKeyPrefix + "host"
-	envKeyPort   = envKeyPrefix + "port"
-	envKeyType   = envKeyPrefix + "type"
+	envKeyUrl = "edgex_registry"
 )
 
 // environment is receiver that holds environment variables and encapsulates toml.Tree-based configuration field
@@ -57,13 +54,9 @@ func NewEnvironment() *environment {
 // OverrideUseRegistryFromEnvironment method replaces useRegistry content with environment variable override content
 // (when it exists).
 func (e *environment) OverrideUseRegistryFromEnvironment(useRegistry string) string {
-	registryHost, registryHostOk := e.env[envKeyHost]
-	registryPort, registryPortOk := e.env[envKeyPort]
-	registryType, registryTypeOk := e.env[envKeyType]
-	if registryHostOk && registryHost != "" &&
-		registryPortOk && registryPort != "" &&
-		registryTypeOk && registryType != "" {
-		useRegistry = registryType.(string) + "://" + registryHost.(string) + ":" + registryPort.(string)
+	registry, registryOk := e.env[envKeyUrl]
+	if registryOk && registry != "" {
+		useRegistry = registry.(string)
 	}
 	return useRegistry
 }

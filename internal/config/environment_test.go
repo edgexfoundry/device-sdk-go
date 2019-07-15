@@ -30,9 +30,7 @@ const (
 	subValue  = "subValue"
 
 	useRegistryValue = "useRegistry"
-	hostValue        = "host"
-	portValue        = "port"
-	typeValue        = "type"
+	urlValue         = "consul://localhost:8500"
 
 	testToml = `
 ` + rootKey + `="` + rootValue + `"
@@ -110,10 +108,8 @@ func TestOverrideUseRegistryFromEnvironment(t *testing.T) {
 		env      map[string]string
 		expected string
 	}{
-		{"valid", map[string]string{envKeyHost: hostValue, envKeyPort: portValue, envKeyType: typeValue}, typeValue + "://" + hostValue + ":" + portValue},
-		{"missing Host", map[string]string{envKeyPort: portValue, envKeyType: typeValue}, useRegistryValue},
-		{"missing Port", map[string]string{envKeyHost: hostValue, envKeyType: typeValue}, useRegistryValue},
-		{"missing Type", map[string]string{envKeyHost: hostValue, envKeyPort: portValue}, useRegistryValue},
+		{"valid", map[string]string{envKeyUrl: urlValue}, urlValue },
+		{"no variable", map[string]string{}, useRegistryValue},
 	}
 
 	for _, test := range tests {
