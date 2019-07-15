@@ -30,6 +30,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
@@ -268,24 +269,25 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 	// Currently have to load configuration from filesystem first in order to obtain Registry Host/Port
-	configuration := &common.ConfigurationStruct{}
-	err := common.LoadFromFile(sdk.configProfile, sdk.configDir, configuration)
+	configuration, configTree, err := common.LoadFromFile(sdk.configProfile, sdk.configDir)
 	if err != nil {
 		return err
 	}
-	sdk.config = *configuration
 
 	if sdk.useRegistry {
+		e := config.NewEnvironment()
+		configuration.Registry = e.OverrideRegistryInfoFromEnvironment(configuration.Registry)
+
 		registryConfig := registryTypes.Config{
-			Host:          sdk.config.Registry.Host,
-			Port:          sdk.config.Registry.Port,
-			Type:          sdk.config.Registry.Type,
+			Host:          configuration.Registry.Host,
+			Port:          configuration.Registry.Port,
+			Type:          configuration.Registry.Type,
 			Stem:          internal.ConfigRegistryStem,
 			CheckInterval: "1s",
 			CheckRoute:    internal.ApiPingRoute,
 			ServiceKey:    sdk.ServiceKey,
-			ServiceHost:   sdk.config.Service.Host,
-			ServicePort:   sdk.config.Service.Port,
+			ServiceHost:   configuration.Service.Host,
+			ServicePort:   configuration.Service.Port,
 		}
 
 		client, err := registry.NewRegistryClient(registryConfig)
@@ -320,24 +322,29 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 			if !ok {
 				return fmt.Errorf("Configuration from Registry failed type check")
 			}
+			configuration = actual
 
-			sdk.config = *actual
 			//Check that information was successfully read from Consul
-			if sdk.config.Service.Port == 0 {
+			if configuration.Service.Port == 0 {
 				sdk.LoggingClient.Error("Error reading from registry")
 			}
 
 			fmt.Println("Configuration loaded from registry with service key: " + sdk.ServiceKey)
 		} else {
-			err := sdk.registryClient.PutConfiguration(sdk.config, true)
+			err := sdk.registryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), true)
 			if err != nil {
 				return fmt.Errorf("Could not push configuration into registry: %v", err)
+			}
+			err = configTree.Unmarshal(configuration)
+			if err != nil {
+				return fmt.Errorf("could not marshal configTree to configuration: %v", err.Error())
 			}
 			fmt.Println("Configuration pushed to registry with service key: " + sdk.ServiceKey)
 		}
 
 	}
 
+	sdk.config = *configuration
 	return nil
 }
 

@@ -18,12 +18,10 @@ package common
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-
-	"github.com/BurntSushi/toml"
+	"github.com/pelletier/go-toml"
+	"io/ioutil"
+	"os"
 )
 
 const (
@@ -32,20 +30,30 @@ const (
 )
 
 // LoadFromFile loads .toml file for configuration
-func LoadFromFile(profile string, configDir string, configuration interface{}) error {
+func LoadFromFile(profile string, configDir string) (configuration *ConfigurationStruct, tree *toml.Tree, err error) {
 	path := determinePath(configDir)
 	fileName := path + "/" + internal.ConfigFileName //default profile
 	if len(profile) > 0 {
 		fileName = path + "/" + profile + "/" + internal.ConfigFileName
 	}
-
-	// Decode the configuration from TOML
-	_, err := toml.DecodeFile(fileName, configuration)
+	contents, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return fmt.Errorf("Unable to parse configuration file (%s): %v", fileName, err.Error())
+		return nil, nil, fmt.Errorf("Could not load configuration file (%s): %v", fileName, err.Error())
 	}
 
-	return nil
+	// Decode the configuration from TOML
+	configuration = &ConfigurationStruct{}
+	err = toml.Unmarshal(contents, configuration)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Unable to parse configuration file (%s): %v", fileName, err.Error())
+	}
+
+	tree, err = toml.LoadBytes(contents)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Unable to unmarshal configuration tree (%s): %v", path, err.Error())
+	}
+
+	return configuration, tree, nil
 }
 
 func determinePath(configDir string) string {
@@ -62,31 +70,4 @@ func determinePath(configDir string) string {
 	}
 
 	return path
-}
-
-// VerifyTomlFiles Verifies toml file exists and loads it
-func VerifyTomlFiles(configuration interface{}, configDir string) error {
-	files, _ := filepath.Glob("res/*/*.toml")
-	files2, _ := filepath.Glob("res/configuration.toml")
-
-	for _, x := range files2 {
-		files = append(files, x)
-	}
-
-	if len(files) == 0 {
-		return fmt.Errorf("There are no toml files")
-	}
-
-	for _, f := range files {
-		profile := f[len("res") : len(f)-len("/configuration.toml")]
-		if profile != "" {
-			// remove the dash
-			profile = profile[1:]
-		}
-		err := LoadFromFile(profile, configDir, configuration)
-		if err != nil {
-			return fmt.Errorf("Error loading toml file %s: %v", profile, err)
-		}
-	}
-	return nil
 }
