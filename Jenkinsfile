@@ -81,8 +81,7 @@ pipeline {
         stage('Semver Tag') {
             when { expression { edgex.isReleaseStream() } }
             steps {
-                sh 'echo v${VERSION}'
-                sh 'git tag -a v${VERSION} -m "v${VERSION}"'
+                edgeXSemver('tag')
             }
         }
 
