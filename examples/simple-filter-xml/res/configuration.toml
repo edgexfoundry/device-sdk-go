@@ -22,7 +22,12 @@ Type = 'consul'
   Protocol = 'http'
   Host = 'localhost'
   Port = 48080
-  
+
+  [Clients.Logging]
+  Protocol = "http"
+  Host = "localhost"
+  Port = 48061
+
 [MessageBus]
 Type = 'zero'
     [MessageBus.PublishHost]
