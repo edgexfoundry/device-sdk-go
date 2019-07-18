@@ -240,7 +240,11 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			fmt.Printf("failed to initialize Registry: %v\n", err)
 		} else {
 			//initialize logger
-			sdk.LoggingClient = logger.NewClient("AppFunctionsSDK", sdk.config.Logging.EnableRemote, sdk.config.Logging.File, sdk.config.Writable.LogLevel)
+			loggingTarget, err := sdk.setLoggingTarget()
+			if err != nil {
+				return fmt.Errorf("logger initialization failed: %v", err)
+			}
+			sdk.LoggingClient = logger.NewClient(sdk.ServiceKey, sdk.config.Logging.EnableRemote, loggingTarget, sdk.config.Writable.LogLevel)
 			sdk.LoggingClient.Info("Configuration and logger successfully initialized")
 			break
 		}
@@ -404,4 +408,18 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 			// TODO: Deal with pub/sub topics may have changed. Save copy of writeable so that we can determine what if anything changed?
 		}
 	}
+
+}
+
+func (sdk *AppFunctionsSDK) setLoggingTarget() (string, error) {
+	if sdk.config.Logging.EnableRemote {
+		logging, ok := sdk.config.Clients["Logging"]
+		if !ok {
+			return "", errors.New("logging client configuration is missing")
+		}
+
+		return logging.Url() + clients.ApiLoggingRoute, nil
+	}
+
+	return sdk.config.Logging.File, nil
 }
