@@ -79,3 +79,15 @@ func (DriverMock) HandleWriteCommands(deviceName string, protocols map[string]co
 func (DriverMock) Stop(force bool) error {
 	panic("implement me")
 }
+
+func (DriverMock) AddDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
+	return nil
+}
+
+func (DriverMock) UpdateDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
+	return nil
+}
+
+func (DriverMock) RemoveDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
+	return nil
+}

@@ -41,4 +41,16 @@ type ProtocolDriver interface {
 	// for closing any in-use channels, including the channel used to send async
 	// readings (if supported).
 	Stop(force bool) error
+
+	// AddDevice is a callback function that is invoked
+	// when a new Device associated with this Device Service is added
+	AddDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error
+
+	// UpdateDevice is a callback function that is invoked
+	// when a Device associated with this Device Service is updated
+	UpdateDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error
+
+	// RemoveDevice is a callback function that is invoked
+	// when a Device associated with this Device Service is removed
+	RemoveDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error
 }

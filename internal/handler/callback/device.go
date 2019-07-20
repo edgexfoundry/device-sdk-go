@@ -51,6 +51,15 @@ func handleDevice(method string, id string) common.AppError {
 			return appErr
 		}
 
+		err = common.Driver.AddDevice(device.Name, device.Protocols, device.AdminState)
+		if err == nil {
+			common.LoggingClient.Debug(fmt.Sprintf("Invoked driver.AddDevice callback for %s", device.Name))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Invoked driver.AddDevice callback failed for %s: %v", id, err.Error()))
+			return appErr
+		}
+
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
 		autoevent.GetManager().RestartForDevice(device.Name)
 	} else if method == http.MethodPut {
@@ -70,10 +79,20 @@ func handleDevice(method string, id string) common.AppError {
 			return appErr
 		}
 
+		err = common.Driver.UpdateDevice(device.Name, device.Protocols, device.AdminState)
+		if err == nil {
+			common.LoggingClient.Debug(fmt.Sprintf("Invoked driver.UpdateDevice callback for %s", device.Name))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Invoked driver.UpdateDevice callback failed for %s: %v", id, err.Error()))
+			return appErr
+		}
+
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - restarting AutoEvents for updated device %s", device.Name))
 		autoevent.GetManager().RestartForDevice(device.Name)
 	} else if method == http.MethodDelete {
-		if device, ok := cache.Devices().ForId(id); ok {
+		device, ok := cache.Devices().ForId(id)
+		if ok {
 			common.LoggingClient.Debug(fmt.Sprintf("Handler - stopping AutoEvents for updated device %s", device.Name))
 			autoevent.GetManager().StopForDevice(device.Name)
 		}
@@ -84,6 +103,15 @@ func handleDevice(method string, id string) common.AppError {
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Couldn't remove device %s: %v", id, err.Error()))
+			return appErr
+		}
+
+		err = common.Driver.RemoveDevice(device.Name, device.Protocols)
+		if err == nil {
+			common.LoggingClient.Debug(fmt.Sprintf("Invoked driver.RemoveDevice callback for %s", device.Name))
+		} else {
+			appErr := common.NewServerError(err.Error(), err)
+			common.LoggingClient.Error(fmt.Sprintf("Invoked driver.RemoveDevice callback failed for %s: %v", id, err.Error()))
 			return appErr
 		}
 	} else {
