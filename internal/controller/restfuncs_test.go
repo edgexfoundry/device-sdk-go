@@ -46,6 +46,8 @@ func TestCallback(t *testing.T) {
 	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
 	common.LoggingClient = lc
 	common.DeviceClient = &mock.DeviceClientMock{}
+	common.DeviceProfileClient = &mock.DeviceProfileClientMock{}
+	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
 	r := InitRestRoutes()
 
 	for _, tt := range tests {

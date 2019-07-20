@@ -22,6 +22,11 @@ import (
 func handleDevice(method string, id string) common.AppError {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	if method == http.MethodPost {
+		if _, ok := cache.Devices().ForId(id); ok {
+			common.LoggingClient.Debug(fmt.Sprintf("Device id %s has been in cahce, ignoring this callback", id))
+			return nil
+		}
+
 		device, err := common.DeviceClient.Device(id, ctx)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
