@@ -129,6 +129,9 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 // for closing any in-use channels, including the channel used to send async
 // readings (if supported).
 func (s *SimpleDriver) Stop(force bool) error {
-	s.lc.Debug(fmt.Sprintf("SimpleDriver.Stop called: force=%v", force))
+	// Then Logging Client might not be initialized
+	if s.lc != nil {
+		s.lc.Debug(fmt.Sprintf("SimpleDriver.Stop called: force=%v", force))
+	}
 	return nil
 }

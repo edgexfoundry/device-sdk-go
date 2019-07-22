@@ -48,14 +48,9 @@ func startService(serviceName string, serviceVersion string, driver dsModels.Pro
 	}
 
 	fmt.Fprintf(os.Stdout, "Calling service.Start.\n")
-
 	errChan := make(chan error, 2)
 	listenForInterrupt(errChan)
-
-	err = s.Start(errChan)
-	if err != nil {
-		return err
-	}
+	go s.Start(errChan)
 
 	err = <-errChan
 	fmt.Fprintf(os.Stdout, "Terminating: %v.\n", err)
