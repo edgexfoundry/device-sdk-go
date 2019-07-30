@@ -27,6 +27,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pelletier/go-toml"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -273,7 +275,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 	// Currently have to load configuration from filesystem first in order to obtain Registry Host/Port
-	configuration, configTree, err := common.LoadFromFile(sdk.configProfile, sdk.configDir)
+	configuration, err := common.LoadFromFile(sdk.configProfile, sdk.configDir)
 	if err != nil {
 		return err
 	}
@@ -335,9 +337,19 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 
 			fmt.Println("Configuration loaded from registry with service key: " + sdk.ServiceKey)
 		} else {
-			err := sdk.registryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), true)
+			// Marshal into a toml Tree for overriding with environment variables.
+			contents, err := toml.Marshal(*configuration)
 			if err != nil {
-				return fmt.Errorf("Could not push configuration into registry: %v", err)
+				return err
+			}
+			configTree, err := toml.LoadBytes(contents)
+			if err != nil {
+				return err
+			}
+
+			err = sdk.registryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), true)
+			if err != nil {
+				return fmt.Errorf("could not push configuration into registry: %v", err)
 			}
 			err = configTree.Unmarshal(configuration)
 			if err != nil {
