@@ -181,6 +181,21 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 	return pipeline, nil
 }
 
+//
+// SetFunctionsPipeline allows you to define each fgitunction to execute and the order in which each function
+// will be called as each event comes in.
+func (sdk *AppFunctionsSDK) SetFunctionsPipeline(transforms ...appcontext.AppFunction) error {
+	if len(transforms) == 0 {
+		return errors.New("No transforms provided to pipeline")
+	}
+
+	sdk.transforms = transforms
+	if sdk.runtime != nil {
+		sdk.runtime.SetTransforms(transforms)
+	}
+	return nil
+}
+
 // ApplicationSettings returns the values specifed in the custom configuration section.
 func (sdk *AppFunctionsSDK) ApplicationSettings() map[string]string {
 	return sdk.config.ApplicationSettings

@@ -29,7 +29,13 @@ import (
 type Conversion struct {
 }
 
-// TransformToXML ...
+// NewConversion creates, initializes and returns a new instance of Conversion
+func NewConversion() Conversion {
+	return Conversion{}
+}
+
+// TransformToXML transforms an EdgeX event to XML.
+// It will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {
 		return false, errors.New("No Event Received")
@@ -48,7 +54,8 @@ func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...i
 	return false, errors.New("Unexpected type received")
 }
 
-// TransformToJSON ...
+// TransformToJSON transforms an EdgeX event to JSON.
+// It will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Conversion) TransformToJSON(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {
 		return false, errors.New("No Event Received")

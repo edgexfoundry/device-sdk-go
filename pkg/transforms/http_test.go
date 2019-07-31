@@ -61,15 +61,14 @@ func TestHTTPPost(t *testing.T) {
 		t.Fatal("Could not parse url")
 	}
 
-	sender := HTTPSender{
-		URL: `http://` + url.Host + path,
-	}
+	sender := NewHTTPSender(`http://`+url.Host+path, "")
+
 	sender.HTTPPost(context, msgStr)
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
 
-	sender := HTTPSender{}
+	sender := NewHTTPSender("", "")
 	continuePipeline, result := sender.HTTPPost(context)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
@@ -78,7 +77,7 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 }
 func TestHTTPPostInvalidParameter(t *testing.T) {
 
-	sender := HTTPSender{}
+	sender := NewHTTPSender("", "")
 	data := 25
 	continuePipeline, result := sender.HTTPPost(context, data)
 

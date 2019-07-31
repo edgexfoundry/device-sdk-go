@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -53,13 +55,16 @@ func main() {
 		Topic:     "sampleTopic",
 	}
 
+	mqttConfig := transforms.NewMqttConfig()
+	mqttSender := transforms.NewMQTTSender(edgexSdk.LoggingClient, addressable, "", "", mqttConfig)
+
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetFunctionsPipeline(
-		edgexSdk.DeviceNameFilter(deviceNames),
-		edgexSdk.XMLTransform(),
+		transforms.NewFilter(deviceNames).FilterByDeviceName,
+		transforms.NewConversion().TransformToXML,
 		printXMLToConsole,
-		edgexSdk.MQTTSend(addressable, "", "", 0, false, false),
+		mqttSender.MQTTSend,
 	)
 
 	// 4) shows how to access the application's specific configuration settings.

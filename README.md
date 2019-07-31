@@ -50,10 +50,13 @@ func main() {
 
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
-	if err := edgexSdk.SetPipeline(edgexSdk.DeviceNameFilter(deviceIDs), edgexSdk.XMLTransform()); err != nil {
-		edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK SetPipeline failed: %v\n", err))
-		os.Exit(-1)
-	}
+	if err := edgexSdk.SetPipeline(
+			transforms.NewFilter(deviceNames).FilterByDeviceName, 
+			transforms.NewConversion().TransformToXML()
+		); err != nil {
+			edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK SetPipeline failed: %v\n", err))
+			os.Exit(-1)
+		}
 
 	// 5) shows how to access the application's specific configuration settings.
 	appSettings := edgexSdk.ApplicationSettings()
@@ -91,8 +94,8 @@ After placing the above function in your code, the next step is to modify the pi
 
 ```golang
 edgexSdk.SetPipeline(
-  edgexSdk.DeviceNameFilter(deviceIDs),
-  edgexSdk.XMLTransform(),
+  transforms.NewFilter(deviceNames).FilterByDeviceName, 
+  transforms.NewConversion().TransformToXML(),
   printXMLToConsole //notice this is not a function call, but simply a function pointer. 
 )
 ```
@@ -167,40 +170,59 @@ The `LoggingClient` exposed on the context is available to leverage logging libr
 
 ## Built-In Transforms/Functions 
 
+All transforms define a type and a `New` function which is used to initialize an instance of the type with the  required parameters. These instances returned by these `New` functions give access to their appropriate pipeline function pointers when build  the function pipeline.
+
+```
+E.G. NewFilter([] {"Device1", "Device2"}).FilterByDeviceName
+```
+
 ### Filtering
-There are two basic types of filtering included in the SDK to add to your pipeline. The provided Filter functions return a type of `events.Model`.
- - `DeviceNameFilter([]string deviceNames)` - This function will filter the event data down to the specified device names before calling the next function. 
- - `ValueDescriptorFilter([]string valueDescriptors)` - This function will filter the event data down to the specified device value descriptor before calling the next function. 
+
+There are two basic types of filtering included in the SDK to add to your pipeline. Theses provided Filter functions return a type of `events.Model`. If filtering results in no remain data, the pipeline execution for that pass is terminated.
+ - `NewFilter([]string filterValues)` - This function returns a `Filter` instance initialized with the passed in filter values. This `Filter` instance is used to access the following filter functions that will operate using the specified filter values.
+    - `FilterByDeviceName` - This function will filter the event data down to the specified device names and return the filtered data to the pipeline.
+    - `FilterByValueDescriptor` - This function will filter the event data down to the specified device value descriptor and return the filtered data to the pipeline. 
 
 ### Encryption
 There is one encryption transform included in the SDK that can be added to your pipeline. 
 
-- `AESTransform` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte`.
+- `NewEncryption(key string, initializationVector string)` - This function returns a `Encryption` instance initialized with the passed in key and initialization vector. This `Encryption` instance is used to access the following encryption function that will use the specified key and initialization vector.
+  - `EncryptWithAES` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte` to the pipeline.
 
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
- 
- - `XMLTransform()`  - This function receives an `events.Model` type and converts it to XML format. 
- - `JSONTransform()` - This function receives an `events.Model` type and converts it to JSON format. 
+
+ - `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions 
+    - `TransformToXML`  - This function receives an `events.Model` type, converts it to XML format and returns the XML string to the pipeline. 
+    - `TransformToJSON` - This function receives an `events.Model` type and converts it to JSON format and returns the JSON string to the pipeline.
 
  ### Compressions
 There are two compression types included in the SDK that can be added to your pipeline. These transforms return a `[]byte`.
- 
- - `GZIPTransform()`  - This function receives either a `string`,`[]byte`, or `json.Marshaler` type and converts it to base64 encoded string returned as a `[]byte`.
- - `ZLIBTransform()` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type and converts it to base64 encoded string returned as a `[]byte`.
+
+ - `NewCompression()` - This function returns a `Compression` instance that is used to access the following compression functions 
+    - `CompressWithGZIP`  - This function receives either a `string`,`[]byte`, or `json.Marshaler` type, GZIP compresses the data, converts result to base64 encoded string, which is returned as a `[]byte` to the pipeline.
+    - `CompressWithZLIB` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type, ZLIB compresses the data, converts result to base64 encoded string, which is returned as a `[]byte` to the pipeline.
 
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
-	
-- `HTTPPost(string url, mimeType string)` - This function requires an endpoint be passed in order to configure the URL to `POST` data to as well as the mime type. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If will be `POST`ing JSON or XML you can leverage the `HTTPPostJSON(url string)` or `HTTPPostXML(url string)` respectively as shortcuts so you don't have to specify mimeType yourself. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
-- `MQTTSend(addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool)` - This function will send data from the previous function in the pipeline to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline will be used. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+- `NewHTTPSender(url string, mimeType string)` - This function returns a `HTTPSender` instance initialized with the passed in url and mime type values. This `HTTPSender` instance is used to access the following  function that will use the required url and mime type.
+  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+- `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
+  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
 
+### Output Functions
+
+There is one output function included in the SDK that can be added to your pipeline. 
+
+- NewOuptut() - This function returns a `Output` instance that is used to access the following output function 
+  - `SetOutput` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sets it as the output data for the pipeline to return to the configured trigger. If configured to use message bus, the data will be published to the message bus as determined by the `MessageBus` and `Binding` configuration. If configured to use HTTP trigger the data is returned as the HTTP response. Note that calling Complete() from the Context API in a custom function can be used in place of adding this function to your pipeline
 
 ## Configuration
 
 Similar to other EdgeX services, configuration is first determined by the `configuration.toml` file in the `/res` folder. If `-r` is passed to the application on startup, the SDK will leverage the provided registry (i.e Consul) to push configuration from the file into the registry and monitor configuration from there. You will find the configuration under the `edgex/appservices/1.0/` key. There are two primary sections in the `configuration.toml` file that will need to be set that are specific to the AppFunctionsSDK. 
-  1) `[Binding]` - This specifies the [trigger](#triggers) type and associated data required to configurate a trigger. 
+  1) `[Binding]` - This specifies the [trigger](#triggers) type and associated data required to configure a trigger. 
+
   ```toml
   [Binding]
   Type=""
@@ -211,8 +233,8 @@ Similar to other EdgeX services, configuration is first determined by the `confi
  ```toml
  [ApplicationSettings]
  ApplicationName = "My Application Service"
- ``` 
- 
+ ```
+
 ## Error Handling
  - Each transform returns a `true` or `false` as part of the return signature. This is called the `continuePipeline` flag and indicates whether the SDK should continue calling successive transforms in the pipeline.
  - `return false, nil` will stop the pipeline and stop processing the event. This is useful for example when filtering on values and nothing matches the criteria you've filtered on. 

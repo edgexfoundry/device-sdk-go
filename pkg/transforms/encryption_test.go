@@ -74,12 +74,9 @@ func TestAES(t *testing.T) {
 		InitVector: iv,
 	}
 
-	enc := Encryption{
-		Key:                 aesData.Key,
-		IntializationVector: aesData.InitVector,
-	}
+	enc := NewEncryption(aesData.Key, aesData.InitVector)
 
-	continuePipeline, cphrd := enc.AESTransform(context, []byte(plainString))
+	continuePipeline, cphrd := enc.EncryptWithAES(context, []byte(plainString))
 	assert.True(t, continuePipeline)
 
 	decphrd := aesDecrypt(cphrd.([]byte), aesData)

@@ -1,11 +1,8 @@
 package transforms
 
 import (
-	"strconv"
-	"strings"
 	"testing"
 
-	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,25 +22,17 @@ func init() {
 
 func TestMQTTSend(t *testing.T) {
 	t.SkipNow()
-	protocol := strings.ToLower(addr.Protocol)
-	opts := MQTT.NewClientOptions()
-	broker := protocol + "://" + addr.Address + ":" + strconv.Itoa(addr.Port) + addr.Path
-	opts.AddBroker(broker)
-	opts.SetClientID(addr.Publisher)
-	opts.SetUsername(addr.User)
-	opts.SetPassword(addr.Password)
-	opts.SetAutoReconnect(false)
 
-	sender := MQTTSender{
-		client: MQTT.NewClient(opts),
-		topic:  addr.Topic,
-	}
+	mqttConfig := NewMqttConfig()
+	sender := NewMQTTSender(lc, addr, "", "", mqttConfig)
+
 	dataToSend := "SOME DATA TO SEND"
 	continuePipeline, result := sender.MQTTSend(context, dataToSend)
 	assert.True(t, continuePipeline, "Should Continue Pipeline")
 	assert.Equal(t, nil, result, "Should be nil")
 
 }
+
 func TestMQTTSendNoData(t *testing.T) {
 
 	sender := MQTTSender{}
@@ -52,26 +41,24 @@ func TestMQTTSendNoData(t *testing.T) {
 	assert.Equal(t, "No Data Received", result.(error).Error(), "Error should be: No Data Received")
 
 }
+
 func TestMQTTSendInvalidData(t *testing.T) {
 	t.SkipNow()
 
-	protocol := strings.ToLower(addr.Protocol)
-	opts := MQTT.NewClientOptions()
-	broker := protocol + "://" + addr.Address + ":" + strconv.Itoa(addr.Port) + addr.Path
-	opts.AddBroker(broker)
-	opts.SetClientID(addr.Publisher)
-	opts.SetUsername(addr.User)
-	opts.SetPassword(addr.Password)
-	opts.SetAutoReconnect(false)
+	expected := "passed in data must be of type []byte, string or implement json.Marshaler"
+	mqttConfig := NewMqttConfig()
+	sender := NewMQTTSender(lc, addr, "", "", mqttConfig)
 
-	sender := MQTTSender{
-		client: MQTT.NewClient(opts),
-		topic:  "",
+	type RandomObject struct {
+		something string
 	}
-	dataToSend := "SOME DATA TO SEND"
-	continuePipeline, result := sender.MQTTSend(context, ([]byte)(dataToSend))
-	assert.False(t, continuePipeline, "Should Not Continue Pipeline")
-	assert.Equal(t, "Unexpected type received", result.(error).Error(), "Error should be: Unexpected type received")
+
+	dataToSend := RandomObject{something: "SOME DATA TO SEND"}
+	continuePipeline, result := sender.MQTTSend(context, dataToSend)
+	if !assert.False(t, continuePipeline, "Should Not Continue Pipeline") {
+		t.Fatal()
+	}
+	assert.Equal(t, expected, result.(error).Error())
 
 }
 
@@ -86,7 +73,9 @@ func TestNewMQTTSender(t *testing.T) {
 		Password:  "password",
 		Topic:     "testMQTTTopic",
 	}
-	sender := NewMQTTSender(lc, addr1, "", "", NewMqttConfig())
+
+	mqttConfig := NewMqttConfig()
+	sender := NewMQTTSender(lc, addr1, "", "", mqttConfig)
 	assert.NotNil(t, sender.client, "Client should not be nil")
 	opts := sender.client.OptionsReader()
 	assert.Equal(t, "testMQTTTopic", sender.topic, "Topic should be set to testMQTTTopic")

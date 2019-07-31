@@ -43,7 +43,7 @@ func TestConfigurableDeviceNameFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params[tt.key] = tt.value
-			trx := configurable.DeviceNameFilter(params)
+			trx := configurable.FilterByDeviceName(params)
 			if tt.expectNil {
 				assert.Nil(t, trx, "return result from DeviceNameFilter should be nil")
 			} else {
@@ -74,7 +74,7 @@ func TestConfigurableValueDescriptorFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			params[tt.key] = tt.value
-			trx := configurable.ValueDescriptorFilter(params)
+			trx := configurable.FilterByValueDescriptor(params)
 			if tt.expectNil {
 				assert.Nil(t, trx, "return result from ValueDescriptorFilter should be nil")
 			} else {
@@ -87,14 +87,14 @@ func TestConfigurableValueDescriptorFilter(t *testing.T) {
 func TestConfigurableXMLTransform(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{}
 
-	trx := configurable.XMLTransform()
+	trx := configurable.TransformToXML()
 	assert.NotNil(t, trx, "return result from XMLTransform should not be nil")
 }
 
 func TestConfigurableJSONTransform(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{}
 
-	trx := configurable.JSONTransform()
+	trx := configurable.TransformToJSON()
 	assert.NotNil(t, trx, "return result from JSONTransform should not be nil")
 }
 

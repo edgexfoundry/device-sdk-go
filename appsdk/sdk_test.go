@@ -184,10 +184,10 @@ func TestLoadConfigurablePipelineAddressableConfig(t *testing.T) {
 
 func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 	functions := make(map[string]common.PipelineFunction)
-	functions["DeviceNameFilter"] = common.PipelineFunction{
-		Parameters: map[string]string{"FilterValues": "Random-Float-Device Random-Integer-Device"},
+	functions["FilterByDeviceName"] = common.PipelineFunction{
+		Parameters: map[string]string{"FilterValues": "Random-Float-Device, Random-Integer-Device"},
 	}
-	functions["XMLTransform"] = common.PipelineFunction{}
+	functions["TransformToXML"] = common.PipelineFunction{}
 	functions["SetOutputData"] = common.PipelineFunction{}
 
 	sdk := AppFunctionsSDK{
@@ -195,7 +195,7 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 		config: common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder: "DeviceNameFilter, XMLTransform, SetOutputData",
+					ExecutionOrder: "FilterByDeviceName, TransformToXML, SetOutputData",
 					Functions:      functions,
 				},
 			},
