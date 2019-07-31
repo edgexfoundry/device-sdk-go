@@ -115,7 +115,7 @@ func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
 			Writable: common.WritableInfo{
-				Pipeline: common.PipeLineInfo{
+				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "Bogus",
 					Functions:      make(map[string]common.PipelineFunction),
 				},
@@ -137,7 +137,7 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
 			Writable: common.WritableInfo{
-				Pipeline: common.PipeLineInfo{
+				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "Bogus",
 					Functions:      functions,
 				},
@@ -169,7 +169,7 @@ func TestLoadConfigurablePipelineAddressableConfig(t *testing.T) {
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
 			Writable: common.WritableInfo{
-				Pipeline: common.PipeLineInfo{
+				Pipeline: common.PipelineInfo{
 					ExecutionOrder: functionName,
 					Functions:      functions,
 				},
@@ -194,7 +194,7 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
 			Writable: common.WritableInfo{
-				Pipeline: common.PipeLineInfo{
+				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "DeviceNameFilter, XMLTransform, SetOutputData",
 					Functions:      functions,
 				},

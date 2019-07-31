@@ -26,7 +26,7 @@ import (
 // WritableInfo ...
 type WritableInfo struct {
 	LogLevel string
-	Pipeline PipeLineInfo
+	Pipeline PipelineInfo
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
@@ -90,7 +90,7 @@ type BindingInfo struct {
 	PublishTopic   string
 }
 
-type PipeLineInfo struct {
+type PipelineInfo struct {
 	ExecutionOrder string
 	Functions      map[string]PipelineFunction
 }

@@ -18,10 +18,11 @@ package common
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	"github.com/pelletier/go-toml"
 	"io/ioutil"
 	"os"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	"github.com/pelletier/go-toml"
 )
 
 const (
@@ -30,7 +31,7 @@ const (
 )
 
 // LoadFromFile loads .toml file for configuration
-func LoadFromFile(profile string, configDir string) (configuration *ConfigurationStruct, tree *toml.Tree, err error) {
+func LoadFromFile(profile string, configDir string) (configuration *ConfigurationStruct, err error) {
 	path := determinePath(configDir)
 	fileName := path + "/" + internal.ConfigFileName //default profile
 	if len(profile) > 0 {
@@ -38,22 +39,17 @@ func LoadFromFile(profile string, configDir string) (configuration *Configuratio
 	}
 	contents, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Could not load configuration file (%s): %v", fileName, err.Error())
+		return nil, fmt.Errorf("Could not load configuration file (%s): %v", fileName, err.Error())
 	}
 
 	// Decode the configuration from TOML
 	configuration = &ConfigurationStruct{}
 	err = toml.Unmarshal(contents, configuration)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to parse configuration file (%s): %v", fileName, err.Error())
+		return nil, fmt.Errorf("Unable to parse configuration file (%s): %v", fileName, err.Error())
 	}
 
-	tree, err = toml.LoadBytes(contents)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to unmarshal configuration tree (%s): %v", path, err.Error())
-	}
-
-	return configuration, tree, nil
+	return configuration, nil
 }
 
 func determinePath(configDir string) string {
