@@ -32,9 +32,9 @@ func TestFilterByDeviceNameFound(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	filter := Filter{
-		FilterValues: []string{"id1"},
-	}
+
+	filter := NewFilter([]string{"id1"})
+
 	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
 	if result == nil {
 		t.Fatal("result should not be nil")
@@ -53,9 +53,9 @@ func TestFilterByDeviceNameNotFound(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	filter := Filter{
-		FilterValues: []string{"id2"},
-	}
+
+	filter := NewFilter([]string{"id2"})
+
 	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
 	if result != nil {
 		t.Fatal("result should be nil")
@@ -65,9 +65,8 @@ func TestFilterByDeviceNameNotFound(t *testing.T) {
 	}
 }
 func TestFilterByDeviceNameNoParameters(t *testing.T) {
-	filter := Filter{
-		FilterValues: []string{"id2"},
-	}
+	filter := NewFilter([]string{"id2"})
+
 	continuePipeline, result := filter.FilterByDeviceName(context)
 	if result.(error).Error() != "No Event Received" {
 		t.Fatal("Should have an error when no parameter was passed")
@@ -82,12 +81,8 @@ func TestFilterByDeviceNameNoParameters(t *testing.T) {
 
 func TestFilterValue(t *testing.T) {
 
-	f1 := Filter{
-		FilterValues: []string{descriptor1},
-	}
-	f12 := Filter{
-		FilterValues: []string{descriptor1, descriptor2},
-	}
+	f1 := NewFilter([]string{descriptor1})
+	f12 := NewFilter([]string{descriptor1, descriptor2})
 
 	// event with a value descriptor 1
 	event1 := models.Event{

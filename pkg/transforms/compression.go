@@ -33,7 +33,12 @@ type Compression struct {
 	zlibWriter *zlib.Writer
 }
 
-func (compression *Compression) GZIPTransform(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+// NewCompression creates, initializes and returns a new instance of Compression
+func NewCompression() Compression {
+	return Compression{}
+}
+
+func (compression *Compression) CompressWithGZIP(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
@@ -58,7 +63,7 @@ func (compression *Compression) GZIPTransform(edgexcontext *appcontext.Context, 
 
 }
 
-func (compression *Compression) ZLIBTransform(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+func (compression *Compression) CompressWithZLIB(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")

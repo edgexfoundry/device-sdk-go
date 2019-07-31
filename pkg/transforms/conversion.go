@@ -29,6 +29,11 @@ import (
 type Conversion struct {
 }
 
+// NewConversion creates, initializes and returns a new instance of Conversion
+func NewConversion() Conversion {
+	return Conversion{}
+}
+
 // TransformToXML ...
 func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, stringType interface{}) {
 	if len(params) < 1 {

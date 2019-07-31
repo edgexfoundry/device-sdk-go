@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
 )
@@ -45,8 +47,8 @@ func main() {
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetFunctionsPipeline(
-		edgexSdk.DeviceNameFilter(deviceNames),
-		edgexSdk.XMLTransform(),
+		transforms.NewFilter(deviceNames).FilterByDeviceName,
+		transforms.NewConversion().TransformToXML,
 		printXMLToConsole,
 	)
 

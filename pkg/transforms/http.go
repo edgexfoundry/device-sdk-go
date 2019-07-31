@@ -35,6 +35,14 @@ type HTTPSender struct {
 	MimeType string
 }
 
+// NewHTTPSender creates, initializes and returns a new instance of HTTPSender
+func NewHTTPSender(url string, mimeType string) HTTPSender {
+	return HTTPSender{
+		URL:      url,
+		MimeType: mimeType,
+	}
+}
+
 // HTTPPost ...
 func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {

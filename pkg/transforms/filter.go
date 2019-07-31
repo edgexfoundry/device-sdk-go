@@ -28,6 +28,11 @@ type Filter struct {
 	FilterValues []string
 }
 
+// NewFilter creates, initializes and returns a new instance of Filter
+func NewFilter(filterValues []string) Filter {
+	return Filter{FilterValues: filterValues}
+}
+
 // FilterByDeviceName filters events received from CoreData based off the specified DeviceIDs.
 // This function returns an Event
 func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {

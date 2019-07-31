@@ -36,15 +36,11 @@ type MqttConfig struct {
 	qos           byte
 	retain        bool
 	autoreconnect bool
+	user          string
+	password      string
 }
 
-type MQTTSender struct {
-	client MQTT.Client
-	topic  string
-	opts   MqttConfig
-}
-
-// NewMqttConfig returns a new MqttConfig with default values
+// NewMqttConfig returns a new MqttConfig with default values. Use Setter functions to change specific values.
 func NewMqttConfig() *MqttConfig {
 	mqttConfig := new(MqttConfig)
 	mqttConfig.qos = 0
@@ -67,6 +63,51 @@ func (mqttConfig MqttConfig) SetQos(qos byte) {
 // SetAutoreconnect enables or disables the automatic client reconnection to broker
 func (mqttConfig MqttConfig) SetAutoreconnect(reconnect bool) {
 	mqttConfig.autoreconnect = reconnect
+}
+
+type MQTTSender struct {
+	client MQTT.Client
+	topic  string
+	opts   MqttConfig
+}
+
+// NewMQTTSender - create new mqtt sender
+func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string, mqttConfig *MqttConfig) *MQTTSender {
+	protocol := strings.ToLower(addr.Protocol)
+
+	opts := MQTT.NewClientOptions()
+	broker := protocol + "://" + addr.Address + ":" + strconv.Itoa(addr.Port) + addr.Path
+	opts.AddBroker(broker)
+	opts.SetClientID(addr.Publisher)
+	opts.SetUsername(addr.User)
+	opts.SetPassword(addr.Password)
+	opts.SetAutoReconnect(mqttConfig.autoreconnect)
+
+	if protocol == "tcps" || protocol == "ssl" || protocol == "tls" {
+		cert, err := tls.LoadX509KeyPair(cert, key)
+
+		if err != nil {
+			logging.Error("Failed loading x509 data")
+			return nil
+		}
+
+		tlsConfig := &tls.Config{
+			ClientCAs:          nil,
+			InsecureSkipVerify: true,
+			Certificates:       []tls.Certificate{cert},
+		}
+
+		opts.SetTLSConfig(tlsConfig)
+
+	}
+
+	sender := &MQTTSender{
+		client: MQTT.NewClient(opts),
+		topic:  addr.Topic,
+		opts:   *mqttConfig,
+	}
+
+	return sender
 }
 
 // MQTTSend ...
@@ -99,43 +140,4 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 		edgexcontext.LoggingClient.Error(err.Error())
 	}
 	return true, nil
-}
-
-// NewMQTTSender - create new mqtt sender
-func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, certFile string, key string, config *MqttConfig) *MQTTSender {
-	protocol := strings.ToLower(addr.Protocol)
-
-	opts := MQTT.NewClientOptions()
-	broker := protocol + "://" + addr.Address + ":" + strconv.Itoa(addr.Port) + addr.Path
-	opts.AddBroker(broker)
-	opts.SetClientID(addr.Publisher)
-	opts.SetUsername(addr.User)
-	opts.SetPassword(addr.Password)
-	opts.SetAutoReconnect(config.autoreconnect)
-
-	if protocol == "tcps" || protocol == "ssl" || protocol == "tls" {
-		cert, err := tls.LoadX509KeyPair(certFile, key)
-
-		if err != nil {
-			logging.Error("Failed loading x509 data")
-			return nil
-		}
-
-		tlsConfig := &tls.Config{
-			ClientCAs:          nil,
-			InsecureSkipVerify: true,
-			Certificates:       []tls.Certificate{cert},
-		}
-
-		opts.SetTLSConfig(tlsConfig)
-
-	}
-
-	sender := &MQTTSender{
-		client: MQTT.NewClient(opts),
-		topic:  addr.Topic,
-		opts:   *config,
-	}
-
-	return sender
 }

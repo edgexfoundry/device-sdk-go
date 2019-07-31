@@ -26,6 +26,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
@@ -68,7 +70,7 @@ func main() {
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetFunctionsPipeline(
-		edgexSdk.ValueDescriptorFilter(valueDescriptors),
+		transforms.NewFilter(valueDescriptors).FilterByValueDescriptor,
 		processImages,
 	)
 

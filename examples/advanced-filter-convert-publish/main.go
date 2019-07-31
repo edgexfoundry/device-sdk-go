@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
 	"github.com/edgexfoundry/app-functions-sdk-go/examples/advanced-filter-convert-publish/functions"
 )
@@ -67,7 +69,7 @@ func main() {
 	// 4) This is our functions pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	err := edgexSdk.SetFunctionsPipeline(
-		edgexSdk.ValueDescriptorFilter(valueDescriptors),
+		transforms.NewFilter(valueDescriptors).FilterByValueDescriptor,
 		functions.ConvertToReadableFloatValues,
 		functions.PrintFloatValuesToConsole,
 		functions.Publish,

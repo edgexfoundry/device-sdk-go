@@ -26,6 +26,11 @@ import (
 type OutputData struct {
 }
 
+// NewOutputData creates, initializes and returns a new instance of OutputData
+func NewOutputData() OutputData {
+	return OutputData{}
+}
+
 func (f OutputData) SetOutputData(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 
 	edgexcontext.LoggingClient.Debug("Setting output data")

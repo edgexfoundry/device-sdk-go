@@ -63,7 +63,7 @@ func TestTransformToXML(t *testing.T) {
 		Device: devID1,
 	}
 	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
-	conv := Conversion{}
+	conv := NewConversion()
 
 	continuePipeline, result := conv.TransformToXML(context, eventIn)
 
@@ -72,14 +72,14 @@ func TestTransformToXML(t *testing.T) {
 	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToXMLNoParameters(t *testing.T) {
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context)
 
 	assert.Equal(t, "No Event Received", result.(error).Error())
 	assert.False(t, continuePipeline)
 }
 func TestTransformToXMLNotAnEvent(t *testing.T) {
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, "")
 
 	assert.Equal(t, "Unexpected type received", result.(error).Error())
@@ -92,7 +92,7 @@ func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 		Device: devID1,
 	}
 	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
 	if result == nil {
 		t.Fatal("result should not be nil")
@@ -111,7 +111,7 @@ func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 		Device: devID2,
 	}
 	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id2</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn2, eventIn1, "", "")
 
 	assert.NotNil(t, result)
@@ -126,7 +126,7 @@ func TestTransformToJSON(t *testing.T) {
 		Device: devID1,
 	}
 	expectedResult := `{"device":"id1"}`
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn)
 
 	assert.NotNil(t, result)
@@ -134,7 +134,7 @@ func TestTransformToJSON(t *testing.T) {
 	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToJSONNoEvent(t *testing.T) {
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context)
 
 	assert.Equal(t, "No Event Received", result.(error).Error())
@@ -142,7 +142,7 @@ func TestTransformToJSONNoEvent(t *testing.T) {
 
 }
 func TestTransformToJSONNotAnEvent(t *testing.T) {
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, "")
 	if result.(error).Error() != "Unexpected type received" {
 		t.Fatal("Should have an error when wrong type was passed")
@@ -156,7 +156,7 @@ func TestTransformToJSONMultipleParametersValid(t *testing.T) {
 		Device: devID1,
 	}
 	expectedResult := `{"device":"id1"}`
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn, "", "", "")
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
@@ -173,7 +173,7 @@ func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
 		Device: devID2,
 	}
 	expectedResult := `{"device":"id2"}`
-	conv := Conversion{}
+	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn2, eventIn1, "", "")
 
 	assert.NotNil(t, result)

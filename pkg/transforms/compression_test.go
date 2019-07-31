@@ -36,8 +36,8 @@ const (
 
 func TestGzip(t *testing.T) {
 
-	comp := Compression{}
-	continuePipeline, result := comp.GZIPTransform(context, []byte(clearString))
+	comp := NewCompression()
+	continuePipeline, result := comp.CompressWithGZIP(context, []byte(clearString))
 	assert.True(t, continuePipeline)
 
 	compressed, err := base64.StdEncoding.DecodeString(string(result.([]byte)))
@@ -61,7 +61,7 @@ func TestGzip(t *testing.T) {
 		t.Fatal("Decoded string ", result.([]byte), " is not ", clearString)
 	}
 
-	continuePipeline2, result2 := comp.GZIPTransform(context, []byte(clearString))
+	continuePipeline2, result2 := comp.CompressWithGZIP(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
 
 	if !bytes.Equal(result.([]byte), result2.([]byte)) {
@@ -71,8 +71,8 @@ func TestGzip(t *testing.T) {
 
 func TestZlib(t *testing.T) {
 
-	comp := Compression{}
-	continuePipeline, result := comp.ZLIBTransform(context, []byte(clearString))
+	comp := NewCompression()
+	continuePipeline, result := comp.CompressWithZLIB(context, []byte(clearString))
 	assert.True(t, continuePipeline)
 
 	assert.NotNil(t, result)
@@ -98,7 +98,7 @@ func TestZlib(t *testing.T) {
 		t.Fatal("Decoded string ", result.([]byte), " is not ", clearString)
 	}
 
-	continuePipeline2, result2 := comp.ZLIBTransform(context, []byte(clearString))
+	continuePipeline2, result2 := comp.CompressWithZLIB(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
 
 	if !bytes.Equal(result.([]byte), result2.([]byte)) {
@@ -110,11 +110,11 @@ var result []byte
 
 func BenchmarkGzip(b *testing.B) {
 
-	comp := Compression{}
+	comp := NewCompression()
 
 	var enc interface{}
 	for i := 0; i < b.N; i++ {
-		_, enc = comp.GZIPTransform(context, []byte(clearString))
+		_, enc = comp.CompressWithGZIP(context, []byte(clearString))
 	}
 	b.SetBytes(int64(len(enc.([]byte))))
 	result = enc.([]byte)
@@ -122,11 +122,11 @@ func BenchmarkGzip(b *testing.B) {
 
 func BenchmarkZlib(b *testing.B) {
 
-	comp := Compression{}
+	comp := NewCompression()
 
 	var enc interface{}
 	for i := 0; i < b.N; i++ {
-		_, enc = comp.ZLIBTransform(context, []byte(clearString))
+		_, enc = comp.CompressWithZLIB(context, []byte(clearString))
 	}
 	b.SetBytes(int64(len(enc.([]byte))))
 	result = enc.([]byte)

@@ -29,8 +29,16 @@ import (
 )
 
 type Encryption struct {
-	Key                 string
-	IntializationVector string
+	Key                  string
+	InitializationVector string
+}
+
+// NewEncryption creates, initializes and returns a new instance of Encryption
+func NewEncryption(key string, initializationVector string) Encryption {
+	return Encryption{
+		Key:                  key,
+		InitializationVector: initializationVector,
+	}
 }
 
 // IV and KEY must be 16 bytes
@@ -42,14 +50,14 @@ func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 	return append(ciphertext, padtext...)
 }
 
-func (aesData Encryption) AESTransform(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+func (aesData Encryption) EncryptWithAES(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	data, err := util.CoerceType(params[0])
 	if err != nil {
 		return false, err
 	}
 
 	iv := make([]byte, blockSize)
-	copy(iv, []byte(aesData.IntializationVector))
+	copy(iv, []byte(aesData.InitializationVector))
 
 	hash := sha1.New()
 

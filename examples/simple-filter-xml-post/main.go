@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
 )
 
@@ -41,9 +43,9 @@ func main() {
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
 	edgexSdk.SetFunctionsPipeline(
-		edgexSdk.DeviceNameFilter(deviceNames),
-		edgexSdk.XMLTransform(),
-		edgexSdk.HTTPPostXML("<Your endpoint goes here>"),
+		transforms.NewFilter(deviceNames).FilterByDeviceName,
+		transforms.NewConversion().TransformToXML,
+		transforms.NewHTTPSender("<Your endpoint goes here>", "application/xml").HTTPPost,
 	)
 
 	// 4) This example doesn't have any application's specific configuration settings. Skipping call to sdk.ApplicationSettings
