@@ -50,6 +50,8 @@ func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 	return append(ciphertext, padtext...)
 }
 
+// EncryptWithAES encrypts a string, []byte, or json.Marshaller type using AES encryption.
+// It will return a Base64 encode []byte of the encrypted data.
 func (aesData Encryption) EncryptWithAES(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	data, err := util.CoerceType(params[0])
 	if err != nil {

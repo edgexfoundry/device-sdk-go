@@ -110,7 +110,8 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert s
 	return sender
 }
 
-// MQTTSend ...
+// MQTTSend sends data from the previous function to the specified MQTT broker.
+// If no previous function exists, then the event that triggered the pipeline will be used.
 func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result

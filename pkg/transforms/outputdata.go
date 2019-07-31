@@ -31,6 +31,8 @@ func NewOutputData() OutputData {
 	return OutputData{}
 }
 
+// SetOutputData sets the output data to that passed in from the previous function.
+// It will return an error and stop the pipeline if the input data is not of type []byte, string or json.Mashaler
 func (f OutputData) SetOutputData(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 
 	edgexcontext.LoggingClient.Debug("Setting output data")

@@ -43,7 +43,9 @@ func NewHTTPSender(url string, mimeType string) HTTPSender {
 	}
 }
 
-// HTTPPost ...
+// HTTPPost will send data from the previous function to the specified Endpoint via http POST.
+// If no previous function exists, then the event that triggered the pipeline will be used.
+// An empty string for the mimetype will default to application/json.
 func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result

@@ -38,6 +38,8 @@ func NewCompression() Compression {
 	return Compression{}
 }
 
+// CompressWithGZIP compresses data received as either a string,[]byte, or json.Marshaler using gzip algorithm
+// and returns a base64 encoded string as a []byte.
 func (compression *Compression) CompressWithGZIP(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
@@ -63,6 +65,8 @@ func (compression *Compression) CompressWithGZIP(edgexcontext *appcontext.Contex
 
 }
 
+// CompressWithZLIB compresses data received as either a string,[]byte, or json.Marshaler using zlib algorithm
+// and returns a base64 encoded string as a []byte.
 func (compression *Compression) CompressWithZLIB(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
