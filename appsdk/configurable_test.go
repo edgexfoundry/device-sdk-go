@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfigurableDeviceNameFilter(t *testing.T) {
+func TestConfigurableFilterByDeviceName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -45,15 +45,15 @@ func TestConfigurableDeviceNameFilter(t *testing.T) {
 			params[tt.key] = tt.value
 			trx := configurable.FilterByDeviceName(params)
 			if tt.expectNil {
-				assert.Nil(t, trx, "return result from DeviceNameFilter should be nil")
+				assert.Nil(t, trx, "return result from FilterByDeviceName should be nil")
 			} else {
-				assert.NotNil(t, trx, "return result from DeviceNameFilter should not be nil")
+				assert.NotNil(t, trx, "return result from FilterByDeviceName should not be nil")
 			}
 		})
 	}
 }
 
-func TestConfigurableValueDescriptorFilter(t *testing.T) {
+func TestConfigurableFilterByValueDescriptor(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -76,26 +76,26 @@ func TestConfigurableValueDescriptorFilter(t *testing.T) {
 			params[tt.key] = tt.value
 			trx := configurable.FilterByValueDescriptor(params)
 			if tt.expectNil {
-				assert.Nil(t, trx, "return result from ValueDescriptorFilter should be nil")
+				assert.Nil(t, trx, "return result from FilterByValueDescriptor should be nil")
 			} else {
-				assert.NotNil(t, trx, "return result from ValueDescriptorFilter should not be nil")
+				assert.NotNil(t, trx, "return result from FilterByValueDescriptor should not be nil")
 			}
 		})
 	}
 }
 
-func TestConfigurableXMLTransform(t *testing.T) {
+func TestConfigurableTransformToXML(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{}
 
 	trx := configurable.TransformToXML()
-	assert.NotNil(t, trx, "return result from XMLTransform should not be nil")
+	assert.NotNil(t, trx, "return result from TransformToXML should not be nil")
 }
 
-func TestConfigurableJSONTransform(t *testing.T) {
+func TestConfigurableTransformToJSON(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{}
 
 	trx := configurable.TransformToJSON()
-	assert.NotNil(t, trx, "return result from JSONTransform should not be nil")
+	assert.NotNil(t, trx, "return result from TransformToJSON should not be nil")
 }
 
 func TestConfigurableHTTPPost(t *testing.T) {

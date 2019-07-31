@@ -44,7 +44,7 @@ func main() {
 		os.Exit(-1)
 	}
 
-	// 3) Since our DeviceNameFilter Function requires the list of Device Names we would
+	// 3) Since our FilterByDeviceName Function requires the list of Device Names we would
 	// like to search for, we'll go ahead and define that now.
 	deviceIDs := []string{"Random-Float-Device"}
 
