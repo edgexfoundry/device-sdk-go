@@ -50,7 +50,6 @@ func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 		return "", err
 	}
 	device.Id = id
-	cache.Devices().Add(device)
 
 	return id, nil
 }
@@ -86,10 +85,8 @@ func (s *Service) RemoveDevice(id string) error {
 	err := common.DeviceClient.Delete(id, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", id))
-		return err
 	}
 
-	err = cache.Devices().Remove(id)
 	return err
 }
 
@@ -108,10 +105,8 @@ func (s *Service) RemoveDeviceByName(name string) error {
 	err := common.DeviceClient.DeleteByName(name, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", name))
-		return err
 	}
 
-	err = cache.Devices().RemoveByName(name)
 	return err
 }
 
@@ -130,9 +125,7 @@ func (s *Service) UpdateDevice(device contract.Device) error {
 	err := common.DeviceClient.Update(device, ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Update Device %s from Core Metadata failed: %v", device.Name, err))
-		return err
 	}
 
-	err = cache.Devices().Update(device)
 	return err
 }
