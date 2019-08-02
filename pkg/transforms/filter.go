@@ -48,6 +48,11 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 	deviceIDs := f.FilterValues
 	event := params[0].(models.Event)
 
+	// No deviceIDs to filter for, so pass events thru rather than filtering them all out.
+	if len(deviceIDs) == 0 {
+		return true, event
+	}
+
 	for _, devID := range deviceIDs {
 		if event.Device == devID {
 			// LoggingClient.Debug(fmt.Sprintf("Event accepted: %s", event.Device))
@@ -72,6 +77,12 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 	}
 
 	existingEvent := params[0].(models.Event)
+
+	// No filter values, so pass all event and all readings thru, rather than filtering them all out.
+	if len(f.FilterValues) == 0 {
+		return true, existingEvent
+	}
+
 	auxEvent := models.Event{
 		Pushed:   existingEvent.Pushed,
 		Device:   existingEvent.Device,
