@@ -17,6 +17,7 @@
 package transforms
 
 import (
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -79,7 +80,7 @@ func TestFilterByDeviceNameNoParameters(t *testing.T) {
 	// }
 }
 
-func TestFilterValue(t *testing.T) {
+func TestFilterByValueDescriptor(t *testing.T) {
 
 	f1 := NewFilter([]string{descriptor1})
 	f12 := NewFilter([]string{descriptor1, descriptor2})
@@ -150,5 +151,59 @@ func TestFilterValue(t *testing.T) {
 	}
 	if len(res.(models.Event).Readings) != 1 {
 		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
+	}
+}
+
+func TestFilterByValueDescriptorNoFilterValues(t *testing.T) {
+	expected := models.Event{
+		Device: devID1,
+	}
+
+	expected.Readings = append(expected.Readings, models.Reading{Name: descriptor1})
+
+	filter := NewFilter(nil)
+
+	continuePipeline, result := filter.FilterByValueDescriptor(context, expected)
+	if !assert.NotNil(t, result, "Expected event to be passed thru") {
+		t.Fatal()
+	}
+
+	actual, ok := result.(models.Event)
+	if !assert.True(t, ok, "Expected result to be an Event") {
+		t.Fatal()
+	}
+
+	if !assert.NotNil(t, actual.Readings, "Expected Reading passed thru") {
+		t.Fatal()
+	}
+
+	assert.Equal(t, expected.Device, actual.Device, "Expected Event to be same as passed in")
+	assert.Equal(t, expected.Readings[0].Name, actual.Readings[0].Name, "Expected Reading to be same as passed in")
+
+	if !assert.True(t, continuePipeline, "Pipeline should'nt stop processing") {
+		t.Fatal()
+	}
+}
+
+func TestFilterByDeviceNameNoFilterValues(t *testing.T) {
+	expected := models.Event{
+		Device: devID1,
+	}
+
+	filter := NewFilter(nil)
+
+	continuePipeline, result := filter.FilterByDeviceName(context, expected)
+	if !assert.NotNil(t, result, "Expected event to be passed thru") {
+		t.Fatal()
+	}
+
+	actual, ok := result.(models.Event)
+	if !assert.True(t, ok, "Expected result to be an Event") {
+		t.Fatal()
+	}
+
+	assert.Equal(t, expected.Device, actual.Device, "Expected Event to be same as passed in")
+	if !assert.True(t, continuePipeline, "Pipeline should'nt stop processing") {
+		t.Fatal()
 	}
 }
