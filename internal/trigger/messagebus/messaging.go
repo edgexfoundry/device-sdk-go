@@ -61,7 +61,7 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 				logger.Error(fmt.Sprintf("Failed to receive ZMQ Message, %v", msgErr))
 			case msgs := <-trigger.topics[0].Messages:
 				go func() {
-					logger.Trace("Received message from bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
+					logger.Trace("Received message from bus", "topic", trigger.Configuration.Binding.SubscribeTopic, clients.CorrelationHeader, msgs.CorrelationID)
 
 					edgexContext := &appcontext.Context{
 						Configuration: trigger.Configuration,
