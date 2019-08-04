@@ -322,24 +322,25 @@ func TestParseWriteParams(t *testing.T) {
 
 func TestExecReadCmd(t *testing.T) {
 	tests := []struct {
-		testName  string
-		device    *contract.Device
-		cmd       string
-		expectErr bool
+		testName    string
+		device      *contract.Device
+		cmd         string
+		queryParams string
+		expectErr   bool
 	}{
-		{"CmdExecutionPass", &deviceIntegerGenerator, "RandomValue_Int8", false},
-		{"CmdNotFound", &deviceIntegerGenerator, "InexistentCmd", true},
-		{"ValueTransformFail", &deviceIntegerGenerator, "ResourceTestTransform_Fail", true},
-		{"ValueAssertionPass", &deviceIntegerGenerator, "ResourceTestAssertion_Pass", false},
+		{"CmdExecutionPass", &deviceIntegerGenerator, "RandomValue_Int8", "", false},
+		{"CmdNotFound", &deviceIntegerGenerator, "InexistentCmd", "", true},
+		{"ValueTransformFail", &deviceIntegerGenerator, "ResourceTestTransform_Fail", "", true},
+		{"ValueAssertionPass", &deviceIntegerGenerator, "ResourceTestAssertion_Pass", "", false},
 		//The expectErr on the test below is false because execReadCmd does NOT throw an error when assertion failed
-		{"ValueAssertionFail", &deviceIntegerGenerator, "ResourceTestAssertion_Fail", false},
-		{"ValueMappingPass", &deviceIntegerGenerator, "ResourceTestMapping_Pass", false},
+		{"ValueAssertionFail", &deviceIntegerGenerator, "ResourceTestAssertion_Fail", "", false},
+		{"ValueMappingPass", &deviceIntegerGenerator, "ResourceTestMapping_Pass", "", false},
 		//The expectErr on the test below is false because execReadCmd does NOT throw an error when there is no mapping value matched
-		{"ValueMappingFail", &deviceIntegerGenerator, "ResourceTestMapping_Fail", false},
-		{"NoDeviceResourceForOperation", &deviceIntegerGenerator, "NoDeviceResourceForOperation", true},
-		{"NoDeviceResourceForResult", &deviceIntegerGenerator, "NoDeviceResourceForResult", true},
-		{"MaxCmdOpsExceeded", &deviceIntegerGenerator, "Error", true},
-		{"ErrorOccurredInDriver", &deviceIntegerGenerator, "Error", true},
+		{"ValueMappingFail", &deviceIntegerGenerator, "ResourceTestMapping_Fail", "", false},
+		{"NoDeviceResourceForOperation", &deviceIntegerGenerator, "NoDeviceResourceForOperation", "", true},
+		{"NoDeviceResourceForResult", &deviceIntegerGenerator, "NoDeviceResourceForResult", "", true},
+		{"MaxCmdOpsExceeded", &deviceIntegerGenerator, "Error", "", true},
+		{"ErrorOccurredInDriver", &deviceIntegerGenerator, "Error", "", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
@@ -349,7 +350,7 @@ func TestExecReadCmd(t *testing.T) {
 					common.CurrentConfig.Device.MaxCmdOps = 128
 				}()
 			}
-			v, err := execReadCmd(tt.device, tt.cmd)
+			v, err := execReadCmd(tt.device, tt.cmd, tt.queryParams)
 			if !tt.expectErr && err != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, err)
 				return
@@ -421,20 +422,22 @@ func TestExecWriteCmd(t *testing.T) {
 
 func TestCommandAllHandler(t *testing.T) {
 	tests := []struct {
-		testName  string
-		cmd       string
-		body      string
-		method    string
-		expectErr bool
+		testName    string
+		cmd         string
+		body        string
+		queryParams string
+		method      string
+		expectErr   bool
 	}{
-		{"PartOfReadCommandExecutionSuccess", "RandomValue_Uint8", "", methodGet, false},
-		{"PartOfReadCommandExecutionFail", "error", "", methodGet, true},
-		{"PartOfWriteCommandExecutionSuccess", "RandomValue_Uint8", `{"RandomValue_Uint8":"123"}`, methodSet, false},
-		{"PartOfWriteCommandExecutionFail", "error", `{"RandomValue_Uint8":"123"}`, methodSet, true},
+		{"PartOfReadCommandExecutionSuccess", "RandomValue_Uint8", "", "", methodGet, false},
+		{"PartOfReadCommandExecutionSuccessWithQueryParams", "RandomValue_Uint8", "", "test=test&test2=test2", methodGet, false},
+		{"PartOfReadCommandExecutionFail", "error", "", "", methodGet, true},
+		{"PartOfWriteCommandExecutionSuccess", "RandomValue_Uint8", `{"RandomValue_Uint8":"123"}`, "", methodSet, false},
+		{"PartOfWriteCommandExecutionFail", "error", `{"RandomValue_Uint8":"123"}`, "", methodSet, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, appErr := CommandAllHandler(tt.cmd, tt.body, tt.method)
+			_, appErr := CommandAllHandler(tt.cmd, tt.body, tt.method, tt.queryParams)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return
@@ -467,24 +470,25 @@ func TestCommandHandler(t *testing.T) {
 	}
 
 	tests := []struct {
-		testName  string
-		vars      map[string]string
-		body      string
-		method    string
-		expectErr bool
+		testName    string
+		vars        map[string]string
+		body        string
+		method      string
+		queryParams string
+		expectErr   bool
 	}{
-		{"ValidDeviceId", varsFindDeviceByValidId, "", methodGet, false},
-		{"InvalidDeviceId", varsFindDeviceByInvalidId, "", methodGet, true},
-		{"ValidDeviceName", varsFindDeviceByValidName, "", methodGet, false},
-		{"InvalidDeviceName", varsFindDeviceByInvalidName, "", methodGet, true},
-		{"AdminStateLocked", varsAdminStateLocked, "", methodGet, true},
-		{"ProfileNotFound", varsProfileNotFound, "", methodGet, true},
-		{"CmdNotFound", varsCmdNotFound, "", methodGet, true},
-		{"WriteCommand", varsWriteInt8, `{"RandomValue_Int8":"123"}`, methodSet, false},
+		{"ValidDeviceId", varsFindDeviceByValidId, "", methodGet, "test=test&test2=test2", false},
+		{"InvalidDeviceId", varsFindDeviceByInvalidId, "", methodGet, "", true},
+		{"ValidDeviceName", varsFindDeviceByValidName, "", methodGet, "", false},
+		{"InvalidDeviceName", varsFindDeviceByInvalidName, "", methodGet, "", true},
+		{"AdminStateLocked", varsAdminStateLocked, "", methodGet, "", true},
+		{"ProfileNotFound", varsProfileNotFound, "", methodGet, "", true},
+		{"CmdNotFound", varsCmdNotFound, "", methodGet, "", true},
+		{"WriteCommand", varsWriteInt8, `{"RandomValue_Int8":"123"}`, methodSet, "", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, appErr := CommandHandler(tt.vars, tt.body, tt.method)
+			_, appErr := CommandHandler(tt.vars, tt.body, tt.method, tt.queryParams)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return

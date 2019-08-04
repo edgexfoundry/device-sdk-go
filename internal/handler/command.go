@@ -24,7 +24,7 @@ import (
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func CommandHandler(vars map[string]string, body string, method string) (*dsModels.Event, common.AppError) {
+func CommandHandler(vars map[string]string, body string, method string, queryParams string) (*dsModels.Event, common.AppError) {
 	dKey := vars[common.IdVar]
 	cmd := vars[common.CommandVar]
 
@@ -68,7 +68,7 @@ func CommandHandler(vars map[string]string, body string, method string) (*dsMode
 		}
 
 		if strings.ToLower(method) == common.GetCmdMethod {
-			return execReadDeviceResource(&d, &dr)
+			return execReadDeviceResource(&d, &dr, queryParams)
 		} else {
 			appErr := execWriteDeviceResource(&d, &dr, body)
 			return nil, appErr
@@ -76,20 +76,23 @@ func CommandHandler(vars map[string]string, body string, method string) (*dsMode
 	}
 
 	if strings.ToLower(method) == common.GetCmdMethod {
-		return execReadCmd(&d, cmd)
+		return execReadCmd(&d, cmd, queryParams)
 	} else {
 		appErr := execWriteCmd(&d, cmd, body)
 		return nil, appErr
 	}
 }
 
-func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource) (*dsModels.Event, common.AppError) {
+func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource, queryParams string) (*dsModels.Event, common.AppError) {
 	var reqs []dsModels.CommandRequest
 	var req dsModels.CommandRequest
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", dr.Name))
 
 	req.DeviceResourceName = dr.Name
 	req.Attributes = dr.Attributes
+	if queryParams != "" {
+		req.Attributes[common.URLRawQuery] = queryParams
+	}
 	req.Type = dsModels.ParseValueType(dr.Properties.Value.Type)
 	reqs = append(reqs, req)
 
@@ -178,7 +181,7 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 	return event, nil
 }
 
-func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.AppError) {
+func execReadCmd(device *contract.Device, cmd string, queryParams string) (*dsModels.Event, common.AppError) {
 	// make ResourceOperations
 	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, common.GetCmdMethod)
 	if err != nil {
@@ -213,6 +216,14 @@ func execReadCmd(device *contract.Device, cmd string) (*dsModels.Event, common.A
 
 		reqs[i].DeviceResourceName = dr.Name
 		reqs[i].Attributes = dr.Attributes
+		if queryParams != "" {
+			if len(reqs[i].Attributes) <= 0 {
+				reqs[i].Attributes = make(map[string]string)
+				reqs[i].Attributes[common.URLRawQuery] = queryParams
+			} else {
+				reqs[i].Attributes[common.URLRawQuery] = queryParams
+			}
+		}
 		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
 	}
 
@@ -468,7 +479,7 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 	return result, err
 }
 
-func CommandAllHandler(cmd string, body string, method string) ([]*dsModels.Event, common.AppError) {
+func CommandAllHandler(cmd string, body string, method string, queryParams string) ([]*dsModels.Event, common.AppError) {
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - CommandAll: execute the %s command %s from all operational devices", method, cmd))
 	devices := filterOperationalDevices(cache.Devices().All())
 
@@ -486,7 +497,7 @@ func CommandAllHandler(cmd string, body string, method string) ([]*dsModels.Even
 			var event *dsModels.Event = nil
 			var appErr common.AppError = nil
 			if strings.ToLower(method) == common.GetCmdMethod {
-				event, appErr = execReadCmd(device, cmd)
+				event, appErr = execReadCmd(device, cmd, queryParams)
 			} else {
 				appErr = execWriteCmd(device, cmd, body)
 			}
