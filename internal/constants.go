@@ -25,3 +25,9 @@ const (
 	ApiPingRoute         = "/api/v1/ping"
 	LogDurationKey       = "duration"
 )
+
+// SDKVersion indicates the version of the SDK - will be overwritten by build
+var SDKVersion string = "0.0.0"
+
+// ApplicationVersion indicates the version of the application itself, not the SDK - will be overwritten by build
+var ApplicationVersion string = "0.0.0"
