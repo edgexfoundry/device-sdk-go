@@ -54,7 +54,21 @@ func TestConfigureAndPingRoute(t *testing.T) {
 	assert.Equal(t, "pong", body)
 
 }
+func TestConfigureAndVersionRoute(t *testing.T) {
 
+	webserver := WebServer{
+		LoggingClient: logClient,
+	}
+	webserver.ConfigureStandardRoutes()
+
+	req, _ := http.NewRequest("GET", clients.ApiVersionRoute, nil)
+	rr := httptest.NewRecorder()
+	webserver.router.ServeHTTP(rr, req)
+
+	body := rr.Body.String()
+	assert.Equal(t, "{\"version\":\"0.0.0\",\"sdk_version\":\"0.0.0\"}\n", body)
+
+}
 func TestConfigureAndConfigRoute(t *testing.T) {
 
 	webserver := WebServer{

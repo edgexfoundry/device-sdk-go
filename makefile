@@ -7,7 +7,7 @@ MICROSERVICES=examples/simple-filter-xml/simple-filter-xml examples/simple-cbor-
 
 VERSION=$(shell cat ./VERSION)
 
-GOFLAGS=-ldflags "-X app-functions-sdk-go.Version=$(VERSION)"
+GOFLAGS=-ldflags "-X github.com/edgexfoundry/app-functions-sdk-go/internal.SDKVersion=$(VERSION) -X github.com/edgexfoundry/app-functions-sdk-go/internal.ApplicationVersion=$(VERSION)"
 
 GIT_SHA=$(shell git rev-parse HEAD)
 
