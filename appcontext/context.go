@@ -54,7 +54,7 @@ func (context *Context) Complete(output []byte) {
 	context.OutputData = output
 }
 
-// MarkAsPushed ...
+// MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
 func (context *Context) MarkAsPushed() error {
 	if context.EventID != "" {
 		return context.EventClient.MarkPushed(context.EventID, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
