@@ -108,6 +108,13 @@ func (dynamic AppFunctionsSDKConfigurable) TransformToJSON() appcontext.AppFunct
 	return transform.TransformToJSON
 }
 
+// MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) MarkAsPushed() appcontext.AppFunction {
+	transform := transforms.CoreData{}
+	return transform.MarkAsPushed
+}
+
 // CompressWithGZIP compresses data received as either a string,[]byte, or json.Marshaler using gzip algorithm and returns a base64 encoded string as a []byte.
 // This function is a configuration function and returns a function pointer.
 func (dynamic AppFunctionsSDKConfigurable) CompressWithGZIP() appcontext.AppFunction {
