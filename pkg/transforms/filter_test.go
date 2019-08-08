@@ -17,8 +17,9 @@
 package transforms
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
@@ -75,9 +76,6 @@ func TestFilterByDeviceNameNoParameters(t *testing.T) {
 	if continuePipeline == true {
 		t.Fatal("Pipeline should stop processing")
 	}
-	// if result != errors.new()("") {
-	// 	t.Fatal("Pipeline should return no paramater error")
-	// }
 }
 
 func TestFilterByValueDescriptor(t *testing.T) {

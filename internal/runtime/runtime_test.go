@@ -304,8 +304,8 @@ func TestProcessEventCBOR(t *testing.T) {
 
 	transform1WasCalled := false
 
-	buffer := new(bytes.Buffer)
-	handle := new(codec.CborHandle)
+	buffer := &bytes.Buffer{}
+	handle := &codec.CborHandle{}
 	encoder := codec.NewEncoder(buffer, handle)
 	encoder.Encode(eventIn)
 

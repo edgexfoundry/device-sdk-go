@@ -42,7 +42,7 @@ type MqttConfig struct {
 
 // NewMqttConfig returns a new MqttConfig with default values. Use Setter functions to change specific values.
 func NewMqttConfig() *MqttConfig {
-	mqttConfig := new(MqttConfig)
+	mqttConfig := &MqttConfig{}
 	mqttConfig.qos = 0
 	mqttConfig.retain = false
 	mqttConfig.autoreconnect = false
@@ -136,9 +136,6 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 	}
 	edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
 	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
-	err = edgexcontext.MarkAsPushed()
-	if err != nil {
-		edgexcontext.LoggingClient.Error(err.Error())
-	}
+
 	return true, nil
 }
