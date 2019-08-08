@@ -14,6 +14,7 @@ Table of contents
       * [Encryption](#encryption)
       * [Conversion](#conversion)
       * [Compressions](#compressions)
+	  * [Core Data](#CoreData-Functions)
       * [Export Functions](#export-functions)    
    * [Configuration](#configuration)
    * [Error Handling](#error-handling)
@@ -193,30 +194,34 @@ There is one encryption transform included in the SDK that can be added to your 
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
 
- - `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions 
+ - `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions: 
     - `TransformToXML`  - This function receives an `events.Model` type, converts it to XML format and returns the XML string to the pipeline. 
     - `TransformToJSON` - This function receives an `events.Model` type and converts it to JSON format and returns the JSON string to the pipeline.
 
  ### Compressions
 There are two compression types included in the SDK that can be added to your pipeline. These transforms return a `[]byte`.
 
- - `NewCompression()` - This function returns a `Compression` instance that is used to access the following compression functions 
+ - `NewCompression()` - This function returns a `Compression` instance that is used to access the following compression functions:
     - `CompressWithGZIP`  - This function receives either a `string`,`[]byte`, or `json.Marshaler` type, GZIP compresses the data, converts result to base64 encoded string, which is returned as a `[]byte` to the pipeline.
     - `CompressWithZLIB` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type, ZLIB compresses the data, converts result to base64 encoded string, which is returned as a `[]byte` to the pipeline.
 
+### CoreData Functions
+These are functions that enable interactions with the CoreData REST API. 
+- `NewCoreData()` - This function returns a `CoreData` instance. This `CoreData` instance is used to access the following function(s).
+  - `MarkAsPushed` - This function provides the MarkAsPushed function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.MarkAsPushed()). The data passed into this function from the pipeline is passed along unmodifed since all required information is provided on the context (EventId, CorrelationId,etc.. )
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
-- `NewHTTPSender(url string, mimeType string)` - This function returns a `HTTPSender` instance initialized with the passed in url and mime type values. This `HTTPSender` instance is used to access the following  function that will use the required url and mime type.
-  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+- `NewHTTPSender(url string, mimeType string)` - This function returns a `HTTPSender` instance initialized with the passed in url and mime type values. This `HTTPSender` instance is used to access the following functions that will use the required url and mime type:
+  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future.
 - `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
-  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used.
 
 ### Output Functions
 
 There is one output function included in the SDK that can be added to your pipeline. 
 
-- NewOuptut() - This function returns a `Output` instance that is used to access the following output function 
+- NewOuptut() - This function returns a `Output` instance that is used to access the following output function: 
   - `SetOutput` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sets it as the output data for the pipeline to return to the configured trigger. If configured to use message bus, the data will be published to the message bus as determined by the `MessageBus` and `Binding` configuration. If configured to use HTTP trigger the data is returned as the HTTP response. Note that calling Complete() from the Context API in a custom function can be used in place of adding this function to your pipeline
 
 ## Configuration
