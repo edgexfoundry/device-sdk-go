@@ -228,7 +228,7 @@ func NewCommandValue(DeviceResourceName string, origin int64, value interface{},
 	switch t {
 	case Binary:
 		// assign cv.BinValue
-		err = encodeBinaryValue(cv, value)
+		cv.BinValue = value.([]byte)
 	case String:
 		cv.stringValue = value.(string)
 	default:
