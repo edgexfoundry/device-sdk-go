@@ -108,7 +108,7 @@ func TestOverrideUseRegistryFromEnvironment(t *testing.T) {
 		env      map[string]string
 		expected string
 	}{
-		{"valid", map[string]string{envKeyUrl: urlValue}, urlValue },
+		{"valid", map[string]string{envKeyUrl: urlValue}, urlValue},
 		{"no variable", map[string]string{}, useRegistryValue},
 	}
 

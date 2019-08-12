@@ -135,3 +135,24 @@ func (s *SimpleDriver) Stop(force bool) error {
 	}
 	return nil
 }
+
+// AddDevice is a callback function that is invoked
+// when a new Device associated with this Device Service is added
+func (s *SimpleDriver) AddDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
+	s.lc.Debug(fmt.Sprintf("a new Device is added: %s", deviceName))
+	return nil
+}
+
+// UpdateDevice is a callback function that is invoked
+// when a Device associated with this Device Service is updated
+func (s *SimpleDriver) UpdateDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
+	s.lc.Debug(fmt.Sprintf("Device %s is updated", deviceName))
+	return nil
+}
+
+// RemoveDevice is a callback function that is invoked
+// when a Device associated with this Device Service is removed
+func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
+	s.lc.Debug(fmt.Sprintf("Device %s is removed", deviceName))
+	return nil
+}
