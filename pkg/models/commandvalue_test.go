@@ -21,6 +21,153 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
+// Test NewCommandValue function
+func TestNewCommandValue(t *testing.T) {
+	// Test Bool
+	cv, err := NewCommandValue("resource", 0, true, Bool)
+	test, err2 := NewBoolValue("resource", 0, true)
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewBoolValue")
+	}
+
+	// Test int8
+	cv, err = NewCommandValue("resource", 0, int8(5), Int8)
+	test, err2 = NewInt8Value("resource", 0, int8(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt8Value")
+	}
+
+	// Test int16
+	cv, err = NewCommandValue("resource", 0, int16(5), Int16)
+	test, err2 = NewInt16Value("resource", 0, int16(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt16Value")
+	}
+
+	// Test int32
+	cv, err = NewCommandValue("resource", 0, int32(5), Int32)
+	test, err2 = NewInt32Value("resource", 0, int32(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt32Value")
+	}
+
+	// Test uint8
+	cv, err = NewCommandValue("resource", 0, uint8(5), Uint8)
+	test, err2 = NewUint8Value("resource", 0, uint8(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewUint8Value")
+	}
+
+	// Test uint16
+	cv, err = NewCommandValue("resource", 0, uint16(5), Uint16)
+	test, err2 = NewUint16Value("resource", 0, uint16(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewUint16Value")
+	}
+
+	// Test uint32
+	cv, err = NewCommandValue("resource", 0, uint32(5), Uint32)
+	test, err2 = NewUint32Value("resource", 0, uint32(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt8Value")
+	}
+
+	// Test float32
+	cv, err = NewCommandValue("resource", 0, float32(5.8), Float32)
+	test, err2 = NewFloat32Value("resource", 0, float32(5.8))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewFloat32Value")
+	}
+
+	// Test float64
+	cv, err = NewCommandValue("resource", 0, float64(5.8), Float64)
+	test, err2 = NewFloat64Value("resource", 0, float64(5.8))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewFloat64Value")
+	}
+
+	// Test string
+	cv, err = NewCommandValue("resource", 0, "test value", String)
+	test = NewStringValue("resource", 0, "test value")
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewStringValue")
+	}
+
+	// Test binary
+	cv, err = NewCommandValue("resource", 0, []byte{1, 2, 3, 5, 8, 13}, Binary)
+	test, err2 = NewBinaryValue("resource", 0, []byte{1, 2, 3, 5, 8, 13})
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewBinaryValue")
+	}
+
+}
+
 // Test NewBoolValue function.
 func TestNewBoolValue(t *testing.T) {
 	var value bool
