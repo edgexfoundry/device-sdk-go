@@ -71,6 +71,7 @@ type AppFunctionsSDK struct {
 	eventClient               coredata.EventClient
 	config                    common.ConfigurationStruct
 	LoggingClient             logger.LoggingClient
+	TargetType                interface{}
 }
 
 // MakeItRun will initialize and start the trigger as specifed in the
@@ -80,7 +81,7 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	httpErrors := make(chan error)
 	defer close(httpErrors)
 
-	sdk.runtime = &runtime.GolangRuntime{} //Transforms: sdk.transforms
+	sdk.runtime = &runtime.GolangRuntime{TargetType: sdk.TargetType} //Transforms: sdk.transforms
 	sdk.runtime.SetTransforms(sdk.transforms)
 	sdk.webserver = &webserver.WebServer{
 		Config:        &sdk.config,

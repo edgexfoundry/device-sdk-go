@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -82,7 +84,7 @@ func TestProcessEventOneCustomTransform(t *testing.T) {
 	}
 	transform1WasCalled := false
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		if len(params) != 1 {
+		if len(params) < 1 {
 			t.Fatal("should have been passed the first event from CoreData")
 		}
 		if result, ok := params[0].(*models.Event); ok {
@@ -127,7 +129,7 @@ func TestProcessEventTwoCustomTransforms(t *testing.T) {
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
-		if len(params) != 1 {
+		if len(params) < 1 {
 			t.Fatal("should have been passed the first event from CoreData")
 		}
 		if result, ok := params[0].(*models.Event); ok {
@@ -185,7 +187,7 @@ func TestProcessEventThreeCustomTransformsOneFail(t *testing.T) {
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
-		if len(params) != 1 {
+		if len(params) < 1 {
 			t.Fatal("should have been passed the first event from CoreData")
 		}
 		if result, ok := params[0].(*models.Event); ok {
@@ -254,6 +256,7 @@ func TestProcessEventJSON(t *testing.T) {
 
 	context := &appcontext.Context{
 		LoggingClient: lc,
+		CorrelationID: expectedCorrelationID,
 	}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -318,6 +321,7 @@ func TestProcessEventCBOR(t *testing.T) {
 
 	context := &appcontext.Context{
 		LoggingClient: lc,
+		CorrelationID: expectedCorrelationID,
 	}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -353,5 +357,76 @@ func TestProcessEventCBOR(t *testing.T) {
 
 	if !assert.True(t, transform1WasCalled, "transform1 should have been called") {
 		t.Fatal()
+	}
+}
+
+type CustomType struct {
+	ID string `json:"id"`
+}
+
+// Must implement the Marshaler interface so SetOutputData will marshal it to JSON
+func (custom CustomType) MarshalJSON() ([]byte, error) {
+	test := struct {
+		ID string `json:"id"`
+	}{
+		ID: custom.ID,
+	}
+
+	return json.Marshal(test)
+}
+
+type targetTypeTest struct {
+	Name               string
+	TargetType         interface{}
+	Payload            []byte
+	ContentType        string
+	ExpectedOutputData []byte
+}
+
+func TestProcessEventTargetType(t *testing.T) {
+	eventIn := models.Event{
+		Device: devID1,
+	}
+	eventJson, _ := json.Marshal(eventIn)
+
+	eventCbor := &bytes.Buffer{}
+	handle := &codec.CborHandle{}
+	encoder := codec.NewEncoder(eventCbor, handle)
+	encoder.Encode(eventIn)
+
+	expected := CustomType{
+		ID: "Id1",
+	}
+	customJson, _ := expected.MarshalJSON()
+	byteData := []byte("This is my bytes")
+
+	targetTypeTests := []targetTypeTest{
+		{Name: "Default Nil Target Type", TargetType: nil, Payload: eventJson, ContentType: clients.ContentTypeJSON, ExpectedOutputData: eventJson},
+		{Name: "Event as Json", TargetType: &models.Event{}, Payload: eventJson, ContentType: clients.ContentTypeJSON, ExpectedOutputData: eventJson},
+		{Name: "Event as Cbor", TargetType: &models.Event{}, Payload: eventCbor.Bytes(), ContentType: clients.ContentTypeCBOR, ExpectedOutputData: eventJson}, // Not re-encoding as CBOR
+		{Name: "Custom Type Json", TargetType: &CustomType{}, Payload: customJson, ContentType: clients.ContentTypeJSON, ExpectedOutputData: customJson},
+		{Name: "Byte Slice", TargetType: &[]byte{}, Payload: byteData, ContentType: "application/binary", ExpectedOutputData: byteData},
+		{Name: "Target Type Not a pointer", TargetType: models.Event{}, Payload: nil, ContentType: "", ExpectedOutputData: nil},
+	}
+
+	for _, currentTest := range targetTypeTests {
+		envelope := types.MessageEnvelope{
+			CorrelationID: "123-234-345-456",
+			Payload:       currentTest.Payload,
+			ContentType:   currentTest.ContentType,
+		}
+
+		context := &appcontext.Context{
+			LoggingClient: lc,
+		}
+
+		runtime := GolangRuntime{TargetType: currentTest.TargetType}
+		runtime.SetTransforms([]appcontext.AppFunction{transforms.NewOutputData().SetOutputData})
+
+		err := runtime.ProcessEvent(context, envelope)
+		assert.NoError(t, err, fmt.Sprintf("unexpected error for test '%s'", currentTest.Name))
+
+		// OutputData will be nil if an error occurred in the pipeline processing the data
+		assert.Equal(t, currentTest.ExpectedOutputData, context.OutputData, fmt.Sprintf("'%s' test failed", currentTest.Name))
 	}
 }
