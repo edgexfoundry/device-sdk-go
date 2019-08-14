@@ -18,7 +18,10 @@ Table of contents
       * [Export Functions](#export-functions)    
    * [Configuration](#configuration)
    * [Error Handling](#error-handling)
-<!--te-->
+   * [Advanced Topics](#advanced-topics)
+     * [Target Type](#target-type)
+
+  <!--te-->
 
 ## Getting Started
 
@@ -249,5 +252,53 @@ Similar to other EdgeX services, configuration is first determined by the `confi
  - The SDK will return control back to main when receiving a SIGTERM/SIGINT event to allow for custom clean up.
 
 
+## Advanced Topics
 
+The following items discuss topics that are a bit beyond the basic use cases of the Application Functions SDK when interacting with EdgeX.
 
+### Target Type
+
+The target type is the object type of the incoming data that is sent to the first function in the function pipeline. By default this is an EdgeX `Event` since typical usage is receiving `events` from Core Data via Message Bus. 
+
+For other usages where the data is not `events` coming from Core Data, the `TargetType` of the accepted incoming data can be set when the SDK instance is created. 
+There are scenarios where the incoming data is not an EdgeX `Event`. One example scenario is 2 application services are chained via the Message Bus. The output of the first service back to the Messages Bus is inference data from analyzing the original input `Event`data.  The second service needs to be able to let the SDK know the target type of the input data it is expecting.
+
+For usages where the incoming data is not `events`, the `TargetType` of the excepted incoming data can the set when the SDK instance is created. 
+
+Example:
+
+```
+type Person struct {
+    FirstName string `json:"first_name"`
+    LastName  string `json:"last_name"`
+}
+
+edgexSdk := &appsdk.AppFunctionsSDK {
+	ServiceKey: serviceKey, 
+	TargetType: &Person{},
+}
+```
+
+Note that `TargetType` must be set to a pointer to an instance of your target type such as `&Person{}` . The first function in your function pipeline will be passed an instance of your target type, not a pointer to it. In the example above the first function in the pipeline would start something like:
+
+```
+func MyPersonFunction(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+
+	edgexcontext.LoggingClient.Debug("MyPersonFunction")
+
+	if len(params) < 1 {
+		// We didn't receive a result
+		return false, nil
+	}
+
+	person, ok := params[0].(Person)
+	if !ok {
+        return false, errors.New("type received is not a Person")
+	}
+	
+	....
+```
+
+The SDK supports unmarshaling JSON or CBOR encoded data into an instance of the target type. If your incoming data is not JSON or CBOR encoded, you then need to set the `TargetType` to  `&[]byte`.
+
+If the target type is set to `&[]byte` the incoming data will not be unmarshaled.  The content type, if set, will be passed as the second parameter to the first function in your pipeline.  Your first function will be responsible for decoding the data or not.

@@ -39,14 +39,17 @@ func NewFilter(filterValues []string) Filter {
 // is received or if no data is received.
 func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
 
-	edgexcontext.LoggingClient.Debug("Filter by DeviceID")
+	edgexcontext.LoggingClient.Debug("Filtering by DeviceID")
 
-	if len(params) != 1 {
-		return false, errors.New("No Event Received")
+	if len(params) < 1 {
+		return false, errors.New("no Event Received")
 	}
 
 	deviceIDs := f.FilterValues
-	event := params[0].(models.Event)
+	event, ok := params[0].(models.Event)
+	if !ok {
+		return false, errors.New("type received is not an Event")
+	}
 
 	// No deviceIDs to filter for, so pass events thru rather than filtering them all out.
 	if len(deviceIDs) == 0 {
@@ -70,13 +73,16 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 // This function will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
 
-	edgexcontext.LoggingClient.Debug("Filter by ValueDescriptor")
+	edgexcontext.LoggingClient.Debug("Filtering by ValueDescriptor")
 
-	if len(params) != 1 {
-		return false, errors.New("No Event Received")
+	if len(params) < 1 {
+		return false, errors.New("no Event Received")
 	}
 
-	existingEvent := params[0].(models.Event)
+	existingEvent, ok := params[0].(models.Event)
+	if !ok {
+		return false, errors.New("type received is not an Event")
+	}
 
 	// No filter values, so pass all event and all readings thru, rather than filtering them all out.
 	if len(f.FilterValues) == 0 {

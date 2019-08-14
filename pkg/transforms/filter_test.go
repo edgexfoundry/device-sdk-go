@@ -50,6 +50,7 @@ func TestFilterByDeviceNameFound(t *testing.T) {
 		}
 	}
 }
+
 func TestFilterByDeviceNameNotFound(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
@@ -66,15 +67,60 @@ func TestFilterByDeviceNameNotFound(t *testing.T) {
 		t.Fatal("Pipeline should stop processing")
 	}
 }
+
 func TestFilterByDeviceNameNoParameters(t *testing.T) {
 	filter := NewFilter([]string{"id2"})
 
 	continuePipeline, result := filter.FilterByDeviceName(context)
-	if result.(error).Error() != "No Event Received" {
+	if result.(error).Error() != "no Event Received" {
 		t.Fatal("Should have an error when no parameter was passed")
 	}
 	if continuePipeline == true {
 		t.Fatal("Pipeline should stop processing")
+	}
+}
+
+func TestFilterByDeviceNameNoFilterValues(t *testing.T) {
+	expected := models.Event{
+		Device: devID1,
+	}
+
+	filter := NewFilter(nil)
+
+	continuePipeline, result := filter.FilterByDeviceName(context, expected)
+	if !assert.NotNil(t, result, "Expected event to be passed thru") {
+		t.Fatal()
+	}
+
+	actual, ok := result.(models.Event)
+	if !assert.True(t, ok, "Expected result to be an Event") {
+		t.Fatal()
+	}
+
+	assert.Equal(t, expected.Device, actual.Device, "Expected Event to be same as passed in")
+	if !assert.True(t, continuePipeline, "Pipeline should'nt stop processing") {
+		t.Fatal()
+	}
+}
+
+func TestFilterByDeviceNameFoundExtraParameters(t *testing.T) {
+	eventIn := models.Event{
+		Device: devID1,
+	}
+
+	filter := NewFilter([]string{"id1"})
+
+	continuePipeline, result := filter.FilterByDeviceName(context, eventIn, "application/event")
+	if result == nil {
+		t.Fatal("result should not be nil")
+	}
+	if continuePipeline == false {
+		t.Fatal("Pipeline should continue processing")
+	}
+	if eventOut, ok := result.(*models.Event); ok {
+		if eventOut.Device != "id1" {
+			t.Fatal("device id does not match filter")
+		}
 	}
 }
 
@@ -102,7 +148,7 @@ func TestFilterByValueDescriptor(t *testing.T) {
 	if continuePipeline {
 		t.Fatal("Pipeline should stop since no parameter was passed")
 	}
-	if res.(error).Error() != "No Event Received" {
+	if res.(error).Error() != "no Event Received" {
 		t.Fatal("Should have an error when no parameter was passed")
 	}
 
@@ -183,25 +229,21 @@ func TestFilterByValueDescriptorNoFilterValues(t *testing.T) {
 	}
 }
 
-func TestFilterByDeviceNameNoFilterValues(t *testing.T) {
-	expected := models.Event{
+func TestFilterByValueDescriptorExtraParameters(t *testing.T) {
+
+	f1 := NewFilter([]string{descriptor1})
+
+	// event with a value descriptor 1
+	event1 := models.Event{
 		Device: devID1,
 	}
+	event1.Readings = append(event1.Readings, models.Reading{Name: descriptor1})
 
-	filter := NewFilter(nil)
-
-	continuePipeline, result := filter.FilterByDeviceName(context, expected)
-	if !assert.NotNil(t, result, "Expected event to be passed thru") {
-		t.Fatal()
+	continuePipeline, res := f1.FilterByValueDescriptor(context, event1, "application/event")
+	if !continuePipeline {
+		t.Fatal("Pipeline should continue")
 	}
-
-	actual, ok := result.(models.Event)
-	if !assert.True(t, ok, "Expected result to be an Event") {
-		t.Fatal()
-	}
-
-	assert.Equal(t, expected.Device, actual.Device, "Expected Event to be same as passed in")
-	if !assert.True(t, continuePipeline, "Pipeline should'nt stop processing") {
-		t.Fatal()
+	if len(res.(models.Event).Readings) != 1 {
+		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
 	}
 }

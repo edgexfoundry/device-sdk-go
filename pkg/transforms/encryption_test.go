@@ -83,3 +83,17 @@ func TestAES(t *testing.T) {
 
 	assert.Equal(t, string(plainString), string(decphrd))
 }
+
+func TestAESNoData(t *testing.T) {
+	aesData := models.EncryptionDetails{
+		Algo:       "AES",
+		Key:        key,
+		InitVector: iv,
+	}
+
+	enc := NewEncryption(aesData.Key, aesData.InitVector)
+
+	continuePipeline, result := enc.EncryptWithAES(context)
+	assert.False(t, continuePipeline)
+	assert.Error(t, result.(error), "expect an error")
+}
