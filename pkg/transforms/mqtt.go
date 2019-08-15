@@ -40,6 +40,16 @@ type MqttConfig struct {
 	password      string
 }
 
+// KeyCertPair is used to pass key/cert pair to NewMQTTSender
+// KeyPEMBlock and CertPEMBlock will be used if they are not nil
+// then it will fall back to KeyFile and CertFile
+type KeyCertPair struct {
+	KeyFile      string
+	CertFile     string
+	KeyPEMBlock  []byte
+	CertPEMBlock []byte
+}
+
 // NewMqttConfig returns a new MqttConfig with default values. Use Setter functions to change specific values.
 func NewMqttConfig() *MqttConfig {
 	mqttConfig := &MqttConfig{}
@@ -72,7 +82,7 @@ type MQTTSender struct {
 }
 
 // NewMQTTSender - create new mqtt sender
-func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string, mqttConfig *MqttConfig) *MQTTSender {
+func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig *MqttConfig) *MQTTSender {
 	protocol := strings.ToLower(addr.Protocol)
 
 	opts := MQTT.NewClientOptions()
@@ -83,8 +93,15 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert s
 	opts.SetPassword(addr.Password)
 	opts.SetAutoReconnect(mqttConfig.autoreconnect)
 
-	if protocol == "tcps" || protocol == "ssl" || protocol == "tls" {
-		cert, err := tls.LoadX509KeyPair(cert, key)
+	if (protocol == "tcps" || protocol == "ssl" || protocol == "tls") && keyCertPair != nil {
+		var cert tls.Certificate
+		var err error
+
+		if keyCertPair.KeyPEMBlock != nil && keyCertPair.CertPEMBlock != nil {
+			cert, err = tls.X509KeyPair(keyCertPair.CertPEMBlock, keyCertPair.KeyPEMBlock)
+		} else {
+			cert, err = tls.LoadX509KeyPair(keyCertPair.CertFile, keyCertPair.KeyFile)
+		}
 
 		if err != nil {
 			logging.Error("Failed loading x509 data")
