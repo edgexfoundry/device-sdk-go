@@ -1,0 +1,42 @@
+{
+	"info": {
+		"_postman_id": "c8645c7d-0b6a-48ce-81a0-4fd0760f1334",
+		"name": "Post Person to Trigger",
+		"description": "Sends Person JSON to http trigger of Application Service",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Person Trigger",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"first_name\": \"Sam\",\n    \"last_name\": \"Smith\",\n    \"event\": null,\n    \"phone\": {\n        \"country_code\": 1,\n        \"area_code\": 480,\n        \"local_prefix\": 970,\n        \"local_number\": 3476\n    }\n}"
+				},
+				"url": {
+					"raw": "127.0.0.1:48095/trigger",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "48095",
+					"path": [
+						"trigger"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

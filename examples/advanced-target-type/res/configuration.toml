@@ -1,0 +1,39 @@
+[Writable]
+LogLevel = 'DEBUG'
+
+[Service]
+BootTimeout = 30000
+ClientMonitor = 15000
+CheckInterval = '10s'
+Host = 'localhost'
+Port = 48095
+Protocol = 'http'
+ReadMaxLimit = 100
+StartupMsg = 'This is a sample Application Service which use of TargetType'
+Timeout = 5000
+
+[Registry]
+Host = 'localhost'
+Port = 8500
+Type = 'consul'
+
+[Clients]
+  [Clients.CoreData]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 48080
+
+  [Clients.Logging]
+  Protocol = "http"
+  Host = "localhost"
+  Port = 48061
+
+# This example depends on HTTP trigger to receive the input data which is a custom type.
+[Binding]
+Type="http"
+
+[Logging]
+EnableRemote = false
+File = './logs/filter-custom-convert-publish.log'
+
+[ApplicationSettings]
