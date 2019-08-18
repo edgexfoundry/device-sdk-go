@@ -15,6 +15,7 @@ import (
 	"syscall"
 
 	"github.com/edgexfoundry/device-sdk-go"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 )
 
@@ -33,6 +34,8 @@ func Bootstrap(serviceName string, serviceVersion string, driver dsModels.Protoc
 	flag.StringVar(&confProfile, "p", "", "Specify a profile other than default.")
 	flag.StringVar(&confDir, "confdir", "", "Specify an alternate configuration directory.")
 	flag.StringVar(&confDir, "c", "", "Specify an alternate configuration directory.")
+	flag.BoolVar(&common.OverwriteConfig, "overwrite", false, "Overwrite configuration in the registry")
+	flag.BoolVar(&common.OverwriteConfig, "o", false, "Overwrite configuration in the registry")
 	flag.Parse()
 
 	if err := startService(serviceName, serviceVersion, driver); err != nil {

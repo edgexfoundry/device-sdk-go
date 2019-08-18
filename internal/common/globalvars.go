@@ -20,6 +20,7 @@ var (
 	CurrentConfig         *Config
 	CurrentDeviceService  contract.DeviceService
 	UseRegistry           bool
+	OverwriteConfig       bool
 	ServiceLocked         bool
 	Driver                dsModels.ProtocolDriver
 	EventClient           coredata.EventClient

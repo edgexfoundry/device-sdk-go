@@ -78,7 +78,7 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 			return nil, fmt.Errorf("could not verify that Registry already has configuration: %v", err.Error())
 		}
 
-		if hasConfiguration {
+		if hasConfiguration && !common.OverwriteConfig {
 			// Get the configuration values from the Registry
 			rawConfig, err := RegistryClient.GetConfiguration(configuration)
 			if err != nil {
@@ -100,7 +100,7 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 				return nil, err
 			}
 
-			err = RegistryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), true)
+			err = RegistryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), common.OverwriteConfig)
 			if err != nil {
 				return nil, fmt.Errorf("could not push configuration to Registry: %v", err.Error())
 			}
