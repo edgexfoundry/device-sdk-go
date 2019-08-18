@@ -21,6 +21,9 @@ func InitRestRoutes() *mux.Router {
 	common.LoggingClient.Debug("init status rest controller")
 	r.HandleFunc("/ping", statusFunc)
 
+	common.LoggingClient.Debug("init version rest controller")
+	r.HandleFunc("/version", versionFunc)
+
 	common.LoggingClient.Debug("init command rest controller")
 	sr := r.PathPrefix("/device").Subrouter()
 	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)

@@ -40,5 +40,5 @@ const (
 	SetCmdMethod string = "set"
 
 	CorrelationHeader = clients.CorrelationHeader
-	URLRawQuery = "urlRawQuery"
+	URLRawQuery       = "urlRawQuery"
 )
