@@ -19,10 +19,10 @@ func InitRestRoutes() *mux.Router {
 	r := mux.NewRouter().PathPrefix(common.APIv1Prefix).Subrouter()
 
 	common.LoggingClient.Debug("init status rest controller")
-	r.HandleFunc("/ping", statusFunc)
+	r.HandleFunc("/ping", statusFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init version rest controller")
-	r.HandleFunc("/version", versionFunc)
+	r.HandleFunc("/version", versionFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init command rest controller")
 	sr := r.PathPrefix("/device").Subrouter()
@@ -34,8 +34,8 @@ func InitRestRoutes() *mux.Router {
 	r.HandleFunc("/callback", callbackFunc)
 
 	common.LoggingClient.Debug("init other rest controller")
-	r.HandleFunc("/discovery", discoveryFunc).Methods("POST")
-	r.HandleFunc("/debug/transformData/{transformData}", transformFunc).Methods("GET")
+	r.HandleFunc("/discovery", discoveryFunc).Methods(http.MethodPost)
+	r.HandleFunc("/debug/transformData/{transformData}", transformFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init the metrics and config rest controller each")
 	r.HandleFunc("/metrics", metricsHandler).Methods(http.MethodGet)
