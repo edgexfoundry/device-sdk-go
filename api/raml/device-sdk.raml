@@ -1,0 +1,272 @@
+#%RAML 0.8
+---
+title: device-sdk
+version: "1.1.x"
+baseUri: "http://device-x:49999/api"
+protocols: [ HTTP ]
+
+documentation:
+    - title: Device Service API
+      content: This is the REST API implemented by device-sdk-go and device-sdk-c. It is therefore available on device services built with either SDK.
+
+schemas: 
+    -
+        responseobjects: '{"type":"array","$schema":"http://json-schema.org/draft-06/schema#","title":"responseobjects","items":{"type":"object","required":false,"$ref":"#/schemas/responseobject"}}'
+    -
+        responseobject: '{"type":"object","$schema":"http://json-schema.org/draft-06/schema#","title":"responseobject","properties": {"device":{"description":"the name of the device","type":"string"}, "origin":{"description":"timestamp indicating when the readings were taken","type":"integer"}, "readings":{"type":"array","items":{"type":"object","$ref":"#/schemas/reading"}}}}'
+    -
+        reading: '{"type":"object","$schema":"http://json-schema.org/draft-06/schema#","title":"reading","properties":{"name":{"type":"string"},"value":{"type":"string"}}}'
+    -
+        setting: '{"type":"object","$schema":"http://json-schema.org/draft-06/schema#","title":"setting","additionalProperties":{"type":"string"}}'
+    -
+        callbackalert: '{"type": "object","$schema": "http://json-schema.org/draft-06/schema#","title": "Notification Schema","properties": {"id": {"description": "the identifier of the object which is called back","type": "string"},"actionType": {"description": "the type of the called back object","enum":["PROFILE","DEVICE","PROVISIONWATCHER","SCHEDULE","SCHEDULEEVENT"],"type": "string"}},"required": ["id"]}'
+    -
+        versionobject: '{"type":"object","$schema":"http://json-schema.org/draft-06/schema#","title":"version","properties":{"version":{"type":"string"},"sdk_version":{"type":"string"}}}'
+    -
+
+/version:
+    displayName: Version Strings
+    description: Example -- http://localhost:49999/api/version
+    get:
+        description: Report service and SDK versions
+        responses:
+            "200":
+                body:
+                    application/json:
+                        schema: versionobject
+                        example: '{"version":"1.0","sdk_version":"1.1.0"}'
+
+/v1/ping:
+    displayName: Ping Resource
+    description: Example -- http://localhost:49999/api/v1/ping
+    get:
+        description: Test service providing an indication that the service is available.
+        displayName: service up check
+        responses:
+            "200":
+                body:
+                    text/plain:
+                        description: device service version string
+                        example: 'V1.0'
+
+/v1/device/{id}/{command}:
+    displayName: Command Device (by ID) with Command Name
+    description: Example -- http://localhost:49999/api/v1/device/57bd0f2d32d258ad3fcd2d4b/Command
+    uriParameters:
+        id:
+            displayName: id
+            type: string
+        command:
+            displayName: command
+            type: string
+    get:
+        description: Issue the GET command referenced by the command to the device/sensor (referenced by database-generated ID) to which it is associated thorugh the Device Service.
+        responses:
+            "200":
+                description: String as returned by the device/sensor through the device service.
+                body:
+                    application/json:
+                        schema: responseobject
+                        example: '{"device":"TestDevice","origin":1550485943000,"readings":[{"name":"VDS-CurrentTemperature","value":"32.5"}]}'
+            "404":
+                description: If no device exists by the ID provided or the command is unknown.
+            "405":
+                description: If the requested command exists but not for GET, or the resource is marked as write-only.
+            "423":
+                description: If the device or service is locked (admin state) or disabled (operating state).
+            "500":
+                description: The device driver is unable to process the request, or too many values were returned.
+    put:
+        description: Issues the PUT command referenced by the command to the device/sensor (referenced by database-generated ID) to which it is associated through the Device Service.
+        body:
+            application/json:
+                schema: setting
+                example: '{"AHU-TargetTemperature": "28.5"}'
+        responses:
+            "200":
+                description: The PUT command was successful.
+            "404":
+                description: If no device exists for the ID provided or the command is unknown.
+            "405":
+                description: If the requested command exists but not for PUT, or the resource is marked as read-only.
+            "423":
+                description: If the device or service is locked (admin state) or disabled (operating state).
+            "500":
+                description: The device driver is unable to process the request.
+    post:
+        description: Issues the POST command referenced by the command to the device/sensor (referenced by database generated ID) to which it is associated through the device service.
+        body:
+            application/json:
+                schema: setting
+                example: '{"AHU-TargetTemperature": "28.5"}'
+        responses:
+            "200":
+                description: The POST command was successful.
+            "404":
+                description: If no device exists for the ID provided or the command is unknown.
+            "405":
+                description: If the requested command exists but not for POST, or the resource is marked as read-only.
+            "423":
+                description: If the device or service is locked (admin state) or disabled (operating state).
+            "500":
+                description: The device driver is unable to process the request.
+
+/v1/device/name/{name}/{command}:
+    displayName: Command Device (by Name) with Command Name
+    description: Example -- http://localhost:49999/api/v1/device/name/MyDevice94/Command
+    uriParameters:
+        name:
+            displayName: name
+            type: string
+        command:
+            displayName: command
+            type: string
+    get:
+        description: Issue the GET command referenced by the command to the device/sensor (referenced by name) to which it is associated thorugh the Device Service.
+        responses:
+            "200":
+                description: String as returned by the device/sensor through the device service.
+                body:
+                    application/json:
+                        schema: responseobject
+                        example: '{"device":"TestDevice","origin":1550485943000,"readings":[{"name":"VDS-CurrentTemperature","value":"32.5"}]}'
+            "404":
+                description: If no device exists by the ID provided or the command is unknown.
+            "405":
+                description: If the requested command exists but not for GET, or the resource is marked as write-only.
+            "423":
+                description: If the device or service is locked (admin state) or disabled (operating state).
+            "500":
+                description: The device driver is unable to process the request, or too many values were returned.
+    put:
+        description: Issues the PUT command referenced by the command to the device/sensor (referenced by name) to which it is associated through the Device Service.
+        body:
+            application/json:
+                schema: setting
+                example: '{"AHU-TargetTemperature": "28.5"}'
+        responses:
+            "200":
+                description: The PUT command was successful.
+            "404":
+                description: If no device exists for the ID provided or the command is unknown.
+            "405":
+                description: If the requested command exists but not for PUT, or the resource is marked as read-only.
+            "423":
+                description: If the device or service is locked (admin state) or disabled (operating state).
+            "500":
+                description: The device driver is unable to process the request.
+    post:
+        description: Issues the POST command referenced by the command to the device/sensor (referenced by name) to which it is associated through the device service.
+        body:
+            application/json:
+                schema: setting
+                example: '{"AHU-TargetTemperature": "28.5"}'
+        responses:
+            "200":
+                description: The POST command was successful.
+            "404":
+                description: If no device exists for the ID provided or the command is unknown.
+            "405":
+                description: If the requested command exists but not for POST, or the resource is marked as read-only.
+            "423":
+                description: If the device or service is locked (admin state) or disabled (operating state).
+            "500":
+                description: The device driver is unable to process the request.
+
+/v1/device/all/{command}:
+    displayName: Command all operational Devices for the service with command name.
+    description: Example -- http://localhost:49999/api/v1/device/all/Command
+    uriParameters:
+        command:
+            displayName: command
+            type: string
+    get:
+        description: Issues the GET command referenced by the command to all operational device(s)/sensor(s) that are associated to the device service and have this command.
+        responses:
+            "200":
+                description: String as returned by the device(s)/sensor(s) through the Device Service.
+                body:
+                    application/json:
+                        schema: responseobjects
+                        example: '[{"device":"TestDevice1","origin":1550485943000,"readings":[{"name":"VDS-CurrentTemperature","value":"32.5"}]},{"device":"TestDevice2","origin":1550485945000,"readings":[{"name":"VDS-CurrentTemperature","value":"33.1"}]}]'
+            "423":
+                description: If the device service is locked (admin state).
+            "500":
+                description: The device driver is unable to process the request, or too many values were returned.
+    put:
+        description: Issues the PUT command referenced by the command to all operational device(s)/sensor(s) that are associated to the device service and have this command.
+        body:
+            application/json:
+                schema: setting
+                example: '{"AHU-TargetTemperature": "28.5"}'
+        responses:
+            "200":
+                description: The PUT commands were successful.
+            "423":
+                description: If the device service is locked (admin state).
+            "500":
+                description: The device driver is unable to process the request.
+    post:
+        description: Issues the POST command referenced by the command to all operational device(s)/sensor(s) that are associated to the Device Service and have this command.
+        body:
+            application/json:
+                schema: setting
+                example: '{"AHU-TargetTemperature": "28.5"}'
+        responses:
+            "200":
+                description: The POST commands were successful.
+            "423":
+                description: If the device service is locked (admin state).
+            "500":
+                description: The device driver is unable to process the request.
+
+/v1/callback:
+    displayName: Update Callback
+    description: Example -- http://localhost:49999/api/v1/callback
+    put:
+        description: Update the object referred to by the database ID. The only supported update is a change to the object's operational state.
+        body:
+            application/json:
+                schema: callbackalert
+                example: '{"id": "57bd0f2d32d258ad3fcd2d4b", "actionType": "DEVICE"}'
+        responses:
+            "200":
+                description: Boolean indicating success of the operation.
+            "400":
+                description: The object ID could not be parsed.
+            "501":
+                description: An actionType other than DEVICE, or a method other than PUT/POST/DELETE was requested.
+
+/v1/discovery:
+    displayName: Run device discovery request for all registered Provision Watchers
+    description: Example -- http://localhost:49999/api/v1/discovery
+    post:
+        description: Run the discovery request for a Device Service.
+        responses:
+            "200":
+                description: The service is running the discovery request.
+            "423":
+                description: The service is disabled or administratively locked.
+            "501":
+                description: The device driver does not implement discovery.
+            "503":
+                description: Discovery is disabled by configuration.
+
+/v1/config:
+    displayName: Config Resource
+    description: Example - http://localhost:49999/api/v1/config
+    get:
+        description: Fetch the current state of the service's configuration.
+        responses:
+            "200":
+                description: The service's configuration as JSON document.
+
+/v1/metrics:
+    displayName: Metrics Resource
+    description: Example - http://localhost:49999/api/v1/metrics
+    get:
+        description: Fetch the current state of the service's metrics.
+        responses:
+            "200":
+                description: The service's metrics as JSON document.
+
