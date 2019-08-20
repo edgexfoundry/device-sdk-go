@@ -20,6 +20,10 @@ Table of contents
    * [Error Handling](#error-handling)
    * [Advanced Topics](#advanced-topics)
      * [Target Type](#target-type)
+     * [Command Line Options](#command_line_options)
+     * [Environment Variable Overrides](#environment_variable_overrides)
+       * [edgex_registry](#edgex_registry)
+       * [edgex_service](#edgex_service)
 
   <!--te-->
 
@@ -302,3 +306,88 @@ func MyPersonFunction(edgexcontext *appcontext.Context, params ...interface{}) (
 The SDK supports unmarshaling JSON or CBOR encoded data into an instance of the target type. If your incoming data is not JSON or CBOR encoded, you then need to set the `TargetType` to  `&[]byte`.
 
 If the target type is set to `&[]byte` the incoming data will not be unmarshaled.  The content type, if set, will be passed as the second parameter to the first function in your pipeline.  Your first function will be responsible for decoding the data or not.
+
+### Command Line Options
+
+The following command line options are available
+
+```
+  -c=<path>
+        Specify an alternate configuration directory.
+  -confdir=<path>
+        Specify an alternate configuration directory.
+  -p=<profile>
+        Specify a profile other than default.
+  -profile=<profile>
+        Specify a profile other than default.
+  -r    Indicates the service should use registry.
+  -registry
+        Indicates the service should use the registry.
+```
+
+Examples:
+
+```
+simple-filter-xml -r -c=./res -p=docker
+```
+
+or
+
+```
+simple-filter-xml --registry --confdir=./res --profile=docker
+```
+
+### Environment Variable Overrides
+
+All the configuration settings from the configuration.toml file can be overridden by environment variables. Except for two special cases listed below, the overrides **only** occur when the configuration values are first pushed into the Registry. Once the values are in the Registry, the Registry values are always used. 
+
+The environment variable names have the following format:
+
+```
+<TOML Key>
+<TOML Section>_<TOML Key>
+<TOML Section>_<TOML Sub-Section>_<TOML Key>
+```
+
+Examples:
+
+```
+TOML   : FailLimit = 30
+ENVVAR : FailLimit=100
+
+TOML   : [Logging]
+		 EnableRemote = false
+ENVVAR : Logging.EnableRemote=true
+
+TOML   : [Clients]
+  			[Clients.CoreData]
+  			Host = 'localhost'
+ENVVAR : Clients_CoreData_Host=edgex-core-data
+```
+
+#### edgex_registry
+
+This environment variable overrides the Registry connection information and occurs every time the application service starts. The value is in the format of a URL.
+
+```
+edgex_registry=consul://edgex-core-consul:8500
+
+This sets the Registry information fields as follows:
+    Type: consul
+    Host: edgex-core-consul
+    Port: 8500
+```
+
+#### edgex_service
+
+This environment variable overrides the Service connection information and occurs every time the application service starts. The value is in the format of a URL.
+
+```
+edgex_service=http://192.168.1.2:4903
+
+This sets the Service information fields as follows:
+    Protocol: http
+    Host: 192.168.1.2
+    Port: 4903
+```
+
