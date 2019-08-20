@@ -260,6 +260,10 @@ Similar to other EdgeX services, configuration is first determined by the `confi
 
 The following items discuss topics that are a bit beyond the basic use cases of the Application Functions SDK when interacting with EdgeX.
 
+### Configurable Functions Pipeline
+
+This SDK provides the capability to define the functions pipeline via configuration rather than code using the **app-service-configurable** application service. See **app-service-configurable** [README](https://github.com/edgexfoundry/app-service-configurable/blob/master/README.md) for more details.
+
 ### Target Type
 
 The target type is the object type of the incoming data that is sent to the first function in the function pipeline. By default this is an EdgeX `Event` since typical usage is receiving `events` from Core Data via Message Bus. 
