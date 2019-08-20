@@ -103,9 +103,13 @@ func TestNonMatchingKeyDoesNotOverwritesValue(t *testing.T) {
 }
 
 const (
-	expectedTypeValue = "consul"
-	expectedHostValue = "localhost"
-	expectedPortValue = 8500
+	expectedRegistryTypeValue = "consul"
+	expectedRegistryHostValue = "localhost"
+	expectedRegistryPortValue = 8500
+
+	expectedServiceProtocolValue = "http"
+	expectedServiceHostValue     = "localhost"
+	expectedServicePortValue     = 8500
 
 	defaultHostValue = "defaultHost"
 	defaultPortValue = 987654321
@@ -123,13 +127,29 @@ func initializeTest(t *testing.T) common.RegistryInfo {
 
 func TestEnvVariableUpdatesRegistryInfo(t *testing.T) {
 	registryInfo := initializeTest(t)
-	sut := newSUT(t, map[string]string{envKeyUrl: expectedTypeValue + "://" + expectedHostValue + ":" + strconv.Itoa(expectedPortValue)})
+	sut := newSUT(t, map[string]string{envKeyRegistryUrl: expectedRegistryTypeValue + "://" + expectedRegistryHostValue + ":" + strconv.Itoa(expectedRegistryPortValue)})
 
 	registryInfo = sut.OverrideRegistryInfoFromEnvironment(registryInfo)
 
-	assert.Equal(t, registryInfo.Host, expectedHostValue)
-	assert.Equal(t, registryInfo.Port, expectedPortValue)
-	assert.Equal(t, registryInfo.Type, expectedTypeValue)
+	assert.Equal(t, registryInfo.Host, expectedRegistryHostValue)
+	assert.Equal(t, registryInfo.Port, expectedRegistryPortValue)
+	assert.Equal(t, registryInfo.Type, expectedRegistryTypeValue)
+}
+
+func TestEnvVariableUpdatesServiceInfo(t *testing.T) {
+	os.Clearenv()
+	serviceInfo := common.ServiceInfo{
+		Host:     defaultHostValue,
+		Port:     defaultPortValue,
+		Protocol: defaultTypeValue,
+	}
+	sut := newSUT(t, map[string]string{envKeyServiceUrl: expectedServiceProtocolValue + "://" + expectedServiceHostValue + ":" + strconv.Itoa(expectedServicePortValue)})
+
+	serviceInfo = sut.OverrideServiceInfoFromEnvironment(serviceInfo)
+
+	assert.Equal(t, serviceInfo.Host, expectedServiceHostValue)
+	assert.Equal(t, serviceInfo.Port, expectedServicePortValue)
+	assert.Equal(t, serviceInfo.Protocol, expectedServiceProtocolValue)
 }
 
 func TestNoEnvVariableDoesNotUpdateRegistryInfo(t *testing.T) {

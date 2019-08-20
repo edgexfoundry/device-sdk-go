@@ -299,6 +299,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 	if sdk.useRegistry {
 		e := config.NewEnvironment()
 		configuration.Registry = e.OverrideRegistryInfoFromEnvironment(configuration.Registry)
+		configuration.Service = e.OverrideServiceInfoFromEnvironment(configuration.Service)
 
 		registryConfig := registryTypes.Config{
 			Host:          configuration.Registry.Host,
@@ -316,17 +317,12 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 		if err != nil {
 			return fmt.Errorf("Connection to Registry could not be made: %v", err)
 		}
+
 		//set registryClient
 		sdk.registryClient = client
 
 		if !sdk.registryClient.IsAlive() {
 			return fmt.Errorf("Registry (%s) is not running", registryConfig.Type)
-		}
-
-		// Register the service with Registry
-		err = sdk.registryClient.Register()
-		if err != nil {
-			return fmt.Errorf("Could not register service with Registry: %v", err)
 		}
 
 		hasConfig, err := sdk.registryClient.HasConfiguration()
@@ -374,6 +370,11 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 			fmt.Println("Configuration pushed to registry with service key: " + sdk.ServiceKey)
 		}
 
+		// Register the service with Registry
+		err = sdk.registryClient.Register()
+		if err != nil {
+			return fmt.Errorf("Could not register service with Registry: %v", err)
+		}
 	}
 
 	sdk.config = *configuration

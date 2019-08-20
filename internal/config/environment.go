@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	envKeyUrl = "edgex_registry"
+	envKeyRegistryUrl = "edgex_registry"
+	envKeyServiceUrl  = "edgex_service"
 )
 
 // environment is receiver that holds environment variables and encapsulates toml.Tree-based configuration field
@@ -57,7 +58,7 @@ func NewEnvironment() *environment {
 
 // OverrideRegistryInfoFromEnvironment method overrides registry location with environment variables.
 func (e *environment) OverrideRegistryInfoFromEnvironment(registry common.RegistryInfo) common.RegistryInfo {
-	if env := os.Getenv(envKeyUrl); env != "" {
+	if env := os.Getenv(envKeyRegistryUrl); env != "" {
 		if u, err := url.Parse(env); err == nil {
 			if p, err := strconv.ParseInt(u.Port(), 10, 0); err == nil {
 				registry.Port = int(p)
@@ -67,6 +68,20 @@ func (e *environment) OverrideRegistryInfoFromEnvironment(registry common.Regist
 		}
 	}
 	return registry
+}
+
+// OverrideServiceInfoFromEnvironment method overrides Service location with environment variables.
+func (e *environment) OverrideServiceInfoFromEnvironment(service common.ServiceInfo) common.ServiceInfo {
+	if env := os.Getenv(envKeyServiceUrl); env != "" {
+		if u, err := url.Parse(env); err == nil {
+			if p, err := strconv.ParseInt(u.Port(), 10, 0); err == nil {
+				service.Port = int(p)
+				service.Host = u.Hostname()
+				service.Protocol = u.Scheme
+			}
+		}
+	}
+	return service
 }
 
 // OverrideRegistryConfigFromEnvironment method replaces values in the toml.Tree for matching environment variable keys.
