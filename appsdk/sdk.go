@@ -58,8 +58,15 @@ const ProfileSuffixPlaceholder = "<profile>"
 // provide the desired transforms for your pipeline by calling .SetFunctionsPipeline(). Lastly, call .MakeItRun() to start listening for events based on
 // your configured trigger.
 type AppFunctionsSDK struct {
+	// ServiceKey is the application services's key used for Configuration and Registration when the Registry is enabled
+	ServiceKey string
+	// LoggingClient is the EdgeX logger client used to log messages
+	LoggingClient logger.LoggingClient
+	// TargetType is the expected type of the incoming data. Must be set to a pointer to an instance of the type.
+	// Defaults to &models.Event{} if nil. The income data is unmarshaled (JSON or CBOR) in to the type,
+	// except when &[]byte{} is specified. In this case the []byte data is pass to the first function in the Pipeline.
+	TargetType                interface{}
 	transforms                []appcontext.AppFunction
-	ServiceKey                string
 	configProfile             string
 	configDir                 string
 	useRegistry               bool
@@ -70,8 +77,6 @@ type AppFunctionsSDK struct {
 	registryClient            registry.Client
 	eventClient               coredata.EventClient
 	config                    common.ConfigurationStruct
-	LoggingClient             logger.LoggingClient
-	TargetType                interface{}
 }
 
 // MakeItRun will initialize and start the trigger as specifed in the
@@ -123,6 +128,11 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 	var pipeline []appcontext.AppFunction
 
 	sdk.usingConfigurablePipeline = true
+
+	sdk.TargetType = nil
+	if sdk.config.Writable.Pipeline.UseTargetTypeOfByteArray {
+		sdk.TargetType = &[]byte{}
+	}
 
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: sdk,
@@ -191,9 +201,12 @@ func (sdk *AppFunctionsSDK) SetFunctionsPipeline(transforms ...appcontext.AppFun
 	}
 
 	sdk.transforms = transforms
+
 	if sdk.runtime != nil {
 		sdk.runtime.SetTransforms(transforms)
+		sdk.runtime.TargetType = sdk.TargetType
 	}
+
 	return nil
 }
 

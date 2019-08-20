@@ -81,7 +81,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
-	expected := `{"Writable":{"LogLevel":"","Pipeline":{"ExecutionOrder":"","Functions":null}},"Logging":{"EnableRemote":false,"File":""},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":0,"CheckInterval":"","ClientMonitor":0,"Host":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":0},"MessageBus":{"PublishHost":{"Host":"","Port":0,"Protocol":""},"SubscribeHost":{"Host":"","Port":0,"Protocol":""},"Type":"","Optional":null},"Binding":{"Type":"","Name":"","SubscribeTopic":"","PublishTopic":""},"ApplicationSettings":null,"Clients":null}` + "\n"
+	expected := `{"Writable":{"LogLevel":"","Pipeline":{"ExecutionOrder":"","UseTargetTypeOfByteArray":false,"Functions":null}},"Logging":{"EnableRemote":false,"File":""},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":0,"CheckInterval":"","ClientMonitor":0,"Host":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":0},"MessageBus":{"PublishHost":{"Host":"","Port":0,"Protocol":""},"SubscribeHost":{"Host":"","Port":0,"Protocol":""},"Type":"","Optional":null},"Binding":{"Type":"","Name":"","SubscribeTopic":"","PublishTopic":""},"ApplicationSettings":null,"Clients":null}` + "\n"
 	body := rr.Body.String()
 	assert.Equal(t, expected, body)
 }

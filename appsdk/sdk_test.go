@@ -207,3 +207,51 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 	assert.NotNil(t, appFunctions, "expected app functions list to be set")
 	assert.Equal(t, 3, len(appFunctions))
 }
+
+func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
+	functions := make(map[string]common.PipelineFunction)
+	functions["CompressWithGZIP"] = common.PipelineFunction{}
+	functions["SetOutputData"] = common.PipelineFunction{}
+
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Writable: common.WritableInfo{
+				Pipeline: common.PipelineInfo{
+					ExecutionOrder:           "CompressWithGZIP, SetOutputData",
+					UseTargetTypeOfByteArray: true,
+					Functions:                functions,
+				},
+			},
+		},
+	}
+
+	_, err := sdk.LoadConfigurablePipeline()
+	assert.NoError(t, err, "")
+	assert.NotNil(t, sdk.TargetType)
+	assert.Equal(t, reflect.Ptr, reflect.TypeOf(sdk.TargetType).Kind())
+	assert.Equal(t, reflect.TypeOf([]byte{}).Kind(), reflect.TypeOf(sdk.TargetType).Elem().Kind())
+}
+
+func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
+	functions := make(map[string]common.PipelineFunction)
+	functions["CompressWithGZIP"] = common.PipelineFunction{}
+	functions["SetOutputData"] = common.PipelineFunction{}
+
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Writable: common.WritableInfo{
+				Pipeline: common.PipelineInfo{
+					ExecutionOrder:           "CompressWithGZIP, SetOutputData",
+					UseTargetTypeOfByteArray: false,
+					Functions:                functions,
+				},
+			},
+		},
+	}
+
+	_, err := sdk.LoadConfigurablePipeline()
+	assert.NoError(t, err, "")
+	assert.Nil(t, sdk.TargetType)
+}
