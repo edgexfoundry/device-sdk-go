@@ -36,6 +36,15 @@ func statusFunc(w http.ResponseWriter, req *http.Request) {
 	io.WriteString(w, result)
 }
 
+func versionFunc(w http.ResponseWriter, req *http.Request) {
+	res := struct {
+		Version string `json:"version"`
+	}{handler.VersionHandler()}
+	w.Header().Add(clients.ContentType, clients.ContentTypeJSON)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&res)
+}
+
 func discoveryFunc(w http.ResponseWriter, req *http.Request) {
 	if checkServiceLocked(w, req) {
 		return

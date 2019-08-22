@@ -17,10 +17,9 @@ const (
 	ClientMetadata = "Metadata"
 	ClientLogging  = "Logging"
 
-	APIv1Prefix = "/api/v1"
-	Colon       = ":"
-	HttpScheme  = "http://"
-	HttpProto   = "HTTP"
+	Colon      = ":"
+	HttpScheme = "http://"
+	HttpProto  = "HTTP"
 
 	ConfigDirectory    = "./res"
 	ConfigFileName     = "configuration.toml"
@@ -28,10 +27,17 @@ const (
 	WritableKey        = "/Writable"
 	RegistryFailLimit  = 3
 
-	APICallbackRoute        = APIv1Prefix + "/callback"
-	APIValueDescriptorRoute = APIv1Prefix + "/valuedescriptor"
-	APIDiscoveryRoute       = APIv1Prefix + "/discovery"
-	APIPingRoute            = APIv1Prefix + "/ping"
+	APICallbackRoute        = clients.ApiCallbackRoute
+	APIValueDescriptorRoute = clients.ApiValueDescriptorRoute
+	APIPingRoute            = clients.ApiPingRoute
+	APIVersionRoute         = clients.ApiVersionRoute
+	APIMetricsRoute         = clients.ApiMetricsRoute
+	APIConfigRoute          = clients.ApiConfigRoute
+	APIAllCommandRoute      = clients.ApiDeviceRoute + "/all/{command}"
+	APIIdCommandRoute       = clients.ApiDeviceRoute + "/{id}/{command}"
+	APINameCommandRoute     = clients.ApiDeviceRoute + "/name/{name}/{command}"
+	APIDiscoveryRoute       = clients.ApiBase + "/discovery"
+	APITransformRoute       = clients.ApiBase + "/debug/transformData/{transformData}"
 
 	IdVar        string = "id"
 	NameVar      string = "name"
@@ -40,5 +46,5 @@ const (
 	SetCmdMethod string = "set"
 
 	CorrelationHeader = clients.CorrelationHeader
-	URLRawQuery = "urlRawQuery"
+	URLRawQuery       = "urlRawQuery"
 )

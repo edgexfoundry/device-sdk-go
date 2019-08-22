@@ -33,6 +33,10 @@ var (
 
 type ValueDescriptorMock struct{}
 
+func (ValueDescriptorMock) ValueDescriptorsUsage(names []string, ctx context.Context) (map[string]bool, error) {
+	panic("implement me")
+}
+
 func (ValueDescriptorMock) ValueDescriptors(ctx context.Context) ([]contract.ValueDescriptor, error) {
 	populateValueDescriptorMock()
 	return []contract.ValueDescriptor{
