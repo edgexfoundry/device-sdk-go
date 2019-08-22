@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -111,6 +112,6 @@ func (webserver *WebServer) StartHTTPServer(errChannel chan error) {
 	webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTP Server on port :%d", webserver.Config.Service.Port))
 	go func() {
 		p := fmt.Sprintf(":%d", webserver.Config.Service.Port)
-		errChannel <- http.ListenAndServe(p, webserver.router)
+		errChannel <- http.ListenAndServe(p, http.TimeoutHandler(webserver.router, time.Millisecond*time.Duration(webserver.Config.Service.Timeout), "Request timed out"))
 	}()
 }
