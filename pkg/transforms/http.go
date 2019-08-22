@@ -77,12 +77,7 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 
 	// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
 	isSuccessfulPost := response.StatusCode >= 200 && response.StatusCode < 300
-	if isSuccessfulPost == true {
-		err = edgexcontext.MarkAsPushed()
-		if err != nil {
-			edgexcontext.LoggingClient.Error(err.Error())
-		}
-	}
+
 	return isSuccessfulPost, bodyBytes
 
 }

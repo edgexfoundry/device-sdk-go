@@ -56,7 +56,17 @@ func main() {
 	}
 
 	mqttConfig := transforms.NewMqttConfig()
-	mqttSender := transforms.NewMQTTSender(edgexSdk.LoggingClient, addressable, "", "", mqttConfig)
+
+	// Make sure you change KeyFile and CertFile here to point to actual key/cert files
+	// or an error will be logged for failing to load key/cert files
+	// If you don't use key/cert for MQTT authentication, just pass nil to NewMQTTSender() as following:
+	// mqttSender := transforms.NewMQTTSender(edgexSdk.LoggingClient, addressable, nil, mqttConfig)
+	pair := transforms.KeyCertPair{
+		KeyFile:  "PATH_TO_YOUR_KEY_FILE",
+		CertFile: "PATH_TO_YOUR_CERT_FILE",
+	}
+
+	mqttSender := transforms.NewMQTTSender(edgexSdk.LoggingClient, addressable, &pair, mqttConfig)
 
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.

@@ -179,3 +179,10 @@ func TestConfigurableSetOutputData(t *testing.T) {
 	trx := configurable.SetOutputData()
 	assert.NotNil(t, trx, "return result from SetOutputData should not be nil")
 }
+
+func TestConfigurableMarkAsPushed(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{}
+
+	trx := configurable.MarkAsPushed()
+	assert.NotNil(t, trx, "return result from MarkAsPushed should not be nil")
+}

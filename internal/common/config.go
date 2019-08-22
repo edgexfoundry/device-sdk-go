@@ -91,8 +91,9 @@ type BindingInfo struct {
 }
 
 type PipelineInfo struct {
-	ExecutionOrder string
-	Functions      map[string]PipelineFunction
+	ExecutionOrder           string
+	UseTargetTypeOfByteArray bool
+	Functions                map[string]PipelineFunction
 }
 
 type PipelineFunction struct {

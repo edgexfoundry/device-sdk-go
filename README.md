@@ -14,10 +14,18 @@ Table of contents
       * [Encryption](#encryption)
       * [Conversion](#conversion)
       * [Compressions](#compressions)
+	  * [Core Data](#CoreData-Functions)
       * [Export Functions](#export-functions)    
    * [Configuration](#configuration)
    * [Error Handling](#error-handling)
-<!--te-->
+   * [Advanced Topics](#advanced-topics)
+     * [Target Type](#target-type)
+     * [Command Line Options](#command_line_options)
+     * [Environment Variable Overrides](#environment_variable_overrides)
+       * [edgex_registry](#edgex_registry)
+       * [edgex_service](#edgex_service)
+
+  <!--te-->
 
 ## Getting Started
 
@@ -28,6 +36,7 @@ package main
 import (
 	"fmt"
 	"github.com/edgexfoundry/app-functions-sdk-go/appsdk"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
 	"os"
 )
 
@@ -46,13 +55,13 @@ func main() {
 
 	// 3) Since our FilterByDeviceName Function requires the list of Device Names we would
 	// like to search for, we'll go ahead and define that now.
-	deviceIDs := []string{"Random-Float-Device"}
+	deviceNames := []string{"Random-Float-Device"}
 
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
-	if err := edgexSdk.SetPipeline(
+	if err := edgexSdk.SetFunctionsPipeline(
 			transforms.NewFilter(deviceNames).FilterByDeviceName, 
-			transforms.NewConversion().TransformToXML()
+			transforms.NewConversion().TransformToXML,
 		); err != nil {
 			edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK SetPipeline failed: %v\n", err))
 			os.Exit(-1)
@@ -93,9 +102,9 @@ func printXMLToConsole(edgexcontext *excontext.Context, params ...interface{}) (
 After placing the above function in your code, the next step is to modify the pipeline to call this function:
 
 ```golang
-edgexSdk.SetPipeline(
+edgexSdk.SetFunctionsPipeline(
   transforms.NewFilter(deviceNames).FilterByDeviceName, 
-  transforms.NewConversion().TransformToXML(),
+  transforms.NewConversion().TransformToXML,
   printXMLToConsole //notice this is not a function call, but simply a function pointer. 
 )
 ```
@@ -178,7 +187,7 @@ E.G. NewFilter([] {"Device1", "Device2"}).FilterByDeviceName
 
 ### Filtering
 
-There are two basic types of filtering included in the SDK to add to your pipeline. Theses provided Filter functions return a type of `events.Model`. If filtering results in no remain data, the pipeline execution for that pass is terminated.
+There are two basic types of filtering included in the SDK to add to your pipeline. Theses provided Filter functions return a type of events.Model. If filtering results in no remaining data, the pipeline execution for that pass is terminated. If no values are provided for filtering, then data flows through unfiltered.
  - `NewFilter([]string filterValues)` - This function returns a `Filter` instance initialized with the passed in filter values. This `Filter` instance is used to access the following filter functions that will operate using the specified filter values.
     - `FilterByDeviceName` - This function will filter the event data down to the specified device names and return the filtered data to the pipeline.
     - `FilterByValueDescriptor` - This function will filter the event data down to the specified device value descriptor and return the filtered data to the pipeline. 
@@ -192,30 +201,34 @@ There is one encryption transform included in the SDK that can be added to your 
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
 
- - `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions 
+ - `NewConversion()` - This function returns a `Conversion` instance that is used to access the following conversion functions: 
     - `TransformToXML`  - This function receives an `events.Model` type, converts it to XML format and returns the XML string to the pipeline. 
     - `TransformToJSON` - This function receives an `events.Model` type and converts it to JSON format and returns the JSON string to the pipeline.
 
  ### Compressions
 There are two compression types included in the SDK that can be added to your pipeline. These transforms return a `[]byte`.
 
- - `NewCompression()` - This function returns a `Compression` instance that is used to access the following compression functions 
+ - `NewCompression()` - This function returns a `Compression` instance that is used to access the following compression functions:
     - `CompressWithGZIP`  - This function receives either a `string`,`[]byte`, or `json.Marshaler` type, GZIP compresses the data, converts result to base64 encoded string, which is returned as a `[]byte` to the pipeline.
     - `CompressWithZLIB` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type, ZLIB compresses the data, converts result to base64 encoded string, which is returned as a `[]byte` to the pipeline.
 
+### CoreData Functions
+These are functions that enable interactions with the CoreData REST API. 
+- `NewCoreData()` - This function returns a `CoreData` instance. This `CoreData` instance is used to access the following function(s).
+  - `MarkAsPushed` - This function provides the MarkAsPushed function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.MarkAsPushed()). The data passed into this function from the pipeline is passed along unmodifed since all required information is provided on the context (EventId, CorrelationId,etc.. )
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
-- `NewHTTPSender(url string, mimeType string)` - This function returns a `HTTPSender` instance initialized with the passed in url and mime type values. This `HTTPSender` instance is used to access the following  function that will use the required url and mime type.
-  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+- `NewHTTPSender(url string, mimeType string)` - This function returns a `HTTPSender` instance initialized with the passed in url and mime type values. This `HTTPSender` instance is used to access the following functions that will use the required url and mime type:
+  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future.
 - `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
-  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. This function will mark the received EdgeX event as pushed in Core Data upon a success response code. 
+  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used.
 
 ### Output Functions
 
 There is one output function included in the SDK that can be added to your pipeline. 
 
-- NewOuptut() - This function returns a `Output` instance that is used to access the following output function 
+- NewOuptut() - This function returns a `Output` instance that is used to access the following output function: 
   - `SetOutput` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sets it as the output data for the pipeline to return to the configured trigger. If configured to use message bus, the data will be published to the message bus as determined by the `MessageBus` and `Binding` configuration. If configured to use HTTP trigger the data is returned as the HTTP response. Note that calling Complete() from the Context API in a custom function can be used in place of adding this function to your pipeline
 
 ## Configuration
@@ -243,5 +256,142 @@ Similar to other EdgeX services, configuration is first determined by the `confi
  - The SDK will return control back to main when receiving a SIGTERM/SIGINT event to allow for custom clean up.
 
 
+## Advanced Topics
 
+The following items discuss topics that are a bit beyond the basic use cases of the Application Functions SDK when interacting with EdgeX.
+
+### Configurable Functions Pipeline
+
+This SDK provides the capability to define the functions pipeline via configuration rather than code using the **app-service-configurable** application service. See **app-service-configurable** [README](https://github.com/edgexfoundry/app-service-configurable/blob/master/README.md) for more details.
+
+### Target Type
+
+The target type is the object type of the incoming data that is sent to the first function in the function pipeline. By default this is an EdgeX `Event` since typical usage is receiving `events` from Core Data via Message Bus. 
+
+For other usages where the data is not `events` coming from Core Data, the `TargetType` of the accepted incoming data can be set when the SDK instance is created. 
+There are scenarios where the incoming data is not an EdgeX `Event`. One example scenario is 2 application services are chained via the Message Bus. The output of the first service back to the Messages Bus is inference data from analyzing the original input `Event`data.  The second service needs to be able to let the SDK know the target type of the input data it is expecting.
+
+For usages where the incoming data is not `events`, the `TargetType` of the excepted incoming data can the set when the SDK instance is created. 
+
+Example:
+
+```
+type Person struct {
+    FirstName string `json:"first_name"`
+    LastName  string `json:"last_name"`
+}
+
+edgexSdk := &appsdk.AppFunctionsSDK {
+	ServiceKey: serviceKey, 
+	TargetType: &Person{},
+}
+```
+
+Note that `TargetType` must be set to a pointer to an instance of your target type such as `&Person{}` . The first function in your function pipeline will be passed an instance of your target type, not a pointer to it. In the example above the first function in the pipeline would start something like:
+
+```
+func MyPersonFunction(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+
+	edgexcontext.LoggingClient.Debug("MyPersonFunction")
+
+	if len(params) < 1 {
+		// We didn't receive a result
+		return false, nil
+	}
+
+	person, ok := params[0].(Person)
+	if !ok {
+        return false, errors.New("type received is not a Person")
+	}
+	
+	....
+```
+
+The SDK supports unmarshaling JSON or CBOR encoded data into an instance of the target type. If your incoming data is not JSON or CBOR encoded, you then need to set the `TargetType` to  `&[]byte`.
+
+If the target type is set to `&[]byte` the incoming data will not be unmarshaled.  The content type, if set, will be passed as the second parameter to the first function in your pipeline.  Your first function will be responsible for decoding the data or not.
+
+### Command Line Options
+
+The following command line options are available
+
+```
+  -c=<path>
+        Specify an alternate configuration directory.
+  -confdir=<path>
+        Specify an alternate configuration directory.
+  -p=<profile>
+        Specify a profile other than default.
+  -profile=<profile>
+        Specify a profile other than default.
+  -r    Indicates the service should use registry.
+  -registry
+        Indicates the service should use the registry.
+```
+
+Examples:
+
+```
+simple-filter-xml -r -c=./res -p=docker
+```
+
+or
+
+```
+simple-filter-xml --registry --confdir=./res --profile=docker
+```
+
+### Environment Variable Overrides
+
+All the configuration settings from the configuration.toml file can be overridden by environment variables. Except for two special cases listed below, the overrides **only** occur when the configuration values are first pushed into the Registry. Once the values are in the Registry, the Registry values are always used. 
+
+The environment variable names have the following format:
+
+```
+<TOML Key>
+<TOML Section>_<TOML Key>
+<TOML Section>_<TOML Sub-Section>_<TOML Key>
+```
+
+Examples:
+
+```
+TOML   : FailLimit = 30
+ENVVAR : FailLimit=100
+
+TOML   : [Logging]
+		 EnableRemote = false
+ENVVAR : Logging.EnableRemote=true
+
+TOML   : [Clients]
+  			[Clients.CoreData]
+  			Host = 'localhost'
+ENVVAR : Clients_CoreData_Host=edgex-core-data
+```
+
+#### edgex_registry
+
+This environment variable overrides the Registry connection information and occurs every time the application service starts. The value is in the format of a URL.
+
+```
+edgex_registry=consul://edgex-core-consul:8500
+
+This sets the Registry information fields as follows:
+    Type: consul
+    Host: edgex-core-consul
+    Port: 8500
+```
+
+#### edgex_service
+
+This environment variable overrides the Service connection information and occurs every time the application service starts. The value is in the format of a URL.
+
+```
+edgex_service=http://192.168.1.2:4903
+
+This sets the Service information fields as follows:
+    Protocol: http
+    Host: 192.168.1.2
+    Port: 4903
+```
 

@@ -108,6 +108,13 @@ func (dynamic AppFunctionsSDKConfigurable) TransformToJSON() appcontext.AppFunct
 	return transform.TransformToJSON
 }
 
+// MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) MarkAsPushed() appcontext.AppFunction {
+	transform := transforms.CoreData{}
+	return transform.MarkAsPushed
+}
+
 // CompressWithGZIP compresses data received as either a string,[]byte, or json.Marshaler using gzip algorithm and returns a base64 encoded string as a []byte.
 // This function is a configuration function and returns a function pointer.
 func (dynamic AppFunctionsSDKConfigurable) CompressWithGZIP() appcontext.AppFunction {
@@ -235,11 +242,20 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 	}
 	dynamic.Sdk.LoggingClient.Debug("MQTT Send Parameters", "Address", addr, Qos, qosVal, Retain, retainVal, AutoReconnect, autoreconnectVal, Cert, cert, Key, key)
 
+	var pair *transforms.KeyCertPair
+
+	if len(cert) > 0 && len(key) > 0 {
+		pair = &transforms.KeyCertPair{
+			CertFile: cert,
+			KeyFile:  key,
+		}
+	}
+
 	mqttconfig := transforms.NewMqttConfig()
 	mqttconfig.SetQos(byte(qos))
 	mqttconfig.SetRetain(retain)
 	mqttconfig.SetAutoreconnect(autoreconnect)
-	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, cert, key, mqttconfig)
+	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, pair, mqttconfig)
 	return sender.MQTTSend
 }
 

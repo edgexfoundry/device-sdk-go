@@ -14,20 +14,23 @@
 // limitations under the License.
 //
 
-package internal
+package functions
 
-const (
-	BootTimeoutDefault   = 30000
-	ClientMonitorDefault = 15000
-	ConfigFileName       = "configuration.toml"
-	ConfigRegistryStem   = "edgex/appservices/1.0/"
-	WritableKey          = "/Writable"
-	ApiPingRoute         = "/api/v1/ping"
-	LogDurationKey       = "duration"
+import (
+	"fmt"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
-// SDKVersion indicates the version of the SDK - will be overwritten by build
-var SDKVersion string = "0.0.0"
+func PrintXmlToConsole(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	edgexcontext.LoggingClient.Debug("PrintXmlToConsole")
 
-// ApplicationVersion indicates the version of the application itself, not the SDK - will be overwritten by build
-var ApplicationVersion string = "0.0.0"
+	if len(params) < 1 {
+		// We didn't receive a result
+		return false, nil
+	}
+
+	fmt.Println(params[0].(string))
+
+	return true, params[0]
+}

@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"encoding/json"
+	"reflect"
 	"strconv"
 	"sync"
 
@@ -30,6 +31,7 @@ import (
 
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
+	TargetType    interface{}
 	transforms    []appcontext.AppFunction
 	isBusyCopying sync.Mutex
 }
@@ -38,48 +40,77 @@ type GolangRuntime struct {
 func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) error {
 
 	edgexcontext.LoggingClient.Debug("Processing Event: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
-	var event models.Event
 
-	switch envelope.ContentType {
-	case clients.ContentTypeJSON:
-		if err := json.Unmarshal([]byte(envelope.Payload), &event); err != nil {
-			edgexcontext.LoggingClient.Error("Unable to JSON unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
-			return nil
-		}
+	if gr.TargetType == nil {
+		gr.TargetType = &models.Event{}
+	}
+	target := gr.TargetType
 
-		// Needed for Marking event as handled
-		edgexcontext.EventID = event.ID
-
-	case clients.ContentTypeCBOR:
-		x := codec.CborHandle{}
-		err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&event)
-		if err != nil {
-			edgexcontext.LoggingClient.Error("Unable to CBOR unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
-			return nil
-		}
-
-		// Needed for Marking event as handled
-		edgexcontext.EventChecksum = envelope.Checksum
-
-	default:
-		edgexcontext.LoggingClient.Error("'"+envelope.ContentType+"' content type for EdgeX Event not supported: ", clients.CorrelationHeader, envelope.CorrelationID)
+	if reflect.TypeOf(target).Kind() != reflect.Ptr {
+		edgexcontext.LoggingClient.Error("pipeline seed target type must be a pointer to an object of the target type, not a value of the target type.")
 		return nil
 	}
 
+	// Only set when the data is binary so function receiving it knows how to deal with it.
+	var contentType string
+
+	switch target.(type) {
+	case *[]byte:
+		target = &envelope.Payload
+		contentType = envelope.ContentType
+
+	default:
+		switch envelope.ContentType {
+		case clients.ContentTypeJSON:
+
+			if err := json.Unmarshal([]byte(envelope.Payload), target); err != nil {
+				edgexcontext.LoggingClient.Error("Unable to JSON unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+				return nil
+			}
+
+			event, ok := target.(*models.Event)
+			if ok {
+				// Needed for Marking event as handled
+				edgexcontext.EventID = event.ID
+			}
+
+		case clients.ContentTypeCBOR:
+			x := codec.CborHandle{}
+			err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&target)
+			if err != nil {
+				edgexcontext.LoggingClient.Error("Unable to CBOR unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+				return nil
+			}
+
+			// Needed for Marking event as handled
+			edgexcontext.EventChecksum = envelope.Checksum
+
+		default:
+			edgexcontext.LoggingClient.Error("'"+envelope.ContentType+"' content type for EdgeX Event not supported: ", clients.CorrelationHeader, envelope.CorrelationID)
+			return nil
+		}
+	}
+
 	edgexcontext.CorrelationID = envelope.CorrelationID
-	edgexcontext.EventID = event.ID
+
+	// All functions expect an object, not a pointer to an object, so must use reflection to
+	// dereference to pointer to the object
+	target = reflect.ValueOf(target).Elem().Interface()
+
 	var result interface{}
 	var continuePipeline = true
+
 	// Make copy of transform functions to avoid disruption of pipeline when updating the pipeline from registry
 	gr.isBusyCopying.Lock()
 	transforms := make([]appcontext.AppFunction, len(gr.transforms))
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
+
 	for _, trxFunc := range transforms {
 		if result != nil {
 			continuePipeline, result = trxFunc(edgexcontext, result)
 		} else {
-			continuePipeline, result = trxFunc(edgexcontext, event)
+			continuePipeline, result = trxFunc(edgexcontext, target, contentType)
 		}
 		if continuePipeline != true {
 			if result != nil {

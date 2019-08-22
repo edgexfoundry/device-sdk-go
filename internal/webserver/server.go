@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
@@ -68,6 +68,19 @@ func (webserver *WebServer) metricsHandler(writer http.ResponseWriter, _ *http.R
 
 	return
 }
+func (webserver *WebServer) versionHandler(writer http.ResponseWriter, _ *http.Request) {
+	type Version struct {
+		Version    string `json:"version"`
+		SDKVersion string `json:"sdk_version"`
+	}
+	version := Version{
+		Version:    internal.ApplicationVersion,
+		SDKVersion: internal.SDKVersion,
+	}
+	webserver.encode(version, writer)
+
+	return
+}
 
 // ConfigureStandardRoutes loads up some default routes
 func (webserver *WebServer) ConfigureStandardRoutes() {
@@ -83,6 +96,8 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 	// Metrics
 	webserver.router.HandleFunc(clients.ApiMetricsRoute, webserver.metricsHandler).Methods(http.MethodGet)
 
+	// Version
+	webserver.router.HandleFunc(clients.ApiVersionRoute, webserver.versionHandler).Methods(http.MethodGet)
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
