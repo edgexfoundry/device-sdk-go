@@ -16,30 +16,29 @@ import (
 )
 
 func InitRestRoutes() *mux.Router {
-	r := mux.NewRouter().PathPrefix(common.APIv1Prefix).Subrouter()
+	r := mux.NewRouter()
 
 	common.LoggingClient.Debug("init status rest controller")
-	r.HandleFunc("/ping", statusFunc).Methods(http.MethodGet)
+	r.HandleFunc(common.APIPingRoute, statusFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init version rest controller")
-	r.HandleFunc("/version", versionFunc).Methods(http.MethodGet)
+	r.HandleFunc(common.APIVersionRoute, versionFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init command rest controller")
-	sr := r.PathPrefix("/device").Subrouter()
-	sr.HandleFunc("/all/{command}", commandAllFunc).Methods(http.MethodGet, http.MethodPut)
-	sr.HandleFunc("/{id}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
-	sr.HandleFunc("/name/{name}/{command}", commandFunc).Methods(http.MethodGet, http.MethodPut)
+	r.HandleFunc(common.APIAllCommandRoute, commandAllFunc).Methods(http.MethodGet, http.MethodPut)
+	r.HandleFunc(common.APIIdCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
+	r.HandleFunc(common.APINameCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
 
 	common.LoggingClient.Debug("init callback rest controller")
-	r.HandleFunc("/callback", callbackFunc)
+	r.HandleFunc(common.APICallbackRoute, callbackFunc)
 
 	common.LoggingClient.Debug("init other rest controller")
-	r.HandleFunc("/discovery", discoveryFunc).Methods(http.MethodPost)
-	r.HandleFunc("/debug/transformData/{transformData}", transformFunc).Methods(http.MethodGet)
+	r.HandleFunc(common.APIDiscoveryRoute, discoveryFunc).Methods(http.MethodPost)
+	r.HandleFunc(common.APITransformRoute, transformFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init the metrics and config rest controller each")
-	r.HandleFunc("/metrics", metricsHandler).Methods(http.MethodGet)
-	r.HandleFunc("/config", configHandler).Methods(http.MethodGet)
+	r.HandleFunc(common.APIMetricsRoute, metricsHandler).Methods(http.MethodGet)
+	r.HandleFunc(common.APIConfigRoute, configHandler).Methods(http.MethodGet)
 
 	r.Use(correlation.ManageHeader)
 	r.Use(correlation.OnResponseComplete)
