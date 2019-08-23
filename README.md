@@ -90,7 +90,7 @@ func main() {
 The above example is meant to merely demonstrate the structure of your application. Notice that the output of the last function is not available anywhere inside this application. You must provide a function in order to work with the data from the previous function. Let's go ahead and add the following function that prints the output to the console.
 
 ```golang
-func printXMLToConsole(edgexcontext *excontext.Context, params ...interface{}) (bool,interface{}) {
+func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) (bool,interface{}) {
   if len(params) < 1 { 
   	// We didn't receive a result
   	return false, errors.New("No Data Received")

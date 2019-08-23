@@ -315,15 +315,16 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 		configuration.Service = e.OverrideServiceInfoFromEnvironment(configuration.Service)
 
 		registryConfig := registryTypes.Config{
-			Host:          configuration.Registry.Host,
-			Port:          configuration.Registry.Port,
-			Type:          configuration.Registry.Type,
-			Stem:          internal.ConfigRegistryStem,
-			CheckInterval: "1s",
-			CheckRoute:    internal.ApiPingRoute,
-			ServiceKey:    sdk.ServiceKey,
-			ServiceHost:   configuration.Service.Host,
-			ServicePort:   configuration.Service.Port,
+			Host:            configuration.Registry.Host,
+			Port:            configuration.Registry.Port,
+			Type:            configuration.Registry.Type,
+			Stem:            internal.ConfigRegistryStem,
+			CheckInterval:   "1s",
+			CheckRoute:      internal.ApiPingRoute,
+			ServiceKey:      sdk.ServiceKey,
+			ServiceHost:     configuration.Service.Host,
+			ServicePort:     configuration.Service.Port,
+			ServiceProtocol: configuration.Service.Protocol,
 		}
 
 		client, err := registry.NewRegistryClient(registryConfig)
