@@ -319,7 +319,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 			Port:          configuration.Registry.Port,
 			Type:          configuration.Registry.Type,
 			Stem:          internal.ConfigRegistryStem,
-			CheckInterval: "1s",
+			CheckInterval: configuration.Service.CheckInterval,
 			CheckRoute:    internal.ApiPingRoute,
 			ServiceKey:    sdk.ServiceKey,
 			ServiceHost:   configuration.Service.Host,
