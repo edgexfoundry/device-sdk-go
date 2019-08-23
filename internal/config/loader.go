@@ -144,7 +144,7 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 		}
 	}
 
-	fmt.Println(registryMsg)
+	fmt.Fprintln(os.Stdout, registryMsg)
 	return configuration, nil
 }
 
