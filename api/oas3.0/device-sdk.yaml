@@ -1,0 +1,602 @@
+openapi: 3.0.0
+info:
+  title: device-sdk
+  version: "1.1.x-oas3"
+servers:
+  - url: 'https://virtserver.swaggerhub.com/edgex-test/device-sdk/1.1.x-oas3'
+paths:
+  '/v1/callback':
+    post:
+      description: >-
+        callback is a special API for EdgeX internal communication. When a
+        new device is created in Core Metadata, it will send a POST request to
+        this API to notice the Device Service there is a new device created.
+        Device Service would add this new device into its cache or do some
+        initialization work for the new device.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: Indicating success of the operation.
+        '400':
+          description: Invalid callback request.
+        '500':
+          description: Internal server error.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/callbackalert'
+        required: true
+    put:
+      description: >-
+        callback is a special API for EdgeX internal communication. When a
+        device is updated in Core Metadata, it will send a PUT request to
+        this API to notice the Device Service there is a existing device updated.
+        Device Service would update this device in its cache or do some
+        corresponding work for the Device changes.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: Indicating success of the operation.
+        '400':
+          description: Invalid callback request.
+        '500':
+          description: Internal server error.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/callbackalert'
+        required: true
+    delete:
+      description: >-
+        callback is a special API for EdgeX internal communication. When a
+        new Device is removed in Core Metadata, it will send a DELETE request to
+        this API to notice the Device Service this Device has been removed.
+        Device Service would remove this Device in its cache or do some
+        corresponding work in the protocol driver level.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: Indicating success of the operation.
+        '400':
+          description: Invalid callback request.
+        '500':
+          description: Internal server error.
+  '/v1/config':
+    get:
+      description: Fetch the current state of the service's configuration.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: The service's configuration as JSON document.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                objectExample:
+                  $ref: '#/components/examples/config'
+        '500':
+          description: Internal server error.
+  '/v1/device/all/{command}':
+    get:
+      description: >-
+        Request the device(s)/sensor(s) under management to return the current (or in some cases new) event/reading values for the command or device resource specified. The device service may have cached the latest event/reading for the sensor(s) or it may immediate request new event/reading values depending on the implementation and the device(s)/sensor(s) capability.
+      tags:
+        - device
+      parameters:
+        - in: path
+          name: command
+          required: true
+          schema:
+            type: string
+          example: allValues
+      responses:
+        '200':
+          description: >-
+            String as returned by the device(s)/sensor(s) through the Device
+            Service.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/events'
+              examples:
+                objectExample:
+                  $ref: '#/components/examples/event'
+        '423':
+          description: If the device service is locked (admin state).
+        '500':
+          description: >-
+            The device driver is unable to process the request, or too many
+            values were returned.
+    put:
+      description: >-
+        Request the actuator(s) under management to trigger actions or set the values for the command or device resource specified.
+      tags:
+        - device
+      parameters:
+        - in: path
+          name: command
+          required: true
+          schema:
+            type: string
+          example: allValues
+      responses:
+        '200':
+          description: The PUT commands were successful.
+        '423':
+          description: If the device service is locked (admin state).
+        '500':
+          description: The device driver is unable to process the request.
+      requestBody:
+        $ref: '#/components/requestBodies/setting'
+
+  '/v1/device/name/{name}/{command}':
+    get:
+      description: >-
+        Request the device/sensor by its name to return the current (or in some cases new) event/reading values for the command or device resource specified. The device service may have cached the latest event/reading for the sensor(s) or it may immediate request new event/reading values depending on the implementation and the device(s)/sensor(s) capability.
+      tags:
+        - device
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+          example: sensor
+        - in: path
+          name: command
+          required: true
+          schema:
+            type: string
+          example: allValues
+      responses:
+        '200':
+          description: String as returned by the device/sensor through the device service.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/event'
+              examples:
+                objectExample:
+                  $ref: '#/components/examples/event'
+        '404':
+          description: If no device exists by the name provided or the command is unknown.
+        '405':
+          description: If the requested command exists but not for GET, or the resource is marked as write-only.
+        '423':
+          description: >-
+            If the device or service is locked (admin state) or disabled
+            (operating state).
+        '500':
+          description: >-
+            The device driver is unable to process the request, or too many
+            values were returned.
+    put:
+      description: >-
+        Request the actuator by its name to trigger a action or set a current value for the command or device resource specified.
+      tags:
+        - device
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+          example: sensor
+        - in: path
+          name: command
+          required: true
+          schema:
+            type: string
+          example: allValues
+      responses:
+        '200':
+          description: The PUT command was successful.
+        '404':
+          description: If no device exists for the name provided or the command is unknown.
+        '405':
+          description: If the requested command exists but not for PUT, or the resource is marked as read-only.
+        '423':
+          description: >-
+            If the device or service is locked (admin state) or disabled
+            (operating state).
+        '500':
+          description: The device driver is unable to process the request.
+      requestBody:
+        $ref: '#/components/requestBodies/setting'
+  '/v1/device/{id}/{command}':
+    get:
+      description: >-
+        Request the device/sensor by its id to return the current (or in some cases new) event/reading values for the command or device resource specified. The device service may have cached the latest event/reading for the sensor(s) or it may immediate request new event/reading values depending on the implementation and the device(s)/sensor(s) capability.
+      tags:
+        - device
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: b4081782-a611-4180-848a-cf8235e6351d
+        - in: path
+          name: command
+          required: true
+          schema:
+            type: string
+          example: allValues
+      responses:
+        '200':
+          description: String as returned by the device/sensor through the device service.
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/event'
+              examples:
+                objectExample:
+                  $ref: '#/components/examples/event'
+        '404':
+          description: If no device exists by the id provided or the command is unknown.
+        '405':
+          description: If the requested command exists but not for GET, or the resource is marked as write-only.
+        '423':
+          description: >-
+            If the device or service is locked (admin state) or disabled
+            (operating state).
+        '500':
+          description: >-
+            The device driver is unable to process the request, or too many
+            values were returned.
+    put:
+      description: >-
+        Request the actuator by its id to trigger a action or set a current value for the command or device resource specified.
+      tags:
+        - device
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: b4081782-a611-4180-848a-cf8235e6351d
+        - in: path
+          name: command
+          required: true
+          schema:
+            type: string
+          example: allValues
+      responses:
+        '200':
+          description: The PUT command was successful.
+        '404':
+          description: If no device exists for the ID provided or the command is unknown.
+        '405':
+          description: If the requested command exists but not for PUT, or the resource is marked as read-only.
+        '423':
+          description: >-
+            If the device or service is locked (admin state) or disabled
+            (operating state).
+        '500':
+          description: The device driver is unable to process the request.
+      requestBody:
+        $ref: '#/components/requestBodies/setting'
+  '/v1/discovery':
+    post:
+      description: Run the discovery request for a Device Service.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: The service is running the discovery request.
+          content:
+            application/json:
+              schema:
+                type: string
+                example: 'true'
+        '423':
+          description: The service is disabled or administratively locked.
+        '500':
+          description: Internal server error.
+        '501':
+          description: The device driver does not implement discovery.
+        '503':
+          description: Discovery is disabled by configuration.
+  '/v1/metrics':
+    get:
+      description: Fetch the current state of the service's metrics.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: The service's metrics as JSON document.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                objectExample:
+                  $ref: '#/components/examples/metrics'
+        '500':
+          description: Internal server error.
+  '/v1/ping':
+    get:
+      description: Test service providing an indication that the service is available.
+      tags:
+        - resource
+      responses:
+        '200':
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 1.5.0
+        '500':
+          description: Internal server error
+  '/version':
+    get:
+      description: Report service and SDK versions
+      tags:
+        - resource
+      responses:
+        '200':
+          description: OK
+          content:
+            'application/json':
+              schema:
+                $ref: '#/components/schemas/versionobject'
+        '500':
+          description: Internal server error.
+components:
+  requestBodies:
+    setting:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/setting'
+      required: true
+  schemas:
+    callbackalert:
+      description: CallbackAlert indicates an action to take when a callback fires.
+      properties:
+        actionType:
+          description: The type of the callback object. If this callback request is triggerred due to the device changed, the value will be DEVICE.
+          enum:
+            - PROFILE
+            - DEVICE
+            - PROVISIONWATCHER
+          type: string
+          example: DEVICE
+        id:
+          description: The identifier of the object which is called back. For example, the id of the device which is created or updated.
+          type: string
+          example: 7fe852e0-c95a-4d66-bf9b-ad0f343ec1f2
+      required:
+        - actionType
+        - id
+      title: CallbackAlert
+      type: object
+    reading:
+      description: Reading holds data that was gathered from a device.
+      properties:
+        id:
+          type: string
+          example: b4081782-a611-4180-848a-cf8235e6351d
+          description: ID uniquely identifies a reading, for example a UUID.
+        created:
+          type: integer
+          format: int64
+          example: 1566810945003
+          description: Created is a timestamp indicating when the reading was created.
+        origin:
+          type: integer
+          format: int64
+          example: 1566810945003
+          description: Origin is a timestamp that can communicate the time of the original reading, prior to reading creation.
+        modified:
+          type: integer
+          format: int64
+          example: 1566810945010
+          description: Modified is a timestamp indicating when the reading was last modified.
+        device:
+          type: string
+          example: sensor
+          description: Device identifies the source of the reading, can be a device name or id. Usually the device name.
+        name:
+          type: string
+          example: temperature
+          description: Name is the data name of this reading. It should match one of the valuedescriptor names in Core Data.
+        value:
+          type: string
+          example: 28
+          description: Value is the data value of this reading.
+      title: Reading
+      type: object
+    event:
+      description: Event represents a single measurable event read from a device.
+      properties:
+        id:
+          type: string
+          example: b4081782-a611-4180-848a-cf8235e6351d
+          description: ID uniquely identifies an event, for example a UUID.
+        created:
+          type: integer
+          format: int64
+          example: 1566810945003
+          description: Created is a timestamp indicating when the event was created.
+        origin:
+          type: integer
+          format: int64
+          example: 1566810945003
+          description: Origin is a timestamp that can communicate the time of the original reading, prior to event creation.
+        modified:
+          type: integer
+          format: int64
+          example: 1566810945009
+          description: Modified is a timestamp indicating when the event was last modified
+        device:
+          type: string
+          example: sensor
+          description: Device identifies the source of the event, can be a device name or id. Usually the device name.
+        readings:
+          items:
+            $ref: '#/components/schemas/reading'
+          type: array
+          description: Readings will contain zero to many entries for the associated readings of a given event.
+      title: Event
+      type: object
+    events:
+      type: array
+      title: Events
+      items:
+        $ref: '#/components/schemas/event'
+    setting:
+      additionalProperties:
+        type: string
+      title: Setting
+      type: object
+      example: {"AHU-TargetTemperature": "28.5"}
+    versionobject:
+      properties:
+        sdk_version:
+          type: string
+          example: 1.5.0
+        version:
+          type: string
+          example: 1.5.0
+      title: Version
+      type: object
+  examples:
+    event:
+      summary: event object for executing  device command
+      value:
+        - id: b4081782-a611-4180-848a-cf8235e6351d
+          device: sensor
+          created: 1566810945003
+          modified: 1566810945003
+          origin: 1566810944998
+          readings:
+            - id: 85f8698d-965f-4bac-b5d7-1edd9e14f243
+              created: 1566810944999
+              origin: 1566810944996
+              modified: 1566810944999
+              device: sensor
+              name: temperature
+              value: '27'
+        - id: c3d956ab-cb34-4f43-b93e-529b460abac4
+          device: sensor
+          created: 1566810929986
+          modified: 1566810929986
+          origin: 1566810929982
+          readings:
+            - id: 8aae0ba5-e896-4830-92cb-a8e02867d4ed
+              created: 1566810929983
+              origin: 1566810929981
+              modified: 1566810929983
+              device: sensor
+              name: humidity
+              value: '65'
+    config:
+      summary: device service configuration
+      value:
+        Writable:
+          LogLevel: DEBUG
+        Service:
+          Host: edgex-device-mqtt
+          Port: 49982
+          ConnectRetries: 3
+          Labels: []
+          OpenMsg: device mqtt started
+          Timeout: 5000
+          EnableAsyncReadings: true
+          AsyncBufferSize: 16
+        Registry:
+          Host: edgex-core-consul
+          Port: 8500
+          Type: consul
+          Timeout: 0
+          CheckInterval: 10s
+          FailLimit: 3
+          FailWaitTime: 10
+        Clients:
+          Data:
+            Name: edgex-core-data
+            Host: localhost
+            Port: 48080
+            Protocol: http
+            Timeout: 50000
+          Logging:
+            Name: edgex-support-logging
+            Host: localhost
+            Port: 48061
+            Protocol: http
+            Timeout: 0
+          Metadata:
+            Name: edgex-core-metadata
+            Host: localhost
+            Port: 48081
+            Protocol: http
+            Timeout: 50000
+        Device:
+          DataTransform: true
+          InitCmd: ''
+          InitCmdArgs: ''
+          MaxCmdOps: 128
+          MaxCmdValueLen: 256
+          RemoveCmd: ''
+          RemoveCmdArgs: ''
+          ProfilesDir: ./res/example
+        Logging:
+          EnableRemote: false
+          File: ./device-mqtt.log
+        Watchers: null
+        DeviceList:
+          - Name: MQ_DEVICE
+            Profile: Test.Device.MQTT.Profile
+            Description: General MQTT device
+            Labels:
+              - MQTT
+            Protocols:
+              mqtt:
+                ClientId: CommandPublisher
+                Host: 192.168.16.68
+                Password: ''
+                Port: '1883'
+                Schema: tcp
+                Topic: CommandTopic
+                User: ''
+            AutoEvents:
+              - frequency: 30s
+                resource: testrandnum
+        Driver:
+          IncomingClientId: IncomingDataSubscriber
+          IncomingHost: 192.168.16.68
+          IncomingKeepAlive: '3600'
+          IncomingPassword: ''
+          IncomingPort: '1883'
+          IncomingQos: '0'
+          IncomingSchema: tcp
+          IncomingTopic: DataTopic
+          IncomingUser: ''
+          ResponseClientId: CommandResponseSubscriber
+          ResponseHost: 192.168.16.68
+          ResponseKeepAlive: '3600'
+          ResponsePassword: ''
+          ResponsePort: '1883'
+          ResponseQos: '0'
+          ResponseSchema: tcp
+          ResponseTopic: ResponseTopic
+          ResponseUser: ''
+    metrics:
+      summary: device service metrics
+      value:
+        Alloc: 1206128
+        TotalAlloc: 1206128
+        Sys: 72417528
+        Mallocs: 11719
+        Frees: 1504
+        LiveObjects: 10215
