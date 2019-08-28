@@ -18,6 +18,8 @@ package runtime
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"reflect"
 	"strconv"
 	"sync"
@@ -29,6 +31,8 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
+const unmarshalErrorMessage = "Unable to unmarshal message payload as %s"
+
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
 	TargetType    interface{}
@@ -36,10 +40,15 @@ type GolangRuntime struct {
 	isBusyCopying sync.Mutex
 }
 
-// ProcessEvent handles processing the event
-func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) error {
+type MessageError struct {
+	Err       error
+	ErrorCode int
+}
 
-	edgexcontext.LoggingClient.Debug("Processing Event: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
+// ProcessMessage sends the contents of the message thru the functions pipeline
+func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) *MessageError {
+
+	edgexcontext.LoggingClient.Debug("Processing message: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
 
 	if gr.TargetType == nil {
 		gr.TargetType = &models.Event{}
@@ -47,8 +56,9 @@ func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope
 	target := gr.TargetType
 
 	if reflect.TypeOf(target).Kind() != reflect.Ptr {
-		edgexcontext.LoggingClient.Error("pipeline seed target type must be a pointer to an object of the target type, not a value of the target type.")
-		return nil
+		err := fmt.Errorf("TargetType must be a pointer, not a value of the target type.")
+		edgexcontext.LoggingClient.Error(err.Error())
+		return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
 	}
 
 	// Only set when the data is binary so function receiving it knows how to deal with it.
@@ -64,8 +74,10 @@ func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope
 		case clients.ContentTypeJSON:
 
 			if err := json.Unmarshal([]byte(envelope.Payload), target); err != nil {
-				edgexcontext.LoggingClient.Error("Unable to JSON unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
-				return nil
+				message := fmt.Sprintf(unmarshalErrorMessage, "JSON")
+				edgexcontext.LoggingClient.Error(message, "error", err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+				err = fmt.Errorf("%s : %s", message, err.Error())
+				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 			}
 
 			event, ok := target.(*models.Event)
@@ -78,16 +90,20 @@ func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope
 			x := codec.CborHandle{}
 			err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&target)
 			if err != nil {
-				edgexcontext.LoggingClient.Error("Unable to CBOR unmarshal EdgeX Event: "+err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
-				return nil
+				message := fmt.Sprintf(unmarshalErrorMessage, "CBOR")
+				edgexcontext.LoggingClient.Error(message, "error", err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+				err = fmt.Errorf("%s : %s", message, err.Error())
+				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 			}
 
 			// Needed for Marking event as handled
 			edgexcontext.EventChecksum = envelope.Checksum
 
 		default:
-			edgexcontext.LoggingClient.Error("'"+envelope.ContentType+"' content type for EdgeX Event not supported: ", clients.CorrelationHeader, envelope.CorrelationID)
-			return nil
+			message := "content type for input data not supported"
+			edgexcontext.LoggingClient.Error(message, clients.ContentType, envelope.ContentType, clients.CorrelationHeader, envelope.CorrelationID)
+			err := fmt.Errorf("'%s' %s", envelope.ContentType, message)
+			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 		}
 	}
 
@@ -106,7 +122,7 @@ func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
 
-	for _, trxFunc := range transforms {
+	for index, trxFunc := range transforms {
 		if result != nil {
 			continuePipeline, result = trxFunc(edgexcontext, result)
 		} else {
@@ -114,8 +130,10 @@ func (gr *GolangRuntime) ProcessEvent(edgexcontext *appcontext.Context, envelope
 		}
 		if continuePipeline != true {
 			if result != nil {
-				if result, ok := result.(error); ok {
-					edgexcontext.LoggingClient.Error((result).(error).Error())
+				if err, ok := result.(error); ok {
+					edgexcontext.LoggingClient.Error(fmt.Sprintf("Pipeline function #%d resulted in error", index),
+						"error", err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+					return &MessageError{Err: err, ErrorCode: http.StatusUnprocessableEntity}
 				}
 			}
 			break

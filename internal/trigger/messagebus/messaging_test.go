@@ -29,7 +29,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-
 	"github.com/stretchr/testify/assert"
 )
 
