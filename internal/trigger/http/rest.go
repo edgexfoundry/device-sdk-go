@@ -17,6 +17,7 @@
 package http
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -55,16 +56,11 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 
 	contentType := r.Header.Get(clients.ContentType)
 
-	if contentType != clients.ContentTypeJSON && contentType != clients.ContentTypeCBOR {
-		trigger.logging.Debug("HTTP content type not supported", clients.ContentType, contentType)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		trigger.logging.Debug("Error reading HTTP Body", "error", err)
+		trigger.logging.Error("Error reading HTTP Body", "error", err)
 		writer.WriteHeader(http.StatusBadRequest)
+		writer.Write([]byte(fmt.Sprintf("Error reading HTTP Body: %s", err.Error())))
 		return
 	}
 
@@ -87,7 +83,14 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 		Payload:       data,
 	}
 
-	trigger.Runtime.ProcessEvent(edgexContext, envelope)
+	messageError := trigger.Runtime.ProcessMessage(edgexContext, envelope)
+	if messageError != nil {
+		// ProcessMessage logs the error, so no need to log it here.
+		writer.WriteHeader(messageError.ErrorCode)
+		writer.Write([]byte(messageError.Err.Error()))
+		return
+	}
+
 	writer.Write(edgexContext.OutputData)
 
 	if edgexContext.OutputData != nil {

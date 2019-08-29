@@ -69,7 +69,13 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 						CorrelationID: msgs.CorrelationID,
 						EventClient:   trigger.EventClient,
 					}
-					trigger.Runtime.ProcessEvent(edgexContext, msgs)
+
+					messageError := trigger.Runtime.ProcessMessage(edgexContext, msgs)
+					if messageError != nil {
+						// ProcessMessage logs the error, so no need to log it here.
+						return
+					}
+
 					if edgexContext.OutputData != nil {
 						outputEnvelope := types.MessageEnvelope{
 							CorrelationID: edgexContext.CorrelationID,
