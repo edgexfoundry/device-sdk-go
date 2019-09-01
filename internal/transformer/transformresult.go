@@ -122,7 +122,7 @@ func transformReadBase(value interface{}, base string) (interface{}, error) {
 		valueFloat64 = v
 	}
 
-	valueFloat64 = math.Pow(valueFloat64, b)
+	valueFloat64 = math.Pow(b, valueFloat64)
 	inRange := checkTransformedValueInRange(value, valueFloat64)
 	if !inRange {
 		return value, NewOverflowError(value, valueFloat64)
