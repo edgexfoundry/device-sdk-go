@@ -51,11 +51,11 @@ func checkTransformedValueInRange(origin interface{}, transformed float64) bool 
 			inRange = true
 		}
 	case float32:
-		if math.Abs(transformed) >= math.SmallestNonzeroFloat32 && math.Abs(transformed) <= math.MaxFloat32 {
+		if !math.IsNaN(float64(transformed)) && math.Abs(transformed) <= math.MaxFloat32 {
 			inRange = true
 		}
 	case float64:
-		if math.Abs(transformed) >= math.SmallestNonzeroFloat64 && math.Abs(transformed) <= math.MaxFloat64 {
+		if !math.IsNaN(transformed) && !math.IsInf(transformed, 0) {
 			inRange = true
 		}
 	default:
