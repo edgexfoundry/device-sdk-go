@@ -300,9 +300,7 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 		return common.NewServerError(msg, nil)
 	}
 
-	roMap := roSliceToMap(ros)
-
-	cvs, err := parseWriteParams(device.Profile.Name, roMap, params)
+	cvs, err := parseWriteParams(device.Profile.Name, ros, params)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -349,14 +347,14 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 	return nil
 }
 
-func parseWriteParams(profileName string, roMap map[string]*contract.ResourceOperation, params string) ([]*dsModels.CommandValue, error) {
+func parseWriteParams(profileName string, ros []contract.ResourceOperation, params string) ([]*dsModels.CommandValue, error) {
 	paramMap, err := parseParams(params)
 	if err != nil {
 		return []*dsModels.CommandValue{}, err
 	}
 
 	result := make([]*dsModels.CommandValue, 0, len(paramMap))
-	for _, ro := range roMap {
+	for _, ro := range ros {
 		common.LoggingClient.Debug(fmt.Sprintf("looking for %s in the request parameters", ro.DeviceResource))
 		p, ok := paramMap[ro.DeviceResource]
 		if !ok {
@@ -389,7 +387,7 @@ func parseWriteParams(profileName string, roMap map[string]*contract.ResourceOpe
 			}
 		}
 
-		cv, err := createCommandValueFromRO(profileName, ro, p)
+		cv, err := createCommandValueFromRO(profileName, &ro, p)
 		if err == nil {
 			result = append(result, cv)
 		} else {
@@ -412,14 +410,6 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 		return
 	}
 	return
-}
-
-func roSliceToMap(ros []contract.ResourceOperation) map[string]*contract.ResourceOperation {
-	roMap := make(map[string]*contract.ResourceOperation, len(ros))
-	for i, ro := range ros {
-		roMap[ro.Object] = &ros[i]
-	}
-	return roMap
 }
 
 func createCommandValueFromRO(profileName string, ro *contract.ResourceOperation, v string) (*dsModels.CommandValue, error) {
