@@ -245,34 +245,41 @@ func execWriteDeviceResource(device *contract.Device, dr *contract.DeviceResourc
 		return common.NewBadRequestError(msg, err)
 	}
 
-	if v, ok := paramMap[dr.Name]; ok {
-		cv, err := createCommandValueFromDR(dr, v)
+	v, ok := paramMap[dr.Name]
+	if !ok && dr.Properties.Value.DefaultValue != "" {
+		v = dr.Properties.Value.DefaultValue
+	} else if !ok {
+		msg := fmt.Sprintf("there is no %s in parameters and no default value in DeviceResource", dr.Name)
+		common.LoggingClient.Error(msg)
+		return common.NewBadRequestError(msg, fmt.Errorf(msg))
+	}
+
+	cv, err := createCommandValueFromDR(dr, v)
+	if err != nil {
+		msg := fmt.Sprintf("Handler - execWriteDeviceResource: Put parameters parsing failed: %s", params)
+		common.LoggingClient.Error(msg)
+		return common.NewBadRequestError(msg, err)
+	}
+
+	reqs := make([]dsModels.CommandRequest, 1)
+	common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteDeviceResource: putting deviceResource: %s", dr.Name))
+	reqs[0].DeviceResourceName = cv.DeviceResourceName
+	reqs[0].Attributes = dr.Attributes
+	reqs[0].Type = cv.Type
+
+	if common.CurrentConfig.Device.DataTransform {
+		err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
 		if err != nil {
-			msg := fmt.Sprintf("Handler - execWriteDeviceResource: Put parameters parsing failed: %s", params)
+			msg := fmt.Sprintf("Handler - execWriteDeviceResource: CommandValue (%s) transformed failed: %v", cv.String(), err)
 			common.LoggingClient.Error(msg)
-			return common.NewBadRequestError(msg, err)
-		}
-
-		reqs := make([]dsModels.CommandRequest, 1)
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteDeviceResource: putting deviceResource: %s", dr.Name))
-		reqs[0].DeviceResourceName = cv.DeviceResourceName
-		reqs[0].Attributes = dr.Attributes
-		reqs[0].Type = cv.Type
-
-		if common.CurrentConfig.Device.DataTransform {
-			err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
-			if err != nil {
-				msg := fmt.Sprintf("Handler - execWriteDeviceResource: CommandValue (%s) transformed failed: %v", cv.String(), err)
-				common.LoggingClient.Error(msg)
-				return common.NewServerError(msg, err)
-			}
-		}
-
-		err = common.Driver.HandleWriteCommands(device.Name, device.Protocols, reqs, []*dsModels.CommandValue{cv})
-		if err != nil {
-			msg := fmt.Sprintf("Handler - execWriteDeviceResource: error for Device: %s Device Resource: %s, %v", device.Name, dr.Name, err)
 			return common.NewServerError(msg, err)
 		}
+	}
+
+	err = common.Driver.HandleWriteCommands(device.Name, device.Protocols, reqs, []*dsModels.CommandValue{cv})
+	if err != nil {
+		msg := fmt.Sprintf("Handler - execWriteDeviceResource: error for Device: %s Device Resource: %s, %v", device.Name, dr.Name, err)
+		return common.NewServerError(msg, err)
 	}
 
 	return nil
@@ -349,28 +356,44 @@ func parseWriteParams(profileName string, roMap map[string]*contract.ResourceOpe
 	}
 
 	result := make([]*dsModels.CommandValue, 0, len(paramMap))
-	for k, v := range paramMap {
-		ro, ok := roMap[k]
-		if ok {
-			if len(ro.Mappings) > 0 {
-				newV, ok := ro.Mappings[v]
-				if ok {
-					v = newV
-				} else {
-					msg := fmt.Sprintf("Handler - parseWriteParams: Resource (%s) mapping value (%s) failed with the mapping table: %v", ro.Object, v, ro.Mappings)
-					common.LoggingClient.Warn(msg)
-					//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
-				}
+	for _, ro := range roMap {
+		common.LoggingClient.Debug(fmt.Sprintf("looking for %s in the request parameters", ro.DeviceResource))
+		p, ok := paramMap[ro.DeviceResource]
+		if !ok {
+			dr, ok := cache.Profiles().DeviceResource(profileName, ro.DeviceResource)
+			if !ok {
+				err := fmt.Errorf("the parameter %s does not match any DeviceResource in DeviceProfile", ro.DeviceResource)
+				return []*dsModels.CommandValue{}, err
 			}
-			cv, err := createCommandValueFromRO(profileName, ro, v)
-			if err == nil {
-				result = append(result, cv)
+
+			if ro.Parameter != "" {
+				common.LoggingClient.Debug(fmt.Sprintf("there is no %s in the request parameters, retrieving value from the Parameter field from the ResourceOperation", ro.DeviceResource))
+				p = ro.Parameter
+			} else if dr.Properties.Value.DefaultValue != "" {
+				common.LoggingClient.Debug(fmt.Sprintf("there is no %s in the request parameters, retrieving value from the DefaultValue field from the ValueProperty", ro.DeviceResource))
+				p = dr.Properties.Value.DefaultValue
 			} else {
-				return result, err
+				err := fmt.Errorf("the parameter %s is not defined in the request body and there is no default value", ro.DeviceResource)
+				return []*dsModels.CommandValue{}, err
 			}
+		}
+
+		if len(ro.Mappings) > 0 {
+			newP, ok := ro.Mappings[p]
+			if ok {
+				p = newP
+			} else {
+				msg := fmt.Sprintf("parseWriteParams: Resource (%s) mapping value (%s) failed with the mapping table: %v", ro.DeviceResource, p, ro.Mappings)
+				common.LoggingClient.Warn(msg)
+				//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
+			}
+		}
+
+		cv, err := createCommandValueFromRO(profileName, ro, p)
+		if err == nil {
+			result = append(result, cv)
 		} else {
-			err := fmt.Errorf("the parameter %s cannot find the matched ResourceOperation", k)
-			return []*dsModels.CommandValue{}, err
+			return result, err
 		}
 	}
 
