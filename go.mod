@@ -7,7 +7,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.2.0
 	github.com/edgexfoundry/go-mod-core-contracts v0.1.14
 	github.com/edgexfoundry/go-mod-messaging v0.1.11
-	github.com/edgexfoundry/go-mod-registry v0.1.0
+	github.com/edgexfoundry/go-mod-registry v0.1.11
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gorilla/mux v1.7.2
 	github.com/pelletier/go-toml v1.2.0
