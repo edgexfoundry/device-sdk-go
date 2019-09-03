@@ -53,13 +53,15 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	if gr.TargetType == nil {
 		gr.TargetType = &models.Event{}
 	}
-	target := gr.TargetType
 
-	if reflect.TypeOf(target).Kind() != reflect.Ptr {
+	if reflect.TypeOf(gr.TargetType).Kind() != reflect.Ptr {
 		err := fmt.Errorf("TargetType must be a pointer, not a value of the target type.")
 		edgexcontext.LoggingClient.Error(err.Error())
 		return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
 	}
+
+	// Must make a copy of the type so that data isn't retained between calls.
+	target := reflect.New(reflect.ValueOf(gr.TargetType).Elem().Type()).Interface()
 
 	// Only set when the data is binary so function receiving it knows how to deal with it.
 	var contentType string
