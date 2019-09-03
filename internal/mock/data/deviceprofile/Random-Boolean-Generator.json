@@ -1,0 +1,109 @@
+{
+  "created": 1567401371211,
+  "modified": 1567401371211,
+  "description": "Example of Device-Virtual",
+  "id": "1272428b-0c0a-46fd-90f7-ece6f287f191",
+  "name": "Random-Boolean-Generator",
+  "manufacturer": "IOTech",
+  "model": "Device-Virtual-01",
+  "labels": [
+    "device-virtual-example"
+  ],
+  "deviceResources": [
+    {
+      "description": "used to decide whether to re-generate a random value",
+      "name": "EnableRandomization_Bool",
+      "properties": {
+        "value": {
+          "type": "Bool",
+          "readWrite": "W",
+          "defaultValue": "true"
+        },
+        "units": {
+          "type": "String",
+          "readWrite": "R",
+          "defaultValue": "Random"
+        }
+      }
+    },
+    {
+      "description": "Generate random boolean value",
+      "name": "RandomValue_Bool",
+      "properties": {
+        "value": {
+          "type": "Bool",
+          "readWrite": "R",
+          "defaultValue": "true"
+        },
+        "units": {
+          "type": "String",
+          "readWrite": "R",
+          "defaultValue": "random bool value"
+        }
+      }
+    }
+  ],
+  "deviceCommands": [
+    {
+      "name": "RandomValue_Bool",
+      "get": [
+        {
+          "operation": "get",
+          "object": "RandomValue_Bool",
+          "parameter": "RandomValue_Bool"
+        }
+      ],
+      "set": [
+        {
+          "operation": "set",
+          "object": "EnableRandomization_Bool",
+          "parameter": "EnableRandomization_Bool"
+        },
+        {
+          "operation": "set",
+          "object": "RandomValue_Bool",
+          "parameter": "RandomValue_Bool"
+        }
+      ]
+    }
+  ],
+  "coreCommands": [
+    {
+      "created": 1567401371211,
+      "modified": 1567401371211,
+      "id": "5579ec2a-aefe-4426-99a2-6c3cd982be27",
+      "name": "RandomValue_Bool",
+      "get": {
+        "path": "/api/v1/device/{deviceId}/RandomValue_Bool",
+        "responses": [
+          {
+            "code": "200",
+            "expectedValues": [
+              "RandomValue_Bool"
+            ]
+          },
+          {
+            "code": "503",
+            "description": "service unavailable"
+          }
+        ]
+      },
+      "put": {
+        "path": "/api/v1/device/{deviceId}/RandomValue_Bool",
+        "responses": [
+          {
+            "code": "200"
+          },
+          {
+            "code": "503",
+            "description": "service unavailable"
+          }
+        ],
+        "parameterNames": [
+          "RandomValue_Bool",
+          "EnableRandomization_Bool"
+        ]
+      }
+    }
+  ]
+}
