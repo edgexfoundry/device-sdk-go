@@ -53,15 +53,12 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 			return
 		}
 
-		// TODO: Verify this is correct.
-		stem := common.ConfigRegistryStem + common.ServiceName + "/"
-
 		registryMsg = "Register in registry..."
 		registryConfig := types.Config{
 			Host:       configuration.Registry.Host,
 			Port:       configuration.Registry.Port,
 			Type:       configuration.Registry.Type,
-			Stem:       stem,
+			Stem:       common.ConfigRegistryStem,
 			CheckRoute: common.APIPingRoute,
 			ServiceKey: common.ServiceName,
 		}
@@ -120,7 +117,7 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 			Host:          configuration.Registry.Host,
 			Port:          configuration.Registry.Port,
 			Type:          configuration.Registry.Type,
-			Stem:          stem,
+			Stem:          common.ConfigRegistryStem,
 			CheckInterval: configuration.Registry.CheckInterval,
 			CheckRoute:    common.APIPingRoute,
 			ServiceKey:    common.ServiceName,
