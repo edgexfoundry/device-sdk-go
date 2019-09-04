@@ -45,6 +45,7 @@ test:
 	$(GO) vet ./...
 	gofmt -l .
 	[ "`gofmt -l .`" = "" ]
+	./bin/test-go-mod-tidy.sh
 
 clean:
 	rm -f $(MICROSERVICES)
