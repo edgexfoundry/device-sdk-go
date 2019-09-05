@@ -1,5 +1,6 @@
 *.out
 examples/bin
+.idea/
 .vscode
 **/debug
 **/debug.test
