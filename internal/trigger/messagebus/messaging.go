@@ -23,8 +23,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
@@ -33,19 +31,19 @@ import (
 type Trigger struct {
 	Configuration common.ConfigurationStruct
 	Runtime       *runtime.GolangRuntime
-	logging       logger.LoggingClient
 	client        messaging.MessageClient
 	topics        []types.TopicChannel
-	EventClient   coredata.EventClient
+	EdgeXClients  common.EdgeXClients
 }
 
 // Initialize ...
-func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
-	trigger.logging = logger
-	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger. Subscribing to topic: %s on port %d , Publish Topic: %s on port %d", trigger.Configuration.Binding.SubscribeTopic, trigger.Configuration.MessageBus.SubscribeHost.Port, trigger.Configuration.Binding.PublishTopic, trigger.Configuration.MessageBus.PublishHost.Port))
+func (trigger *Trigger) Initialize() error {
 	var err error
-	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
+	logger := trigger.EdgeXClients.LoggingClient
 
+	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger. Subscribing to topic: %s on port %d , Publish Topic: %s on port %d", trigger.Configuration.Binding.SubscribeTopic, trigger.Configuration.MessageBus.SubscribeHost.Port, trigger.Configuration.Binding.PublishTopic, trigger.Configuration.MessageBus.PublishHost.Port))
+
+	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
 	if err != nil {
 		return err
 	}
@@ -64,10 +62,13 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 					logger.Trace("Received message from bus", "topic", trigger.Configuration.Binding.SubscribeTopic, clients.CorrelationHeader, msgs.CorrelationID)
 
 					edgexContext := &appcontext.Context{
-						Configuration: trigger.Configuration,
-						LoggingClient: trigger.logging,
-						CorrelationID: msgs.CorrelationID,
-						EventClient:   trigger.EventClient,
+						CorrelationID:         msgs.CorrelationID,
+						Configuration:         trigger.Configuration,
+						LoggingClient:         trigger.EdgeXClients.LoggingClient,
+						EventClient:           trigger.EdgeXClients.EventClient,
+						ValueDescriptorClient: trigger.EdgeXClients.ValueDescriptorClient,
+						CommandClient:         trigger.EdgeXClients.CommandClient,
+						NotificationsClient:   trigger.EdgeXClients.NotificationsClient,
 					}
 
 					messageError := trigger.Runtime.ProcessMessage(edgexContext, msgs)

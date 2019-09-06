@@ -16,12 +16,8 @@
 
 package trigger
 
-import (
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-)
-
 // Trigger interface is used to hold event data and allow function to
 type Trigger interface {
 	// Initialize performs post creation initializations
-	Initialize(logger.LoggingClient) error
+	Initialize() error
 }

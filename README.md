@@ -159,24 +159,92 @@ Designating an HTTP trigger will allow the pipeline to be triggered by a RESTful
 The context parameter passed to each function/transform provides operations and data associated with each execution of the pipeline. Let's take a look at a few of the properties that are available:
 ```golang
 type Context struct {
-	EventID       string // ID of the EdgeX Event -- will be filled for a received JSON Event
-	EventChecksum string // Checksum of the EdgeX Event -- will be filled for a received CBOR Event
-	CorrelationID string // This is the ID used to track the EdgeX event through entire EdgeX framework. 
-	Configuration common.ConfigurationStruct // This holds the configuration for your service. This is the preferred way to access your custom application settings that have been set in the configuration. 
-	LoggingClient logger.LoggingClient // This is exposed to allow logging following the preferred logging strategy within EdgeX. 
+	// ID of the EdgeX Event -- will be filled for a received JSON Event
+	EventID string
+	
+	// Checksum of the EdgeX Event -- will be filled for a received CBOR Event
+	EventChecksum string
+	
+	// This is the ID used to track the EdgeX event through entire EdgeX framework.
+	CorrelationID string
+	
+	// OutputData is used for specifying the data that is to be outputted. Leverage the .Complete() function to set.
+	OutputData []byte
+	
+	// This holds the configuration for your service. This is the preferred way to access your custom application settings that have been set in the configuration.	
+	Configuration common.ConfigurationStruct
+	
+	// LoggingClient is exposed to allow logging following the preferred logging strategy within EdgeX.
+	LoggingClient logger.LoggingClient
+	
+	// EventClient exposes Core Data's EventClient API
+	EventClient coredata.EventClient
+	
+	// ValueDescriptorClient exposes Core Data's ValueDescriptor API
+	ValueDescriptorClient coredata.ValueDescriptorClient
+	
+	// CommandClient exposes Core Commands's Command API
+	CommandClient command.CommandClient
+	
+	// NotificationsClient exposes Support Notification's Notifications API
+	NotificationsClient notifications.NotificationsClient
 }
 ```
 
-### Logging
+### LoggingClient
 
-The `LoggingClient` exposed on the context is available to leverage logging libraries/service leveraged throughout the EdgeX framework. The SDK has initialized everything so it can be used to log `Trace`, `Debug`, `Warn`, `Info`, and `Error` messages as appopriate. See `examples/simple-filter-xml/main.go` for an example of how to use the `LoggingClient`.
+The `LoggingClient` exposed on the context is available to leverage logging libraries/service utilized throughout the EdgeX framework. The SDK has initialized everything so it can be used to log `Trace`, `Debug`, `Warn`, `Info`, and `Error` messages as appropriate. See `examples/simple-filter-xml/main.go` for an example of how to use the `LoggingClient`.
+
+### EventClient 
+
+The `EventClient ` exposed on the context is available to leverage Core Data's `Event` API. See [interface definition](https://github.com/edgexfoundry/go-mod-core-contracts/blob/master/clients/coredata/event.go#L35) for more details. This client is useful for querying events and is used by the [MarkAsPushed](#markaspushed) convenience API described below.
+
+### ValueDescriptorClient
+
+The `ValueDescriptorClient ` exposed on the context is available to leverage Core Data's `ValueDescriptor` API. See [interface definition](https://github.com/edgexfoundry/go-mod-core-contracts/blob/master/clients/coredata/value_descriptor.go#L29) for more details. Useful for looking up the value descriptor for a reading received.
+
+### CommandClient 
+
+The `CommandClient ` exposed on the context is available to leverage Core Command's `Command` API. See [interface definition](https://github.com/edgexfoundry/go-mod-core-contracts/blob/master/clients/command/client.go#L28) for more details. Useful for sending commands to devices.
+
+### NotificationsClient
+
+The `CommandClient` exposed on the context is available to leverage Support Notifications' `Notifications` API. See [README](https://github.com/edgexfoundry/go-mod-core-contracts/blob/master/clients/notifications/README.md) for more details. Useful for sending notifications. 
+
+### Note about Clients
+
+Each of the clients above is only initialized if the Clients section of the configuration contains an entry for the service associated with the Client API. If it isn't in the configuration the client will be `nil`. Your code must check for `nil` to avoid panic in case it is missing from the configuration. Only add the clients to your configuration that your Application Service will actually be using. All application services need the `Logging` and many will need `Core-Data`. The following is an example `Clients` section of a configuration.toml with all supported clients specified:
+
+```
+[Clients]
+  [Clients.Logging]
+  Protocol = "http"
+  Host = "localhost"
+  Port = 48061
+
+  [Clients.CoreData]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 48080
+
+  [Clients.Command]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 48082
+
+  [Clients.Notifications]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 48060
+```
 
 ### .MarkAsPushed()
+
 `.MarkAsPushed()` is used to indicate to EdgeX Core Data that an event has been "pushed" and is no longer required to be stored. The scheduler service will purge all events that have been marked as pushed based on the configured schedule. By default, it is once daily at midnight. If you leverage the built in export functions (i.e. HTTP Export, or MQTT Export), then the event will automatically be marked as pushed upon a successful export. 
 ### .PushToCore()
 `.PushToCore(string deviceName, string readingName, byte[] value)` is used to push data to EdgeX Core Data so that it can be shared with other applications that are subscribed to the message bus that core-data publishes to. `deviceName` can be set as you like along with the `readingName` which will be set on the EdgeX event sent to CoreData. This function will return the new EdgeX Event with the ID populated, however the CorrelationId will not be available.
  > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
- 
+
  > WARNING: Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
 ### .Complete()
 `.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
@@ -221,6 +289,7 @@ These are functions that enable interactions with the CoreData REST API.
 - `NewCoreData()` - This function returns a `CoreData` instance. This `CoreData` instance is used to access the following function(s).
   - `MarkAsPushed` - This function provides the MarkAsPushed function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.MarkAsPushed()). The data passed into this function from the pipeline is passed along unmodifed since all required information is provided on the context (EventId, CorrelationId,etc.. )
   - `PushToCore` - This function provides the PushToCore function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.PushToCore()). The data passed into this function from the pipeline is wrapped in an EdgeX event with the `deviceName` and `readingName` that were set upon instantiation and then sent to CoreData to be added as an event. Returns the new EdgeX event with ID populated.
+    
     > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
 
 ### Export Functions

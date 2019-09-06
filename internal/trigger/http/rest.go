@@ -26,8 +26,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
@@ -36,17 +34,17 @@ type Trigger struct {
 	Configuration common.ConfigurationStruct
 	Runtime       *runtime.GolangRuntime
 	outputData    []byte
-	logging       logger.LoggingClient
 	Webserver     *webserver.WebServer
-	EventClient   coredata.EventClient
+	EdgeXClients  common.EdgeXClients
 }
 
 // Initialize initializes the Trigger for logging and REST route
-func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
-	trigger.logging = logger
-	trigger.logging.Info("Initializing HTTP Trigger")
+func (trigger *Trigger) Initialize() error {
+	logger := trigger.EdgeXClients.LoggingClient
+
+	logger.Info("Initializing HTTP Trigger")
 	trigger.Webserver.SetupTriggerRoute(trigger.requestHandler)
-	trigger.logging.Info("HTTP Trigger Initialized")
+	logger.Info("HTTP Trigger Initialized")
 
 	return nil
 }
@@ -54,28 +52,32 @@ func (trigger *Trigger) Initialize(logger logger.LoggingClient) error {
 func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
+	logger := trigger.EdgeXClients.LoggingClient
 	contentType := r.Header.Get(clients.ContentType)
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		trigger.logging.Error("Error reading HTTP Body", "error", err)
+		logger.Error("Error reading HTTP Body", "error", err)
 		writer.WriteHeader(http.StatusBadRequest)
 		writer.Write([]byte(fmt.Sprintf("Error reading HTTP Body: %s", err.Error())))
 		return
 	}
 
-	trigger.logging.Debug("Request Body read", "byte count", len(data))
+	logger.Debug("Request Body read", "byte count", len(data))
 
 	correlationID := r.Header.Get("X-Correlation-ID")
 	edgexContext := &appcontext.Context{
-		Configuration: trigger.Configuration,
-		LoggingClient: trigger.logging,
-		CorrelationID: correlationID,
-		EventClient:   trigger.EventClient,
+		CorrelationID:         correlationID,
+		Configuration:         trigger.Configuration,
+		LoggingClient:         trigger.EdgeXClients.LoggingClient,
+		EventClient:           trigger.EdgeXClients.EventClient,
+		ValueDescriptorClient: trigger.EdgeXClients.ValueDescriptorClient,
+		CommandClient:         trigger.EdgeXClients.CommandClient,
+		NotificationsClient:   trigger.EdgeXClients.NotificationsClient,
 	}
 
-	trigger.logging.Trace("Received message from http", clients.CorrelationHeader, correlationID)
-	trigger.logging.Debug("Received message from http", clients.ContentType, contentType)
+	logger.Trace("Received message from http", clients.CorrelationHeader, correlationID)
+	logger.Debug("Received message from http", clients.ContentType, contentType)
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: correlationID,
@@ -94,7 +96,7 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 	writer.Write(edgexContext.OutputData)
 
 	if edgexContext.OutputData != nil {
-		trigger.logging.Trace("Sent http response message", clients.CorrelationHeader, correlationID)
+		logger.Trace("Sent http response message", clients.CorrelationHeader, correlationID)
 	}
 
 	trigger.outputData = nil
