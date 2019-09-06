@@ -16,7 +16,6 @@
 package interfaces
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
 )
 
@@ -36,7 +35,4 @@ type StoreClient interface {
 
 	// RemoveFromStore removes an object from the data store.
 	RemoveFromStore(id string) error
-
-	// NewClient provides a factory for building a StoreClient
-	NewClient(config db.Configuration) (StoreClient, error)
 }

@@ -17,44 +17,38 @@ package models
 
 // StoredObject is the atomic and most abstract description of what is collected by the export store system.
 type StoredObject struct {
-	// id is the unique identifier for this record once stored.
-	id string
+	ID string `bson:"id"`
 
 	// AppServiceKey identifies the app to which this data belongs.
-	AppServiceKey string
+	AppServiceKey string `bson:"appServiceKey"`
 
 	// Payload is the data to be exported
-	Payload []byte
+	Payload []byte `bson:"payload"`
 
 	// RetryCount is how many times this has tried to be exported
-	RetryCount int
+	RetryCount int `bson:"retryCount"`
 
 	// PipelinePosition is where to pickup in the pipeline
-	PipelinePosition int
+	PipelinePosition int `bson:"pipelinePosition"`
 
 	// Version is a hash of the functions to know if the pipeline has changed.
-	Version string
+	Version string `bson:"version"`
 
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
-	CorrelationID string
+	CorrelationID string `bson:"correlationID"`
 
 	// EventID is used to identify an EdgeX event from the core services and mark it as pushed.
-	EventID string
+	EventID string `bson:"eventID"`
 
 	// EventChecksum is used to identify CBOR encoded data from the core services and mark it as pushed.
-	EventChecksum string
-}
-
-// GetId returns the unexported field id.
-func (o StoredObject) GetId() string {
-	return o.id
+	EventChecksum string `bson:"eventChecksum"`
 }
 
 // NewStoredObject creates a new instance of StoredObject and is the preferred way to create one.
 func NewStoredObject(id string, appServiceKey string, payload []byte, pipelinePosition int,
 	version string) StoredObject {
 	return StoredObject{
-		id:               id,
+		ID:               id,
 		AppServiceKey:    appServiceKey,
 		Payload:          payload,
 		RetryCount:       0,
