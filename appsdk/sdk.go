@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	nethttp "net/http"
 	"os"
 	"os/signal"
 	"reflect"
@@ -79,6 +80,11 @@ type AppFunctionsSDK struct {
 	config                    common.ConfigurationStruct
 }
 
+// AddRoute allows you to leverage the existing webserver to add routes.
+func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) {
+	sdk.webserver.AddRoute(route, handler, methods...)
+}
+
 // MakeItRun will initialize and start the trigger as specifed in the
 // configuration. It will also configure the webserver and start listening on
 // the specified port.
@@ -88,11 +94,6 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.runtime = &runtime.GolangRuntime{TargetType: sdk.TargetType} //Transforms: sdk.transforms
 	sdk.runtime.SetTransforms(sdk.transforms)
-	sdk.webserver = &webserver.WebServer{
-		Config:        &sdk.config,
-		LoggingClient: sdk.LoggingClient,
-	}
-	sdk.webserver.ConfigureStandardRoutes()
 
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
@@ -286,6 +287,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	if sdk.useRegistry {
 		go sdk.listenForConfigChanges()
 	}
+
 	//Setup eventClient
 	params := coreTypes.EndpointParams{
 		ServiceKey:  clients.CoreDataServiceKey,
@@ -297,6 +299,9 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.eventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
 
 	go telemetry.StartCpuUsageAverage()
+
+	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.LoggingClient)
+	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
 }

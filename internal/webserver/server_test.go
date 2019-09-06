@@ -29,21 +29,20 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
 var logClient logger.LoggingClient
+var config *common.ConfigurationStruct
 
 func init() {
 	logClient = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	config = &common.ConfigurationStruct{}
 }
 
 func TestConfigureAndPingRoute(t *testing.T) {
 
-	webserver := WebServer{
-		LoggingClient: logClient,
-	}
+	webserver := NewWebServer(config, logClient)
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiPingRoute, nil)
@@ -54,11 +53,10 @@ func TestConfigureAndPingRoute(t *testing.T) {
 	assert.Equal(t, "pong", body)
 
 }
+
 func TestConfigureAndVersionRoute(t *testing.T) {
 
-	webserver := WebServer{
-		LoggingClient: logClient,
-	}
+	webserver := NewWebServer(config, logClient)
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiVersionRoute, nil)
@@ -71,10 +69,7 @@ func TestConfigureAndVersionRoute(t *testing.T) {
 }
 func TestConfigureAndConfigRoute(t *testing.T) {
 
-	webserver := WebServer{
-		LoggingClient: logClient,
-		Config:        &common.ConfigurationStruct{},
-	}
+	webserver := NewWebServer(config, logClient)
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiConfigRoute, nil)
@@ -87,9 +82,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-	webserver := WebServer{
-		LoggingClient: logClient,
-	}
+	webserver := NewWebServer(config, logClient)
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiMetricsRoute, nil)
@@ -110,11 +103,7 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	myRouter := mux.NewRouter()
-	webserver := WebServer{
-		LoggingClient: logClient,
-		router:        myRouter,
-	}
+	webserver := NewWebServer(config, logClient)
 
 	handlerFunctionNotCalled := true
 	handler := func(w http.ResponseWriter, r *http.Request) {
