@@ -10,6 +10,7 @@ require (
 	github.com/edgexfoundry/go-mod-messaging v0.1.11
 	github.com/edgexfoundry/go-mod-registry v0.1.11
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/google/uuid v1.1.0
 	github.com/gorilla/mux v1.7.2
 	github.com/pelletier/go-toml v1.2.0
 	github.com/stretchr/testify v1.3.0

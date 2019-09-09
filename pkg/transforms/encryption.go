@@ -57,6 +57,7 @@ func (aesData Encryption) EncryptWithAES(edgexcontext *appcontext.Context, param
 	if len(params) < 1 {
 		return false, errors.New("no data received to encrypt")
 	}
+	edgexcontext.LoggingClient.Debug("Encrypting with AES")
 	data, err := util.CoerceType(params[0])
 	if err != nil {
 		return false, err

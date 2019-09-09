@@ -37,6 +37,8 @@ const (
 	Qos              = "qos"
 	Retain           = "retain"
 	AutoReconnect    = "autoreconnect"
+	DeviceName       = "devicename"
+	ReadingName      = "readingname"
 )
 
 // AppFunctionsSDKConfigurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -113,6 +115,30 @@ func (dynamic AppFunctionsSDKConfigurable) TransformToJSON() appcontext.AppFunct
 func (dynamic AppFunctionsSDKConfigurable) MarkAsPushed() appcontext.AppFunction {
 	transform := transforms.CoreData{}
 	return transform.MarkAsPushed
+}
+
+// PushToCore pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
+// CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) PushToCore(parameters map[string]string) appcontext.AppFunction {
+	deviceName, ok := parameters[DeviceName]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + DeviceName)
+		return nil
+	}
+	readingName, ok := parameters[ReadingName]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + readingName)
+		return nil
+	}
+	deviceName = strings.TrimSpace(deviceName)
+	readingName = strings.TrimSpace(readingName)
+	dynamic.Sdk.LoggingClient.Debug("PushToCore Parameters", DeviceName, deviceName, ReadingName, readingName)
+	transform := transforms.CoreData{
+		DeviceName:  deviceName,
+		ReadingName: readingName,
+	}
+	return transform.PushToCoreData
 }
 
 // CompressWithGZIP compresses data received as either a string,[]byte, or json.Marshaler using gzip algorithm and returns a base64 encoded string as a []byte.
