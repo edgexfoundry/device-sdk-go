@@ -26,16 +26,21 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
-
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var TestHost = "localhost"
-var TestPort = 27017
-var TestTimeout = 5000
-var TestDatabaseName = "test"
-var TestBatchSize = 1337
+const (
+	TestHost         = "localhost"
+	TestPort         = 27017
+	TestTimeout      = 5000
+	TestDatabaseName = "test"
+	TestBatchSize    = 1337
+
+	TestID               = primitive.NewObjectID().Hex()
+	TestAppServiceKey    = uuid.New().String()
+	TestPayload          = []byte("brandon was here")
+	TestPipelinePosition = 0
+	TestVersion          = "1"
+)
 
 var TestValidNoAuthConfig = db.Configuration{
 	Type:         db.MongoDB,
@@ -55,12 +60,6 @@ var TestTimeoutConfig = db.Configuration{
 	BatchSize:    TestBatchSize,
 }
 
-var TestID = primitive.NewObjectID().Hex()
-var TestAppServiceKey = uuid.New().String()
-var TestPayload = []byte("brandon was here")
-var TestPipelinePosition = 0
-var TestVersion = "1"
-
 var TestStoredObject = models.NewStoredObject(TestID, TestAppServiceKey, TestPayload, TestPipelinePosition, TestVersion)
 
 func TestNewClient(t *testing.T) {
@@ -77,13 +76,11 @@ func TestNewClient(t *testing.T) {
 			_, err := NewClient(test.config)
 
 			if test.expectedError && err == nil {
-				t.Error("Expected an error")
-				return
+				t.Fatal("Expected an error")
 			}
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 		})
 	}
@@ -105,43 +102,36 @@ func TestClient_CRUD(t *testing.T) {
 			err := client.Store(TestStoredObject)
 
 			if test.expectedError && err == nil {
-				t.Error("Expected an error")
-				return
+				t.Fatal("Expected an error")
 			}
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			if test.expectedErrorVal != nil && err != nil {
 				if test.expectedErrorVal.Error() != err.Error() {
-					t.Errorf("Observed error doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedErrorVal.Error(), err.Error())
-					return
+					t.Fatalf("Observed error doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedErrorVal.Error(), err.Error())
 				}
 			}
 
 			retrievedValSlice, err := client.RetrieveFromStore(TestAppServiceKey)
 
 			if retrievedValSlice == nil {
-				t.Error("No objects retrieved from store")
-				return
+				t.Fatal("No objects retrieved from store")
 			}
 
 			if !reflect.DeepEqual(retrievedValSlice[0], TestStoredObject) {
-				t.Errorf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", TestStoredObject, retrievedValSlice[0])
-				return
+				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", TestStoredObject, retrievedValSlice[0])
 			}
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			if test.expectedErrorVal != nil && err != nil {
 				if test.expectedErrorVal.Error() != err.Error() {
-					t.Errorf("Observed error doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedErrorVal.Error(), err.Error())
-					return
+					t.Fatalf("Observed error doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedErrorVal.Error(), err.Error())
 				}
 			}
 
@@ -151,25 +141,21 @@ func TestClient_CRUD(t *testing.T) {
 			err = client.UpdateRetryCount(updatedTestObject.ID, updatedTestObject.RetryCount)
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			retrievedValSlice, err = client.RetrieveFromStore(TestAppServiceKey)
 
 			if retrievedValSlice == nil {
-				t.Error("No objects retrieved from store")
-				return
+				t.Fatal("No objects retrieved from store")
 			}
 
 			if !reflect.DeepEqual(retrievedValSlice[0], updatedTestObject) {
-				t.Errorf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", updatedTestObject, retrievedValSlice[0])
-				return
+				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", updatedTestObject, retrievedValSlice[0])
 			}
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			updatedTestObject.Version = "2"
@@ -177,43 +163,37 @@ func TestClient_CRUD(t *testing.T) {
 			err = client.Update(updatedTestObject)
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			retrievedValSlice, err = client.RetrieveFromStore(updatedTestObject.AppServiceKey)
 
 			if retrievedValSlice == nil {
-				t.Error("No objects retrieved from store")
-				return
+				t.Fatal("No objects retrieved from store")
 			}
 
 			if !reflect.DeepEqual(retrievedValSlice[0], updatedTestObject) {
-				t.Errorf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", updatedTestObject, retrievedValSlice[0])
-				return
+				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", updatedTestObject, retrievedValSlice[0])
 			}
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			err = client.RemoveFromStore(TestID)
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
 			shouldBeEmpty, err := client.RetrieveFromStore(TestAppServiceKey)
 
 			if len(shouldBeEmpty) != 0 {
-				t.Error("Objects should be deleted")
+				t.Fatal("Objects should be deleted")
 			}
 
 			if !test.expectedError && err != nil {
-				t.Errorf("Unexpectedly encountered error: %s", err.Error())
-				return
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 		})
 	}

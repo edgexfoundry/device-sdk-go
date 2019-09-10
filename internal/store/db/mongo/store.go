@@ -39,7 +39,7 @@ type Client struct {
 	client *mongo.Client
 }
 
-var mongoCollection = "store"
+const mongoCollection = "store"
 
 // Store persists a stored object to the data store.
 func (c Client) Store(o models.StoredObject) error {
@@ -87,20 +87,18 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []models.Stored
 
 // Update replaces the data currently in the store with the provided data.
 func (c Client) Update(o models.StoredObject) error {
-	// set filters and updates
-	filter := bson.M{"id": o.ID}
+	if o.ID == "" {
+		return errors.New("update argument object does not have an ID")
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	// update document
-	updated, err := c.Client.Collection(mongoCollection).ReplaceOne(ctx, filter, &o)
+	filter := bson.M{"id": o.ID}
+
+	_, err := c.Client.Collection(mongoCollection).ReplaceOne(ctx, filter, &o)
 	if err != nil {
 		return err
-	}
-
-	if updated.ModifiedCount == 0 {
-		return errors.New("no updates performed")
 	}
 
 	return nil
@@ -114,14 +112,9 @@ func (c Client) UpdateRetryCount(id string, count int) error {
 	filter := bson.M{"id": id}
 	update := bson.M{"$set": bson.M{"retryCount": count}}
 
-	// update document
-	updated, err := c.Client.Collection(mongoCollection).UpdateOne(ctx, filter, update)
+	_, err := c.Client.Collection(mongoCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
-	}
-
-	if updated.ModifiedCount == 0 {
-		return errors.New("no updates performed")
 	}
 
 	return nil
@@ -132,13 +125,11 @@ func (c Client) RemoveFromStore(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	deleted, err := c.Client.Collection(mongoCollection).DeleteOne(ctx, bson.M{"id": id})
+	filter := bson.M{"id": id}
+
+	_, err := c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
 	if err != nil {
 		return err
-	}
-
-	if deleted.DeletedCount == 0 {
-		return errors.New("no deletes performed")
 	}
 
 	return nil
@@ -165,7 +156,7 @@ func NewClient(config db.Configuration) (client interfaces.StoreClient, err erro
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	notify := make(chan struct{})
+	notify := make(chan bool)
 
 	var mongoDatabase *mongo.Database
 	var mongoClient *mongo.Client
@@ -186,7 +177,7 @@ func NewClient(config db.Configuration) (client interfaces.StoreClient, err erro
 		mongoDatabase = mongoClient.Database(config.DatabaseName)
 
 		// ping the watcher and tell it we're done
-		notify <- struct{}{}
+		notify <- true
 	}()
 
 	select {
