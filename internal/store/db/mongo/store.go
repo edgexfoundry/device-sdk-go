@@ -184,7 +184,7 @@ func NewClient(config db.Configuration) (client interfaces.StoreClient, err erro
 	case <-ctx.Done():
 		if err != nil {
 			// an error from the business logic
-			return
+			return nil, err
 		} else {
 			// timeout exceeded
 			return nil, ctx.Err()

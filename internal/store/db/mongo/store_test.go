@@ -24,6 +24,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
 )
