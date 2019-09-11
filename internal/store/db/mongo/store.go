@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -48,9 +49,27 @@ func (c Client) Store(o contracts.StoredObject) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
+	objID, uuid, err := models.FromContractId(o.ID)
+	if err != nil {
+		return "", err
+	}
 	var doc bson.M
-	if o.ID == "" {
+
+	if objID == primitive.NilObjectID {
+		// determine if this object already exists in the DB
+		filter := bson.M{"uuid": uuid}
+		result := c.Client.Collection(mongoCollection).FindOne(ctx, filter)
+
+		var m models.StoredObject
+		_ = result.Decode(&m)
+
+		// if the result of the lookup is any object other than the empty, it exists
+		if !reflect.DeepEqual(m, models.StoredObject{}) {
+			return "", errors.New("object exists in database")
+		}
+
 		doc = bson.M{
+			"uuid":             uuid,
 			"appServiceKey":    o.AppServiceKey,
 			"payload":          o.Payload,
 			"retryCount":       o.RetryCount,
@@ -61,11 +80,6 @@ func (c Client) Store(o contracts.StoredObject) (string, error) {
 			"eventChecksum":    o.EventChecksum,
 		}
 	} else {
-		objID, uuid, err := models.FromContractId(o.ID)
-		if err != nil {
-			return "", err
-		}
-
 		doc = bson.M{
 			"_id":              objID,
 			"uuid":             uuid,

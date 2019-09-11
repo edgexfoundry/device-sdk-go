@@ -62,7 +62,7 @@ func TestTransformToXML(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	expectedResult := `<Event><UUID></UUID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := NewConversion()
 
 	continuePipeline, result := conv.TransformToXML(context, eventIn)
@@ -91,7 +91,7 @@ func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
 	}
-	expectedResult := `<Event><UUID></UUID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
 	if result == nil {
@@ -110,7 +110,7 @@ func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 	eventIn2 := models.Event{
 		Device: devID2,
 	}
-	expectedResult := `<Event><UUID></UUID><Pushed>0</Pushed><Device>id2</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id2</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn2, eventIn1, "", "")
 

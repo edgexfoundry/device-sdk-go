@@ -1,3 +1,5 @@
+// +build mongoRunning
+
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  *
@@ -19,6 +21,9 @@
 package mongo
 
 import (
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"math/rand"
 	"reflect"
 	"testing"
 
@@ -35,11 +40,16 @@ const (
 	TestDatabaseName = "test"
 	TestBatchSize    = 1337
 
-	TestPipelinePosition = 0
-	TestVersion          = "1"
+	TestUUIDNil          = ""
+	TestAppServiceKey    = "apps"
+	TestRetryCount       = 100
+	TestPipelinePosition = 1337
+	TestVersion          = "your"
+	TestCorrelationID    = "test"
+	TestEventID          = "probably"
+	TestEventChecksum    = "failed :("
 )
 
-var TestAppServiceKey = uuid.New().String()
 var TestPayload = []byte("brandon was here")
 
 var TestValidNoAuthConfig = db.Configuration{
@@ -60,9 +70,30 @@ var TestTimeoutConfig = db.Configuration{
 	BatchSize:    TestBatchSize,
 }
 
-var TestStoredObject = contracts.NewStoredObject(TestAppServiceKey, TestPayload, TestPipelinePosition, TestVersion)
+var TestContract = contracts.StoredObject{
+	AppServiceKey:    TestAppServiceKey,
+	Payload:          TestPayload,
+	RetryCount:       TestRetryCount,
+	PipelinePosition: TestPipelinePosition,
+	Version:          TestVersion,
+	CorrelationID:    TestCorrelationID,
+	EventID:          TestEventID,
+	EventChecksum:    TestEventChecksum,
+}
 
-func TestNewClient(t *testing.T) {
+var TestContractBadID = contracts.StoredObject{
+	ID:               "brandon!",
+	AppServiceKey:    TestAppServiceKey,
+	Payload:          TestPayload,
+	RetryCount:       TestRetryCount,
+	PipelinePosition: TestPipelinePosition,
+	Version:          TestVersion,
+	CorrelationID:    TestCorrelationID,
+	EventID:          TestEventID,
+	EventChecksum:    TestEventChecksum,
+}
+
+func TestClient_NewClient(t *testing.T) {
 	tests := []struct {
 		name          string
 		config        db.Configuration
@@ -73,34 +104,164 @@ func TestNewClient(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewClient(test.config)
+			client, connectErr := NewClient(test.config)
 
-			if test.expectedError && err == nil {
+			if client != nil {
+				disconnectErr := client.Disconnect()
+				if test.expectedError && disconnectErr == nil {
+					t.Fatal("Expected an error")
+				}
+
+				if !test.expectedError && disconnectErr != nil {
+					t.Fatalf("Unexpectedly encountered error: %s", disconnectErr.Error())
+				}
+			}
+
+			if test.expectedError && connectErr == nil {
 				t.Fatal("Expected an error")
 			}
 
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			if !test.expectedError && connectErr != nil {
+				t.Fatalf("Unexpectedly encountered error: %s", connectErr.Error())
 			}
 		})
 	}
 }
 
-func TestClient_CRUD(t *testing.T) {
+func TestClient_Store(t *testing.T) {
+	TestContractBSON := TestContract
+	TestContractBSON.ID = primitive.NewObjectID().Hex()
+
+	TestContractUUID := TestContract
+	TestContractUUID.ID = uuid.New().String()
+
+	var client interfaces.StoreClient
+
 	tests := []struct {
-		name             string
-		config           db.Configuration
-		expectedError    bool
-		expectedErrorVal error
+		name          string
+		toStore       contracts.StoredObject
+		expectedError bool
 	}{
-		{"Success, no auth", TestValidNoAuthConfig, false, nil},
+		{
+			"Success, no ID",
+			TestContract,
+			false,
+		},
+		{
+			"Success, no ID double store",
+			TestContract,
+			false,
+		},
+		{
+			"Success, BSON",
+			TestContractBSON,
+			false,
+		},
+		{
+			"Failure, BSON double store",
+			TestContractBSON,
+			true,
+		},
+		{
+			"Success, UUID",
+			TestContractUUID,
+			false,
+		},
+		{
+			"Failure, UUID double store",
+			TestContractUUID,
+			true,
+		},
+		{
+			"Bad ID",
+			TestContractBadID,
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, _ := NewClient(test.config)
+			client, _ = NewClient(TestValidNoAuthConfig)
 
-			id, err := client.Store(TestStoredObject)
-			TestStoredObject.ID = id
+			_, err := client.Store(test.toStore)
+			if test.expectedError && err == nil {
+				t.Fatal("Expected an error")
+			}
+
+			if !test.expectedError && err != nil {
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			}
+		})
+	}
+
+	err := client.Disconnect()
+	if err != nil {
+		t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+	}
+}
+
+func TestClient_RetrieveFromStore(t *testing.T) {
+	BSONAppServiceKey := uuid.New().String()
+
+	BSONContract0 := TestContract
+	BSONContract0.ID = primitive.NewObjectID().Hex()
+	BSONContract0.AppServiceKey = BSONAppServiceKey
+
+	BSONContract1 := TestContract
+	BSONContract1.ID = primitive.NewObjectID().Hex()
+	BSONContract1.AppServiceKey = BSONAppServiceKey
+
+	UUIDAppServiceKey := uuid.New().String()
+
+	UUIDContract0 := TestContract
+	UUIDContract0.ID = uuid.New().String()
+	UUIDContract0.AppServiceKey = UUIDAppServiceKey
+
+	UUIDContract1 := TestContract
+	UUIDContract1.ID = uuid.New().String()
+	UUIDContract1.AppServiceKey = UUIDAppServiceKey
+
+	var client interfaces.StoreClient
+
+	tests := []struct {
+		name          string
+		toStore       []contracts.StoredObject
+		key           string
+		expectedError bool
+	}{
+		{
+			"Success, single object, BSON",
+			[]contracts.StoredObject{BSONContract0},
+			BSONAppServiceKey,
+			false,
+		},
+		{
+			"Success, multiple object, BSON",
+			[]contracts.StoredObject{BSONContract0, BSONContract1},
+			BSONAppServiceKey,
+			false,
+		},
+		{
+			"Success, single object, UUID",
+			[]contracts.StoredObject{UUIDContract0},
+			UUIDAppServiceKey,
+			false,
+		},
+		{
+			"Success, multiple object, UUID",
+			[]contracts.StoredObject{UUIDContract0, UUIDContract1},
+			UUIDAppServiceKey,
+			false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, _ = NewClient(TestValidNoAuthConfig)
+
+			for _, object := range test.toStore {
+				_, _ = client.Store(object)
+			}
+
+			actual, err := client.RetrieveFromStore(test.key)
 
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")
@@ -110,92 +271,171 @@ func TestClient_CRUD(t *testing.T) {
 				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
-			if test.expectedErrorVal != nil && err != nil {
-				if test.expectedErrorVal.Error() != err.Error() {
-					t.Fatalf("Observed error doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedErrorVal.Error(), err.Error())
-				}
-			}
-
-			retrievedValSlice, err := client.RetrieveFromStore(TestAppServiceKey)
-
-			if retrievedValSlice == nil {
-				t.Fatal("No objects retrieved from store")
-			}
-
-			if !reflect.DeepEqual(retrievedValSlice[0], TestStoredObject) {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", TestStoredObject, retrievedValSlice[0])
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			if test.expectedErrorVal != nil && err != nil {
-				if test.expectedErrorVal.Error() != err.Error() {
-					t.Fatalf("Observed error doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedErrorVal.Error(), err.Error())
-				}
-			}
-
-			updatedTestObject := TestStoredObject
-			updatedTestObject.RetryCount = 10
-
-			err = client.UpdateRetryCount(updatedTestObject.ID, updatedTestObject.RetryCount)
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			retrievedValSlice, err = client.RetrieveFromStore(TestAppServiceKey)
-
-			if retrievedValSlice == nil {
-				t.Fatal("No objects retrieved from store")
-			}
-
-			if !reflect.DeepEqual(retrievedValSlice[0], updatedTestObject) {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", updatedTestObject, retrievedValSlice[0])
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			updatedTestObject.Version = "2"
-
-			err = client.Update(updatedTestObject)
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			retrievedValSlice, err = client.RetrieveFromStore(updatedTestObject.AppServiceKey)
-
-			if retrievedValSlice == nil {
-				t.Fatal("No objects retrieved from store")
-			}
-
-			if !reflect.DeepEqual(retrievedValSlice[0], updatedTestObject) {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", updatedTestObject, retrievedValSlice[0])
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			err = client.RemoveFromStore(id)
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			shouldBeEmpty, err := client.RetrieveFromStore(TestAppServiceKey)
-
-			if len(shouldBeEmpty) != 0 {
-				t.Fatal("Objects should be deleted")
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			if len(actual) != len(test.toStore) {
+				t.Fatalf("Returned slice length doesn't match expected.\nExpected: %v\nActual: %v\n", len(test.toStore), len(actual))
 			}
 		})
+	}
+
+	err := client.Disconnect()
+	if err != nil {
+		t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+	}
+}
+
+func TestClient_Update(t *testing.T) {
+	TestContractBSON := TestContract
+	TestContractBSON.ID = primitive.NewObjectID().Hex()
+
+	TestContractUpdated := TestContractBSON
+	TestContractUpdated.ID = primitive.NewObjectID().Hex()
+	TestContractUpdated.AppServiceKey = uuid.New().String()
+	TestContractUpdated.Version = uuid.New().String()
+
+	var client interfaces.StoreClient
+
+	tests := []struct {
+		name          string
+		updateFrom    contracts.StoredObject
+		updateTo      contracts.StoredObject
+		expectedError bool
+	}{
+		{
+			"Success, BSON",
+			TestContractBSON,
+			TestContractUpdated,
+			false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, _ = NewClient(TestValidNoAuthConfig)
+
+			id, _ := client.Store(test.updateFrom)
+
+			test.updateTo.ID = id
+
+			err := client.Update(test.updateTo)
+
+			if test.expectedError && err == nil {
+				t.Fatal("Expected an error")
+			}
+
+			if !test.expectedError && err != nil {
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			}
+
+			actual, _ := client.RetrieveFromStore(test.updateTo.AppServiceKey)
+			if actual == nil {
+				t.Fatal("No objects retrieved from store")
+			}
+
+			if !reflect.DeepEqual(actual[0], test.updateTo) {
+				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.updateTo, actual[0])
+			}
+		})
+	}
+
+	err := client.Disconnect()
+	if err != nil {
+		t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+	}
+}
+
+func TestClient_UpdateRetryCount(t *testing.T) {
+	TestContractBSON := TestContract
+	TestContractBSON.AppServiceKey = uuid.New().String()
+
+	var client interfaces.StoreClient
+
+	tests := []struct {
+		name          string
+		toStore       contracts.StoredObject
+		updateCount   int
+		expectedError bool
+	}{
+		{
+			"Success, BSON",
+			TestContractBSON,
+			rand.Intn(10),
+			false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, _ = NewClient(TestValidNoAuthConfig)
+
+			id, _ := client.Store(test.toStore)
+
+			err := client.UpdateRetryCount(id, test.updateCount)
+
+			if test.expectedError && err == nil {
+				t.Fatal("Expected an error")
+			}
+
+			if !test.expectedError && err != nil {
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			}
+
+			actual, _ := client.RetrieveFromStore(test.toStore.AppServiceKey)
+			if actual == nil {
+				t.Fatal("No objects retrieved from store")
+			}
+
+			if !reflect.DeepEqual(actual[0].RetryCount, test.updateCount) {
+				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.updateCount, actual[0].RetryCount)
+			}
+		})
+	}
+
+	err := client.Disconnect()
+	if err != nil {
+		t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+	}
+}
+
+func TestClient_RemoveFromStore(t *testing.T) {
+	TestContractBSON := TestContract
+	TestContractBSON.AppServiceKey = uuid.New().String()
+
+	var client interfaces.StoreClient
+
+	tests := []struct {
+		name          string
+		toStore       contracts.StoredObject
+		expectedError bool
+	}{
+		{
+			"Success, BSON",
+			TestContractBSON,
+			false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, _ = NewClient(TestValidNoAuthConfig)
+
+			id, _ := client.Store(test.toStore)
+
+			err := client.RemoveFromStore(id)
+
+			if test.expectedError && err == nil {
+				t.Fatal("Expected an error")
+			}
+
+			if !test.expectedError && err != nil {
+				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			}
+
+			actual, _ := client.RetrieveFromStore(test.toStore.AppServiceKey)
+			if actual != nil {
+				t.Fatal("Object retrieved, should have been nil")
+			}
+		})
+	}
+
+	err := client.Disconnect()
+	if err != nil {
+		t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 	}
 }

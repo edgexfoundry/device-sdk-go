@@ -38,11 +38,11 @@ type AppFunction = func(edgexcontext *Context, params ...interface{}) (bool, int
 
 // Context ...
 type Context struct {
-	// UUID of the EdgeX Event -- will be filled for a received JSON Event
+	// ID of the EdgeX Event -- will be filled for a received JSON Event
 	EventID string
 	// Checksum of the EdgeX Event -- will be filled for a received CBOR Event
 	EventChecksum string
-	// This is the UUID used to track the EdgeX event through entire EdgeX framework.
+	// This is the ID used to track the EdgeX event through entire EdgeX framework.
 	CorrelationID string
 	// OutputData is used for specifying the data that is to be outputted. Leverage the .Complete() function to set.
 	OutputData []byte

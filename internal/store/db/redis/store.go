@@ -46,6 +46,11 @@ func RemoveFromStore(id string) error {
 	return nil
 }
 
+// Disconnect ends the connection.
+func Disconnect() error {
+	return nil
+}
+
 // NewClient provides a factory for building a StoreClient
 func NewClient(config db.Configuration) (interfaces.StoreClient, error) {
 	return nil, nil

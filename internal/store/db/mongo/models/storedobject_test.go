@@ -114,7 +114,7 @@ var TestContractBadID = contracts.StoredObject{
 }
 
 var TestContractNilID = contracts.StoredObject{
-	ID: primitive.NilObjectID.Hex(),
+	ID:               primitive.NilObjectID.Hex(),
 	AppServiceKey:    TestAppServiceKey,
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
@@ -128,7 +128,7 @@ var TestContractNilID = contracts.StoredObject{
 func TestFromContract(t *testing.T) {
 	tests := []struct {
 		testName       string
-		fromContract contracts.StoredObject
+		fromContract   contracts.StoredObject
 		expectedResult StoredObject
 		expectedError  bool
 	}{
@@ -174,7 +174,7 @@ func TestFromContract(t *testing.T) {
 func TestToContract(t *testing.T) {
 	tests := []struct {
 		testName       string
-		fromModel StoredObject
+		fromModel      StoredObject
 		expectedResult contracts.StoredObject
 	}{
 		{

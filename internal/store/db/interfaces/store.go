@@ -35,4 +35,7 @@ type StoreClient interface {
 
 	// RemoveFromStore removes an object from the data store.
 	RemoveFromStore(id string) error
+
+	// Disconnect ends the connection.
+	Disconnect() error
 }
