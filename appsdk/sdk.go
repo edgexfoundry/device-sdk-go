@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	nethttp "net/http"
 	"os"
 	"os/signal"
@@ -28,12 +29,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pelletier/go-toml"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
@@ -43,12 +41,15 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
 	coreTypes "github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
+	"github.com/pelletier/go-toml"
 )
 
 // ProfileSuffixPlaceholder is used to create unique names for profiles
@@ -75,8 +76,8 @@ type AppFunctionsSDK struct {
 	httpErrors                chan error
 	runtime                   *runtime.GolangRuntime
 	webserver                 *webserver.WebServer
+	edgexClients              common.EdgeXClients
 	registryClient            registry.Client
-	eventClient               coredata.EventClient
 	config                    common.ConfigurationStruct
 }
 
@@ -94,12 +95,13 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.runtime = &runtime.GolangRuntime{TargetType: sdk.TargetType} //Transforms: sdk.transforms
 	sdk.runtime.SetTransforms(sdk.transforms)
+	sdk.webserver.ConfigureStandardRoutes()
 
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-	err := trigger.Initialize(sdk.LoggingClient)
+	err := trigger.Initialize()
 	if err != nil {
 		sdk.LoggingClient.Error(err.Error())
 	}
@@ -224,10 +226,10 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruc
 	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
 		sdk.LoggingClient.Info("HTTP trigger selected")
-		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EventClient: sdk.eventClient}
+		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
 	case "MESSAGEBUS":
 		sdk.LoggingClient.Info("MessageBus trigger selected")
-		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EventClient: sdk.eventClient}
+		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
 	}
 
 	return trigger
@@ -264,39 +266,54 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		}
 	}
 
-	now := time.Now()
-	until := now.Add(time.Millisecond * time.Duration(internal.BootTimeoutDefault))
-	for now.Before(until) {
-		err := sdk.initializeConfiguration()
-		if err != nil {
-			fmt.Printf("failed to initialize Registry: %v\n", err)
-		} else {
-			//initialize logger
-			loggingTarget, err := sdk.setLoggingTarget()
+	loggerInitialized := false
+	configurationInitialized := false
+	bootstrapComplete := false
+
+	// Bootstrap retry loop to ensure all dependencies are ready before continuing.
+	until := time.Now().Add(time.Millisecond * time.Duration(internal.BootTimeoutDefault))
+	for time.Now().Before(until) {
+		if !configurationInitialized {
+			err := sdk.initializeConfiguration()
 			if err != nil {
-				return fmt.Errorf("logger initialization failed: %v", err)
+				fmt.Printf("failed to initialize Registry: %v\n", err)
+				goto ContinueWithSleep
 			}
-			sdk.LoggingClient = logger.NewClient(sdk.ServiceKey, sdk.config.Logging.EnableRemote, loggingTarget, sdk.config.Writable.LogLevel)
-			sdk.LoggingClient.Info("Configuration and logger successfully initialized")
-			break
+			configurationInitialized = true
+			fmt.Printf("Configuration & Registry initialized")
 		}
 
+		if !loggerInitialized {
+			loggingTarget, err := sdk.setLoggingTarget()
+			if err != nil {
+				fmt.Printf("logger initialization failed: %v", err)
+				goto ContinueWithSleep
+			}
+
+			sdk.LoggingClient = logger.NewClient(sdk.ServiceKey, sdk.config.Logging.EnableRemote, loggingTarget, sdk.config.Writable.LogLevel)
+			sdk.LoggingClient.Info("Configuration and logger successfully initialized")
+			sdk.edgexClients.LoggingClient = sdk.LoggingClient
+			loggerInitialized = true
+		}
+
+		sdk.initializeClients()
+		sdk.LoggingClient.Info("Clients initialized")
+		bootstrapComplete = true
+		break
+
+	ContinueWithSleep:
 		time.Sleep(time.Second * time.Duration(1))
+	}
+
+	if !bootstrapComplete {
+		return fmt.Errorf("bootstrap retry timed out")
 	}
 
 	if sdk.useRegistry {
 		go sdk.listenForConfigChanges()
 	}
 
-	//Setup eventClient
-	params := coreTypes.EndpointParams{
-		ServiceKey:  clients.CoreDataServiceKey,
-		Path:        clients.ApiEventRoute,
-		UseRegistry: sdk.useRegistry,
-		Url:         sdk.config.Clients["CoreData"].Url() + clients.ApiEventRoute,
-		Interval:    sdk.config.Service.ClientMonitor,
-	}
-	sdk.eventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+	sdk.initializeClients()
 
 	go telemetry.StartCpuUsageAverage()
 
@@ -304,6 +321,41 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
+}
+
+func (sdk *AppFunctionsSDK) initializeClients() {
+	// Need when passing all Clients to other components
+	sdk.edgexClients.LoggingClient = sdk.LoggingClient
+
+	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
+	// sending commands, then don't need to have the Command client in the configuration.
+	if _, ok := sdk.config.Clients[common.CoreDataClientName]; ok {
+		params := sdk.getClientParams(clients.CoreDataServiceKey, common.CoreDataClientName, clients.ApiEventRoute)
+		sdk.edgexClients.EventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+
+		params = sdk.getClientParams(clients.CoreDataServiceKey, common.CoreDataClientName, clients.ApiValueDescriptorRoute)
+		sdk.edgexClients.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+	}
+
+	if _, ok := sdk.config.Clients[common.CoreCommandClientName]; ok {
+		params := sdk.getClientParams(clients.CoreCommandServiceKey, common.CoreCommandClientName, clients.ApiCommandRoute)
+		sdk.edgexClients.CommandClient = command.NewCommandClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+	}
+
+	if _, ok := sdk.config.Clients[common.NotificationsClientName]; ok {
+		params := sdk.getClientParams(clients.SupportNotificationsServiceKey, common.NotificationsClientName, clients.ApiNotificationRoute)
+		sdk.edgexClients.NotificationsClient = notifications.NewNotificationsClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+	}
+}
+
+func (sdk *AppFunctionsSDK) getClientParams(serviceKey string, clientName string, route string) coreTypes.EndpointParams {
+	return coreTypes.EndpointParams{
+		ServiceKey:  serviceKey,
+		Path:        route,
+		UseRegistry: sdk.useRegistry,
+		Url:         sdk.config.Clients[clientName].Url() + route,
+		Interval:    sdk.config.Service.ClientMonitor,
+	}
 }
 
 func (sdk *AppFunctionsSDK) initializeConfiguration() error {
@@ -461,7 +513,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 
 func (sdk *AppFunctionsSDK) setLoggingTarget() (string, error) {
 	if sdk.config.Logging.EnableRemote {
-		logging, ok := sdk.config.Clients["Logging"]
+		logging, ok := sdk.config.Clients[common.LoggingClientName]
 		if !ok {
 			return "", errors.New("logging client configuration is missing")
 		}

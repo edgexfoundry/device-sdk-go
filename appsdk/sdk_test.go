@@ -255,3 +255,44 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	assert.NoError(t, err, "")
 	assert.Nil(t, sdk.TargetType)
 }
+
+func TestInitializeClientsAll(t *testing.T) {
+	clients := make(map[string]common.ClientInfo)
+	clients[common.CoreDataClientName] = common.ClientInfo{}
+	clients[common.NotificationsClientName] = common.ClientInfo{}
+	clients[common.CoreCommandClientName] = common.ClientInfo{}
+
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Clients: clients,
+		},
+	}
+
+	sdk.initializeClients()
+
+	assert.NotNil(t, sdk.edgexClients.EventClient)
+	assert.NotNil(t, sdk.edgexClients.CommandClient)
+	assert.NotNil(t, sdk.edgexClients.ValueDescriptorClient)
+	assert.NotNil(t, sdk.edgexClients.NotificationsClient)
+}
+
+func TestInitializeClientsJustData(t *testing.T) {
+	clients := make(map[string]common.ClientInfo)
+	clients[common.CoreDataClientName] = common.ClientInfo{}
+
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Clients: clients,
+		},
+	}
+
+	sdk.initializeClients()
+
+	assert.NotNil(t, sdk.edgexClients.EventClient)
+	assert.NotNil(t, sdk.edgexClients.ValueDescriptorClient)
+
+	assert.Nil(t, sdk.edgexClients.CommandClient)
+	assert.Nil(t, sdk.edgexClients.NotificationsClient)
+}

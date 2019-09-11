@@ -63,8 +63,8 @@ func TestInitialize(t *testing.T) {
 
 	runtime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: config, Runtime: runtime}
-	trigger.Initialize(logClient)
+	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger.Initialize()
 	assert.NotNil(t, trigger.client, "Expected client to be set")
 	assert.Equal(t, 1, len(trigger.topics))
 	assert.Equal(t, "events", trigger.topics[0].Topic)
@@ -97,8 +97,8 @@ func TestInitializeBadConfiguration(t *testing.T) {
 
 	runtime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: config, Runtime: runtime}
-	err := trigger.Initialize(logClient)
+	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	err := trigger.Initialize()
 	assert.NotNil(t, err)
 }
 
@@ -141,8 +141,8 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	runtime := &runtime.GolangRuntime{}
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: config, Runtime: runtime}
-	trigger.Initialize(logClient)
+	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger.Initialize()
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
@@ -216,7 +216,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	runtime := &runtime.GolangRuntime{}
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: config, Runtime: runtime}
+	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -241,7 +241,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
 
-	trigger.Initialize(logClient)
+	trigger.Initialize()
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
