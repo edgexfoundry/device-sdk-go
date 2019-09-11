@@ -1,5 +1,3 @@
-// +build mongoRunning
-
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
  *
@@ -25,10 +23,9 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
 )
 
 const (
@@ -38,12 +35,12 @@ const (
 	TestDatabaseName = "test"
 	TestBatchSize    = 1337
 
-	TestID               = primitive.NewObjectID().Hex()
-	TestAppServiceKey    = uuid.New().String()
-	TestPayload          = []byte("brandon was here")
 	TestPipelinePosition = 0
 	TestVersion          = "1"
 )
+
+var TestAppServiceKey = uuid.New().String()
+var TestPayload = []byte("brandon was here")
 
 var TestValidNoAuthConfig = db.Configuration{
 	Type:         db.MongoDB,
@@ -63,7 +60,7 @@ var TestTimeoutConfig = db.Configuration{
 	BatchSize:    TestBatchSize,
 }
 
-var TestStoredObject = models.NewStoredObject(TestID, TestAppServiceKey, TestPayload, TestPipelinePosition, TestVersion)
+var TestStoredObject = contracts.NewStoredObject(TestAppServiceKey, TestPayload, TestPipelinePosition, TestVersion)
 
 func TestNewClient(t *testing.T) {
 	tests := []struct {
@@ -102,7 +99,8 @@ func TestClient_CRUD(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			client, _ := NewClient(test.config)
 
-			err := client.Store(TestStoredObject)
+			id, err := client.Store(TestStoredObject)
+			TestStoredObject.ID = id
 
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")
@@ -183,7 +181,7 @@ func TestClient_CRUD(t *testing.T) {
 				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
-			err = client.RemoveFromStore(TestID)
+			err = client.RemoveFromStore(id)
 
 			if !test.expectedError && err != nil {
 				t.Fatalf("Unexpectedly encountered error: %s", err.Error())

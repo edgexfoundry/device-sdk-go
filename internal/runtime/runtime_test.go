@@ -313,7 +313,7 @@ func TestProcessMessageJSON(t *testing.T) {
 			}
 
 			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
-			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
+			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong UUID")
 		}
 
 		return false, nil
@@ -378,7 +378,7 @@ func TestProcessMessageCBOR(t *testing.T) {
 			}
 
 			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
-			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
+			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong UUID")
 		}
 
 		return false, nil

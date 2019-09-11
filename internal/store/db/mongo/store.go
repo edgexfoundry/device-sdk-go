@@ -22,11 +22,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/mongo/models"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -42,20 +44,52 @@ type Client struct {
 const mongoCollection = "store"
 
 // Store persists a stored object to the data store.
-func (c Client) Store(o models.StoredObject) error {
+func (c Client) Store(o contracts.StoredObject) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	_, err := c.Client.Collection(mongoCollection).InsertOne(ctx, &o)
-	if err != nil {
-		return err
+	var doc bson.M
+	if o.ID == "" {
+		doc = bson.M{
+			"appServiceKey":    o.AppServiceKey,
+			"payload":          o.Payload,
+			"retryCount":       o.RetryCount,
+			"pipelinePosition": o.PipelinePosition,
+			"version":          o.Version,
+			"correlationID":    o.CorrelationID,
+			"eventID":          o.EventID,
+			"eventChecksum":    o.EventChecksum,
+		}
+	} else {
+		objID, uuid, err := models.FromContractId(o.ID)
+		if err != nil {
+			return "", err
+		}
+
+		doc = bson.M{
+			"_id":              objID,
+			"uuid":             uuid,
+			"appServiceKey":    o.AppServiceKey,
+			"payload":          o.Payload,
+			"retryCount":       o.RetryCount,
+			"pipelinePosition": o.PipelinePosition,
+			"version":          o.Version,
+			"correlationID":    o.CorrelationID,
+			"eventID":          o.EventID,
+			"eventChecksum":    o.EventChecksum,
+		}
 	}
 
-	return nil
+	result, err := c.Client.Collection(mongoCollection).InsertOne(ctx, doc)
+	if err != nil {
+		return "", err
+	}
+
+	return result.InsertedID.(primitive.ObjectID).Hex(), nil
 }
 
 // RetrieveFromStore gets an object from the data store.
-func (c Client) RetrieveFromStore(appServiceKey string) (objects []models.StoredObject, err error) {
+func (c Client) RetrieveFromStore(appServiceKey string) (objects []contracts.StoredObject, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
@@ -67,6 +101,8 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []models.Stored
 		return nil, err
 	}
 
+	var modelSlice []models.StoredObject
+
 	// iterate through all documents
 	for cursor.Next(ctx) {
 		var p models.StoredObject
@@ -74,7 +110,7 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []models.Stored
 		if err = cursor.Decode(&p); err != nil {
 			return nil, err
 		}
-		objects = append(objects, p)
+		modelSlice = append(modelSlice, p)
 	}
 
 	// check if the cursor encountered any errors while iterating
@@ -82,21 +118,31 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []models.Stored
 		return nil, err
 	}
 
+	for _, model := range modelSlice {
+		objects = append(objects, model.ToContract())
+	}
+
 	return objects, nil
 }
 
 // Update replaces the data currently in the store with the provided data.
-func (c Client) Update(o models.StoredObject) error {
+func (c Client) Update(o contracts.StoredObject) error {
 	if o.ID == "" {
-		return errors.New("update argument object does not have an ID")
+		return errors.New("update argument object does not have an UUID")
+	}
+
+	model := models.StoredObject{}
+	err := model.FromContract(o)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	filter := bson.M{"id": o.ID}
+	filter := bson.M{"_id": model.ObjectID}
 
-	_, err := c.Client.Collection(mongoCollection).ReplaceOne(ctx, filter, &o)
+	_, err = c.Client.Collection(mongoCollection).ReplaceOne(ctx, filter, &model)
 	if err != nil {
 		return err
 	}
@@ -109,10 +155,19 @@ func (c Client) UpdateRetryCount(id string, count int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	filter := bson.M{"id": id}
+	if id == "" {
+		return errors.New("update argument object does not have an UUID")
+	}
+
+	objID, _, err := models.FromContractId(id)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": objID}
 	update := bson.M{"$set": bson.M{"retryCount": count}}
 
-	_, err := c.Client.Collection(mongoCollection).UpdateOne(ctx, filter, update)
+	_, err = c.Client.Collection(mongoCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
@@ -125,9 +180,14 @@ func (c Client) RemoveFromStore(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	filter := bson.M{"id": id}
+	objID, _, err := models.FromContractId(id)
+	if err != nil {
+		return err
+	}
 
-	_, err := c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
+	filter := bson.M{"_id": objID}
+
+	_, err = c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}

@@ -12,43 +12,43 @@
  * the License.
  *******************************************************************************/
 
-// models describes the data types that will be used when storing export data.
-package models
+// contracts are implementation agnostic data storage models.
+package contracts
 
 // StoredObject is the atomic and most abstract description of what is collected by the export store system.
 type StoredObject struct {
-	ID string `bson:"id"`
+	// UUID uniquely identifies this StoredObject
+	ID string
 
 	// AppServiceKey identifies the app to which this data belongs.
-	AppServiceKey string `bson:"appServiceKey"`
+	AppServiceKey string
 
 	// Payload is the data to be exported
-	Payload []byte `bson:"payload"`
+	Payload []byte
 
 	// RetryCount is how many times this has tried to be exported
-	RetryCount int `bson:"retryCount"`
+	RetryCount int
 
 	// PipelinePosition is where to pickup in the pipeline
-	PipelinePosition int `bson:"pipelinePosition"`
+	PipelinePosition int
 
 	// Version is a hash of the functions to know if the pipeline has changed.
-	Version string `bson:"version"`
+	Version string
 
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
-	CorrelationID string `bson:"correlationID"`
+	CorrelationID string
 
 	// EventID is used to identify an EdgeX event from the core services and mark it as pushed.
-	EventID string `bson:"eventID"`
+	EventID string
 
 	// EventChecksum is used to identify CBOR encoded data from the core services and mark it as pushed.
-	EventChecksum string `bson:"eventChecksum"`
+	EventChecksum string
 }
 
 // NewStoredObject creates a new instance of StoredObject and is the preferred way to create one.
-func NewStoredObject(id string, appServiceKey string, payload []byte, pipelinePosition int,
+func NewStoredObject(appServiceKey string, payload []byte, pipelinePosition int,
 	version string) StoredObject {
 	return StoredObject{
-		ID:               id,
 		AppServiceKey:    appServiceKey,
 		Payload:          payload,
 		RetryCount:       0,

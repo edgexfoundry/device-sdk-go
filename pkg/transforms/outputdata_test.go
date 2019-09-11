@@ -27,7 +27,7 @@ import (
 )
 
 func TestSetOutputDataString(t *testing.T) {
-	expected := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
+	expected := `<Event><UUID></UUID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	target := NewOutputData()
 
 	continuePipeline, result := target.SetOutputData(context, expected)
@@ -42,7 +42,7 @@ func TestSetOutputDataString(t *testing.T) {
 func TestSetOutputDataBytes(t *testing.T) {
 
 	var expected []byte
-	expected = []byte(`<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`)
+	expected = []byte(`<Event><UUID></UUID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`)
 	target := NewOutputData()
 
 	continuePipeline, result := target.SetOutputData(context, expected)
@@ -81,7 +81,7 @@ func TestSetOutputDataNoData(t *testing.T) {
 }
 
 func TestSetOutputDataMultipleParametersValid(t *testing.T) {
-	expected := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
+	expected := `<Event><UUID></UUID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	target := NewOutputData()
 
 	continuePipeline, result := target.SetOutputData(context, expected, "", "", "")

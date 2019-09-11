@@ -16,23 +16,23 @@
 package redis
 
 import (
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
 )
 
 // Store persists a stored object to the data store.
-func Store(o models.StoredObject) error {
-	return nil
+func Store(o contracts.StoredObject) (id string, err error) {
+	return "", nil
 }
 
 // RetrieveFromStore gets an object from the data store.
-func RetrieveFromStore(appServiceKey string) (objects []models.StoredObject, err error) {
+func RetrieveFromStore(appServiceKey string) (objects []contracts.StoredObject, err error) {
 	return nil, nil
 }
 
 // Update replaces the data currently in the store with the provided data.
-func Update(o models.StoredObject) error {
+func Update(o contracts.StoredObject) error {
 	return nil
 }
 
