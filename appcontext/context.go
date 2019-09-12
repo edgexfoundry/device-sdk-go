@@ -19,13 +19,16 @@ package appcontext
 import (
 	syscontext "context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
@@ -45,9 +48,16 @@ type Context struct {
 	OutputData []byte
 	// This holds the configuration for your service. This is the preferred way to access your custom application settings that have been set in the configuration.
 	Configuration common.ConfigurationStruct
-	// This is exposed to allow logging following the preferred logging strategy within EdgeX.
+	// LoggingClient is exposed to allow logging following the preferred logging strategy within EdgeX.
 	LoggingClient logger.LoggingClient
-	EventClient   coredata.EventClient
+	// EventClient exposes Core Data's EventClient API
+	EventClient coredata.EventClient
+	// ValueDescriptorClient exposes Core Data's ValueDescriptor API
+	ValueDescriptorClient coredata.ValueDescriptorClient
+	// CommandClient exposes Core Commands's Command API
+	CommandClient command.CommandClient
+	// NotificationsClient exposes Support Notification's Notifications API
+	NotificationsClient notifications.NotificationsClient
 }
 
 // Complete is optional and provides a way to return the specified data.
@@ -61,6 +71,10 @@ func (context *Context) Complete(output []byte) {
 // MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
 func (context *Context) MarkAsPushed() error {
 	context.LoggingClient.Debug("Marking event as pushed")
+	if context.EventClient == nil {
+		return fmt.Errorf("unable to Mark As Pushed: '%s' is missing from Clients configuration", common.CoreDataClientName)
+	}
+
 	if context.EventID != "" {
 		return context.EventClient.MarkPushed(context.EventID, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
 	} else if context.EventChecksum != "" {

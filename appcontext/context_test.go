@@ -52,9 +52,20 @@ func init() {
 	eventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: nil})
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 }
-func TestMarkAsPushedNoEventIdOrChecksum(t *testing.T) {
+func TestMarkAsPushedNoClient(t *testing.T) {
 	ctx := Context{
 		LoggingClient: lc,
+	}
+	err := ctx.MarkAsPushed()
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "'CoreData' is missing from Clients")
+}
+
+func TestMarkAsPushedNoEventIdOrChecksum(t *testing.T) {
+	eventClient = coredata.NewEventClient(params, mockEventEndpoint{})
+	ctx := Context{
+		LoggingClient: lc,
+		EventClient:   eventClient,
 	}
 	err := ctx.MarkAsPushed()
 	assert.NotNil(t, err)
@@ -79,6 +90,7 @@ func TestMarkAsPushedNoChecksum(t *testing.T) {
 	defer ts.Close()
 	params.Url = ts.URL + clients.ApiEventRoute
 	eventClient = coredata.NewEventClient(params, mockEventEndpoint{})
+
 	ctx := Context{
 		EventChecksum: testChecksum,
 		CorrelationID: "correlationId",

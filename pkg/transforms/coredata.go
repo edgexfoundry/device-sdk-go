@@ -52,11 +52,11 @@ func (cdc *CoreData) PushToCoreData(edgexcontext *appcontext.Context, params ...
 	}
 	val, err := util.CoerceType(params[0])
 	if err != nil {
-		return false, err.Error()
+		return false, err
 	}
 	result, err := edgexcontext.PushToCoreData(cdc.DeviceName, cdc.ReadingName, val)
 	if err != nil {
-		return false, err.Error()
+		return false, err
 	}
 	return true, result
 }
