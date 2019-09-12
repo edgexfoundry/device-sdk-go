@@ -65,7 +65,7 @@ var TestTimeoutConfig = db.Configuration{
 	BatchSize:    TestBatchSize,
 }
 
-var TestContract = contracts.StoredObject{
+var TestContractBase = contracts.StoredObject{
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
 	PipelinePosition: TestPipelinePosition,
@@ -82,6 +82,37 @@ var TestContractBadID = contracts.StoredObject{
 	RetryCount:       TestRetryCount,
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
+	CorrelationID:    TestCorrelationID,
+	EventID:          TestEventID,
+	EventChecksum:    TestEventChecksum,
+}
+
+var TestContractNoAppServiceKey = contracts.StoredObject{
+	ID:               uuid.New().String(),
+	Payload:          TestPayload,
+	RetryCount:       TestRetryCount,
+	PipelinePosition: TestPipelinePosition,
+	Version:          TestVersion,
+	CorrelationID:    TestCorrelationID,
+	EventID:          TestEventID,
+	EventChecksum:    TestEventChecksum,
+}
+
+var TestContractNoPayload = contracts.StoredObject{
+	AppServiceKey:    uuid.New().String(),
+	RetryCount:       TestRetryCount,
+	PipelinePosition: TestPipelinePosition,
+	Version:          TestVersion,
+	CorrelationID:    TestCorrelationID,
+	EventID:          TestEventID,
+	EventChecksum:    TestEventChecksum,
+}
+
+var TestContractNoVersion = contracts.StoredObject{
+	AppServiceKey:    uuid.New().String(),
+	Payload:          TestPayload,
+	RetryCount:       TestRetryCount,
+	PipelinePosition: TestPipelinePosition,
 	CorrelationID:    TestCorrelationID,
 	EventID:          TestEventID,
 	EventChecksum:    TestEventChecksum,
@@ -123,14 +154,14 @@ func TestClient_NewClient(t *testing.T) {
 }
 
 func TestClient_Store(t *testing.T) {
-	TestContractUUID := TestContract
+	TestContractUUID := TestContractBase
 	TestContractUUID.ID = uuid.New().String()
 	TestContractUUID.AppServiceKey = uuid.New().String()
 
-	TestContractValid := TestContract
+	TestContractValid := TestContractBase
 	TestContractValid.AppServiceKey = uuid.New().String()
 
-	TestContractNoAppServiceKey := TestContract
+	TestContractNoAppServiceKey := TestContractBase
 	TestContractUUID.ID = uuid.New().String()
 
 	client, _ := NewClient(TestValidNoAuthConfig)
@@ -151,14 +182,14 @@ func TestClient_Store(t *testing.T) {
 			false,
 		},
 		{
-			"Success, no app service key",
+			"Failure, no app service key",
 			TestContractNoAppServiceKey,
-			false,
+			true,
 		},
 		{
 			"Failure, no app service key double store",
 			TestContractNoAppServiceKey,
-			false,
+			true,
 		},
 		{
 			"Success, object with UUID",
@@ -171,7 +202,17 @@ func TestClient_Store(t *testing.T) {
 			true,
 		},
 		{
-			"Bad ID",
+			"Failure, no payload",
+			TestContractNoPayload,
+			true,
+		},
+		{
+			"Failure, no version",
+			TestContractNoVersion,
+			true,
+		},
+		{
+			"Failure, bad ID",
 			TestContractBadID,
 			true,
 		},
@@ -198,11 +239,11 @@ func TestClient_Store(t *testing.T) {
 func TestClient_RetrieveFromStore(t *testing.T) {
 	UUIDAppServiceKey := uuid.New().String()
 
-	UUIDContract0 := TestContract
+	UUIDContract0 := TestContractBase
 	UUIDContract0.ID = uuid.New().String()
 	UUIDContract0.AppServiceKey = UUIDAppServiceKey
 
-	UUIDContract1 := TestContract
+	UUIDContract1 := TestContractBase
 	UUIDContract1.ID = uuid.New().String()
 	UUIDContract1.AppServiceKey = UUIDAppServiceKey
 
@@ -262,7 +303,7 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 }
 
 func TestClient_Update(t *testing.T) {
-	TestContractValid := TestContract
+	TestContractValid := TestContractBase
 	TestContractValid.AppServiceKey = uuid.New().String()
 	TestContractValid.Version = uuid.New().String()
 
@@ -283,10 +324,24 @@ func TestClient_Update(t *testing.T) {
 		},
 		{
 			"Failure, no UUID",
-			TestContract,
+			TestContractBase,
 			true,
 		},
-		// cannot test for no AppServiceKey since this is a valid update but an invalid read
+		{
+			"Failure, no app service key",
+			TestContractNoAppServiceKey,
+			true,
+		},
+		{
+			"Failure, no payload",
+			TestContractNoPayload,
+			true,
+		},
+		{
+			"Failure, no version",
+			TestContractNoVersion,
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -321,7 +376,7 @@ func TestClient_Update(t *testing.T) {
 }
 
 func TestClient_RemoveFromStore(t *testing.T) {
-	TestContractValid := TestContract
+	TestContractValid := TestContractBase
 	TestContractValid.AppServiceKey = uuid.New().String()
 
 	client, _ := NewClient(TestValidNoAuthConfig)
@@ -340,11 +395,20 @@ func TestClient_RemoveFromStore(t *testing.T) {
 			false,
 		},
 		{
-			"Failure, no UUID",
-			TestContract,
+			"Failure, no app service key",
+			TestContractNoAppServiceKey,
 			true,
 		},
-		// cannot test for no AppServiceKey since this is a valid delete but an invalid read
+		{
+			"Failure, no payload",
+			TestContractNoPayload,
+			true,
+		},
+		{
+			"Failure, no version",
+			TestContractNoVersion,
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

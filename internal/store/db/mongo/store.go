@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strconv"
 	"time"
@@ -45,6 +46,17 @@ const mongoCollection = "store"
 
 // Store persists a stored object to the data store.
 func (c Client) Store(o contracts.StoredObject) (string, error) {
+	// do not use standard function because empty ID is a valid object
+	if o.AppServiceKey == "" {
+		return "", errors.New("invalid contract, app service key cannot be empty")
+	}
+	if len(o.Payload) == 0 {
+		return "", errors.New("invalid contract, payload cannot be empty")
+	}
+	if o.Version == "" {
+		return "", errors.New("invalid contract, version cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
@@ -130,24 +142,17 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []contracts.Sto
 
 // Update replaces the data currently in the store with the provided data.
 func (c Client) Update(o contracts.StoredObject) error {
-	if o.ID == "" {
-		return errors.New("update argument object does not have an UUID")
+	err := validateContract(o)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	var filter bson.D
-	// do not use ASK if it's blank, otherwise it will leak info about all ASK
-	if o.AppServiceKey != "" {
-		filter = bson.D{
-			{"uuid", o.ID},
-			{"appServiceKey", o.AppServiceKey},
-		}
-	} else {
-		filter = bson.D{
-			{"uuid", o.ID},
-		}
+	filter := bson.D{
+		primitive.E{Key: "uuid", Value: o.ID},
+		primitive.E{Key: "appServiceKey", Value: o.AppServiceKey},
 	}
 
 	update := bson.M{"$set": bson.M{
@@ -162,10 +167,6 @@ func (c Client) Update(o contracts.StoredObject) error {
 		"eventChecksum":    o.EventChecksum,
 	}}
 
-	model := new(models.StoredObject)
-	debug := c.Client.Collection(mongoCollection).FindOne(ctx, filter)
-	err := debug.Decode(model)
-
 	_, err = c.Client.Collection(mongoCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
@@ -176,27 +177,20 @@ func (c Client) Update(o contracts.StoredObject) error {
 
 // RemoveFromStore removes an object from the data store.
 func (c Client) RemoveFromStore(o contracts.StoredObject) error {
-	if o.ID == "" {
-		return errors.New("update argument object does not have an UUID")
+	err := validateContract(o)
+	if err != nil {
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	var filter bson.D
-	// do not use ASK if it's blank, otherwise it will leak info about all ASK
-	if o.AppServiceKey != "" {
-		filter = bson.D{
-			{"uuid", o.ID},
-			{"appServiceKey", o.AppServiceKey},
-		}
-	} else {
-		filter = bson.D{
-			{"uuid", o.ID},
-		}
+	filter := bson.D{
+		primitive.E{Key: "uuid", Value: o.ID},
+		primitive.E{Key: "appServiceKey", Value: o.AppServiceKey},
 	}
 
-	_, err := c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
+	_, err = c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -261,4 +255,21 @@ func NewClient(config db.Configuration) (client interfaces.StoreClient, err erro
 	case <-notify:
 		return Client{timeout, mongoDatabase, mongoClient}, nil
 	}
+}
+
+func validateContract(o contracts.StoredObject) error {
+	if o.ID == "" {
+		return errors.New("invalid contract, ID cannot be empty")
+	}
+	if o.AppServiceKey == "" {
+		return errors.New("invalid contract, app service key cannot be empty")
+	}
+	if len(o.Payload) == 0 {
+		return errors.New("invalid contract, payload cannot be empty")
+	}
+	if o.Version == "" {
+		return errors.New("invalid contract, version cannot be empty")
+	}
+
+	return nil
 }

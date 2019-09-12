@@ -15,15 +15,15 @@
 package models
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"reflect"
 	"testing"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var TestObjectIDValid = primitive.NewObjectID()
 var TestObjectIDNil = primitive.NilObjectID
 
 var TestUUIDValid = uuid.New().String()
@@ -40,19 +40,6 @@ const (
 	TestEventChecksum    = "failed :("
 )
 
-var TestModelBSON = StoredObject{
-	ObjectID:         TestObjectIDValid,
-	UUID:             TestUUIDNil,
-	AppServiceKey:    TestAppServiceKey,
-	Payload:          TestPayload,
-	RetryCount:       TestRetryCount,
-	PipelinePosition: TestPipelinePosition,
-	Version:          TestVersion,
-	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
-}
-
 var TestModelNoID = StoredObject{
 	AppServiceKey:    TestAppServiceKey,
 	Payload:          TestPayload,
@@ -67,18 +54,6 @@ var TestModelNoID = StoredObject{
 var TestModelUUID = StoredObject{
 	ObjectID:         TestObjectIDNil,
 	UUID:             TestUUIDValid,
-	AppServiceKey:    TestAppServiceKey,
-	Payload:          TestPayload,
-	RetryCount:       TestRetryCount,
-	PipelinePosition: TestPipelinePosition,
-	Version:          TestVersion,
-	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
-}
-
-var TestContractBSON = contracts.StoredObject{
-	ID:               TestObjectIDValid.Hex(),
 	AppServiceKey:    TestAppServiceKey,
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
@@ -133,12 +108,6 @@ func TestFromContract(t *testing.T) {
 		expectedError  bool
 	}{
 		{
-			"Success, BSON",
-			TestContractBSON,
-			TestModelBSON,
-			false,
-		},
-		{
 			"Success, UUID",
 			TestContractUUID,
 			TestModelUUID,
@@ -177,11 +146,6 @@ func TestToContract(t *testing.T) {
 		fromModel      StoredObject
 		expectedResult contracts.StoredObject
 	}{
-		{
-			"Success, BSON",
-			TestModelBSON,
-			TestContractBSON,
-		},
 		{
 			"Success, UUID",
 			TestModelUUID,
