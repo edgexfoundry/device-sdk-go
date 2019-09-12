@@ -21,7 +21,7 @@ import (
 
 // StoreClient establishes the contracts required to persist exported data before being forwarded.
 type StoreClient interface {
-	// Store persists a stored object to the data store.
+	// Store persists a stored object to the data store and returns the assigned UUID.
 	Store(o contracts.StoredObject) (id string, err error)
 
 	// RetrieveFromStore gets an object from the data store.

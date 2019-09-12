@@ -21,13 +21,12 @@
 package mongo
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"math/rand"
 	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
@@ -40,7 +39,6 @@ const (
 	TestDatabaseName = "test"
 	TestBatchSize    = 1337
 
-	TestUUIDNil          = ""
 	TestAppServiceKey    = "apps"
 	TestRetryCount       = 100
 	TestPipelinePosition = 1337
@@ -135,7 +133,7 @@ func TestClient_Store(t *testing.T) {
 	TestContractUUID := TestContract
 	TestContractUUID.ID = uuid.New().String()
 
-	var client interfaces.StoreClient
+	client, _ := NewClient(TestValidNoAuthConfig)
 
 	tests := []struct {
 		name          string
@@ -180,8 +178,6 @@ func TestClient_Store(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, _ = NewClient(TestValidNoAuthConfig)
-
 			_, err := client.Store(test.toStore)
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")
@@ -220,7 +216,7 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 	UUIDContract1.ID = uuid.New().String()
 	UUIDContract1.AppServiceKey = UUIDAppServiceKey
 
-	var client interfaces.StoreClient
+	client, _ := NewClient(TestValidNoAuthConfig)
 
 	tests := []struct {
 		name          string
@@ -255,8 +251,6 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, _ = NewClient(TestValidNoAuthConfig)
-
 			for _, object := range test.toStore {
 				_, _ = client.Store(object)
 			}
@@ -288,34 +282,38 @@ func TestClient_Update(t *testing.T) {
 	TestContractBSON.ID = primitive.NewObjectID().Hex()
 
 	TestContractUpdated := TestContractBSON
-	TestContractUpdated.ID = primitive.NewObjectID().Hex()
 	TestContractUpdated.AppServiceKey = uuid.New().String()
 	TestContractUpdated.Version = uuid.New().String()
 
-	var client interfaces.StoreClient
+	client, _ := NewClient(TestValidNoAuthConfig)
+
+	// add the objects we're going to update in the database now so we have a known state
+	TestContractUpdated.ID, _ = client.Store(TestContractBSON)
 
 	tests := []struct {
 		name          string
-		updateFrom    contracts.StoredObject
-		updateTo      contracts.StoredObject
+		expectedVal   contracts.StoredObject
 		expectedError bool
 	}{
 		{
 			"Success, BSON",
-			TestContractBSON,
 			TestContractUpdated,
 			false,
+		},
+		{
+			"Failure, Bad ID",
+			TestContractBadID,
+			true,
+		},
+		{
+			"Failure, no UUID",
+			TestContract,
+			true,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, _ = NewClient(TestValidNoAuthConfig)
-
-			id, _ := client.Store(test.updateFrom)
-
-			test.updateTo.ID = id
-
-			err := client.Update(test.updateTo)
+			err := client.Update(test.expectedVal)
 
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")
@@ -325,13 +323,16 @@ func TestClient_Update(t *testing.T) {
 				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
-			actual, _ := client.RetrieveFromStore(test.updateTo.AppServiceKey)
-			if actual == nil {
-				t.Fatal("No objects retrieved from store")
-			}
+			// only do a lookup on tests that we aren't expecting errors
+			if !test.expectedError {
+				actual, _ := client.RetrieveFromStore(test.expectedVal.AppServiceKey)
+				if actual == nil {
+					t.Fatal("No objects retrieved from store")
+				}
 
-			if !reflect.DeepEqual(actual[0], test.updateTo) {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.updateTo, actual[0])
+				if !reflect.DeepEqual(actual[0], test.expectedVal) {
+					t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedVal, actual[0])
+				}
 			}
 		})
 	}
@@ -346,11 +347,14 @@ func TestClient_UpdateRetryCount(t *testing.T) {
 	TestContractBSON := TestContract
 	TestContractBSON.AppServiceKey = uuid.New().String()
 
-	var client interfaces.StoreClient
+	client, _ := NewClient(TestValidNoAuthConfig)
+
+	// add the objects we're going to update in the database now so we have a known state
+	TestContractBSON.ID, _ = client.Store(TestContractBSON)
 
 	tests := []struct {
 		name          string
-		toStore       contracts.StoredObject
+		toUpdate      contracts.StoredObject
 		updateCount   int
 		expectedError bool
 	}{
@@ -360,14 +364,22 @@ func TestClient_UpdateRetryCount(t *testing.T) {
 			rand.Intn(10),
 			false,
 		},
+		{
+			"Failure, Bad ID",
+			TestContractBadID,
+			0,
+			true,
+		},
+		{
+			"Failure, no UUID",
+			TestContract,
+			0,
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, _ = NewClient(TestValidNoAuthConfig)
-
-			id, _ := client.Store(test.toStore)
-
-			err := client.UpdateRetryCount(id, test.updateCount)
+			err := client.UpdateRetryCount(test.toUpdate.ID, test.updateCount)
 
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")
@@ -377,13 +389,16 @@ func TestClient_UpdateRetryCount(t *testing.T) {
 				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
-			actual, _ := client.RetrieveFromStore(test.toStore.AppServiceKey)
-			if actual == nil {
-				t.Fatal("No objects retrieved from store")
-			}
+			// only do a lookup on tests that we aren't expecting errors
+			if !test.expectedError {
+				actual, _ := client.RetrieveFromStore(test.toUpdate.AppServiceKey)
+				if actual == nil {
+					t.Fatal("No objects retrieved from store")
+				}
 
-			if !reflect.DeepEqual(actual[0].RetryCount, test.updateCount) {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.updateCount, actual[0].RetryCount)
+				if !reflect.DeepEqual(actual[0].RetryCount, test.updateCount) {
+					t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.updateCount, actual[0].RetryCount)
+				}
 			}
 		})
 	}
@@ -398,11 +413,14 @@ func TestClient_RemoveFromStore(t *testing.T) {
 	TestContractBSON := TestContract
 	TestContractBSON.AppServiceKey = uuid.New().String()
 
-	var client interfaces.StoreClient
+	client, _ := NewClient(TestValidNoAuthConfig)
+
+	// add the objects we're going to update in the database now so we have a known state
+	TestContractBSON.ID, _ = client.Store(TestContractBSON)
 
 	tests := []struct {
 		name          string
-		toStore       contracts.StoredObject
+		testObject    contracts.StoredObject
 		expectedError bool
 	}{
 		{
@@ -410,14 +428,20 @@ func TestClient_RemoveFromStore(t *testing.T) {
 			TestContractBSON,
 			false,
 		},
+		{
+			"Failure, Bad ID",
+			TestContractBadID,
+			true,
+		},
+		{
+			"Failure, no UUID",
+			TestContract,
+			true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			client, _ = NewClient(TestValidNoAuthConfig)
-
-			id, _ := client.Store(test.toStore)
-
-			err := client.RemoveFromStore(id)
+			err := client.RemoveFromStore(test.testObject.ID)
 
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")
@@ -427,9 +451,12 @@ func TestClient_RemoveFromStore(t *testing.T) {
 				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
 			}
 
-			actual, _ := client.RetrieveFromStore(test.toStore.AppServiceKey)
-			if actual != nil {
-				t.Fatal("Object retrieved, should have been nil")
+			// only do a lookup on tests that we aren't expecting errors
+			if !test.expectedError {
+				actual, _ := client.RetrieveFromStore(test.testObject.AppServiceKey)
+				if actual != nil {
+					t.Fatal("Object retrieved, should have been nil")
+				}
 			}
 		})
 	}

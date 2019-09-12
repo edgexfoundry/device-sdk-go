@@ -166,12 +166,12 @@ func (c Client) Update(o contracts.StoredObject) error {
 
 // UpdateRetryCount modifies the RetryCount variable for a given object.
 func (c Client) UpdateRetryCount(id string, count int) error {
+	if id == "" {
+		return errors.New("no UUID provided")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
-
-	if id == "" {
-		return errors.New("update argument object does not have an UUID")
-	}
 
 	objID, _, err := models.FromContractId(id)
 	if err != nil {
@@ -191,6 +191,10 @@ func (c Client) UpdateRetryCount(id string, count int) error {
 
 // RemoveFromStore removes an object from the data store.
 func (c Client) RemoveFromStore(id string) error {
+	if id == "" {
+		return errors.New("no UUID provided")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
