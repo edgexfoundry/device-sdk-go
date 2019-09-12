@@ -38,6 +38,17 @@ type WebServer struct {
 	router        *mux.Router
 }
 
+// NewWebserver returns a new instance of *WebServer
+func NewWebServer(config *common.ConfigurationStruct, lc logger.LoggingClient, router *mux.Router) *WebServer {
+	ws := &WebServer{
+		Config:        config,
+		LoggingClient: lc,
+		router:        router,
+	}
+
+	return ws
+}
+
 // Test if the service is working
 func (webserver *WebServer) pingHandler(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("Content-Type", "text/plain")
@@ -83,10 +94,14 @@ func (webserver *WebServer) versionHandler(writer http.ResponseWriter, _ *http.R
 	return
 }
 
+// AddRoute enables support to leverage the existing webserver to add routes.
+func (webserver *WebServer) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) {
+	webserver.router.HandleFunc(route, handler).Methods(methods...)
+}
+
 // ConfigureStandardRoutes loads up some default routes
 func (webserver *WebServer) ConfigureStandardRoutes() {
 	webserver.LoggingClient.Info("Registering standard routes...")
-	webserver.router = mux.NewRouter()
 
 	// Ping Resource
 	webserver.router.HandleFunc(clients.ApiPingRoute, webserver.pingHandler).Methods(http.MethodGet)
@@ -103,8 +118,7 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
 func (webserver *WebServer) SetupTriggerRoute(handlerForTrigger func(http.ResponseWriter, *http.Request)) {
-
-	webserver.router.HandleFunc("/trigger", handlerForTrigger)
+	webserver.router.HandleFunc(internal.ApiTriggerRoute, handlerForTrigger)
 }
 
 // StartHTTPServer starts the http server

@@ -22,7 +22,7 @@ const (
 	ConfigFileName       = "configuration.toml"
 	ConfigRegistryStem   = "edgex/appservices/1.0/"
 	WritableKey          = "/Writable"
-	ApiPingRoute         = "/api/v1/ping"
+	ApiTriggerRoute      = "/api/v1/trigger"
 	LogDurationKey       = "duration"
 )
 

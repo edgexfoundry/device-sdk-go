@@ -17,6 +17,7 @@
 package appsdk
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 
@@ -25,8 +26,10 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,6 +44,25 @@ func init() {
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {
 	return reflect.TypeOf(objectPtr) == reflect.TypeOf(typePtr)
 }
+func TestAddRoute(t *testing.T) {
+	router := mux.NewRouter()
+	ws := webserver.NewWebServer(&common.ConfigurationStruct{}, lc, router)
+
+	sdk := AppFunctionsSDK{
+		webserver: ws,
+	}
+	sdk.AddRoute("/test", func(http.ResponseWriter, *http.Request) {}, "GET")
+	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err != nil {
+			return err
+		}
+		assert.Equal(t, "/test", path)
+		return nil
+	})
+
+}
+
 func TestSetupHTTPTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
@@ -71,7 +93,37 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }
+func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Binding: common.BindingInfo{
+				Type: "meSsaGebus",
+			},
+		},
+	}
+	err := sdk.SetFunctionsPipeline()
+	assert.NotNil(t, err, "There should be an error")
+	assert.Equal(t, err.Error(), "No transforms provided to pipeline")
+}
+func TestSetFunctionsPipelineOneTransform(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		runtime:       &runtime.GolangRuntime{},
+		config: common.ConfigurationStruct{
+			Binding: common.BindingInfo{
+				Type: "meSsaGebus",
+			},
+		},
+	}
+	function := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		return true, nil
+	}
 
+	err := sdk.SetFunctionsPipeline(function)
+	assert.Nil(t, err, "There should be no error")
+	assert.Equal(t, 1, len(sdk.transforms))
+}
 func TestApplicationSettings(t *testing.T) {
 	expectedSettingKey := "ApplicationName"
 	expectedSettingValue := "simple-filter-xml"
@@ -254,4 +306,40 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	_, err := sdk.LoadConfigurablePipeline()
 	assert.NoError(t, err, "")
 	assert.Nil(t, sdk.TargetType)
+}
+
+func TestSetLoggingTargetLocal(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Logging: common.LoggingInfo{
+				EnableRemote: false,
+				File:         "./myfile",
+			},
+		},
+	}
+	result, err := sdk.setLoggingTarget()
+	assert.Nil(t, err, "Should be no error")
+	assert.Equal(t, "./myfile", result, "File path is incorrect")
+}
+
+func TestSetLoggingTargetRemote(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Clients: map[string]common.ClientInfo{
+				"Logging": common.ClientInfo{
+					Protocol: "http",
+					Host:     "logs",
+					Port:     8080,
+				},
+			},
+			Logging: common.LoggingInfo{
+				EnableRemote: true,
+			},
+		},
+	}
+	result, err := sdk.setLoggingTarget()
+	assert.Nil(t, err, "Should be no error")
+	assert.Equal(t, "http://logs:8080/api/v1/logs", result, "File path is incorrect")
 }

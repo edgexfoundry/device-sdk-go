@@ -173,7 +173,11 @@ The `LoggingClient` exposed on the context is available to leverage logging libr
 
 ### .MarkAsPushed()
 `.MarkAsPushed()` is used to indicate to EdgeX Core Data that an event has been "pushed" and is no longer required to be stored. The scheduler service will purge all events that have been marked as pushed based on the configured schedule. By default, it is once daily at midnight. If you leverage the built in export functions (i.e. HTTP Export, or MQTT Export), then the event will automatically be marked as pushed upon a successful export. 
-
+### .PushToCore()
+`.PushToCore(string deviceName, string readingName, byte[] value)` is used to push data to EdgeX Core Data so that it can be shared with other applications that are subscribed to the message bus that core-data publishes to. `deviceName` can be set as you like along with the `readingName` which will be set on the EdgeX event sent to CoreData. This function will return the new EdgeX Event with the ID populated, however the CorrelationId will not be available.
+ > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
+ 
+ > WARNING: Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
 ### .Complete()
 `.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
 
@@ -216,6 +220,8 @@ There are two compression types included in the SDK that can be added to your pi
 These are functions that enable interactions with the CoreData REST API. 
 - `NewCoreData()` - This function returns a `CoreData` instance. This `CoreData` instance is used to access the following function(s).
   - `MarkAsPushed` - This function provides the MarkAsPushed function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.MarkAsPushed()). The data passed into this function from the pipeline is passed along unmodifed since all required information is provided on the context (EventId, CorrelationId,etc.. )
+  - `PushToCore` - This function provides the PushToCore function from the context as a First-Class Transform that can be called in your pipeline. [See Definition Above](#.PushToCore()). The data passed into this function from the pipeline is wrapped in an EdgeX event with the `deviceName` and `readingName` that were set upon instantiation and then sent to CoreData to be added as an event. Returns the new EdgeX event with ID populated.
+    > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
@@ -228,7 +234,7 @@ There are two export functions included in the SDK that can be added to your pip
 
 There is one output function included in the SDK that can be added to your pipeline. 
 
-- NewOuptut() - This function returns a `Output` instance that is used to access the following output function: 
+- NewOutput() - This function returns a `Output` instance that is used to access the following output function: 
   - `SetOutput` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sets it as the output data for the pipeline to return to the configured trigger. If configured to use message bus, the data will be published to the message bus as determined by the `MessageBus` and `Binding` configuration. If configured to use HTTP trigger the data is returned as the HTTP response. Note that calling Complete() from the Context API in a custom function can be used in place of adding this function to your pipeline
 
 ## Configuration
@@ -263,6 +269,27 @@ The following items discuss topics that are a bit beyond the basic use cases of 
 ### Configurable Functions Pipeline
 
 This SDK provides the capability to define the functions pipeline via configuration rather than code using the **app-service-configurable** application service. See **app-service-configurable** [README](https://github.com/edgexfoundry/app-service-configurable/blob/master/README.md) for more details.
+
+### Using The Webserver
+
+It is not uncommon to require your own API endpoints when building an app service. Rather than spin up your own webserver inside of your app (alongside the already existing running webserver), we've exposed a method that allows you add your own routes to the existing webserver. A few routes are reserved and cannot be used:
+- /api/version
+- /api/v1/ping
+- /api/v1/metrics
+- /api/v1/config
+- /api/v1/trigger
+To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string)` function provided on the sdk. Here's an example:
+```golang
+edgexSdk.AddRoute("/myroute", func(writer http.ResponseWriter, req *http.Request) {
+    context := req.Context().Value(appsdk.SDKKey).(*appsdk.AppFunctionsSDK) 
+		context.LoggingClient.Info("TEST") // alternative to edgexSdk.LoggingClient.Info("TEST")
+		writer.Header().Set("Content-Type", "text/plain")
+		writer.Write([]byte("hello"))
+		writer.WriteHeader(200)
+}, "GET")
+```
+Under the hood, this simply adds the provided route, handler, and method to the gorilla `mux.Router` we use in the SDK. For more information you can check out the github repo [here](https://github.com/gorilla/mux). 
+You can access the resources such as the logging client by accessing the context as shown above -- this is useful for when your routes might not be defined in your main.go where you have access to the `edgexSdk` instance.
 
 ### Target Type
 
@@ -317,15 +344,13 @@ The following command line options are available
 
 ```
   -c=<path>
-        Specify an alternate configuration directory.
-  -confdir=<path>
+  --confdir=<path>
         Specify an alternate configuration directory.
   -p=<profile>
+  --profile=<profile>
         Specify a profile other than default.
-  -profile=<profile>
-        Specify a profile other than default.
-  -r    Indicates the service should use registry.
-  -registry
+  -r    
+  --registry
         Indicates the service should use the registry.
 ```
 

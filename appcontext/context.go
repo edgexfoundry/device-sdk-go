@@ -19,11 +19,15 @@ package appcontext
 import (
 	syscontext "context"
 	"errors"
+	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/google/uuid"
 )
 
 // AppFunction is a type alias for func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{})
@@ -56,6 +60,7 @@ func (context *Context) Complete(output []byte) {
 
 // MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
 func (context *Context) MarkAsPushed() error {
+	context.LoggingClient.Debug("Marking event as pushed")
 	if context.EventID != "" {
 		return context.EventClient.MarkPushed(context.EventID, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
 	} else if context.EventChecksum != "" {
@@ -63,4 +68,39 @@ func (context *Context) MarkAsPushed() error {
 	} else {
 		return errors.New("No EventID or EventChecksum Provided")
 	}
+}
+
+// PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
+// CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
+func (context *Context) PushToCoreData(deviceName string, readingName string, value interface{}) (*models.Event, error) {
+	context.LoggingClient.Debug("Pushing to CoreData")
+	now := time.Now().UnixNano()
+	val, err := util.CoerceType(value)
+	if err != nil {
+		return nil, err
+	}
+	newReading := models.Reading{
+		Value:  string(val),
+		Origin: now,
+		Device: deviceName,
+		Name:   readingName,
+	}
+
+	readings := make([]models.Reading, 0, 1)
+	readings = append(readings, newReading)
+
+	newEdgeXEvent := &models.Event{
+		Device:   deviceName,
+		Origin:   now,
+		Readings: readings,
+	}
+
+	correlation := uuid.New().String()
+	ctx := syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, correlation)
+	result, err := context.EventClient.Add(newEdgeXEvent, ctx)
+	if err != nil {
+		return nil, err
+	}
+	newEdgeXEvent.ID = result
+	return newEdgeXEvent, nil
 }

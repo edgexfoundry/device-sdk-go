@@ -18,15 +18,13 @@ package webserver
 
 import (
 	"encoding/json"
-	"testing"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-
 	"net/http"
 	"net/http/httptest"
+	"testing"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
@@ -34,16 +32,16 @@ import (
 )
 
 var logClient logger.LoggingClient
+var config *common.ConfigurationStruct
 
 func init() {
 	logClient = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	config = &common.ConfigurationStruct{}
 }
 
 func TestConfigureAndPingRoute(t *testing.T) {
 
-	webserver := WebServer{
-		LoggingClient: logClient,
-	}
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiPingRoute, nil)
@@ -54,11 +52,10 @@ func TestConfigureAndPingRoute(t *testing.T) {
 	assert.Equal(t, "pong", body)
 
 }
+
 func TestConfigureAndVersionRoute(t *testing.T) {
 
-	webserver := WebServer{
-		LoggingClient: logClient,
-	}
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiVersionRoute, nil)
@@ -71,10 +68,7 @@ func TestConfigureAndVersionRoute(t *testing.T) {
 }
 func TestConfigureAndConfigRoute(t *testing.T) {
 
-	webserver := WebServer{
-		LoggingClient: logClient,
-		Config:        &common.ConfigurationStruct{},
-	}
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiConfigRoute, nil)
@@ -87,9 +81,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-	webserver := WebServer{
-		LoggingClient: logClient,
-	}
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiMetricsRoute, nil)
@@ -110,11 +102,7 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	myRouter := mux.NewRouter()
-	webserver := WebServer{
-		LoggingClient: logClient,
-		router:        myRouter,
-	}
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 
 	handlerFunctionNotCalled := true
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +113,7 @@ func TestSetupTriggerRoute(t *testing.T) {
 
 	webserver.SetupTriggerRoute(handler)
 
-	req, _ := http.NewRequest("GET", "/trigger", nil)
+	req, _ := http.NewRequest("GET", internal.ApiTriggerRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
