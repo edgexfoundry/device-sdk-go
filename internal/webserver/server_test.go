@@ -27,6 +27,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
