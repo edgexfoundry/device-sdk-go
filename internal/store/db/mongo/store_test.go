@@ -21,15 +21,13 @@
 package mongo
 
 import (
-	"math/rand"
 	"reflect"
 	"testing"
 
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -39,7 +37,6 @@ const (
 	TestDatabaseName = "test"
 	TestBatchSize    = 1337
 
-	TestAppServiceKey    = "apps"
 	TestRetryCount       = 100
 	TestPipelinePosition = 1337
 	TestVersion          = "your"
@@ -69,7 +66,6 @@ var TestTimeoutConfig = db.Configuration{
 }
 
 var TestContract = contracts.StoredObject{
-	AppServiceKey:    TestAppServiceKey,
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
 	PipelinePosition: TestPipelinePosition,
@@ -81,7 +77,7 @@ var TestContract = contracts.StoredObject{
 
 var TestContractBadID = contracts.StoredObject{
 	ID:               "brandon!",
-	AppServiceKey:    TestAppServiceKey,
+	AppServiceKey:    "brandon!",
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
 	PipelinePosition: TestPipelinePosition,
@@ -127,10 +123,14 @@ func TestClient_NewClient(t *testing.T) {
 }
 
 func TestClient_Store(t *testing.T) {
-	TestContractBSON := TestContract
-	TestContractBSON.ID = primitive.NewObjectID().Hex()
-
 	TestContractUUID := TestContract
+	TestContractUUID.ID = uuid.New().String()
+	TestContractUUID.AppServiceKey = uuid.New().String()
+
+	TestContractValid := TestContract
+	TestContractValid.AppServiceKey = uuid.New().String()
+
+	TestContractNoAppServiceKey := TestContract
 	TestContractUUID.ID = uuid.New().String()
 
 	client, _ := NewClient(TestValidNoAuthConfig)
@@ -142,31 +142,31 @@ func TestClient_Store(t *testing.T) {
 	}{
 		{
 			"Success, no ID",
-			TestContract,
+			TestContractValid,
 			false,
 		},
 		{
 			"Success, no ID double store",
-			TestContract,
+			TestContractValid,
 			false,
 		},
 		{
-			"Success, BSON",
-			TestContractBSON,
+			"Success, no app service key",
+			TestContractNoAppServiceKey,
 			false,
 		},
 		{
-			"Failure, BSON double store",
-			TestContractBSON,
-			true,
+			"Failure, no app service key double store",
+			TestContractNoAppServiceKey,
+			false,
 		},
 		{
-			"Success, UUID",
+			"Success, object with UUID",
 			TestContractUUID,
 			false,
 		},
 		{
-			"Failure, UUID double store",
+			"Failure, object with UUID double store",
 			TestContractUUID,
 			true,
 		},
@@ -196,16 +196,6 @@ func TestClient_Store(t *testing.T) {
 }
 
 func TestClient_RetrieveFromStore(t *testing.T) {
-	BSONAppServiceKey := uuid.New().String()
-
-	BSONContract0 := TestContract
-	BSONContract0.ID = primitive.NewObjectID().Hex()
-	BSONContract0.AppServiceKey = BSONAppServiceKey
-
-	BSONContract1 := TestContract
-	BSONContract1.ID = primitive.NewObjectID().Hex()
-	BSONContract1.AppServiceKey = BSONAppServiceKey
-
 	UUIDAppServiceKey := uuid.New().String()
 
 	UUIDContract0 := TestContract
@@ -225,28 +215,22 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			"Success, single object, BSON",
-			[]contracts.StoredObject{BSONContract0},
-			BSONAppServiceKey,
-			false,
-		},
-		{
-			"Success, multiple object, BSON",
-			[]contracts.StoredObject{BSONContract0, BSONContract1},
-			BSONAppServiceKey,
-			false,
-		},
-		{
-			"Success, single object, UUID",
+			"Success, single object",
 			[]contracts.StoredObject{UUIDContract0},
 			UUIDAppServiceKey,
 			false,
 		},
 		{
-			"Success, multiple object, UUID",
+			"Success, multiple object",
 			[]contracts.StoredObject{UUIDContract0, UUIDContract1},
 			UUIDAppServiceKey,
 			false,
+		},
+		{
+			"Failure, no app service key",
+			[]contracts.StoredObject{},
+			"",
+			true,
 		},
 	}
 	for _, test := range tests {
@@ -278,17 +262,14 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 }
 
 func TestClient_Update(t *testing.T) {
-	TestContractBSON := TestContract
-	TestContractBSON.ID = primitive.NewObjectID().Hex()
-
-	TestContractUpdated := TestContractBSON
-	TestContractUpdated.AppServiceKey = uuid.New().String()
-	TestContractUpdated.Version = uuid.New().String()
+	TestContractValid := TestContract
+	TestContractValid.AppServiceKey = uuid.New().String()
+	TestContractValid.Version = uuid.New().String()
 
 	client, _ := NewClient(TestValidNoAuthConfig)
 
 	// add the objects we're going to update in the database now so we have a known state
-	TestContractUpdated.ID, _ = client.Store(TestContractBSON)
+	TestContractValid.ID, _ = client.Store(TestContractValid)
 
 	tests := []struct {
 		name          string
@@ -296,20 +277,16 @@ func TestClient_Update(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			"Success, BSON",
-			TestContractUpdated,
+			"Success",
+			TestContractValid,
 			false,
-		},
-		{
-			"Failure, Bad ID",
-			TestContractBadID,
-			true,
 		},
 		{
 			"Failure, no UUID",
 			TestContract,
 			true,
 		},
+		// cannot test for no AppServiceKey since this is a valid update but an invalid read
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -343,80 +320,14 @@ func TestClient_Update(t *testing.T) {
 	}
 }
 
-func TestClient_UpdateRetryCount(t *testing.T) {
-	TestContractBSON := TestContract
-	TestContractBSON.AppServiceKey = uuid.New().String()
-
-	client, _ := NewClient(TestValidNoAuthConfig)
-
-	// add the objects we're going to update in the database now so we have a known state
-	TestContractBSON.ID, _ = client.Store(TestContractBSON)
-
-	tests := []struct {
-		name          string
-		toUpdate      contracts.StoredObject
-		updateCount   int
-		expectedError bool
-	}{
-		{
-			"Success, BSON",
-			TestContractBSON,
-			rand.Intn(10),
-			false,
-		},
-		{
-			"Failure, Bad ID",
-			TestContractBadID,
-			0,
-			true,
-		},
-		{
-			"Failure, no UUID",
-			TestContract,
-			0,
-			true,
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := client.UpdateRetryCount(test.toUpdate.ID, test.updateCount)
-
-			if test.expectedError && err == nil {
-				t.Fatal("Expected an error")
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			// only do a lookup on tests that we aren't expecting errors
-			if !test.expectedError {
-				actual, _ := client.RetrieveFromStore(test.toUpdate.AppServiceKey)
-				if actual == nil {
-					t.Fatal("No objects retrieved from store")
-				}
-
-				if !reflect.DeepEqual(actual[0].RetryCount, test.updateCount) {
-					t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.updateCount, actual[0].RetryCount)
-				}
-			}
-		})
-	}
-
-	err := client.Disconnect()
-	if err != nil {
-		t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-	}
-}
-
 func TestClient_RemoveFromStore(t *testing.T) {
-	TestContractBSON := TestContract
-	TestContractBSON.AppServiceKey = uuid.New().String()
+	TestContractValid := TestContract
+	TestContractValid.AppServiceKey = uuid.New().String()
 
 	client, _ := NewClient(TestValidNoAuthConfig)
 
 	// add the objects we're going to update in the database now so we have a known state
-	TestContractBSON.ID, _ = client.Store(TestContractBSON)
+	TestContractValid.ID, _ = client.Store(TestContractValid)
 
 	tests := []struct {
 		name          string
@@ -424,24 +335,20 @@ func TestClient_RemoveFromStore(t *testing.T) {
 		expectedError bool
 	}{
 		{
-			"Success, BSON",
-			TestContractBSON,
+			"Success",
+			TestContractValid,
 			false,
-		},
-		{
-			"Failure, Bad ID",
-			TestContractBadID,
-			true,
 		},
 		{
 			"Failure, no UUID",
 			TestContract,
 			true,
 		},
+		// cannot test for no AppServiceKey since this is a valid delete but an invalid read
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := client.RemoveFromStore(test.testObject.ID)
+			err := client.RemoveFromStore(test.testObject)
 
 			if test.expectedError && err == nil {
 				t.Fatal("Expected an error")

@@ -59,7 +59,7 @@ type StoredObject struct {
 
 func (o *StoredObject) FromContract(c contracts.StoredObject) error {
 	var err error
-	o.ObjectID, o.UUID, err = FromContractId(c.ID)
+	o.UUID, err = GetUUID(c.ID)
 	if err != nil {
 		return err
 	}
@@ -92,26 +92,22 @@ func (o StoredObject) ToContract() contracts.StoredObject {
 	return contract
 }
 
-func FromContractId(id string) (primitive.ObjectID, string, error) {
+// GetUUID validates that the provided ID is a valid UUID, and returns it in the standard format.
+// If no ID is provided, it generates a new UUID.
+func GetUUID(id string) (string, error) {
 	// In this first case, UUID is empty so this must be an add.
 	// Generate new BSON/UUIDs
 	if id == "" {
-		return primitive.NewObjectID(), uuid.New().String(), nil
+		return uuid.New().String(), nil
 	}
 
-	// In this case, we're dealing with an existing id
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		// Id is not a BSON UUID. Is it a UUID?
-		_, err := uuid.Parse(id)
-		if err != nil { // It is some unsupported type of string
-			return primitive.NilObjectID, "", errors.New("invalid id: " + id)
-		}
-		return primitive.NilObjectID, id, nil
+	// Id is not a BSON UUID. Is it a UUID?
+	parsedUUID, err := uuid.Parse(id)
+	if err != nil { // It is some unsupported type of string
+		return "", errors.New("invalid id: " + id)
 	}
 
-	// UUID of pre-existing event is a BSON UUID. We will query using the BSON UUID.
-	return objID, "", nil
+	return parsedUUID.String(), nil
 }
 
 func ToContractId(id primitive.ObjectID, uuid string) string {

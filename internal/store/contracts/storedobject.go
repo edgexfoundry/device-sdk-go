@@ -17,7 +17,7 @@ package contracts
 
 // StoredObject is the atomic and most abstract description of what is collected by the export store system.
 type StoredObject struct {
-	// UUID uniquely identifies this StoredObject
+	// ID uniquely identifies this StoredObject
 	ID string
 
 	// AppServiceKey identifies the app to which this data belongs.

@@ -30,11 +30,8 @@ type StoreClient interface {
 	// Update replaces the data currently in the store with the provided data.
 	Update(o contracts.StoredObject) error
 
-	// UpdateRetryCount modifies the RetryCount variable for a given object.
-	UpdateRetryCount(id string, count int) error
-
 	// RemoveFromStore removes an object from the data store.
-	RemoveFromStore(id string) error
+	RemoveFromStore(o contracts.StoredObject) error
 
 	// Disconnect ends the connection.
 	Disconnect() error

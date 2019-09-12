@@ -29,7 +29,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/mongo/models"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -49,61 +48,51 @@ func (c Client) Store(o contracts.StoredObject) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	objID, uuid, err := models.FromContractId(o.ID)
+	uuid, err := models.GetUUID(o.ID)
 	if err != nil {
 		return "", err
 	}
 	var doc bson.M
 
-	if objID == primitive.NilObjectID {
-		// determine if this object already exists in the DB
-		filter := bson.M{"uuid": uuid}
-		result := c.Client.Collection(mongoCollection).FindOne(ctx, filter)
+	// determine if this object already exists in the DB
+	filter := bson.M{"uuid": uuid}
+	result := c.Client.Collection(mongoCollection).FindOne(ctx, filter)
 
-		var m models.StoredObject
-		_ = result.Decode(&m)
+	var m models.StoredObject
+	_ = result.Decode(&m)
 
-		// if the result of the lookup is any object other than the empty, it exists
-		if !reflect.DeepEqual(m, models.StoredObject{}) {
-			return "", errors.New("object exists in database")
-		}
-
-		doc = bson.M{
-			"uuid":             uuid,
-			"appServiceKey":    o.AppServiceKey,
-			"payload":          o.Payload,
-			"retryCount":       o.RetryCount,
-			"pipelinePosition": o.PipelinePosition,
-			"version":          o.Version,
-			"correlationID":    o.CorrelationID,
-			"eventID":          o.EventID,
-			"eventChecksum":    o.EventChecksum,
-		}
-	} else {
-		doc = bson.M{
-			"_id":              objID,
-			"uuid":             uuid,
-			"appServiceKey":    o.AppServiceKey,
-			"payload":          o.Payload,
-			"retryCount":       o.RetryCount,
-			"pipelinePosition": o.PipelinePosition,
-			"version":          o.Version,
-			"correlationID":    o.CorrelationID,
-			"eventID":          o.EventID,
-			"eventChecksum":    o.EventChecksum,
-		}
+	// if the result of the lookup is any object other than the empty, it exists
+	if !reflect.DeepEqual(m, models.StoredObject{}) {
+		return "", errors.New("object exists in database")
 	}
 
-	result, err := c.Client.Collection(mongoCollection).InsertOne(ctx, doc)
+	doc = bson.M{
+		"uuid":             uuid,
+		"appServiceKey":    o.AppServiceKey,
+		"payload":          o.Payload,
+		"retryCount":       o.RetryCount,
+		"pipelinePosition": o.PipelinePosition,
+		"version":          o.Version,
+		"correlationID":    o.CorrelationID,
+		"eventID":          o.EventID,
+		"eventChecksum":    o.EventChecksum,
+	}
+
+	_, err = c.Client.Collection(mongoCollection).InsertOne(ctx, doc)
 	if err != nil {
 		return "", err
 	}
 
-	return result.InsertedID.(primitive.ObjectID).Hex(), nil
+	return uuid, nil
 }
 
 // RetrieveFromStore gets an object from the data store.
 func (c Client) RetrieveFromStore(appServiceKey string) (objects []contracts.StoredObject, err error) {
+	// do not satisfy requests for a blank ASK, this will return ALL objects with ANY ASK
+	if appServiceKey == "" {
+		return nil, errors.New("no AppServiceKey provided")
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
@@ -145,41 +134,37 @@ func (c Client) Update(o contracts.StoredObject) error {
 		return errors.New("update argument object does not have an UUID")
 	}
 
-	model := models.StoredObject{}
-	err := model.FromContract(o)
-	if err != nil {
-		return err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	filter := bson.M{"_id": model.ObjectID}
-
-	_, err = c.Client.Collection(mongoCollection).ReplaceOne(ctx, filter, &model)
-	if err != nil {
-		return err
+	var filter bson.D
+	// do not use ASK if it's blank, otherwise it will leak info about all ASK
+	if o.AppServiceKey != "" {
+		filter = bson.D{
+			{"uuid", o.ID},
+			{"appServiceKey", o.AppServiceKey},
+		}
+	} else {
+		filter = bson.D{
+			{"uuid", o.ID},
+		}
 	}
 
-	return nil
-}
+	update := bson.M{"$set": bson.M{
+		"uuid":             o.ID,
+		"appServiceKey":    o.AppServiceKey,
+		"payload":          o.Payload,
+		"retryCount":       o.RetryCount,
+		"pipelinePosition": o.PipelinePosition,
+		"version":          o.Version,
+		"correlationID":    o.CorrelationID,
+		"eventID":          o.EventID,
+		"eventChecksum":    o.EventChecksum,
+	}}
 
-// UpdateRetryCount modifies the RetryCount variable for a given object.
-func (c Client) UpdateRetryCount(id string, count int) error {
-	if id == "" {
-		return errors.New("no UUID provided")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
-	defer cancel()
-
-	objID, _, err := models.FromContractId(id)
-	if err != nil {
-		return err
-	}
-
-	filter := bson.M{"_id": objID}
-	update := bson.M{"$set": bson.M{"retryCount": count}}
+	model := new(models.StoredObject)
+	debug := c.Client.Collection(mongoCollection).FindOne(ctx, filter)
+	err := debug.Decode(model)
 
 	_, err = c.Client.Collection(mongoCollection).UpdateOne(ctx, filter, update)
 	if err != nil {
@@ -190,22 +175,28 @@ func (c Client) UpdateRetryCount(id string, count int) error {
 }
 
 // RemoveFromStore removes an object from the data store.
-func (c Client) RemoveFromStore(id string) error {
-	if id == "" {
-		return errors.New("no UUID provided")
+func (c Client) RemoveFromStore(o contracts.StoredObject) error {
+	if o.ID == "" {
+		return errors.New("update argument object does not have an UUID")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
 	defer cancel()
 
-	objID, _, err := models.FromContractId(id)
-	if err != nil {
-		return err
+	var filter bson.D
+	// do not use ASK if it's blank, otherwise it will leak info about all ASK
+	if o.AppServiceKey != "" {
+		filter = bson.D{
+			{"uuid", o.ID},
+			{"appServiceKey", o.AppServiceKey},
+		}
+	} else {
+		filter = bson.D{
+			{"uuid", o.ID},
+		}
 	}
 
-	filter := bson.M{"_id": objID}
-
-	_, err = c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
+	_, err := c.Client.Collection(mongoCollection).DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
