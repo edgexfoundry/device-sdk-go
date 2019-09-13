@@ -39,11 +39,11 @@ type WebServer struct {
 }
 
 // NewWebserver returns a new instance of *WebServer
-func NewWebServer(config *common.ConfigurationStruct, lc logger.LoggingClient) *WebServer {
+func NewWebServer(config *common.ConfigurationStruct, lc logger.LoggingClient, router *mux.Router) *WebServer {
 	ws := &WebServer{
 		Config:        config,
 		LoggingClient: lc,
-		router:        mux.NewRouter(),
+		router:        router,
 	}
 
 	return ws
@@ -118,8 +118,7 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
 func (webserver *WebServer) SetupTriggerRoute(handlerForTrigger func(http.ResponseWriter, *http.Request)) {
-
-	webserver.router.HandleFunc("/trigger", handlerForTrigger)
+	webserver.router.HandleFunc(internal.ApiTriggerRoute, handlerForTrigger)
 }
 
 // StartHTTPServer starts the http server

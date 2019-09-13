@@ -18,17 +18,16 @@ package webserver
 
 import (
 	"encoding/json"
-	"testing"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-
 	"net/http"
 	"net/http/httptest"
+	"testing"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -42,7 +41,7 @@ func init() {
 
 func TestConfigureAndPingRoute(t *testing.T) {
 
-	webserver := NewWebServer(config, logClient)
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiPingRoute, nil)
@@ -56,7 +55,7 @@ func TestConfigureAndPingRoute(t *testing.T) {
 
 func TestConfigureAndVersionRoute(t *testing.T) {
 
-	webserver := NewWebServer(config, logClient)
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiVersionRoute, nil)
@@ -69,7 +68,7 @@ func TestConfigureAndVersionRoute(t *testing.T) {
 }
 func TestConfigureAndConfigRoute(t *testing.T) {
 
-	webserver := NewWebServer(config, logClient)
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiConfigRoute, nil)
@@ -82,7 +81,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-	webserver := NewWebServer(config, logClient)
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiMetricsRoute, nil)
@@ -103,7 +102,7 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	webserver := NewWebServer(config, logClient)
+	webserver := NewWebServer(config, logClient, mux.NewRouter())
 
 	handlerFunctionNotCalled := true
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +113,7 @@ func TestSetupTriggerRoute(t *testing.T) {
 
 	webserver.SetupTriggerRoute(handler)
 
-	req, _ := http.NewRequest("GET", "/trigger", nil)
+	req, _ := http.NewRequest("GET", internal.ApiTriggerRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 

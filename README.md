@@ -244,7 +244,7 @@ Each of the clients above is only initialized if the Clients section of the conf
 ### .PushToCore()
 `.PushToCore(string deviceName, string readingName, byte[] value)` is used to push data to EdgeX Core Data so that it can be shared with other applications that are subscribed to the message bus that core-data publishes to. `deviceName` can be set as you like along with the `readingName` which will be set on the EdgeX event sent to CoreData. This function will return the new EdgeX Event with the ID populated, however the CorrelationId will not be available.
  > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
-
+ 
  > WARNING: Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
 ### .Complete()
 `.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
@@ -338,6 +338,27 @@ The following items discuss topics that are a bit beyond the basic use cases of 
 ### Configurable Functions Pipeline
 
 This SDK provides the capability to define the functions pipeline via configuration rather than code using the **app-service-configurable** application service. See **app-service-configurable** [README](https://github.com/edgexfoundry/app-service-configurable/blob/master/README.md) for more details.
+
+### Using The Webserver
+
+It is not uncommon to require your own API endpoints when building an app service. Rather than spin up your own webserver inside of your app (alongside the already existing running webserver), we've exposed a method that allows you add your own routes to the existing webserver. A few routes are reserved and cannot be used:
+- /api/version
+- /api/v1/ping
+- /api/v1/metrics
+- /api/v1/config
+- /api/v1/trigger
+To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string)` function provided on the sdk. Here's an example:
+```golang
+edgexSdk.AddRoute("/myroute", func(writer http.ResponseWriter, req *http.Request) {
+    context := req.Context().Value(appsdk.SDKKey).(*appsdk.AppFunctionsSDK) 
+		context.LoggingClient.Info("TEST") // alternative to edgexSdk.LoggingClient.Info("TEST")
+		writer.Header().Set("Content-Type", "text/plain")
+		writer.Write([]byte("hello"))
+		writer.WriteHeader(200)
+}, "GET")
+```
+Under the hood, this simply adds the provided route, handler, and method to the gorilla `mux.Router` we use in the SDK. For more information you can check out the github repo [here](https://github.com/gorilla/mux). 
+You can access the resources such as the logging client by accessing the context as shown above -- this is useful for when your routes might not be defined in your main.go where you have access to the `edgexSdk` instance.
 
 ### Target Type
 

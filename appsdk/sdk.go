@@ -17,10 +17,10 @@
 package appsdk
 
 import (
+	syscontext "context"
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	nethttp "net/http"
 	"os"
 	"os/signal"
@@ -29,9 +29,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/pelletier/go-toml"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
@@ -49,11 +53,19 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
-	"github.com/pelletier/go-toml"
 )
 
 // ProfileSuffixPlaceholder is used to create unique names for profiles
 const ProfileSuffixPlaceholder = "<profile>"
+
+// The key type is unexported to prevent collisions with context keys defined in
+// other packages.
+type key int
+
+// SDKKey is the context key for getting the sdk context.  Its value of zero is
+// arbitrary.  If this package defined other context keys, they would have
+// different integer values.
+const SDKKey key = 0
 
 // AppFunctionsSDK provides the necessary struct to create an instance of the Application Functions SDK. Be sure and provide a ServiceKey
 // when creating an instance of the SDK. After creating an instance, you'll first want to call .Initialize(), to start up the SDK. Secondly,
@@ -82,8 +94,22 @@ type AppFunctionsSDK struct {
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
-func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) {
-	sdk.webserver.AddRoute(route, handler, methods...)
+func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) error {
+	if route == clients.ApiPingRoute ||
+		route == clients.ApiConfigRoute ||
+		route == clients.ApiMetricsRoute ||
+		route == clients.ApiVersionRoute ||
+		route == internal.ApiTriggerRoute {
+		return errors.New("Route is reserved")
+	}
+	sdk.webserver.AddRoute(route, sdk.addContext(handler), methods...)
+	return nil
+}
+func (sdk *AppFunctionsSDK) addContext(next func(nethttp.ResponseWriter, *nethttp.Request)) func(nethttp.ResponseWriter, *nethttp.Request) {
+	return nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		ctx := syscontext.WithValue(r.Context(), SDKKey, sdk)
+		next(w, r.WithContext(ctx))
+	})
 }
 
 // MakeItRun will initialize and start the trigger as specifed in the
@@ -95,7 +121,6 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.runtime = &runtime.GolangRuntime{TargetType: sdk.TargetType} //Transforms: sdk.transforms
 	sdk.runtime.SetTransforms(sdk.transforms)
-	sdk.webserver.ConfigureStandardRoutes()
 
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
@@ -317,7 +342,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	go telemetry.StartCpuUsageAverage()
 
-	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.LoggingClient)
+	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.LoggingClient, mux.NewRouter())
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
@@ -377,7 +402,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 			Type:            configuration.Registry.Type,
 			Stem:            internal.ConfigRegistryStem,
 			CheckInterval:   "1s",
-			CheckRoute:      internal.ApiPingRoute,
+			CheckRoute:      clients.ApiPingRoute,
 			ServiceKey:      sdk.ServiceKey,
 			ServiceHost:     configuration.Service.Host,
 			ServicePort:     configuration.Service.Port,
