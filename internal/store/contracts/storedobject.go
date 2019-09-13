@@ -12,13 +12,13 @@
  * the License.
  *******************************************************************************/
 
-// models describes the data types that will be used when storing export data.
-package models
+// contracts are implementation agnostic data storage models.
+package contracts
 
 // StoredObject is the atomic and most abstract description of what is collected by the export store system.
 type StoredObject struct {
-	// id is the unique identifier for this record once stored.
-	id string
+	// ID uniquely identifies this StoredObject
+	ID string
 
 	// AppServiceKey identifies the app to which this data belongs.
 	AppServiceKey string
@@ -45,16 +45,10 @@ type StoredObject struct {
 	EventChecksum string
 }
 
-// GetId returns the unexported field id.
-func (o StoredObject) GetId() string {
-	return o.id
-}
-
 // NewStoredObject creates a new instance of StoredObject and is the preferred way to create one.
-func NewStoredObject(id string, appServiceKey string, payload []byte, pipelinePosition int,
+func NewStoredObject(appServiceKey string, payload []byte, pipelinePosition int,
 	version string) StoredObject {
 	return StoredObject{
-		id:               id,
 		AppServiceKey:    appServiceKey,
 		Payload:          payload,
 		RetryCount:       0,

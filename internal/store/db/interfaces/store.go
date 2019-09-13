@@ -16,27 +16,23 @@
 package interfaces
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/models"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 )
 
 // StoreClient establishes the contracts required to persist exported data before being forwarded.
 type StoreClient interface {
-	// Store persists a stored object to the data store.
-	Store(o models.StoredObject) error
+	// Store persists a stored object to the data store and returns the assigned UUID.
+	Store(o contracts.StoredObject) (id string, err error)
 
 	// RetrieveFromStore gets an object from the data store.
-	RetrieveFromStore(appServiceKey string) (objects []models.StoredObject, err error)
+	RetrieveFromStore(appServiceKey string) (objects []contracts.StoredObject, err error)
 
 	// Update replaces the data currently in the store with the provided data.
-	Update(o models.StoredObject) error
-
-	// UpdateRetryCount modifies the RetryCount variable for a given object.
-	UpdateRetryCount(id string, count int) error
+	Update(o contracts.StoredObject) error
 
 	// RemoveFromStore removes an object from the data store.
-	RemoveFromStore(id string) error
+	RemoveFromStore(o contracts.StoredObject) error
 
-	// NewClient provides a factory for building a StoreClient
-	NewClient(config db.Configuration) (StoreClient, error)
+	// Disconnect ends the connection.
+	Disconnect() error
 }
