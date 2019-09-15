@@ -23,34 +23,19 @@ import (
 )
 
 const (
-	profileNameRandomBooleanGenerator         = "Random-Boolean-Generator"
-	profileNameRandomIntegerGenerator         = "Random-Integer-Generator"
-	profileNameRandomUnsignedIntegerGenerator = "Random-UnsignedInteger-Generator"
-	profileNameRandomFloatGenerator           = "Random-Float-Generator"
-	methodGet                                 = "get"
-	methodSet                                 = "set"
-	typeBool                                  = "Bool"
-	typeInt8                                  = "Int8"
-	typeInt16                                 = "Int16"
-	typeInt32                                 = "Int32"
-	typeInt64                                 = "Int64"
-	typeUint8                                 = "Uint8"
-	typeUint16                                = "Uint16"
-	typeUint32                                = "Uint32"
-	typeUint64                                = "Uint64"
-	typeFloat32                               = "Float32"
-	typeFloat64                               = "Float64"
-	resourceObjectBool                        = "RandomValue_Bool"
-	resourceObjectInt8                        = "RandomValue_Int8"
-	resourceObjectInt16                       = "RandomValue_Int16"
-	resourceObjectInt32                       = "RandomValue_Int32"
-	resourceObjectInt64                       = "RandomValue_Int64"
-	resourceObjectUint8                       = "RandomValue_Uint8"
-	resourceObjectUint16                      = "RandomValue_Uint16"
-	resourceObjectUint32                      = "RandomValue_Uint32"
-	resourceObjectUint64                      = "RandomValue_Uint64"
-	resourceObjectFloat32                     = "RandomValue_Float32"
-	resourceObjectFloat64                     = "RandomValue_Float64"
+	methodGet   = "get"
+	methodSet   = "set"
+	typeBool    = "Bool"
+	typeInt8    = "Int8"
+	typeInt16   = "Int16"
+	typeInt32   = "Int32"
+	typeInt64   = "Int64"
+	typeUint8   = "Uint8"
+	typeUint16  = "Uint16"
+	typeUint32  = "Uint32"
+	typeUint64  = "Uint64"
+	typeFloat32 = "Float32"
+	typeFloat64 = "Float64"
 )
 
 var (
@@ -71,17 +56,17 @@ func init() {
 	common.Driver = &mock.DriverMock{}
 	cache.InitCache()
 	pc = cache.Profiles()
-	operationSetBool, _ = pc.ResourceOperation(profileNameRandomBooleanGenerator, resourceObjectBool, methodSet)
-	operationSetInt8, _ = pc.ResourceOperation(profileNameRandomIntegerGenerator, resourceObjectInt8, methodSet)
-	operationSetInt16, _ = pc.ResourceOperation(profileNameRandomIntegerGenerator, resourceObjectInt16, methodSet)
-	operationSetInt32, _ = pc.ResourceOperation(profileNameRandomIntegerGenerator, resourceObjectInt32, methodSet)
-	operationSetInt64, _ = pc.ResourceOperation(profileNameRandomIntegerGenerator, resourceObjectInt64, methodSet)
-	operationSetUint8, _ = pc.ResourceOperation(profileNameRandomUnsignedIntegerGenerator, resourceObjectUint8, methodSet)
-	operationSetUint16, _ = pc.ResourceOperation(profileNameRandomUnsignedIntegerGenerator, resourceObjectUint16, methodSet)
-	operationSetUint32, _ = pc.ResourceOperation(profileNameRandomUnsignedIntegerGenerator, resourceObjectUint32, methodSet)
-	operationSetUint64, _ = pc.ResourceOperation(profileNameRandomUnsignedIntegerGenerator, resourceObjectUint64, methodSet)
-	operationSetFloat32, _ = pc.ResourceOperation(profileNameRandomFloatGenerator, resourceObjectFloat32, methodSet)
-	operationSetFloat64, _ = pc.ResourceOperation(profileNameRandomFloatGenerator, resourceObjectFloat64, methodSet)
+	operationSetBool, _ = pc.ResourceOperation(mock.ProfileBool, mock.ResourceObjectBool, methodSet)
+	operationSetInt8, _ = pc.ResourceOperation(mock.ProfileInt, mock.ResourceObjectInt8, methodSet)
+	operationSetInt16, _ = pc.ResourceOperation(mock.ProfileInt, mock.ResourceObjectInt16, methodSet)
+	operationSetInt32, _ = pc.ResourceOperation(mock.ProfileInt, mock.ResourceObjectInt32, methodSet)
+	operationSetInt64, _ = pc.ResourceOperation(mock.ProfileInt, mock.ResourceObjectInt64, methodSet)
+	operationSetUint8, _ = pc.ResourceOperation(mock.ProfileUint, mock.ResourceObjectUint8, methodSet)
+	operationSetUint16, _ = pc.ResourceOperation(mock.ProfileUint, mock.ResourceObjectUint16, methodSet)
+	operationSetUint32, _ = pc.ResourceOperation(mock.ProfileUint, mock.ResourceObjectUint32, methodSet)
+	operationSetUint64, _ = pc.ResourceOperation(mock.ProfileUint, mock.ResourceObjectUint64, methodSet)
+	operationSetFloat32, _ = pc.ResourceOperation(mock.ProfileFloat, mock.ResourceObjectFloat32, methodSet)
+	operationSetFloat64, _ = pc.ResourceOperation(mock.ProfileFloat, mock.ResourceObjectFloat64, methodSet)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	ds, _ = common.DeviceClient.DevicesForServiceByName(common.ServiceName, ctx)
@@ -150,49 +135,49 @@ func TestCreateCommandValueForParam(t *testing.T) {
 		parseCheck  dsModels.ValueType
 		expectErr   bool
 	}{
-		{"DeviceResourceNotFound", profileNameRandomBooleanGenerator, typeBool, &contract.ResourceOperation{}, "", dsModels.Bool, true},
-		{"BoolTruePass", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "true", dsModels.Bool, false},
-		{"BoolFalsePass", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "false", dsModels.Bool, false},
-		{"BoolTrueFail", profileNameRandomBooleanGenerator, typeBool, &operationSetBool, "error", dsModels.Bool, true},
-		{"Int8Pass", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "12", dsModels.Int8, false},
-		{"Int8NegativePass", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "-12", dsModels.Int8, false},
-		{"Int8WordFail", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "hello", dsModels.Int8, true},
-		{"Int8OverflowFail", profileNameRandomIntegerGenerator, typeInt8, &operationSetInt8, "9999999999", dsModels.Int8, true},
-		{"Int16Pass", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "12", dsModels.Int16, false},
-		{"Int16NegativePass", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "-12", dsModels.Int16, false},
-		{"Int16WordFail", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "hello", dsModels.Int16, true},
-		{"Int16OverflowFail", profileNameRandomIntegerGenerator, typeInt16, &operationSetInt16, "9999999999", dsModels.Int16, true},
-		{"Int32Pass", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "12", dsModels.Int32, false},
-		{"Int32NegativePass", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "-12", dsModels.Int32, false},
-		{"Int32WordFail", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "hello", dsModels.Int32, true},
-		{"Int32OverflowFail", profileNameRandomIntegerGenerator, typeInt32, &operationSetInt32, "9999999999", dsModels.Int32, true},
-		{"Int64Pass", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "12", dsModels.Int64, false},
-		{"Int64NegativePass", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "-12", dsModels.Int64, false},
-		{"Int64WordFail", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "hello", dsModels.Int64, true},
-		{"Int64OverflowFail", profileNameRandomIntegerGenerator, typeInt64, &operationSetInt64, "99999999999999999999", dsModels.Int64, true},
-		{"Uint8Pass", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "12", dsModels.Uint8, false},
-		{"Uint8NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "-12", dsModels.Uint8, true},
-		{"Uint8WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "hello", dsModels.Uint8, true},
-		{"Uint8OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint8, &operationSetUint8, "9999999999", dsModels.Uint8, true},
-		{"Uint16Pass", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "12", dsModels.Uint16, false},
-		{"Uint16NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "-12", dsModels.Uint16, true},
-		{"Uint16WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "hello", dsModels.Uint16, true},
-		{"Uint16OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint16, &operationSetUint16, "9999999999", dsModels.Uint16, true},
-		{"Uint32Pass", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "12", dsModels.Uint32, false},
-		{"Uint32NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "-12", dsModels.Uint32, true},
-		{"Uint32WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "hello", dsModels.Uint32, true},
-		{"Uint32OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint32, &operationSetUint32, "9999999999", dsModels.Uint32, true},
-		{"Uint64Pass", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "12", dsModels.Uint64, false},
-		{"Uint64NegativeFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "-12", dsModels.Uint64, true},
-		{"Uint64WordFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "hello", dsModels.Uint64, true},
-		{"Uint64OverflowFail", profileNameRandomUnsignedIntegerGenerator, typeUint64, &operationSetUint64, "99999999999999999999", dsModels.Uint64, true},
-		{"Float32Pass", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "12.000", dsModels.Float32, false},
-		{"Float32PassNegativePass", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "-12.000", dsModels.Float32, false},
-		{"Float32PassWordFail", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "hello", dsModels.Float32, true},
-		{"Float32PassOverflowFail", profileNameRandomFloatGenerator, typeFloat32, &operationSetFloat32, "440282346638528859811704183484516925440.0000000000000000", dsModels.Float32, true},
-		{"Float64Pass", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "12.000", dsModels.Float64, false},
-		{"Float64PassNegativePass", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "-12.000", dsModels.Float64, false},
-		{"Float64PassWordFail", profileNameRandomFloatGenerator, typeFloat64, &operationSetFloat64, "hello", dsModels.Float64, true},
+		{"DeviceResourceNotFound", mock.ProfileBool, typeBool, &contract.ResourceOperation{}, "", dsModels.Bool, true},
+		{"BoolTruePass", mock.ProfileBool, typeBool, &operationSetBool, "true", dsModels.Bool, false},
+		{"BoolFalsePass", mock.ProfileBool, typeBool, &operationSetBool, "false", dsModels.Bool, false},
+		{"BoolTrueFail", mock.ProfileBool, typeBool, &operationSetBool, "error", dsModels.Bool, true},
+		{"Int8Pass", mock.ProfileInt, typeInt8, &operationSetInt8, "12", dsModels.Int8, false},
+		{"Int8NegativePass", mock.ProfileInt, typeInt8, &operationSetInt8, "-12", dsModels.Int8, false},
+		{"Int8WordFail", mock.ProfileInt, typeInt8, &operationSetInt8, "hello", dsModels.Int8, true},
+		{"Int8OverflowFail", mock.ProfileInt, typeInt8, &operationSetInt8, "9999999999", dsModels.Int8, true},
+		{"Int16Pass", mock.ProfileInt, typeInt16, &operationSetInt16, "12", dsModels.Int16, false},
+		{"Int16NegativePass", mock.ProfileInt, typeInt16, &operationSetInt16, "-12", dsModels.Int16, false},
+		{"Int16WordFail", mock.ProfileInt, typeInt16, &operationSetInt16, "hello", dsModels.Int16, true},
+		{"Int16OverflowFail", mock.ProfileInt, typeInt16, &operationSetInt16, "9999999999", dsModels.Int16, true},
+		{"Int32Pass", mock.ProfileInt, typeInt32, &operationSetInt32, "12", dsModels.Int32, false},
+		{"Int32NegativePass", mock.ProfileInt, typeInt32, &operationSetInt32, "-12", dsModels.Int32, false},
+		{"Int32WordFail", mock.ProfileInt, typeInt32, &operationSetInt32, "hello", dsModels.Int32, true},
+		{"Int32OverflowFail", mock.ProfileInt, typeInt32, &operationSetInt32, "9999999999", dsModels.Int32, true},
+		{"Int64Pass", mock.ProfileInt, typeInt64, &operationSetInt64, "12", dsModels.Int64, false},
+		{"Int64NegativePass", mock.ProfileInt, typeInt64, &operationSetInt64, "-12", dsModels.Int64, false},
+		{"Int64WordFail", mock.ProfileInt, typeInt64, &operationSetInt64, "hello", dsModels.Int64, true},
+		{"Int64OverflowFail", mock.ProfileInt, typeInt64, &operationSetInt64, "99999999999999999999", dsModels.Int64, true},
+		{"Uint8Pass", mock.ProfileUint, typeUint8, &operationSetUint8, "12", dsModels.Uint8, false},
+		{"Uint8NegativeFail", mock.ProfileUint, typeUint8, &operationSetUint8, "-12", dsModels.Uint8, true},
+		{"Uint8WordFail", mock.ProfileUint, typeUint8, &operationSetUint8, "hello", dsModels.Uint8, true},
+		{"Uint8OverflowFail", mock.ProfileUint, typeUint8, &operationSetUint8, "9999999999", dsModels.Uint8, true},
+		{"Uint16Pass", mock.ProfileUint, typeUint16, &operationSetUint16, "12", dsModels.Uint16, false},
+		{"Uint16NegativeFail", mock.ProfileUint, typeUint16, &operationSetUint16, "-12", dsModels.Uint16, true},
+		{"Uint16WordFail", mock.ProfileUint, typeUint16, &operationSetUint16, "hello", dsModels.Uint16, true},
+		{"Uint16OverflowFail", mock.ProfileUint, typeUint16, &operationSetUint16, "9999999999", dsModels.Uint16, true},
+		{"Uint32Pass", mock.ProfileUint, typeUint32, &operationSetUint32, "12", dsModels.Uint32, false},
+		{"Uint32NegativeFail", mock.ProfileUint, typeUint32, &operationSetUint32, "-12", dsModels.Uint32, true},
+		{"Uint32WordFail", mock.ProfileUint, typeUint32, &operationSetUint32, "hello", dsModels.Uint32, true},
+		{"Uint32OverflowFail", mock.ProfileUint, typeUint32, &operationSetUint32, "9999999999", dsModels.Uint32, true},
+		{"Uint64Pass", mock.ProfileUint, typeUint64, &operationSetUint64, "12", dsModels.Uint64, false},
+		{"Uint64NegativeFail", mock.ProfileUint, typeUint64, &operationSetUint64, "-12", dsModels.Uint64, true},
+		{"Uint64WordFail", mock.ProfileUint, typeUint64, &operationSetUint64, "hello", dsModels.Uint64, true},
+		{"Uint64OverflowFail", mock.ProfileUint, typeUint64, &operationSetUint64, "99999999999999999999", dsModels.Uint64, true},
+		{"Float32Pass", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "12.000", dsModels.Float32, false},
+		{"Float32PassNegativePass", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "-12.000", dsModels.Float32, false},
+		{"Float32PassWordFail", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "hello", dsModels.Float32, true},
+		{"Float32PassOverflowFail", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "440282346638528859811704183484516925440.0000000000000000", dsModels.Float32, true},
+		{"Float64Pass", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "12.000", dsModels.Float64, false},
+		{"Float64PassNegativePass", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "-12.000", dsModels.Float64, false},
+		{"Float64PassWordFail", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "hello", dsModels.Float64, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
@@ -280,7 +265,7 @@ func TestResourceOpSliceToMap(t *testing.T) {
 }
 
 func TestParseWriteParams(t *testing.T) {
-	profileName := profileNameRandomIntegerGenerator
+	profileName := mock.ProfileInt
 	profile, ok := pc.ForName(profileName)
 	if !ok {
 		t.Errorf("device profile was not found, cannot continue")
@@ -452,7 +437,7 @@ func TestCommandAllHandler(t *testing.T) {
 
 func TestCommandHandler(t *testing.T) {
 	var (
-		varsFindDeviceByValidId     = map[string]string{"id": mock.RandomIntegerGeneratorDeviceId, "command": "RandomValue_Int8"}
+		varsFindDeviceByValidId     = map[string]string{"id": mock.ValidDeviceRandomIntegerGenerator.Id, "command": "RandomValue_Int8"}
 		varsFindDeviceByInvalidId   = map[string]string{"id": mock.InvalidDeviceId, "command": "RandomValue_Int8"}
 		varsFindDeviceByValidName   = map[string]string{"name": "Random-Integer-Generator01", "command": "RandomValue_Int8"}
 		varsFindDeviceByInvalidName = map[string]string{"name": "Random-Integer-Generator09", "command": "RandomValue_Int8"}
@@ -461,7 +446,7 @@ func TestCommandHandler(t *testing.T) {
 		varsCmdNotFound             = map[string]string{"name": "Random-Integer-Generator01", "command": "error"}
 		varsWriteInt8               = map[string]string{"name": "Random-Integer-Generator01", "command": "RandomValue_Int8"}
 	)
-	if err := cache.Devices().UpdateAdminState(mock.RandomFloatGeneratorDeviceId, contract.Locked); err != nil {
+	if err := cache.Devices().UpdateAdminState(mock.ValidDeviceRandomFloatGenerator.Id, contract.Locked); err != nil {
 		t.Errorf("Fail to update adminState, error: %v", err)
 	}
 	mock.ValidDeviceRandomBoolGenerator.Profile.Name = "error"
