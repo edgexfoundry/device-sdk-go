@@ -9,6 +9,7 @@ package cache
 
 import (
 	"fmt"
+	"sync"
 
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
@@ -31,10 +32,14 @@ type DeviceCache interface {
 type deviceCache struct {
 	dMap    map[string]*contract.Device // key is Device name
 	nameMap map[string]string           // key is id, and value is Device name
+	mutex   sync.Mutex
 }
 
 // ForName returns a Device with the given name.
 func (d *deviceCache) ForName(name string) (contract.Device, bool) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	if device, ok := d.dMap[name]; ok {
 		return *device, ok
 	} else {
@@ -44,6 +49,9 @@ func (d *deviceCache) ForName(name string) (contract.Device, bool) {
 
 // ForId returns a device with the given device id.
 func (d *deviceCache) ForId(id string) (contract.Device, bool) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	name, ok := d.nameMap[id]
 	if !ok {
 		return contract.Device{}, ok
@@ -58,6 +66,9 @@ func (d *deviceCache) ForId(id string) (contract.Device, bool) {
 
 // All() returns the current list of devices in the cache.
 func (d *deviceCache) All() []contract.Device {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	devices := make([]contract.Device, len(d.dMap))
 	i := 0
 	for _, device := range d.dMap {
@@ -71,6 +82,13 @@ func (d *deviceCache) All() []contract.Device {
 // devices cache with pre-existing devices from Core Metadata, as well
 // as create new devices returned in a ScanList during discovery.
 func (d *deviceCache) Add(device contract.Device) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	return d.add(device)
+}
+
+func (d *deviceCache) add(device contract.Device) error {
 	if _, ok := d.dMap[device.Name]; ok {
 		return fmt.Errorf("device %s has already existed in cache", device.Name)
 	}
@@ -81,24 +99,40 @@ func (d *deviceCache) Add(device contract.Device) error {
 
 // Update updates the device in the cache
 func (d *deviceCache) Update(device contract.Device) error {
-	if err := d.Remove(device.Id); err != nil {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	if err := d.remove(device.Id); err != nil {
 		return err
 	}
-	return d.Add(device)
+	return d.add(device)
 }
 
 // Remove removes the specified device by id from the cache.
 func (d *deviceCache) Remove(id string) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	return d.remove(id)
+}
+
+func (d *deviceCache) remove(id string) error {
 	name, ok := d.nameMap[id]
 	if !ok {
 		return fmt.Errorf("device %s does not exist in cache", id)
 	}
-
-	return d.RemoveByName(name)
+	return d.removeByName(name)
 }
 
 // RemoveByName removes the specified device by name from the cache.
 func (d *deviceCache) RemoveByName(name string) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	return d.removeByName(name)
+}
+
+func (d *deviceCache) removeByName(name string) error {
 	device, ok := d.dMap[name]
 	if !ok {
 		return fmt.Errorf("device %s does not exist in cache", name)
@@ -113,6 +147,9 @@ func (d *deviceCache) RemoveByName(name string) error {
 // is used by the UpdateHandler to trigger update device admin state that's been
 // updated directly to Core Metadata.
 func (d *deviceCache) UpdateAdminState(id string, state contract.AdminState) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	name, ok := d.nameMap[id]
 	if !ok {
 		return fmt.Errorf("device %s cannot be found in cache", id)

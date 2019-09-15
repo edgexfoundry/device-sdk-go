@@ -10,6 +10,7 @@ package cache
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -40,14 +41,21 @@ type profileCache struct {
 	dcMap    map[string]map[string][]contract.ResourceOperation
 	setOpMap map[string]map[string][]contract.ResourceOperation
 	ccMap    map[string]map[string]contract.Command
+	mutex    sync.Mutex
 }
 
 func (p *profileCache) ForName(name string) (contract.DeviceProfile, bool) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	dp, ok := p.dpMap[name]
 	return dp, ok
 }
 
 func (p *profileCache) ForId(id string) (contract.DeviceProfile, bool) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	name, ok := p.nameMap[id]
 	if !ok {
 		return contract.DeviceProfile{}, ok
@@ -58,6 +66,9 @@ func (p *profileCache) ForId(id string) (contract.DeviceProfile, bool) {
 }
 
 func (p *profileCache) All() []contract.DeviceProfile {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	ps := make([]contract.DeviceProfile, len(p.dpMap))
 	i := 0
 	for _, profile := range p.dpMap {
@@ -68,6 +79,13 @@ func (p *profileCache) All() []contract.DeviceProfile {
 }
 
 func (p *profileCache) Add(profile contract.DeviceProfile) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	return p.add(profile)
+}
+
+func (p *profileCache) add(profile contract.DeviceProfile) error {
 	if _, ok := p.dpMap[profile.Name]; ok {
 		return fmt.Errorf("device profile %s has already existed in cache", profile.Name)
 	}
@@ -110,22 +128,39 @@ func commandSliceToMap(commands []contract.Command) map[string]contract.Command 
 }
 
 func (p *profileCache) Update(profile contract.DeviceProfile) error {
-	if err := p.Remove(profile.Id); err != nil {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if err := p.remove(profile.Id); err != nil {
 		return err
 	}
-	return p.Add(profile)
+	return p.add(profile)
 }
 
 func (p *profileCache) Remove(id string) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	return p.remove(id)
+}
+
+func (p *profileCache) remove(id string) error {
 	name, ok := p.nameMap[id]
 	if !ok {
 		return fmt.Errorf("device profile %s does not exist in cache", id)
 	}
 
-	return p.RemoveByName(name)
+	return p.removeByName(name)
 }
 
 func (p *profileCache) RemoveByName(name string) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	return p.removeByName(name)
+}
+
+func (p *profileCache) removeByName(name string) error {
 	profile, ok := p.dpMap[name]
 	if !ok {
 		return fmt.Errorf("device profile %s does not exist in cache", name)
@@ -141,6 +176,9 @@ func (p *profileCache) RemoveByName(name string) error {
 }
 
 func (p *profileCache) DeviceResource(profileName string, resourceName string) (contract.DeviceResource, bool) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	drs, ok := p.drMap[profileName]
 	if !ok {
 		return contract.DeviceResource{}, ok
@@ -153,6 +191,9 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 // CommandExists returns a bool indicating whether the specified command exists for the
 // specified (by name) device. If the specified device doesn't exist, an error is returned.
 func (p *profileCache) CommandExists(profileName string, cmd string) (bool, error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	commands, ok := p.ccMap[profileName]
 	if !ok {
 		err := fmt.Errorf("specified profile: %s not found", profileName)
@@ -168,6 +209,9 @@ func (p *profileCache) CommandExists(profileName string, cmd string) (bool, erro
 
 // Get ResourceOperations
 func (p *profileCache) ResourceOperations(profileName string, cmd string, method string) ([]contract.ResourceOperation, error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var resOps []contract.ResourceOperation
 	var rosMap map[string][]contract.ResourceOperation
 	var ok bool
@@ -189,6 +233,9 @@ func (p *profileCache) ResourceOperations(profileName string, cmd string, method
 
 // Return the first matched ResourceOperation
 func (p *profileCache) ResourceOperation(profileName string, object string, method string) (contract.ResourceOperation, error) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
 	var ro contract.ResourceOperation
 	var rosMap map[string][]contract.ResourceOperation
 	var ok bool
