@@ -49,20 +49,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Bool",
-          "parameter": "RandomValue_Bool"
+          "object": "RandomValue_Bool"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "EnableRandomization_Bool",
-          "parameter": "EnableRandomization_Bool"
+          "parameter": "false"
         },
         {
           "operation": "set",
           "object": "RandomValue_Bool",
-          "parameter": "RandomValue_Bool"
+          "parameter": "false"
         }
       ]
     }

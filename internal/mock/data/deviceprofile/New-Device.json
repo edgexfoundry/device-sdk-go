@@ -37,8 +37,7 @@
         {
           "index": "1",
           "operation": "get",
-          "object": "randfloat32",
-          "parameter": "randfloat32"
+          "object": "randfloat32"
         }
       ]
     }

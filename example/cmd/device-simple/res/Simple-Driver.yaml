@@ -11,7 +11,7 @@ deviceResources:
         description: "Switch On/Off."
         properties:
             value:
-                { type: "Bool", readWrite: "RW" }
+                { type: "Bool", readWrite: "RW", defaultValue: "true" }
             units:
                 { type: "String", readWrite: "R", defaultValue: "On/Off" }
     -
@@ -29,7 +29,7 @@ deviceCommands:
         get:
             - { operation: "get", object: "SwitchButton" }
         set:
-            - { operation: "set", object: "SwitchButton" }
+            - { operation: "set", object: "SwitchButton", parameter: "false" }
     -
         name: "Image"
         get:

@@ -78,10 +78,10 @@ func init() {
 
 func TestParseWriteParamsWrongParamName(t *testing.T) {
 	profileName := "notFound"
-	roMap := roSliceToMap([]contract.ResourceOperation{{Index: ""}})
+	ro := []contract.ResourceOperation{{Index: ""}}
 	params := "{ \"key\": \"value\" }"
 
-	_, err := parseWriteParams(profileName, roMap, params)
+	_, err := parseWriteParams(profileName, ro, params)
 
 	if err == nil {
 		t.Error("expected error")
@@ -90,10 +90,10 @@ func TestParseWriteParamsWrongParamName(t *testing.T) {
 
 func TestParseWriteParamsNoParams(t *testing.T) {
 	profileName := "notFound"
-	roMap := roSliceToMap([]contract.ResourceOperation{{Index: ""}})
+	ro := []contract.ResourceOperation{{Index: ""}}
 	params := "{ }"
 
-	_, err := parseWriteParams(profileName, roMap, params)
+	_, err := parseWriteParams(profileName, ro, params)
 
 	if err == nil {
 		t.Error("expected error")
@@ -226,69 +226,32 @@ func TestCreateCommandValueForParam(t *testing.T) {
 	}
 }
 
-func TestResourceOpSliceToMap(t *testing.T) {
-	var ops []contract.ResourceOperation
-	ops = append(ops, contract.ResourceOperation{Object: "first"})
-	ops = append(ops, contract.ResourceOperation{Object: "second"})
-	ops = append(ops, contract.ResourceOperation{Object: "third"})
-
-	mapped := roSliceToMap(ops)
-
-	if len(mapped) != 3 {
-		t.Errorf("unexpected map length. wanted 3, got %v", len(mapped))
-		return
-	}
-
-	tests := []struct {
-		testName  string
-		key       string
-		expectErr bool
-	}{
-		{"FindFirst", "first", false},
-		{"FindSecond", "second", false},
-		{"FindThird", "third", false},
-		{"NotFoundKey", "fourth", true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.testName, func(t *testing.T) {
-			_, ok := mapped[tt.key]
-			if !tt.expectErr && !ok {
-				t.Errorf("expected entry %s not found in map.", tt.key)
-				return
-			}
-			if tt.expectErr && ok {
-				t.Errorf("test %s expected error not received.", tt.testName)
-				return
-			}
-		})
-	}
-}
-
 func TestParseWriteParams(t *testing.T) {
 	profileName := mock.ProfileInt
-	profile, ok := pc.ForName(profileName)
-	if !ok {
-		t.Errorf("device profile was not found, cannot continue")
-		return
-	}
-	roMap := roSliceToMap(profile.DeviceCommands[0].Set)
-	roMapTestMappingPass := roSliceToMap(profile.DeviceCommands[7].Set)
-	roMapTestMappingFail := roSliceToMap(profile.DeviceCommands[8].Set)
+
+	ros, _ := cache.Profiles().ResourceOperations(profileName, "RandomValue_Int8", common.SetCmdMethod)
+	rosTestDefaultParam, _ := cache.Profiles().ResourceOperations(profileName, "RandomValue_Int16", common.SetCmdMethod)
+	rosTestDefaultValue, _ := cache.Profiles().ResourceOperations(profileName, "RandomValue_Int32", common.SetCmdMethod)
+	rosTestMappingPass, _ := cache.Profiles().ResourceOperations(profileName, "ResourceTestMapping_Pass", common.SetCmdMethod)
+	rosTestMappingFail, _ := cache.Profiles().ResourceOperations(profileName, "ResourceTestMapping_Fail", common.SetCmdMethod)
+
 	tests := []struct {
 		testName    string
 		profile     string
-		resourceOps map[string]*contract.ResourceOperation
+		resourceOps []contract.ResourceOperation
 		params      string
 		expectErr   bool
 	}{
-		{"ValidWriteParam", profileName, roMap, `{"RandomValue_Int8":"123"}`, false},
-		{"InvalidWriteParam", profileName, roMap, `{"NotFound":"true"}`, true},
-		{"InvalidWriteParamType", profileName, roMap, `{"RandomValue_Int8":"abc"}`, true},
-		{"ValueMappingPass", profileName, roMapTestMappingPass, `{"ResourceTestMapping_Pass":"Pass"}`, false},
+		{"ValidWriteParam", profileName, ros, `{"RandomValue_Int8":"123"}`, false},
+		{"InvalidWriteParam", profileName, ros, `{"NotFound":"true"}`, true},
+		{"InvalidWriteParamType", profileName, ros, `{"RandomValue_Int8":"abc"}`, true},
+		{"ValueMappingPass", profileName, rosTestMappingPass, `{"ResourceTestMapping_Pass":"Pass"}`, false},
 		//The expectErr on the test below is false because parseWriteParams does NOT throw an error when there is no mapping value matched
-		{"ValueMappingFail", profileName, roMapTestMappingFail, `{"ResourceTestMapping_Fail":"123"}`, false},
-		{"ParseParamsFail", profileName, roMap, ``, true},
-		{"NoParams", profileName, roMap, `{}`, true},
+		{"ValueMappingFail", profileName, rosTestMappingFail, `{"ResourceTestMapping_Fail":"123"}`, false},
+		{"ParseParamsFail", profileName, ros, ``, true},
+		{"NoRequestParameter", profileName, ros, `{}`, true},
+		{"DefaultParameter", profileName, rosTestDefaultParam, `{"NotMatchedResourceName":"value"}`, false},
+		{"DefaultValue", profileName, rosTestDefaultValue, `{"NotMatchedResourceName":"value"}`, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
