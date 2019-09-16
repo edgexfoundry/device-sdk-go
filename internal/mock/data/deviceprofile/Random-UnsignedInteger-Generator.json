@@ -145,20 +145,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint8",
-          "parameter": "RandomValue_Uint8"
+          "object": "RandomValue_Uint8"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "RandomValue_Uint8",
-          "parameter": "RandomValue_Uint8"
+          "parameter": "0"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Uint8",
-          "parameter": "EnableRandomization_Uint8"
+          "parameter": "false"
         }
       ]
     },
@@ -167,20 +166,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint16",
-          "parameter": "RandomValue_Uint16"
+          "object": "RandomValue_Uint16"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "RandomValue_Uint16",
-          "parameter": "RandomValue_Uint16"
+          "parameter": "0"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Uint16",
-          "parameter": "EnableRandomization_Uint16"
+          "parameter": "false"
         }
       ]
     },
@@ -189,20 +187,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint32",
-          "parameter": "RandomValue_Uint32"
+          "object": "RandomValue_Uint32"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "RandomValue_Uint32",
-          "parameter": "RandomValue_Uint32"
+          "parameter": "0"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Uint32",
-          "parameter": "EnableRandomization_Uint32"
+          "parameter": "false"
         }
       ]
     },
@@ -211,20 +208,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint64",
-          "parameter": "RandomValue_Uint64"
+          "object": "RandomValue_Uint64"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "RandomValue_Uint64",
-          "parameter": "RandomValue_Uint64"
+          "parameter": "0"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Uint64",
-          "parameter": "EnableRandomization_Uint64"
+          "parameter": "false"
         }
       ]
     }

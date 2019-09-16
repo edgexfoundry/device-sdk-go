@@ -80,8 +80,7 @@
       "properties": {
         "value": {
           "type": "Int8",
-          "readWrite": "R",
-          "defaultValue": "0"
+          "readWrite": "R"
         },
         "units": {
           "type": "String",
@@ -96,8 +95,7 @@
       "properties": {
         "value": {
           "type": "Int16",
-          "readWrite": "R",
-          "defaultValue": "0"
+          "readWrite": "R"
         },
         "units": {
           "type": "String",
@@ -267,20 +265,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int8",
-          "parameter": "RandomValue_Int8"
+          "object": "RandomValue_Int8"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Int8",
-          "parameter": "RandomValue_Int8"
+          "object": "RandomValue_Int8"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Int8",
-          "parameter": "EnableRandomization_Int8"
+          "parameter": "false"
         }
       ]
     },
@@ -289,20 +285,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int16",
-          "parameter": "RandomValue_Int16"
+          "object": "RandomValue_Int16"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "RandomValue_Int16",
-          "parameter": "RandomValue_Int16"
+          "parameter": "0"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Int16",
-          "parameter": "EnableRandomization_Int16"
+          "parameter": "false"
         }
       ]
     },
@@ -311,20 +306,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int32",
-          "parameter": "RandomValue_Int32"
+          "object": "RandomValue_Int32"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Int32",
-          "parameter": "RandomValue_Int32"
+          "object": "RandomValue_Int32"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Int32",
-          "parameter": "EnableRandomization_Int32"
+          "parameter": "false"
         }
       ]
     },
@@ -333,20 +326,19 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int64",
-          "parameter": "RandomValue_Int64"
+          "object": "RandomValue_Int64"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "RandomValue_Int64",
-          "parameter": "RandomValue_Int64"
+          "parameter": "0"
         },
         {
           "operation": "set",
           "object": "EnableRandomization_Int64",
-          "parameter": "EnableRandomization_Int64"
+          "parameter": "false"
         }
       ]
     },
@@ -355,15 +347,14 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestTransform_Fail",
-          "parameter": "ResourceTestTransform_Fail"
+          "object": "ResourceTestTransform_Fail"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "ResourceTestTransform_Fail",
-          "parameter": "ResourceTestTransform_Fail"
+          "parameter": "0"
         }
       ]
     },
@@ -372,15 +363,14 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestAssertion_Pass",
-          "parameter": "ResourceTestAssertion_Pass"
+          "object": "ResourceTestAssertion_Pass"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "ResourceTestAssertion_Pass",
-          "parameter": "ResourceTestAssertion_Pass"
+          "parameter": "0"
         }
       ]
     },
@@ -389,15 +379,14 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestAssertion_Fail",
-          "parameter": "ResourceTestAssertion_Fail"
+          "object": "ResourceTestAssertion_Fail"
         }
       ],
       "set": [
         {
           "operation": "set",
           "object": "ResourceTestAssertion_Fail",
-          "parameter": "ResourceTestAssertion_Fail"
+          "parameter": "0"
         }
       ]
     },
@@ -407,7 +396,6 @@
         {
           "operation": "get",
           "object": "ResourceTestMapping_Pass",
-          "parameter": "ResourceTestMapping_Pass",
           "mappings": {
             "123": "Pass"
           }
@@ -417,7 +405,7 @@
         {
           "operation": "set",
           "object": "ResourceTestMapping_Pass",
-          "parameter": "ResourceTestMapping_Pass",
+          "parameter": "0",
           "mappings": {
             "Pass": "123"
           }
@@ -430,7 +418,6 @@
         {
           "operation": "get",
           "object": "ResourceTestMapping_Fail",
-          "parameter": "ResourceTestMapping_Fail",
           "mappings": {
             "12": "Pass"
           }
@@ -440,7 +427,7 @@
         {
           "operation": "set",
           "object": "ResourceTestMapping_Fail",
-          "parameter": "ResourceTestMapping_Fail",
+          "parameter": "0",
           "mappings": {
             "Pass": "12"
           }
@@ -452,15 +439,13 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceNotFound",
-          "parameter": "Error"
+          "object": "ResourceNotFound"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "ResourceNotFound",
-          "parameter": "Error"
+          "object": "ResourceNotFound"
         }
       ]
     },
@@ -469,8 +454,7 @@
       "get": [
         {
           "operation": "get",
-          "object": "NoDeviceResourceForResult",
-          "parameter": "NoDeviceResourceForResult"
+          "object": "NoDeviceResourceForResult"
         }
       ]
     },
@@ -480,14 +464,12 @@
         {
           "index": "1",
           "operation": "get",
-          "object": "Error",
-          "parameter": "Error"
+          "object": "Error"
         },
         {
           "index": "2",
           "operation": "get",
-          "object": "Error",
-          "parameter": "Error"
+          "object": "Error"
         }
       ],
       "set": [
