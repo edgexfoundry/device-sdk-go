@@ -28,13 +28,20 @@ import (
 
 func TestHTTPPost(t *testing.T) {
 	const (
-		msgStr = "test message"
-		path   = "/somepath/foo"
+		msgStr  = "test message"
+		path    = "/somepath/foo"
+		badPath = "/somepath/bad"
 	)
 
 	context.CorrelationID = "123"
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
+
+		if r.URL.EscapedPath() == badPath {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 
 		readMsg, _ := ioutil.ReadAll(r.Body)
@@ -61,23 +68,41 @@ func TestHTTPPost(t *testing.T) {
 		t.Fatal("Could not parse url")
 	}
 
-	sender := NewHTTPSender(`http://`+url.Host+path, "")
+	tests := []struct {
+		Name          string
+		Path          string
+		PersistOnFail bool
+		RetryDataSet  bool
+	}{
+		{"Successful post", path, true, false},
+		{"Failed Post no persist", badPath, false, false},
+		{"Failed Post with persist", badPath, true, true},
+	}
 
-	sender.HTTPPost(context, msgStr)
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			sender := NewHTTPSender(`http://`+url.Host+test.Path, "", test.PersistOnFail)
+
+			sender.HTTPPost(context, msgStr)
+
+			assert.Equal(t, test.RetryDataSet, context.RetryData != nil)
+		})
+	}
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
 
-	sender := NewHTTPSender("", "")
+	sender := NewHTTPSender("", "", false)
 	continuePipeline, result := sender.HTTPPost(context)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
 	assert.Equal(t, result.(error).Error(), "No Data Received")
 }
+
 func TestHTTPPostInvalidParameter(t *testing.T) {
 
-	sender := NewHTTPSender("", "")
+	sender := NewHTTPSender("", "", false)
 	data := 25
 	continuePipeline, result := sender.HTTPPost(context, data)
 

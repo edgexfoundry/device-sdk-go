@@ -31,15 +31,17 @@ import (
 
 // HTTPSender ...
 type HTTPSender struct {
-	URL      string
-	MimeType string
+	URL            string
+	MimeType       string
+	PersistOnError bool
 }
 
 // NewHTTPSender creates, initializes and returns a new instance of HTTPSender
-func NewHTTPSender(url string, mimeType string) HTTPSender {
+func NewHTTPSender(url string, mimeType string, persistOnError bool) HTTPSender {
 	return HTTPSender{
-		URL:      url,
-		MimeType: mimeType,
+		URL:            url,
+		MimeType:       mimeType,
+		PersistOnError: persistOnError,
 	}
 }
 
@@ -54,30 +56,40 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 	if sender.MimeType == "" {
 		sender.MimeType = "application/json"
 	}
-	data, err := util.CoerceType(params[0])
+	exportData, err := util.CoerceType(params[0])
 	if err != nil {
 		return false, err
 	}
 
-	edgexcontext.LoggingClient.Info("POSTing data")
-	response, err := http.Post(sender.URL, sender.MimeType, bytes.NewReader(data))
+	edgexcontext.LoggingClient.Debug("POSTing data")
+	response, err := http.Post(sender.URL, sender.MimeType, bytes.NewReader(exportData))
 	if err != nil {
-		//LoggingClient.Error(err.Error())
+		sender.setRetryData(edgexcontext, exportData)
 		return false, err
 	}
 	defer response.Body.Close()
-	edgexcontext.LoggingClient.Info(fmt.Sprintf("Response: %s", response.Status))
-	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data: %s", string(data)))
+	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Response: %s", response.Status))
+	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data: %s", string(exportData)))
 	bodyBytes, errReadingBody := ioutil.ReadAll(response.Body)
 	if errReadingBody != nil {
+		sender.setRetryData(edgexcontext, exportData)
 		return false, errReadingBody
 	}
 
 	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, edgexcontext.CorrelationID)
 
 	// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
-	isSuccessfulPost := response.StatusCode >= 200 && response.StatusCode < 300
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		sender.setRetryData(edgexcontext, exportData)
+		return false, fmt.Errorf("export failed with %d HTTP status code", response.StatusCode)
+	}
 
-	return isSuccessfulPost, bodyBytes
+	return true, bodyBytes
 
+}
+
+func (sender HTTPSender) setRetryData(ctx *appcontext.Context, exportData []byte) {
+	if sender.PersistOnError {
+		ctx.RetryData = exportData
+	}
 }

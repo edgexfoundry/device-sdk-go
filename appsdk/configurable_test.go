@@ -120,6 +120,10 @@ func TestConfigurableHTTPPost(t *testing.T) {
 	params[MimeType] = ""
 	trx = configurable.HTTPPost(params)
 	assert.NotNil(t, trx, "return result from HTTPPost should not be nil")
+
+	params[PersistOnError] = "true"
+	trx = configurable.HTTPPost(params)
+	assert.NotNil(t, trx, "return result from HTTPPost should not be nil")
 }
 
 func TestConfigurableHTTPPostJSON(t *testing.T) {
@@ -137,6 +141,7 @@ func TestConfigurableHTTPPostJSON(t *testing.T) {
 	assert.Nil(t, trx, "return result from HTTPPostJSON should be nil")
 
 	params[Url] = "http://url"
+	params[PersistOnError] = "true"
 	trx = configurable.HTTPPostJSON(params)
 	assert.NotNil(t, trx, "return result from HTTPPostJSON should not be nil")
 }
@@ -156,6 +161,7 @@ func TestConfigurableHTTPPostXML(t *testing.T) {
 	assert.Nil(t, trx, "return result from HTTPPostXML should be nil")
 
 	params[Url] = "http://url"
+	params[PersistOnError] = "true"
 	trx = configurable.HTTPPostXML(params)
 	assert.NotNil(t, trx, "return result from HTTPPostXML should not be nil")
 }
@@ -169,6 +175,7 @@ func TestConfigurableMQTTSend(t *testing.T) {
 
 	params := make(map[string]string)
 	addr := models.Addressable{}
+	params[PersistOnError] = "true"
 	trx := configurable.MQTTSend(params, addr)
 	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
 }

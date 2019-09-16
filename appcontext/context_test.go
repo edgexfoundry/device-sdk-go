@@ -179,6 +179,13 @@ func TestMarkAsPushedEventId(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestSetRetryData(t *testing.T) {
+	ctx := Context{}
+	testData := "output data"
+	ctx.SetRetryData([]byte(testData))
+	assert.Equal(t, []byte(testData), ctx.RetryData)
+}
+
 type mockEventEndpoint struct {
 }
 
