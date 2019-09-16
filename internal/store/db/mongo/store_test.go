@@ -31,10 +31,9 @@ import (
 )
 
 const (
-	TestHost      = "localhost"
-	TestPort      = 27017
-	TestTimeout   = 5000
-	TestBatchSize = 1337
+	TestHost    = "localhost"
+	TestPort    = 27017
+	TestTimeout = 5000
 
 	TestRetryCount       = 100
 	TestPipelinePosition = 1337

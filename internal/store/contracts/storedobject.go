@@ -15,6 +15,12 @@
 // contracts are implementation agnostic data storage models.
 package contracts
 
+import (
+	"errors"
+
+	"github.com/google/uuid"
+)
+
 // StoredObject is the atomic and most abstract description of what is collected by the export store system.
 type StoredObject struct {
 	// ID uniquely identifies this StoredObject
@@ -55,4 +61,36 @@ func NewStoredObject(appServiceKey string, payload []byte, pipelinePosition int,
 		PipelinePosition: pipelinePosition,
 		Version:          version,
 	}
+}
+
+// ValidateContract ensures that the required fields are present on the object.
+func (o *StoredObject) ValidateContract(IDRequired bool) error {
+	if IDRequired {
+		if o.ID == "" {
+			return errors.New("invalid contract, ID cannot be empty")
+		}
+	} else {
+		if o.ID == "" {
+			o.ID = uuid.New().String()
+		}
+	}
+
+	parsed, err := uuid.Parse(o.ID)
+	if err != nil {
+		return errors.New("invalid contract, ID must be UUID")
+	}
+
+	o.ID = parsed.String()
+
+	if o.AppServiceKey == "" {
+		return errors.New("invalid contract, app service key cannot be empty")
+	}
+	if len(o.Payload) == 0 {
+		return errors.New("invalid contract, payload cannot be empty")
+	}
+	if o.Version == "" {
+		return errors.New("invalid contract, version cannot be empty")
+	}
+
+	return nil
 }

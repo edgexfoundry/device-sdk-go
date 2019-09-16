@@ -57,6 +57,7 @@ type StoredObject struct {
 	EventChecksum string `bson:"eventChecksum"`
 }
 
+// FromContract builds a model object out of the supplied contract.
 func (o *StoredObject) FromContract(c contracts.StoredObject) error {
 	var err error
 	o.UUID, err = GetUUID(c.ID)
@@ -76,6 +77,7 @@ func (o *StoredObject) FromContract(c contracts.StoredObject) error {
 	return nil
 }
 
+// ToContract builds a contract out of the supplied model.
 func (o StoredObject) ToContract() contracts.StoredObject {
 	contract := contracts.NewStoredObject(
 		o.AppServiceKey,
