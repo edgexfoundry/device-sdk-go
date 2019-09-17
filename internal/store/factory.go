@@ -21,7 +21,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/redis"
 )
 
-func NewStoreClient(config db.Configuration) (interfaces.StoreClient, error) {
+func NewStoreClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 	switch config.Type {
 	case db.MongoDB:
 		return mongo.NewClient(config)
