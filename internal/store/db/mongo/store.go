@@ -19,17 +19,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/mongo/models"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -200,7 +201,7 @@ func (c Client) Disconnect() error {
 }
 
 // NewClient provides a factory for building a StoreClient
-func NewClient(config db.Configuration) (client interfaces.StoreClient, err error) {
+func NewClient(config db.DatabaseInfo) (client interfaces.StoreClient, err error) {
 	var uri string
 	if config.Username == "" && config.Password == "" {
 		// no auth path
@@ -231,7 +232,7 @@ func NewClient(config db.Configuration) (client interfaces.StoreClient, err erro
 			return
 		}
 
-		mongoDatabase = mongoClient.Database(config.DatabaseName)
+		mongoDatabase = mongoClient.Database(internal.DatabaseName)
 
 		// ping the watcher and tell it we're done
 		notify <- true

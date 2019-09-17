@@ -1,5 +1,9 @@
 [Writable]
 LogLevel = 'INFO'
+    [Writable.StoreAndForward]
+    Enabled = false
+    RetryInterval = 50000 # 5mins
+    MaxRetryCount = 10
 
 [Service]
 BootTimeout = 30000
@@ -17,6 +21,18 @@ Host = 'localhost'
 Port = 8500
 Type = 'consul'
 
+[Database]
+Type = "mongodb"
+Host = "localhost"
+Port = 27017
+Timeout = 5000
+Username = ""
+Password = ""
+
+[Logging]
+EnableRemote = false
+File = './logs/simple-filter-xml-post.log'
+
 [Clients]
   [Clients.CoreData]
   Protocol = 'http'
@@ -27,6 +43,12 @@ Type = 'consul'
   Protocol = "http"
   Host = "localhost"
   Port = 48061
+
+  # Required when using Store and Forward
+  [Clients.Scheduler]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 48085
 
 [MessageBus]
 Type = 'zero'
@@ -39,10 +61,15 @@ Type = 'zero'
         Port = 5563
         Protocol = 'tcp'
 
+# Choose either an HTTP trigger or MessageBus trigger (aka Binding)
 
-[Logging]
-EnableRemote = false
-File = './logs/simple-filter-xml-post.log'
+#[Binding]
+#Type="http"
 
 [Binding]
- Type="http"
+Type="messagebus"
+SubscribeTopic="events"
+PublishTopic="somewhere"
+
+
+
