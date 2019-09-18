@@ -39,7 +39,7 @@ func TestMQTTSend(t *testing.T) {
 	t.SkipNow()
 
 	mqttConfig := NewMqttConfig()
-	sender := NewMQTTSender(lc, addr, nil, mqttConfig)
+	sender := NewMQTTSender(lc, addr, nil, mqttConfig, false)
 
 	dataToSend := "SOME DATA TO SEND"
 	continuePipeline, result := sender.MQTTSend(context, dataToSend)
@@ -62,7 +62,7 @@ func TestMQTTSendInvalidData(t *testing.T) {
 
 	expected := "passed in data must be of type []byte, string or implement json.Marshaler"
 	mqttConfig := NewMqttConfig()
-	sender := NewMQTTSender(lc, addr, nil, mqttConfig)
+	sender := NewMQTTSender(lc, addr, nil, mqttConfig, false)
 
 	type RandomObject struct {
 		something string
@@ -75,6 +75,20 @@ func TestMQTTSendInvalidData(t *testing.T) {
 	}
 	assert.Equal(t, expected, result.(error).Error())
 
+}
+
+func TestMQTTSendPersistData(t *testing.T) {
+	expected := "Could not connect to mqtt server"
+	mqttConfig := NewMqttConfig()
+	sender := NewMQTTSender(lc, addr, nil, mqttConfig, true)
+
+	dataToSend := "Random data"
+	continuePipeline, result := sender.MQTTSend(context, dataToSend)
+	if !assert.False(t, continuePipeline, "Should Not Continue Pipeline") {
+		t.Fatal()
+	}
+	assert.Contains(t, result.(error).Error(), expected)
+	assert.NotNil(t, context.RetryData)
 }
 
 func TestNewMQTTSender(t *testing.T) {
@@ -90,7 +104,7 @@ func TestNewMQTTSender(t *testing.T) {
 	}
 
 	mqttConfig := NewMqttConfig()
-	sender := NewMQTTSender(lc, addr1, nil, mqttConfig)
+	sender := NewMQTTSender(lc, addr1, nil, mqttConfig, false)
 	assert.NotNil(t, sender.client, "Client should not be nil")
 	opts := sender.client.OptionsReader()
 	assert.Equal(t, "testMQTTTopic", sender.topic, "Topic should be set to testMQTTTopic")

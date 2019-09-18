@@ -66,7 +66,7 @@ func main() {
 		CertFile: "PATH_TO_YOUR_CERT_FILE",
 	}
 
-	mqttSender := transforms.NewMQTTSender(edgexSdk.LoggingClient, addressable, &pair, mqttConfig)
+	mqttSender := transforms.NewMQTTSender(edgexSdk.LoggingClient, addressable, &pair, mqttConfig, false)
 
 	// 3) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
