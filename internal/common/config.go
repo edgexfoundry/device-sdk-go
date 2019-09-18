@@ -19,14 +19,16 @@ package common
 import (
 	"fmt"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // WritableInfo ...
 type WritableInfo struct {
-	LogLevel string
-	Pipeline PipelineInfo
+	LogLevel        string
+	Pipeline        PipelineInfo
+	StoreAndForward StoreAndForwardInfo
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
@@ -54,6 +56,7 @@ type ConfigurationStruct struct {
 	Binding             BindingInfo
 	ApplicationSettings map[string]string
 	Clients             map[string]ClientInfo
+	Database            db.DatabaseInfo
 }
 
 // RegistryInfo ...
@@ -100,4 +103,10 @@ type PipelineFunction struct {
 	// Name	string
 	Parameters  map[string]string
 	Addressable models.Addressable
+}
+
+type StoreAndForwardInfo struct {
+	Enabled       bool
+	RetryInterval int
+	MaxRetryCount int
 }

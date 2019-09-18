@@ -1,5 +1,9 @@
 [Writable]
 LogLevel = 'INFO'
+    [Writable.StoreAndForward]
+    Enabled = false
+    RetryInterval = 50000 # 5mins
+    MaxRetryCount = 10
 
 [Service]
 BootTimeout = 30000
@@ -9,13 +13,24 @@ Host = 'simple-filter-xml'
 Port = 48095
 Protocol = 'http'
 ReadMaxLimit = 100
-StartupMsg = 'This is a simple Filter/XML Transform Application Service'
+StartupMsg = 'This is a sample Filter/XML Transform Application Service'
 Timeout = 5000
 
 [Registry]
 Host = 'edgex-core-consul'
 Port = 8500
 Type = 'consul'
+
+[Logging]
+EnableRemote = true
+
+[Database]
+Type = "mongodb"
+Host = "edgex-mongo"
+Port = 27017
+Timeout = 5000
+Username = ""
+Password = ""
 
 [Clients]
   [Clients.CoreData]
@@ -35,21 +50,19 @@ Type = 'zero'
         Port = 5564
         Protocol = 'tcp'
     [MessageBus.SubscribeHost]
-        Host = 'localhost'
+        Host = 'edgex-core-data'
         Port = 5563
         Protocol = 'tcp'
 
-[Logging]
-EnableRemote = false
-File = '/edgex/logs/simple-filter-xml.log'
+# Choose either an HTTP trigger or MessageBus trigger (aka Binding)
 
-# [Binding]
-#  Type="messagebus"
-#  SubscribeTopic="events"
-#  PublishTopic="somewhere"
- 
+#[Binding]
+#Type="http"
+
 [Binding]
-Type="http"
+Type="messagebus"
+SubscribeTopic="events"
+PublishTopic="somewhere"
 
 [ApplicationSettings]
 ApplicationName = "simple-filter-xml"

@@ -1,5 +1,9 @@
 [Writable]
 LogLevel = 'DEBUG'
+    [Writable.StoreAndForward]
+    Enabled = false
+    RetryInterval = 50000 # 5mins
+    MaxRetryCount = 10
 
 [Service]
 BootTimeout = 30000
@@ -17,6 +21,18 @@ Host = 'localhost'
 Port = 8500
 Type = 'consul'
 
+[Logging]
+EnableRemote = false
+File = './logs/simple-filter-xml-mqtt.log'
+
+[Database]
+Type = "mongodb"
+Host = "localhost"
+Port = 27017
+Timeout = 5000
+Username = ""
+Password = ""
+
 [Clients]
   [Clients.CoreData]
   Protocol = 'http'
@@ -28,12 +44,8 @@ Type = 'consul'
   Host = "localhost"
   Port = 48061
 
-# This example depends on HTTP trigger to receive the input data which is a custom type.
+# This example expect custom type via HTTP Trigger
 [Binding]
 Type="http"
-
-[Logging]
-EnableRemote = false
-File = './logs/filter-custom-convert-publish.log'
 
 [ApplicationSettings]
