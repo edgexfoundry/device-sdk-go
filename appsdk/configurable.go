@@ -17,6 +17,7 @@
 package appsdk
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -33,6 +34,7 @@ const (
 	InitVector       = "initvector"
 	Url              = "url"
 	MimeType         = "mimetype"
+	PersistOnError   = "persistOnError"
 	Cert             = "cert"
 	Qos              = "qos"
 	Retain           = "retain"
@@ -181,6 +183,8 @@ func (dynamic AppFunctionsSDKConfigurable) EncryptWithAES(parameters map[string]
 // method will default to application/json.
 // This function is a configuration function and returns a function pointer.
 func (dynamic AppFunctionsSDKConfigurable) HTTPPost(parameters map[string]string) appcontext.AppFunction {
+	var err error
+
 	url, ok := parameters[Url]
 	if !ok {
 		dynamic.Sdk.LoggingClient.Error("Could not find " + Url)
@@ -191,12 +195,25 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPost(parameters map[string]string
 		dynamic.Sdk.LoggingClient.Error("Could not find " + MimeType)
 		return nil
 	}
+
+	// PersistOnError is optional and is false by default.
+	persistOnError := false
+	value, ok := parameters[PersistOnError]
+	if ok {
+		persistOnError, err = strconv.ParseBool(value)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			return nil
+		}
+	}
+
 	url = strings.TrimSpace(url)
 	mimeType = strings.TrimSpace(mimeType)
 
 	transform := transforms.HTTPSender{
-		URL:      url,
-		MimeType: mimeType,
+		URL:            url,
+		MimeType:       mimeType,
+		PersistOnError: persistOnError,
 	}
 	dynamic.Sdk.LoggingClient.Debug("HTTP Post Parameters", Url, transform.URL, MimeType, transform.MimeType)
 	return transform.HTTPPost
@@ -211,9 +228,22 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPostJSON(parameters map[string]st
 		dynamic.Sdk.LoggingClient.Error("Could not find " + Url)
 		return nil
 	}
+
+	// PersistOnError is optional and is false by default.
+	persistOnError := false
+	value, ok := parameters[PersistOnError]
+	if ok {
+		var err error
+		persistOnError, err = strconv.ParseBool(value)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			return nil
+		}
+	}
+
 	url = strings.TrimSpace(url)
 	dynamic.Sdk.LoggingClient.Debug("HTTP Post JSON Parameters", Url, url)
-	return transforms.NewHTTPSender(url, "application/json").HTTPPost
+	return transforms.NewHTTPSender(url, "application/json", persistOnError).HTTPPost
 }
 
 // HTTPPostXML sends data from the previous function to the specified Endpoint via http POST with a mime type of application/xml.
@@ -225,9 +255,22 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPostXML(parameters map[string]str
 		dynamic.Sdk.LoggingClient.Error("Could not find " + Url)
 		return nil
 	}
+
+	// PersistOnError is optional and is false by default.
+	persistOnError := false
+	value, ok := parameters[PersistOnError]
+	if ok {
+		var err error
+		persistOnError, err = strconv.ParseBool(value)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			return nil
+		}
+	}
+
 	url = strings.TrimSpace(url)
 	dynamic.Sdk.LoggingClient.Debug("HTTP Post XML Parameters", Url, url)
-	return transforms.NewHTTPSender(url, "application/xml").HTTPPost
+	return transforms.NewHTTPSender(url, "application/xml", persistOnError).HTTPPost
 }
 
 // MQTTSend sends data from the previous function to the specified MQTT broker.
@@ -277,11 +320,22 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 		}
 	}
 
+	// PersistOnError os optional and is false by default.
+	persistOnError := false
+	value, ok := parameters[PersistOnError]
+	if ok {
+		persistOnError, err = strconv.ParseBool(value)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			return nil
+		}
+	}
+
 	mqttconfig := transforms.NewMqttConfig()
 	mqttconfig.SetQos(byte(qos))
 	mqttconfig.SetRetain(retain)
 	mqttconfig.SetAutoreconnect(autoreconnect)
-	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, pair, mqttconfig)
+	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, pair, mqttconfig, persistOnError)
 	return sender.MQTTSend
 }
 

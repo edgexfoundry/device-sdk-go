@@ -45,7 +45,7 @@ func main() {
 	edgexSdk.SetFunctionsPipeline(
 		transforms.NewFilter(deviceNames).FilterByDeviceName,
 		transforms.NewConversion().TransformToXML,
-		transforms.NewHTTPSender("<Your endpoint goes here>", "application/xml").HTTPPost,
+		transforms.NewHTTPSender("<Your endpoint goes here>", "application/xml", false).HTTPPost,
 	)
 
 	// 4) This example doesn't have any application's specific configuration settings. Skipping call to sdk.ApplicationSettings

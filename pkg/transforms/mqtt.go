@@ -76,13 +76,14 @@ func (mqttConfig MqttConfig) SetAutoreconnect(reconnect bool) {
 }
 
 type MQTTSender struct {
-	client MQTT.Client
-	topic  string
-	opts   MqttConfig
+	client         MQTT.Client
+	topic          string
+	opts           MqttConfig
+	persistOnError bool
 }
 
 // NewMQTTSender - create new mqtt sender
-func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig *MqttConfig) *MQTTSender {
+func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig *MqttConfig, persistOnError bool) *MQTTSender {
 	protocol := strings.ToLower(addr.Protocol)
 
 	opts := MQTT.NewClientOptions()
@@ -119,9 +120,10 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCer
 	}
 
 	sender := &MQTTSender{
-		client: MQTT.NewClient(opts),
-		topic:  addr.Topic,
-		opts:   *mqttConfig,
+		client:         MQTT.NewClient(opts),
+		topic:          addr.Topic,
+		opts:           *mqttConfig,
+		persistOnError: persistOnError,
 	}
 
 	return sender
@@ -134,25 +136,40 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
-	if !sender.client.IsConnected() {
-		edgexcontext.LoggingClient.Info("Connecting to mqtt server")
-		if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
-			return false, fmt.Errorf("Could not connect to mqtt server, drop event. Error: %s", token.Error().Error())
-		}
-		edgexcontext.LoggingClient.Info("Connected to mqtt server")
-	}
-	data, err := util.CoerceType(params[0])
+
+	exportData, err := util.CoerceType(params[0])
 	if err != nil {
 		return false, err
 	}
-	token := sender.client.Publish(sender.topic, sender.opts.qos, sender.opts.retain, data)
-	// FIXME: could be removed? set of tokens?
+
+	if !sender.client.IsConnected() {
+		edgexcontext.LoggingClient.Info("Connecting to mqtt server")
+		if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
+			sender.setRetryData(edgexcontext, exportData)
+			subMessage := "drop event"
+			if sender.persistOnError {
+				subMessage = "persisting Event for later retry"
+			}
+			return false, fmt.Errorf("Could not connect to mqtt server, %s. Error: %s", subMessage, token.Error().Error())
+		}
+		edgexcontext.LoggingClient.Info("Connected to mqtt server")
+	}
+
+	token := sender.client.Publish(sender.topic, sender.opts.qos, sender.opts.retain, exportData)
 	token.Wait()
 	if token.Error() != nil {
+		sender.setRetryData(edgexcontext, exportData)
 		return false, token.Error()
 	}
-	edgexcontext.LoggingClient.Info("Sent data to MQTT Broker")
+
+	edgexcontext.LoggingClient.Debug("Sent data to MQTT Broker")
 	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
 
 	return true, nil
+}
+
+func (sender MQTTSender) setRetryData(ctx *appcontext.Context, exportData []byte) {
+	if sender.persistOnError {
+		ctx.RetryData = exportData
+	}
 }
