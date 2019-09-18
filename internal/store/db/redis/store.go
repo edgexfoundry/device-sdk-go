@@ -47,6 +47,6 @@ func Disconnect() error {
 }
 
 // NewClient provides a factory for building a StoreClient
-func NewClient(config db.Configuration) (interfaces.StoreClient, error) {
+func NewClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 	return nil, nil
 }

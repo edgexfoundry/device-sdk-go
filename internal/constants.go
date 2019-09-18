@@ -24,6 +24,7 @@ const (
 	WritableKey          = "/Writable"
 	ApiTriggerRoute      = "/api/v1/trigger"
 	LogDurationKey       = "duration"
+	DatabaseName         = "application-service"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build

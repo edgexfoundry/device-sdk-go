@@ -27,13 +27,11 @@ var (
 	ErrUnsupportedDatabase = errors.New("unsupported database type")
 )
 
-type Configuration struct {
-	Type         string
-	Host         string
-	Port         int
-	Timeout      int
-	DatabaseName string
-	Username     string
-	Password     string
-	BatchSize    int
+type DatabaseInfo struct {
+	Type     string
+	Host     string
+	Port     int
+	Timeout  int
+	Username string
+	Password string
 }

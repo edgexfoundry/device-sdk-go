@@ -1,5 +1,9 @@
 [Writable]
 LogLevel = 'INFO'
+    [Writable.StoreAndForward]
+    Enabled = false
+    RetryInterval = 50000 # 5mins
+    MaxRetryCount = 10
 
 [Service]
 BootTimeout = 30000
@@ -16,6 +20,18 @@ Timeout = 5000
 Host = 'localhost'
 Port = 8500
 Type = 'consul'
+
+[Logging]
+EnableRemote = false
+File = './logs/simple-filter-xml-mqtt.log'
+
+[Database]
+Type = "mongodb"
+Host = "localhost"
+Port = 27017
+Timeout = 5000
+Username = ""
+Password = ""
 
 [Clients]
   [Clients.CoreData]
@@ -39,13 +55,15 @@ Type = 'zero'
         Port = 5563
         Protocol = 'tcp'
 
-[Logging]
-EnableRemote = false
-File = './logs/simple-cbor-filter.log'
+# Choose either an HTTP trigger or MessageBus trigger (aka Binding)
+
+#[Binding]
+#Type="http"
 
 [Binding]
 Type="messagebus"
 SubscribeTopic="events"
+PublishTopic="somewhere"
 
 [ApplicationSettings]
 ValueDescriptors = "Image"
