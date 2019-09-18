@@ -58,6 +58,8 @@ type Context struct {
 	CommandClient command.CommandClient
 	// NotificationsClient exposes Support Notification's Notifications API
 	NotificationsClient notifications.NotificationsClient
+	// RetryData holds the data to be stored for later retry when the pipeline function returns an error
+	RetryData []byte
 }
 
 // Complete is optional and provides a way to return the specified data.
@@ -82,6 +84,12 @@ func (context *Context) MarkAsPushed() error {
 	} else {
 		return errors.New("No EventID or EventChecksum Provided")
 	}
+}
+
+// SetRetryData sets the RetryData to the specified payload to be stored for later retry
+// when the pipeline function returns an error.
+func (context *Context) SetRetryData(payload []byte) {
+	context.RetryData = payload
 }
 
 // PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
