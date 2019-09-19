@@ -31,11 +31,10 @@ import (
 )
 
 const (
-	TestHost         = "localhost"
-	TestPort         = 27017
-	TestTimeout      = 5000
-	TestDatabaseName = "test"
-	TestBatchSize    = 1337
+	TestHost      = "localhost"
+	TestPort      = 27017
+	TestTimeout   = 5000
+	TestBatchSize = 1337
 
 	TestRetryCount       = 100
 	TestPipelinePosition = 1337
@@ -47,22 +46,18 @@ const (
 
 var TestPayload = []byte("brandon was here")
 
-var TestValidNoAuthConfig = db.Configuration{
-	Type:         db.MongoDB,
-	Host:         TestHost,
-	Port:         TestPort,
-	Timeout:      TestTimeout,
-	DatabaseName: TestDatabaseName,
-	BatchSize:    TestBatchSize,
+var TestValidNoAuthConfig = db.DatabaseInfo{
+	Type:    db.MongoDB,
+	Host:    TestHost,
+	Port:    TestPort,
+	Timeout: TestTimeout,
 }
 
-var TestTimeoutConfig = db.Configuration{
-	Type:         db.MongoDB,
-	Host:         TestHost,
-	Port:         TestPort,
-	Timeout:      1,
-	DatabaseName: TestDatabaseName,
-	BatchSize:    TestBatchSize,
+var TestTimeoutConfig = db.DatabaseInfo{
+	Type:    db.MongoDB,
+	Host:    TestHost,
+	Port:    TestPort,
+	Timeout: 1,
 }
 
 var TestContractBase = contracts.StoredObject{
@@ -121,7 +116,7 @@ var TestContractNoVersion = contracts.StoredObject{
 func TestClient_NewClient(t *testing.T) {
 	tests := []struct {
 		name          string
-		config        db.Configuration
+		config        db.DatabaseInfo
 		expectedError bool
 	}{
 		{"Success, no auth", TestValidNoAuthConfig, false},

@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/mux v1.7.2
 	github.com/pelletier/go-toml v1.2.0
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.3.0
 	github.com/tidwall/pretty v1.0.0 // indirect
 	github.com/ugorji/go v1.1.4
