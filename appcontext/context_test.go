@@ -192,10 +192,14 @@ type mockEventEndpoint struct {
 func (e mockEventEndpoint) Monitor(params types.EndpointParams, ch chan string) {
 	switch params.ServiceKey {
 	case clients.CoreDataServiceKey:
-		url := fmt.Sprintf("http://%s:%v%s", "localhost", 48080, params.Path)
+		url := e.Fetch(params)
 		ch <- url
 		break
 	default:
 		ch <- ""
 	}
+}
+
+func (e mockEventEndpoint) Fetch(params types.EndpointParams) string {
+	return fmt.Sprintf("http://%s:%v%s", "localhost", 48080, params.Path)
 }
