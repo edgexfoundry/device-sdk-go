@@ -34,4 +34,8 @@ type DatabaseInfo struct {
 	Timeout  int
 	Username string
 	Password string
+
+	// Redis specific configuration items
+	MaxIdle   int
+	BatchSize int
 }

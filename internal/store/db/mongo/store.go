@@ -47,7 +47,7 @@ const mongoCollection = "store"
 
 // Store persists a stored object to the data store.
 func (c Client) Store(o contracts.StoredObject) (string, error) {
-	err := validateContract(false, o)
+	err := o.ValidateContract(false)
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +137,7 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []contracts.Sto
 
 // Update replaces the data currently in the store with the provided data.
 func (c Client) Update(o contracts.StoredObject) error {
-	err := validateContract(true, o)
+	err := o.ValidateContract(true)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (c Client) Update(o contracts.StoredObject) error {
 
 // RemoveFromStore removes an object from the data store.
 func (c Client) RemoveFromStore(o contracts.StoredObject) error {
-	err := validateContract(true, o)
+	err := o.ValidateContract(true)
 	if err != nil {
 		return err
 	}
@@ -250,23 +250,4 @@ func NewClient(config db.DatabaseInfo) (client interfaces.StoreClient, err error
 	case <-notify:
 		return Client{timeout, mongoDatabase, mongoClient}, nil
 	}
-}
-
-func validateContract(IDRequired bool, o contracts.StoredObject) error {
-	if IDRequired {
-		if o.ID == "" {
-			return errors.New("invalid contract, ID cannot be empty")
-		}
-	}
-	if o.AppServiceKey == "" {
-		return errors.New("invalid contract, app service key cannot be empty")
-	}
-	if len(o.Payload) == 0 {
-		return errors.New("invalid contract, payload cannot be empty")
-	}
-	if o.Version == "" {
-		return errors.New("invalid contract, version cannot be empty")
-	}
-
-	return nil
 }
