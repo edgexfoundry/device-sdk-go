@@ -363,7 +363,7 @@ func (sdk *AppFunctionsSDK) initializeClients() {
 	}
 
 	if _, ok := sdk.config.Clients[common.CoreCommandClientName]; ok {
-		params := sdk.getClientParams(clients.CoreCommandServiceKey, common.CoreCommandClientName, clients.ApiCommandRoute)
+		params := sdk.getClientParams(clients.CoreCommandServiceKey, common.CoreCommandClientName, clients.ApiDeviceRoute)
 		sdk.edgexClients.CommandClient = command.NewCommandClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
 	}
 
