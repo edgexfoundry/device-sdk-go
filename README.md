@@ -29,6 +29,12 @@ Table of contents
 
 ## Getting Started
 
+### Build Prerequisites
+
+Please see the [edgex-go README](https://github.com/edgexfoundry/edgex-go/blob/master/README.md).
+
+### The SDK
+
 The SDK is built around the idea of a "Functions Pipeline". A functions pipeline is a collection of various functions that process the data in the order that you've specified. The functions pipeline is executed by the specified [trigger](#triggers) in the `configuration.toml` . The first function in the pipeline is called with the event that triggered the pipeline (ex. `events.Model`). Each successive call in the pipeline is called with the return result of the previous function. Let's take a look at a simple example that creates a pipeline to filter particular device ids and subsequently transform the data to XML:
 ```golang
 package main

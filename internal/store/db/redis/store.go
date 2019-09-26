@@ -32,7 +32,7 @@ import (
 var currClient *Client // a singleton so Readings can be de-referenced
 var once sync.Once
 
-const redisCollection = "store"
+const nameSpace = "store"
 
 // Client provides an implementation for the Client interface for Redis
 type Client struct {
@@ -40,7 +40,12 @@ type Client struct {
 	BatchSize int
 }
 
-// Store persists a stored object to the data store.
+// Store persists a stored object to the data store. Three ("Three shall be the number thou shalt
+// count, and the number of the counting shall be three") keys are used:
+// * the object id to point to a STRING which is the marshal'ed JSON.
+// * the object AppServiceKey to point to a SET containing all object ids associated with this
+//   app service. Note the key is prefixed to avoid key collisions.
+// * the object id to point to a HASH which contains the object AppServiceKey.
 func (c Client) Store(o contracts.StoredObject) (string, error) {
 	err := o.ValidateContract(false)
 	if err != nil {
@@ -66,11 +71,9 @@ func (c Client) Store(o contracts.StoredObject) (string, error) {
 	}
 
 	_ = conn.Send("MULTI")
-	// store the object's representation
 	_ = conn.Send("SET", model.ID, json)
-	// store the association with this ASK
-	_ = conn.Send("SADD", redisCollection+":"+model.AppServiceKey, model.ID)
-
+	_ = conn.Send("SADD", nameSpace+":idl:"+model.AppServiceKey, model.ID)
+	_ = conn.Send("HSET", nameSpace+":ask:"+model.ID, "ASK", model.AppServiceKey)
 	_, err = conn.Do("EXEC")
 	if err != nil {
 		return "", err
@@ -93,7 +96,7 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []contracts.Sto
 	conn := c.Pool.Get()
 	defer conn.Close()
 
-	ids, err := redis.Values(conn.Do("SMEMBERS", redisCollection+":"+appServiceKey))
+	ids, err := redis.Values(conn.Do("SMEMBERS", nameSpace+":idl:"+appServiceKey))
 	if err != nil {
 		return nil, err
 	}
@@ -130,26 +133,19 @@ func (c Client) Update(o contracts.StoredObject) error {
 	conn := c.Pool.Get()
 	defer conn.Close()
 
-	// retrieve the current value
-	result, err := redis.String(conn.Do("GET", o.ID))
+	// retrieve the current AppServiceKey for this store object
+	currentASK, err := redis.String(conn.Do("HGET", nameSpace+":ask:"+o.ID, "ASK"))
 	if err != nil {
 		return err
 	}
-
-	var model models.StoredObject
-
-	err = model.UnmarshalJSON([]byte(result))
-	if err != nil {
-		return err
-	}
-	current := model.ToContract()
 
 	_ = conn.Send("MULTI")
 
 	// ASK has changed, update the ASK registry
-	if o.AppServiceKey != current.AppServiceKey {
-		_ = conn.Send("SREM", redisCollection+":"+current.AppServiceKey, current.ID)
-		_ = conn.Send("SADD", redisCollection+":"+o.AppServiceKey, o.ID)
+	if o.AppServiceKey != currentASK {
+		_ = conn.Send("SREM", nameSpace+":idl:"+currentASK, o.ID)
+		_ = conn.Send("SADD", nameSpace+":idl:"+o.AppServiceKey, o.ID)
+		_ = conn.Send("HSET", nameSpace+":ask:"+o.ID, "ASK", o.AppServiceKey)
 	}
 
 	var update models.StoredObject
@@ -183,7 +179,8 @@ func (c Client) RemoveFromStore(o contracts.StoredObject) error {
 	// remove the object's representation
 	_ = conn.Send("UNLINK", o.ID)
 	// remove the association with the ASK
-	_ = conn.Send("SREM", redisCollection+":"+o.AppServiceKey, o.ID)
+	_ = conn.Send("SREM", nameSpace+":idl:"+o.AppServiceKey, o.ID)
+	_ = conn.Send("UNLINK", nameSpace+":ask:"+o.ID)
 
 	res, err := redis.Values(conn.Do("EXEC"))
 	if err != nil {
