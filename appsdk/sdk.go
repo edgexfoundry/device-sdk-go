@@ -55,8 +55,11 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
-// ProfileSuffixPlaceholder is used to create unique names for profiles
-const ProfileSuffixPlaceholder = "<profile>"
+const (
+	// ProfileSuffixPlaceholder is used to create unique names for profiles
+	ProfileSuffixPlaceholder   = "<profile>"
+	ProfileEnvironmentVariable = "edgex_profile"
+)
 
 // The key type is unexported to prevent collisions with context keys defined in
 // other packages.
@@ -263,6 +266,8 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruc
 // Initialize will parse command line flags, register for interrupts,
 // initialize the logging system, and ingest configuration.
 func (sdk *AppFunctionsSDK) Initialize() error {
+
+	applyCommandlineEnvironmentOverrides()
 
 	flag.BoolVar(&sdk.useRegistry, "registry", false, "Indicates the service should use the registry.")
 	flag.BoolVar(&sdk.useRegistry, "r", false, "Indicates the service should use registry.")
@@ -547,4 +552,26 @@ func (sdk *AppFunctionsSDK) setLoggingTarget() (string, error) {
 	}
 
 	return sdk.config.Logging.File, nil
+}
+
+func applyCommandlineEnvironmentOverrides() {
+	// Currently there is just one commandline option that can be overwritten with an environment variable.
+	// If more are added, a more dynamic data driven approach should be used to avoid code duplication.
+
+	profileName := os.Getenv(ProfileEnvironmentVariable)
+	if profileName == "" {
+		return
+	}
+
+	found := false
+	for index, option := range os.Args {
+		if strings.Contains(option, "-p=") || strings.Contains(option, "--profile=") {
+			os.Args[index] = "--profile=" + profileName
+			found = true
+		}
+	}
+
+	if !found {
+		os.Args = append(os.Args, "--profile="+profileName)
+	}
 }
