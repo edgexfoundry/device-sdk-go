@@ -250,7 +250,7 @@ Each of the clients above is only initialized if the Clients section of the conf
 ### .PushToCore()
 `.PushToCore(string deviceName, string readingName, byte[] value)` is used to push data to EdgeX Core Data so that it can be shared with other applications that are subscribed to the message bus that core-data publishes to. `deviceName` can be set as you like along with the `readingName` which will be set on the EdgeX event sent to CoreData. This function will return the new EdgeX Event with the ID populated, however the CorrelationId will not be available.
  > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
- 
+
  > WARNING: Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
 ### .Complete()
 `.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
@@ -495,3 +495,37 @@ This sets the Service information fields as follows:
     Port: 4903
 ```
 
+#### edgex_profile
+
+This environment variable overrides the command line `profile` argument. It will replace the current value passed via the `-p` or `--profile`, if one exists. If not specified it will add the `--profile` argument. This is useful when running the service via snaps or docker compose.
+
+Using snaps:
+
+```
+sudo snap set app-service-configurable edgex_profile=http-export
+sudo snap start --enable edgex-app-service-configurable.app-service-configurable
+```
+
+This sets the `--profile=http-export` command line argument so that the application service uses the `http-export` configuration profile which resides at  `/res/http-export/configuration.toml`
+
+Using docker compose:
+
+```
+  app-service-configurable-rules:
+    image: edgexfoundry/docker-app-service-configurable:1.1.0
+    environment: 
+      - edgex_profile : "docker-rules-engine"
+    ports:
+      - "48095:48095"
+    container_name: edgex-app-service-configurable
+    hostname: edgex-app-service-configurable
+    networks:
+      edgex-network:
+        aliases:
+          - edgex-app-service-configurable
+    depends_on:
+      - data
+      - command
+```
+
+This sets the `--profile=docker-rules-engine` command line argument so that the application service uses the `docker-rules-engine` configuration profile which resides at  `/res/docker-rules-engine/configuration.toml`
