@@ -46,7 +46,8 @@ func TestCallback(t *testing.T) {
 	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
 	common.LoggingClient = lc
 	common.DeviceClient = &mock.DeviceClientMock{}
-	r := InitRestRoutes()
+	controller := NewRestController()
+	controller.InitRestRoutes()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -55,7 +56,7 @@ func TestCallback(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 
 			rr := httptest.NewRecorder()
-			r.ServeHTTP(rr, req)
+			controller.router.ServeHTTP(rr, req)
 			fmt.Printf("rr.code = %v\n", rr.Code)
 			if status := rr.Code; status != tt.code {
 				t.Errorf("CallbackHandler: handler returned wrong status code: got %v want %v",
@@ -71,13 +72,14 @@ func TestCommandServiceLocked(t *testing.T) {
 	common.LoggingClient = lc
 	common.ServiceLocked = true
 	common.ServiceName = deviceCommandTest
-	r := InitRestRoutes()
+	controller := NewRestController()
+	controller.InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, "nil", "nil"), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": "nil", "cmd": "nil"})
 
 	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
+	controller.router.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusLocked {
 		t.Errorf("ServiceLocked: handler returned wrong status code: got %v want %v",
 			status, http.StatusLocked)
@@ -98,13 +100,14 @@ func TestCommandNoDevice(t *testing.T) {
 	common.LoggingClient = lc
 	common.ServiceLocked = false
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
-	r := InitRestRoutes()
+	controller := NewRestController()
+	controller.InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": badDeviceId, "cmd": testCmd})
 
 	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
+	controller.router.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusNotFound {
 		t.Errorf("NoDevice: handler returned wrong status code: got %v want %v",
