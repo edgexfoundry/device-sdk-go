@@ -17,18 +17,21 @@
 package runtime
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/ugorji/go/codec"
 	"net/http"
 	"reflect"
 	"strconv"
 	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-	"github.com/ugorji/go/codec"
 )
 
 const unmarshalErrorMessage = "Unable to unmarshal message payload as %s"
@@ -38,6 +41,8 @@ type GolangRuntime struct {
 	TargetType    interface{}
 	transforms    []appcontext.AppFunction
 	isBusyCopying sync.Mutex
+	storeForward  storeForwardInfo
+	ServiceKey    string
 }
 
 type MessageError struct {
@@ -77,7 +82,9 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 
 			if err := json.Unmarshal([]byte(envelope.Payload), target); err != nil {
 				message := fmt.Sprintf(unmarshalErrorMessage, "JSON")
-				edgexcontext.LoggingClient.Error(message, "error", err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+				edgexcontext.LoggingClient.Error(
+					message, "error", err.Error(),
+					clients.CorrelationHeader, envelope.CorrelationID)
 				err = fmt.Errorf("%s : %s", message, err.Error())
 				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 			}
@@ -93,7 +100,9 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 			err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&target)
 			if err != nil {
 				message := fmt.Sprintf(unmarshalErrorMessage, "CBOR")
-				edgexcontext.LoggingClient.Error(message, "error", err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+				edgexcontext.LoggingClient.Error(
+					message, "error", err.Error(),
+					clients.CorrelationHeader, envelope.CorrelationID)
 				err = fmt.Errorf("%s : %s", message, err.Error())
 				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 			}
@@ -103,7 +112,9 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 
 		default:
 			message := "content type for input data not supported"
-			edgexcontext.LoggingClient.Error(message, clients.ContentType, envelope.ContentType, clients.CorrelationHeader, envelope.CorrelationID)
+			edgexcontext.LoggingClient.Error(message,
+				clients.ContentType, envelope.ContentType,
+				clients.CorrelationHeader, envelope.CorrelationID)
 			err := fmt.Errorf("'%s' %s", envelope.ContentType, message)
 			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 		}
@@ -115,26 +126,59 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	// dereference to pointer to the object
 	target = reflect.ValueOf(target).Elem().Interface()
 
-	var result interface{}
-	var continuePipeline = true
-
 	// Make copy of transform functions to avoid disruption of pipeline when updating the pipeline from registry
 	gr.isBusyCopying.Lock()
 	transforms := make([]appcontext.AppFunction, len(gr.transforms))
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
 
-	for index, trxFunc := range transforms {
-		if result != nil {
-			continuePipeline, result = trxFunc(edgexcontext, result)
-		} else {
-			continuePipeline, result = trxFunc(edgexcontext, target, contentType)
+	return gr.executePipeline(target, contentType, edgexcontext, transforms, 0, false)
+
+}
+
+// Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
+func (gr *GolangRuntime) Initialize(storeClient interfaces.StoreClient) {
+	gr.storeForward.storeClient = storeClient
+	gr.storeForward.runtime = gr
+}
+
+// SetTransforms is thread safe to set transforms
+func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
+	gr.isBusyCopying.Lock()
+	gr.transforms = transforms
+	gr.storeForward.pipelineHash = gr.storeForward.calculatePipelineHash() // Only need to calculate hash when the pipeline changes.
+	gr.isBusyCopying.Unlock()
+}
+
+func (gr *GolangRuntime) executePipeline(target interface{}, contentType string, edgexcontext *appcontext.Context,
+	transforms []appcontext.AppFunction, startPosition int, isRetry bool) *MessageError {
+
+	var result interface{}
+	var continuePipeline = true
+
+	for functionIndex, trxFunc := range transforms {
+		if functionIndex < startPosition {
+			continue
 		}
+
+		edgexcontext.RetryData = nil
+
+		if result == nil {
+			continuePipeline, result = trxFunc(edgexcontext, target, contentType)
+		} else {
+			continuePipeline, result = trxFunc(edgexcontext, result)
+		}
+
 		if continuePipeline != true {
 			if result != nil {
 				if err, ok := result.(error); ok {
-					edgexcontext.LoggingClient.Error(fmt.Sprintf("Pipeline function #%d resulted in error", index),
-						"error", err.Error(), clients.CorrelationHeader, envelope.CorrelationID)
+					edgexcontext.LoggingClient.Error(
+						fmt.Sprintf("Pipeline function #%d resulted in error", functionIndex),
+						"error", err.Error(), clients.CorrelationHeader, edgexcontext.CorrelationID)
+					if edgexcontext.RetryData != nil && !isRetry {
+						gr.storeForward.storeForLaterRetry(edgexcontext.RetryData, edgexcontext, functionIndex)
+					}
+
 					return &MessageError{Err: err, ErrorCode: http.StatusUnprocessableEntity}
 				}
 			}
@@ -145,9 +189,14 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	return nil
 }
 
-// SetTransforms is thread safe to set transforms
-func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
-	gr.isBusyCopying.Lock()
-	gr.transforms = transforms
-	gr.isBusyCopying.Unlock()
+func (gr *GolangRuntime) StartStoreAndForward(
+	appWg *sync.WaitGroup,
+	appCtx context.Context,
+	enabledWg *sync.WaitGroup,
+	enabledCtx context.Context,
+	serviceKey string,
+	config *common.ConfigurationStruct,
+	edgeXClients common.EdgeXClients) {
+
+	gr.storeForward.startStoreAndForwardRetryLoop(appWg, appCtx, enabledWg, enabledCtx, serviceKey, config, edgeXClients)
 }

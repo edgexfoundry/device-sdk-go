@@ -73,6 +73,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 		},
 	}
 	runtime := &runtime.GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms(sdk.transforms)
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
@@ -88,6 +89,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 		},
 	}
 	runtime := &runtime.GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms(sdk.transforms)
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
@@ -119,6 +121,8 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 	function := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		return true, nil
 	}
+
+	sdk.runtime.Initialize(nil)
 
 	err := sdk.SetFunctionsPipeline(function)
 	assert.Nil(t, err, "There should be no error")

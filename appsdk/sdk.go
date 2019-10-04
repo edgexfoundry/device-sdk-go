@@ -123,6 +123,7 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	defer close(httpErrors)
 
 	sdk.runtime = &runtime.GolangRuntime{TargetType: sdk.TargetType} //Transforms: sdk.transforms
+	sdk.runtime.Initialize(nil)
 	sdk.runtime.SetTransforms(sdk.transforms)
 
 	// determine input type and create trigger for it
