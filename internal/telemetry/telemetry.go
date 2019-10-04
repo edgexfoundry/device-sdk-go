@@ -15,9 +15,12 @@
 package telemetry
 
 import (
+	"context"
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 type SystemUsage struct {
@@ -67,14 +70,21 @@ func NewSystemUsage() (s SystemUsage) {
 	return s
 }
 
-func StartCpuUsageAverage() {
-	once.Do(func() {
-		for {
+func StartCpuUsageAverage(appWg *sync.WaitGroup, appCtx context.Context, logger logger.LoggingClient) {
+	defer appWg.Done()
+
+	logger.Info("Starting CPU Usage Average loop")
+
+	for {
+		select {
+		case <-appCtx.Done():
+			logger.Info("Exiting CPU Usage Average loop")
+			return
+
+		case <-time.After(time.Second * 10):
 			nextUsage := PollCpu()
 			usageAvg = AvgCpuUsage(lastSample, nextUsage)
 			lastSample = nextUsage
-
-			time.Sleep(time.Second * 10)
 		}
-	})
+	}
 }
