@@ -46,6 +46,7 @@ type Service struct {
 	cw           *Watchers
 	asyncCh      chan *dsModels.AsyncValues
 	startTime    time.Time
+	controller   controller.RestController
 }
 
 // Name returns the name of this Device Service
@@ -99,6 +100,11 @@ func (s *Service) Start(errChan chan error) (err error) {
 
 	s.cw = newWatchers()
 
+	// Setup REST API.
+	// Must occur before initialize driver in case driver needs to add route(s)
+	s.controller = controller.NewRestController()
+	s.controller.InitRestRoutes()
+
 	// initialize driver
 	if common.CurrentConfig.Service.EnableAsyncReadings {
 		s.asyncCh = make(chan *dsModels.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
@@ -109,9 +115,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 		return fmt.Errorf("Driver.Initialize failure: %v", err)
 	}
 
-	// Setup REST API
-	r := controller.InitRestRoutes()
-
 	autoevent.GetManager().StartAutoEvents()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
 
@@ -120,7 +123,7 @@ func (s *Service) Start(errChan chan error) (err error) {
 	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
 
 	go func() {
-		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), r)
+		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.controller.Router())
 	}()
 
 	common.LoggingClient.Info("Listening on port: " + strconv.Itoa(common.CurrentConfig.Service.Port))
@@ -129,6 +132,11 @@ func (s *Service) Start(errChan chan error) (err error) {
 	common.LoggingClient.Debug("*Service Start() exit")
 
 	return err
+}
+
+// AddRoute allows leveraging the existing internal webserver to add routes specific to Device Service.
+func (s *Service) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+	return s.controller.AddRoute(route, handler, methods...)
 }
 
 func selfRegister() error {

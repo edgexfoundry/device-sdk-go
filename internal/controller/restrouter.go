@@ -2,12 +2,15 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package controller
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -15,34 +18,62 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func InitRestRoutes() *mux.Router {
-	r := mux.NewRouter()
+type RestController struct {
+	router         *mux.Router
+	reservedRoutes map[string]bool
+}
 
+func NewRestController() RestController {
+	return RestController{
+		router:         mux.NewRouter(),
+		reservedRoutes: make(map[string]bool),
+	}
+}
+
+func (c RestController) InitRestRoutes() {
 	common.LoggingClient.Debug("init status rest controller")
-	r.HandleFunc(common.APIPingRoute, statusFunc).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIPingRoute, statusFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init version rest controller")
-	r.HandleFunc(common.APIVersionRoute, versionFunc).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIVersionRoute, versionFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init command rest controller")
-	r.HandleFunc(common.APIAllCommandRoute, commandAllFunc).Methods(http.MethodGet, http.MethodPut)
-	r.HandleFunc(common.APIIdCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
-	r.HandleFunc(common.APINameCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(common.APIAllCommandRoute, commandAllFunc).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(common.APIIdCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(common.APINameCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
 
 	common.LoggingClient.Debug("init callback rest controller")
-	r.HandleFunc(common.APICallbackRoute, callbackFunc)
+	c.addReservedRoute(common.APICallbackRoute, callbackFunc)
 
 	common.LoggingClient.Debug("init other rest controller")
-	r.HandleFunc(common.APIDiscoveryRoute, discoveryFunc).Methods(http.MethodPost)
-	r.HandleFunc(common.APITransformRoute, transformFunc).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIDiscoveryRoute, discoveryFunc).Methods(http.MethodPost)
+	c.addReservedRoute(common.APITransformRoute, transformFunc).Methods(http.MethodGet)
 
 	common.LoggingClient.Debug("init the metrics and config rest controller each")
-	r.HandleFunc(common.APIMetricsRoute, metricsHandler).Methods(http.MethodGet)
-	r.HandleFunc(common.APIConfigRoute, configHandler).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIMetricsRoute, metricsHandler).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIConfigRoute, configHandler).Methods(http.MethodGet)
 
-	r.Use(correlation.ManageHeader)
-	r.Use(correlation.OnResponseComplete)
-	r.Use(correlation.OnRequestBegin)
+	c.router.Use(correlation.ManageHeader)
+	c.router.Use(correlation.OnResponseComplete)
+	c.router.Use(correlation.OnRequestBegin)
+}
 
-	return r
+func (c RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
+	c.reservedRoutes[route] = true
+	return c.router.HandleFunc(route, handler)
+}
+
+func (c RestController) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+	if c.reservedRoutes[route] {
+		return errors.New("route is reserved")
+	}
+
+	c.router.HandleFunc(route, handler).Methods(methods...)
+	common.LoggingClient.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
+
+	return nil
+}
+
+func (c RestController) Router() *mux.Router {
+	return c.router
 }
