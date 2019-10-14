@@ -37,10 +37,8 @@ import (
 var lc logger.LoggingClient
 
 const (
-	devID1        = "id1"
-	devID2        = "id2"
-	readingName1  = "sensor1"
-	readingValue1 = "123.45"
+	devID1     = "id1"
+	serviceKey = "AppService-UnitTest"
 )
 
 func init() {
@@ -62,6 +60,7 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 		LoggingClient: lc,
 	}
 	runtime := GolangRuntime{}
+	runtime.Initialize(nil)
 
 	result := runtime.ProcessMessage(context, envelope)
 	if result != nil {
@@ -101,6 +100,7 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	result := runtime.ProcessMessage(context, envelope)
 	if result != nil {
@@ -134,13 +134,13 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 		if len(params) < 1 {
 			t.Fatal("should have been passed the first event from CoreData")
 		}
-		if result, ok := params[0].(*models.Event); ok {
+		if result, ok := params[0].(models.Event); ok {
 			if ok == false {
-				t.Fatal("Should have receieved CoreData event")
+				t.Fatal("Should have received Event")
 			}
 
 			if result.Device != devID1 {
-				t.Fatal("Did not receive expected CoreData event")
+				t.Fatal("Did not receive expected Event")
 			}
 		}
 
@@ -155,6 +155,7 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -168,6 +169,7 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 		t.Fatal("transform2 should have been called")
 	}
 }
+
 func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 	// Event from device 1
 
@@ -221,6 +223,7 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2, transform3})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -258,6 +261,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 	}
 	// Let the Runtime know we are sending a RegistryInfo so it passes it to the first function
 	runtime := GolangRuntime{TargetType: &common.RegistryInfo{}}
+	runtime.Initialize(nil)
 	// FilterByDeviceName with return an error if it doesn't receive and Event
 	runtime.SetTransforms([]appcontext.AppFunction{transforms.NewFilter([]string{"SomeDevice"}).FilterByDeviceName})
 	err := runtime.ProcessMessage(context, envelope)
@@ -320,6 +324,7 @@ func TestProcessMessageJSON(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -385,6 +390,7 @@ func TestProcessMessageCBOR(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
+	runtime.Initialize(nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -412,15 +418,6 @@ func (custom CustomType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(test)
 }
 
-type targetTypeTest struct {
-	Name               string
-	TargetType         interface{}
-	Payload            []byte
-	ContentType        string
-	ExpectedOutputData []byte
-	ErrorExpected      bool
-}
-
 func TestProcessMessageTargetType(t *testing.T) {
 	eventIn := models.Event{
 		Device: devID1,
@@ -438,7 +435,14 @@ func TestProcessMessageTargetType(t *testing.T) {
 	customJson, _ := expected.MarshalJSON()
 	byteData := []byte("This is my bytes")
 
-	targetTypeTests := []targetTypeTest{
+	targetTypeTests := []struct {
+		Name               string
+		TargetType         interface{}
+		Payload            []byte
+		ContentType        string
+		ExpectedOutputData []byte
+		ErrorExpected      bool
+	}{
 		{"Default Nil Target Type", nil, eventJson, clients.ContentTypeJSON, eventJson, false},
 		{"Event as Json", &models.Event{}, eventJson, clients.ContentTypeJSON, eventJson, false},
 		{"Event as Cbor", &models.Event{}, eventCbor.Bytes(), clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
@@ -459,6 +463,7 @@ func TestProcessMessageTargetType(t *testing.T) {
 		}
 
 		runtime := GolangRuntime{TargetType: currentTest.TargetType}
+		runtime.Initialize(nil)
 		runtime.SetTransforms([]appcontext.AppFunction{transforms.NewOutputData().SetOutputData})
 
 		err := runtime.ProcessMessage(context, envelope)
@@ -471,5 +476,49 @@ func TestProcessMessageTargetType(t *testing.T) {
 
 		// OutputData will be nil if an error occurred in the pipeline processing the data
 		assert.Equal(t, currentTest.ExpectedOutputData, context.OutputData, fmt.Sprintf("'%s' test failed", currentTest.Name))
+	}
+}
+
+func TestExecutePipelinePersist(t *testing.T) {
+	expectedItemCount := 1
+	config := common.ConfigurationStruct{
+		Writable: common.WritableInfo{
+			LogLevel: "DEBUG",
+			StoreAndForward: common.StoreAndForwardInfo{
+				Enabled:       true,
+				MaxRetryCount: 10},
+		},
+	}
+
+	ctx := appcontext.Context{
+		Configuration: config,
+		LoggingClient: lc,
+		CorrelationID: "CorrelationID",
+		EventChecksum: "EventChecksum",
+		EventID:       "EventID",
+	}
+
+	transformPassthru := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		return true, params[0]
+	}
+
+	runtime := GolangRuntime{ServiceKey: serviceKey}
+	runtime.Initialize(creatMockStoreClient())
+
+	httpPost := transforms.NewHTTPSender("http://nowhere", "", true).HTTPPost
+	runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, httpPost})
+	payload := []byte("My Payload")
+
+	// Target of this test
+	err := runtime.executePipeline(payload, "", &ctx, runtime.transforms, 0, false)
+
+	if assert.NotNil(t, err, "Error expected from export function") {
+		storedObjects := mockRetrieveObjects(serviceKey)
+		if assert.Equal(t, expectedItemCount, len(storedObjects), "unexpected item count") {
+			assert.Equal(t, serviceKey, storedObjects[0].AppServiceKey, "AppServiceKey not as expected")
+			assert.Equal(t, ctx.CorrelationID, storedObjects[0].CorrelationID, "CorrelationID not as expected")
+			assert.Equal(t, ctx.EventID, storedObjects[0].EventID, "EventID not as expected")
+			assert.Equal(t, ctx.EventChecksum, storedObjects[0].EventChecksum, "EventChecksum not as expected")
+		}
 	}
 }

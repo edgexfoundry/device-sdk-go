@@ -12,7 +12,6 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/app-functions-sdk-go/internal.SDKVe
 GIT_SHA=$(shell git rev-parse HEAD)
 
 build: $(MICROSERVICES)
-	$(GO) build ./...
 
 examples/simple-filter-xml/simple-filter-xml:
 	$(GO) build $(GOFLAGS) -o $@ ./examples/simple-filter-xml

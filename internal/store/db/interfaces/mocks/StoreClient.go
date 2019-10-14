@@ -67,17 +67,12 @@ func (_m *StoreClient) Store(o contracts.StoredObject) (string, error) {
 	ret := _m.Called(o)
 
 	var r0 string
-	if rf, ok := ret.Get(0).(func(contracts.StoredObject) string); ok {
-		r0 = rf(o)
-	} else {
-		r0 = ret.Get(0).(string)
-	}
-
 	var r1 error
-	if rf, ok := ret.Get(1).(func(contracts.StoredObject) error); ok {
-		r1 = rf(o)
+
+	if rf, ok := ret.Get(0).(func(contracts.StoredObject) (string, error)); ok {
+		r0, r1 = rf(o)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Error(0)
 	}
 
 	return r0, r1
