@@ -61,7 +61,7 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 		}
 
 		if config.Writable.StoreAndForward.MaxRetryCount < 0 {
-			edgeXClients.LoggingClient.Info(
+			edgeXClients.LoggingClient.Warn(
 				fmt.Sprintf("StoreAndForward MaxRetryCount can not be less than 0, defaulting to 1"))
 			config.Writable.StoreAndForward.MaxRetryCount = 1
 		}
@@ -87,7 +87,7 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 			}
 		}
 
-		edgeXClients.LoggingClient.Info("StoreAndForward Retry Loop exited")
+		edgeXClients.LoggingClient.Info("Exiting StoreAndForward Retry Loop")
 	}()
 }
 

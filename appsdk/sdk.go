@@ -17,7 +17,7 @@
 package appsdk
 
 import (
-	syscontext "context"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -26,6 +26,7 @@ import (
 	"os/signal"
 	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -37,6 +38,8 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
@@ -51,7 +54,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
 	coreTypes "github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	registryTypes "github.com/edgexfoundry/go-mod-registry/pkg/types"
+	"github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
@@ -94,6 +97,12 @@ type AppFunctionsSDK struct {
 	edgexClients              common.EdgeXClients
 	registryClient            registry.Client
 	config                    common.ConfigurationStruct
+	storeClient               interfaces.StoreClient
+	storeForwardWg            *sync.WaitGroup
+	storeForwardCancelCtx     context.CancelFunc
+	appWg                     *sync.WaitGroup
+	appCtx                    context.Context
+	appCancelCtx              context.CancelFunc
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -108,12 +117,6 @@ func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.Response
 	sdk.webserver.AddRoute(route, sdk.addContext(handler), methods...)
 	return nil
 }
-func (sdk *AppFunctionsSDK) addContext(next func(nethttp.ResponseWriter, *nethttp.Request)) func(nethttp.ResponseWriter, *nethttp.Request) {
-	return nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
-		ctx := syscontext.WithValue(r.Context(), SDKKey, sdk)
-		next(w, r.WithContext(ctx))
-	})
-}
 
 // MakeItRun will initialize and start the trigger as specifed in the
 // configuration. It will also configure the webserver and start listening on
@@ -122,17 +125,27 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	httpErrors := make(chan error)
 	defer close(httpErrors)
 
-	sdk.runtime = &runtime.GolangRuntime{TargetType: sdk.TargetType} //Transforms: sdk.transforms
-	sdk.runtime.Initialize(nil)
+	sdk.runtime = &runtime.GolangRuntime{
+		TargetType: sdk.TargetType,
+		ServiceKey: sdk.ServiceKey,
+	}
+
+	sdk.runtime.Initialize(sdk.storeClient)
 	sdk.runtime.SetTransforms(sdk.transforms)
 
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-	err := trigger.Initialize()
+	err := trigger.Initialize(sdk.appWg, sdk.appCtx)
 	if err != nil {
 		sdk.LoggingClient.Error(err.Error())
+	}
+
+	if sdk.config.Writable.StoreAndForward.Enabled {
+		sdk.startStoreForward()
+	} else {
+		sdk.LoggingClient.Info("StoreAndForward disabled. Not running retry loop.")
 	}
 
 	sdk.LoggingClient.Info(sdk.config.Service.StartupMsg)
@@ -145,14 +158,20 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	select {
 	case httpError := <-sdk.httpErrors:
 		sdk.LoggingClient.Info("Terminating: ", httpError.Error())
-		return httpError
+		err = httpError
 
 	case signalReceived := <-signals:
 		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
-
 	}
 
-	return nil
+	if sdk.config.Writable.StoreAndForward.Enabled {
+		sdk.storeForwardCancelCtx()
+		sdk.storeForwardWg.Wait()
+	}
+
+	sdk.appCancelCtx() // Cancel all long running go funcs
+	sdk.appWg.Wait()
+	return err
 }
 
 // LoadConfigurablePipeline ...
@@ -247,27 +266,9 @@ func (sdk *AppFunctionsSDK) ApplicationSettings() map[string]string {
 	return sdk.config.ApplicationSettings
 }
 
-// setupTrigger configures the appropriate trigger as specified by configuration.
-func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
-	var trigger trigger.Trigger
-	// Need to make dynamic, search for the binding that is input
-
-	switch strings.ToUpper(configuration.Binding.Type) {
-	case "HTTP":
-		sdk.LoggingClient.Info("HTTP trigger selected")
-		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
-	case "MESSAGEBUS":
-		sdk.LoggingClient.Info("MessageBus trigger selected")
-		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
-	}
-
-	return trigger
-}
-
 // Initialize will parse command line flags, register for interrupts,
 // initialize the logging system, and ingest configuration.
 func (sdk *AppFunctionsSDK) Initialize() error {
-
 	applyCommandlineEnvironmentOverrides()
 
 	flag.BoolVar(&sdk.useRegistry, "registry", false, "Indicates the service should use the registry.")
@@ -297,7 +298,9 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		}
 	}
 
+	clientsInitialized := false
 	loggerInitialized := false
+	databaseInitialized := false
 	configurationInitialized := false
 	bootstrapComplete := false
 
@@ -322,13 +325,29 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			}
 
 			sdk.LoggingClient = logger.NewClient(sdk.ServiceKey, sdk.config.Logging.EnableRemote, loggingTarget, sdk.config.Writable.LogLevel)
-			sdk.LoggingClient.Info("Configuration and logger successfully initialized")
+			sdk.LoggingClient.Info("Logger successfully initialized")
 			sdk.edgexClients.LoggingClient = sdk.LoggingClient
 			loggerInitialized = true
 		}
 
-		sdk.initializeClients()
-		sdk.LoggingClient.Info("Clients initialized")
+		// Currently only need the database if store and forward is enabled
+		if sdk.config.Writable.StoreAndForward.Enabled {
+			if !databaseInitialized {
+				if sdk.createStoreClient() != nil {
+					// Error already logged
+					goto ContinueWithSleep
+				}
+			}
+
+			databaseInitialized = true
+		}
+
+		if !clientsInitialized {
+			sdk.initializeClients()
+			sdk.LoggingClient.Info("Clients initialized")
+		}
+
+		// This is the last dependency so can break out of the retry loop.
 		bootstrapComplete = true
 		break
 
@@ -340,18 +359,55 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		return fmt.Errorf("bootstrap retry timed out")
 	}
 
+	sdk.appCtx, sdk.appCancelCtx = context.WithCancel(context.Background())
+	sdk.appWg = &sync.WaitGroup{}
+
 	if sdk.useRegistry {
+		sdk.appWg.Add(1)
 		go sdk.listenForConfigChanges()
 	}
 
-	sdk.initializeClients()
-
-	go telemetry.StartCpuUsageAverage()
+	sdk.appWg.Add(1)
+	go telemetry.StartCpuUsageAverage(sdk.appWg, sdk.appCtx, sdk.LoggingClient)
 
 	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.LoggingClient, mux.NewRouter())
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
+}
+
+func (sdk *AppFunctionsSDK) createStoreClient() error {
+	var err error
+	sdk.storeClient, err = store.NewStoreClient(sdk.config.Database)
+	if err != nil {
+		sdk.LoggingClient.Error(fmt.Sprintf("unable to initialize Database for Store and Forward: %s", err.Error()))
+	}
+
+	return err
+}
+
+// setupTrigger configures the appropriate trigger as specified by configuration.
+func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
+	var trigger trigger.Trigger
+	// Need to make dynamic, search for the binding that is input
+
+	switch strings.ToUpper(configuration.Binding.Type) {
+	case "HTTP":
+		sdk.LoggingClient.Info("HTTP trigger selected")
+		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
+	case "MESSAGEBUS":
+		sdk.LoggingClient.Info("MessageBus trigger selected")
+		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
+	}
+
+	return trigger
+}
+
+func (sdk *AppFunctionsSDK) addContext(next func(nethttp.ResponseWriter, *nethttp.Request)) func(nethttp.ResponseWriter, *nethttp.Request) {
+	return nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		ctx := context.WithValue(r.Context(), SDKKey, sdk)
+		next(w, r.WithContext(ctx))
+	})
 }
 
 func (sdk *AppFunctionsSDK) initializeClients() {
@@ -402,7 +458,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration() error {
 		configuration.Registry = e.OverrideRegistryInfoFromEnvironment(configuration.Registry)
 		configuration.Service = e.OverrideServiceInfoFromEnvironment(configuration.Service)
 
-		registryConfig := registryTypes.Config{
+		registryConfig := types.Config{
 			Host:            configuration.Registry.Host,
 			Port:            configuration.Registry.Port,
 			Type:            configuration.Registry.Type,
@@ -488,6 +544,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 	updates := make(chan interface{})
 	registryErrors := make(chan error)
 
+	defer sdk.appWg.Done()
 	defer close(updates)
 
 	sdk.LoggingClient.Info("Listening for changes from registry")
@@ -495,6 +552,10 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 
 	for {
 		select {
+		case <-sdk.appCtx.Done():
+			sdk.LoggingClient.Info("Exiting Listen for changes from registry")
+			return
+
 		case err := <-registryErrors:
 			sdk.LoggingClient.Error(err.Error())
 
@@ -511,35 +572,95 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 			}
 
 			previousLogLevel := sdk.config.Writable.LogLevel
+			previousStoreForward := sdk.config.Writable.StoreAndForward
 
 			sdk.config.Writable = *actual
-			sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
 			sdk.LoggingClient.Info("Writable configuration has been updated from Registry")
 
-			if previousLogLevel != sdk.config.Writable.LogLevel {
-				// Log level changed, not Pipeline, so skip updating the pipeline
-				continue
-			}
+			// Note: Changes occur one setting at a time so if setting not part of the pipeline,
+			//       then skip updating the pipeline
+			switch {
+			case previousLogLevel != sdk.config.Writable.LogLevel:
+				sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
+				sdk.LoggingClient.Info(fmt.Sprintf("Logging level changed to %s", sdk.config.Writable.LogLevel))
 
-			if sdk.usingConfigurablePipeline {
-				transforms, err := sdk.LoadConfigurablePipeline()
-				if err != nil {
-					sdk.LoggingClient.Error("unable to reload Configurable Pipeline from Registry: " + err.Error())
-					continue
+			case previousStoreForward.MaxRetryCount != sdk.config.Writable.StoreAndForward.MaxRetryCount:
+				if sdk.config.Writable.StoreAndForward.MaxRetryCount < 0 {
+					sdk.LoggingClient.Warn(fmt.Sprintf("StoreAndForward MaxRetryCount can not be less than 0, defaulting to 1"))
+					sdk.config.Writable.StoreAndForward.MaxRetryCount = 1
 				}
-				err = sdk.SetFunctionsPipeline(transforms...)
-				if err != nil {
-					sdk.LoggingClient.Error("unable to set Configurable Pipeline from Registry: " + err.Error())
-					continue
-				}
+				sdk.LoggingClient.Info(fmt.Sprintf("StoreAndForward MaxRetryCount changed to %d", sdk.config.Writable.StoreAndForward.MaxRetryCount))
 
-				sdk.LoggingClient.Info("ReLoaded Configurable Pipeline from Registry")
+			case previousStoreForward.RetryInterval != sdk.config.Writable.StoreAndForward.RetryInterval:
+				sdk.processConfigChangedStoreForwardRetryInterval()
+
+			case previousStoreForward.Enabled != sdk.config.Writable.StoreAndForward.Enabled:
+				sdk.processConfigChangedStoreForwardEnabled(previousStoreForward)
+
+			default:
+				// Must have been a change to the pipeline configuration, so now attempt to update it.
+				sdk.processConfigChangedPipeline()
 			}
-
-			// TODO: Deal with pub/sub topics may have changed. Save copy of writeable so that we can determine what if anything changed?
 		}
 	}
+}
 
+func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardRetryInterval() {
+	if sdk.config.Writable.StoreAndForward.Enabled {
+		sdk.stopStoreForward()
+		sdk.startStoreForward()
+	}
+}
+
+func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardEnabled(previousStoreForward common.StoreAndForwardInfo) {
+	if sdk.config.Writable.StoreAndForward.Enabled {
+		// StoreClient must be set up for StoreAndForward
+		if sdk.storeClient == nil {
+			if sdk.createStoreClient() != nil {
+				// Error already logged
+				sdk.config.Writable.StoreAndForward.Enabled = false
+				return
+			}
+
+			sdk.runtime.Initialize(sdk.storeClient)
+		}
+
+		sdk.startStoreForward()
+	} else {
+		sdk.stopStoreForward()
+	}
+}
+
+func (sdk *AppFunctionsSDK) processConfigChangedPipeline() {
+	if sdk.usingConfigurablePipeline {
+		transforms, err := sdk.LoadConfigurablePipeline()
+		if err != nil {
+			sdk.LoggingClient.Error("unable to reload Configurable Pipeline from Registry: " + err.Error())
+			return
+		}
+		err = sdk.SetFunctionsPipeline(transforms...)
+		if err != nil {
+			sdk.LoggingClient.Error("unable to set Configurable Pipeline from Registry: " + err.Error())
+			return
+		}
+
+		sdk.LoggingClient.Info("Reloaded Configurable Pipeline from Registry")
+	}
+}
+
+func (sdk *AppFunctionsSDK) startStoreForward() {
+	var storeForwardEnabledCtx context.Context
+	sdk.storeForwardWg = &sync.WaitGroup{}
+	storeForwardEnabledCtx, sdk.storeForwardCancelCtx = context.WithCancel(context.Background())
+	sdk.runtime.StartStoreAndForward(sdk.appWg, sdk.appCtx,
+		sdk.storeForwardWg, storeForwardEnabledCtx,
+		sdk.ServiceKey, &sdk.config, sdk.edgexClients)
+}
+
+func (sdk *AppFunctionsSDK) stopStoreForward() {
+	sdk.LoggingClient.Info("Canceling Store and Forward retry loop")
+	sdk.storeForwardCancelCtx()
+	sdk.storeForwardWg.Wait()
 }
 
 func (sdk *AppFunctionsSDK) setLoggingTarget() (string, error) {
