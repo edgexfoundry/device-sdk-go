@@ -16,8 +16,13 @@
 
 package trigger
 
+import (
+	"context"
+	"sync"
+)
+
 // Trigger interface is used to hold event data and allow function to
 type Trigger interface {
 	// Initialize performs post creation initializations
-	Initialize() error
+	Initialize(wg *sync.WaitGroup, ctx context.Context) error
 }

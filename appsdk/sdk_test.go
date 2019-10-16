@@ -17,9 +17,13 @@
 package appsdk
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -27,18 +31,24 @@ import (
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
 )
 
 var lc logger.LoggingClient
-var context *appcontext.Context
+var params types.EndpointParams
 
 func init() {
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
-
+	params = types.EndpointParams{
+		ServiceKey:  clients.SupportSchedulerServiceKey,
+		Path:        clients.ApiIntervalActionRoute,
+		UseRegistry: false,
+		Url:         "http://test" + clients.ApiIntervalActionRoute,
+		Interval:    clients.ClientMonitorDefault,
+	}
 }
 
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {
@@ -123,7 +133,6 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 	}
 
 	sdk.runtime.Initialize(nil)
-
 	err := sdk.SetFunctionsPipeline(function)
 	assert.Nil(t, err, "There should be no error")
 	assert.Equal(t, 1, len(sdk.transforms))
@@ -386,4 +395,18 @@ func TestInitializeClientsJustData(t *testing.T) {
 
 	assert.Nil(t, sdk.edgexClients.CommandClient)
 	assert.Nil(t, sdk.edgexClients.NotificationsClient)
+}
+
+type mockEventEndpoint struct {
+}
+
+func (e mockEventEndpoint) Monitor(params types.EndpointParams, ch chan string) {
+	switch params.ServiceKey {
+	case clients.SupportSchedulerServiceKey:
+		url := fmt.Sprintf("http://%s:%v%s", "localhost", 48080, params.Path)
+		ch <- url
+		break
+	default:
+		ch <- ""
+	}
 }
