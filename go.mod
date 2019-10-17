@@ -1,7 +1,7 @@
 module github.com/edgexfoundry/device-sdk-go
 
 require (
-	github.com/edgexfoundry/go-mod-core-contracts v0.1.16
+	github.com/edgexfoundry/go-mod-core-contracts v0.1.30
 	github.com/edgexfoundry/go-mod-registry v0.1.0
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/context v0.0.0-20181012153548-51ce91d2eadd // indirect
@@ -12,3 +12,5 @@ require (
 	github.com/ugorji/go v1.1.4
 	gopkg.in/yaml.v2 v2.2.2
 )
+
+go 1.12

@@ -25,11 +25,10 @@ type Endpoint struct {
 
 func (endpoint Endpoint) Monitor(params types.EndpointParams, ch chan string) {
 	for {
-		data, err := endpoint.RegistryClient.GetServiceEndpoint(params.ServiceKey)
+		url, err := endpoint.buildURL(params)
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err.Error())
 		}
-		url := fmt.Sprintf("http://%s:%v%s", data.Host, data.Port, params.Path)
 		ch <- url
 
 		// After the first run, the client can be indicated initialized
@@ -39,5 +38,25 @@ func (endpoint Endpoint) Monitor(params types.EndpointParams, ch chan string) {
 		}
 
 		time.Sleep(time.Second * time.Duration(params.Interval))
+	}
+}
+
+func (e Endpoint) Fetch(params types.EndpointParams) string {
+	url, err := e.buildURL(params)
+	if err != nil {
+		fmt.Fprintln(os.Stdout, err.Error())
+	}
+	return url
+}
+
+func (e Endpoint) buildURL(params types.EndpointParams) (string, error) {
+	if e.RegistryClient != nil {
+		endpoint, err := (e.RegistryClient).GetServiceEndpoint(params.ServiceKey)
+		if err != nil {
+			return "", fmt.Errorf("unable to get Service endpoint for %s: %s", params.ServiceKey, err.Error())
+		}
+		return fmt.Sprintf("http://%s:%v%s", endpoint.Host, endpoint.Port, params.Path), nil
+	} else {
+		return "", fmt.Errorf("unable to get Service endpoint for %s: Registry client is nil", params.ServiceKey)
 	}
 }
