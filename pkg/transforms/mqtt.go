@@ -33,11 +33,12 @@ import (
 
 // MqttConfig contains mqtt client parameters
 type MqttConfig struct {
-	qos           byte
-	retain        bool
-	autoreconnect bool
-	user          string
-	password      string
+	Qos            byte
+	Retain         bool
+	AutoReconnect  bool
+	SkipCertVerify bool
+	User           string
+	Password       string
 }
 
 // KeyCertPair is used to pass key/cert pair to NewMQTTSender
@@ -50,31 +51,6 @@ type KeyCertPair struct {
 	CertPEMBlock []byte
 }
 
-// NewMqttConfig returns a new MqttConfig with default values. Use Setter functions to change specific values.
-func NewMqttConfig() *MqttConfig {
-	mqttConfig := &MqttConfig{}
-	mqttConfig.qos = 0
-	mqttConfig.retain = false
-	mqttConfig.autoreconnect = false
-
-	return mqttConfig
-}
-
-// SetRetain enables or disables mqtt retain option
-func (mqttConfig MqttConfig) SetRetain(retain bool) {
-	mqttConfig.retain = retain
-}
-
-// SetQos changes mqtt qos(0,1,2) for all messages
-func (mqttConfig MqttConfig) SetQos(qos byte) {
-	mqttConfig.qos = qos
-}
-
-// SetAutoreconnect enables or disables the automatic client reconnection to broker
-func (mqttConfig MqttConfig) SetAutoreconnect(reconnect bool) {
-	mqttConfig.autoreconnect = reconnect
-}
-
 type MQTTSender struct {
 	client         MQTT.Client
 	topic          string
@@ -83,7 +59,8 @@ type MQTTSender struct {
 }
 
 // NewMQTTSender - create new mqtt sender
-func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig *MqttConfig, persistOnError bool) *MQTTSender {
+func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair,
+	mqttConfig MqttConfig, persistOnError bool) *MQTTSender {
 	protocol := strings.ToLower(addr.Protocol)
 
 	opts := MQTT.NewClientOptions()
@@ -92,7 +69,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCer
 	opts.SetClientID(addr.Publisher)
 	opts.SetUsername(addr.User)
 	opts.SetPassword(addr.Password)
-	opts.SetAutoReconnect(mqttConfig.autoreconnect)
+	opts.SetAutoReconnect(mqttConfig.AutoReconnect)
 
 	if (protocol == "tcps" || protocol == "ssl" || protocol == "tls") && keyCertPair != nil {
 		var cert tls.Certificate
@@ -111,7 +88,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCer
 
 		tlsConfig := &tls.Config{
 			ClientCAs:          nil,
-			InsecureSkipVerify: true,
+			InsecureSkipVerify: mqttConfig.SkipCertVerify,
 			Certificates:       []tls.Certificate{cert},
 		}
 
@@ -122,7 +99,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCer
 	sender := &MQTTSender{
 		client:         MQTT.NewClient(opts),
 		topic:          addr.Topic,
-		opts:           *mqttConfig,
+		opts:           mqttConfig,
 		persistOnError: persistOnError,
 	}
 
@@ -155,7 +132,7 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 		edgexcontext.LoggingClient.Info("Connected to mqtt server")
 	}
 
-	token := sender.client.Publish(sender.topic, sender.opts.qos, sender.opts.retain, exportData)
+	token := sender.client.Publish(sender.topic, sender.opts.Qos, sender.opts.Retain, exportData)
 	token.Wait()
 	if token.Error() != nil {
 		sender.setRetryData(edgexcontext, exportData)
