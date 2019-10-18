@@ -18,14 +18,13 @@ What kind of change does this PR introduce?
 - [ ] Build related changes
 - [ ] CI related changes
 - [ ] Documentation content changes
-- [ ] angular.io application / infrastructure changes
 - [ ] Other... Please describe:
 
 
 ## What is the current behavior?
 <!-- Please describe the current behavior and link to a relevant issue. -->
 
-Issue Number: N/A
+Issue Number:
 
 
 ## What is the new behavior?
