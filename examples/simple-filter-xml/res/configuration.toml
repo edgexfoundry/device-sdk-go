@@ -2,19 +2,19 @@
 LogLevel = 'INFO'
     [Writable.StoreAndForward]
     Enabled = false
-    RetryInterval = 50000 # 5mins
+    RetryInterval = '300s'
     MaxRetryCount = 10
 
 [Service]
-BootTimeout = 30000
-ClientMonitor = 15000
+BootTimeout = '30s'
+ClientMonitor = '15s'
 CheckInterval = '10s'
 Host = 'localhost'
 Port = 48095
 Protocol = 'http'
 ReadMaxLimit = 100
 StartupMsg = 'This is a sample Filter/XML Transform Application Service'
-Timeout = 5000
+Timeout = '30s'
 
 [Registry]
 Host = 'localhost'
@@ -29,7 +29,7 @@ File = './logs/simple-filter-xml-mqtt.log'
 Type = "mongodb"
 Host = "localhost"
 Port = 27017
-Timeout = 5000
+Timeout = '30s'
 Username = ""
 Password = ""
 

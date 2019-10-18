@@ -16,9 +16,11 @@
 
 package internal
 
+import "time"
+
 const (
-	BootTimeoutDefault   = 30000
-	ClientMonitorDefault = 15000
+	BootTimeoutDefault   = time.Duration(30 * time.Second)
+	ClientMonitorDefault = time.Duration(15 * time.Second)
 	ConfigFileName       = "configuration.toml"
 	ConfigRegistryStem   = "edgex/appservices/1.0/"
 	WritableKey          = "/Writable"

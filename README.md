@@ -540,16 +540,16 @@ The Store and Forward capability allows for export functions to persist data on 
 
 Two sections of configuration have been added for Store and Forward.
 
-`Writable.StoreAndForward` allows enabling, setting the interval between retries and the max number of retries. If running with Registry, these setting can be changed on the fly without having to restart the service. 
+`Writable.StoreAndForward` allows enabling, setting the interval between retries and the max number of retries. If running with Registry, these setting can be changed on the fly without having to restart the service.
 
-```
+```toml
   [Writable.StoreAndForward]
     Enabled = false
-    RetryInterval = 50000 # 5mins
+    RetryInterval = '300s'
     MaxRetryCount = 10
 ```
 
-> *Note: RetryInterval is specified in microseconds and can be 1000 or greater. If a value less than 1000 is specified, 1000 will be used.*
+> *Note: RetryInterval should be at least 1 second (eg. '1s') or greater. If a value less than 1 second is specified, 1 second will be used.*
 
 > *Note: Endless retries will occur when MaxRetryCount is set to 0.*
 
@@ -557,12 +557,12 @@ Two sections of configuration have been added for Store and Forward.
 
 Database describes which database type to use, `mongodb` or `redisdb`, and the information required to connect to the database. This section is required if Store and Forward is enabled, otherwise it is currently optional.
 
-```
+```toml
 [Database]
 Type = "mongodb"
 Host = "localhost"
 Port = 27017
-Timeout = 5000
+Timeout = '5s'
 Username = ""
 Password = ""
 ```

@@ -74,15 +74,15 @@ type LoggingInfo struct {
 
 // ServiceInfo ...
 type ServiceInfo struct {
-	BootTimeout   int
+	BootTimeout   string
 	CheckInterval string
-	ClientMonitor int
+	ClientMonitor string
 	Host          string
 	Port          int
 	Protocol      string
 	StartupMsg    string
 	ReadMaxLimit  int
-	Timeout       int
+	Timeout       string
 }
 
 // BindingInfo contains Metadata associated with each binding
@@ -107,6 +107,6 @@ type PipelineFunction struct {
 
 type StoreAndForwardInfo struct {
 	Enabled       bool
-	RetryInterval int
+	RetryInterval string
 	MaxRetryCount int
 }

@@ -31,7 +31,7 @@ type DatabaseInfo struct {
 	Type     string
 	Host     string
 	Port     int
-	Timeout  int
+	Timeout  string
 	Username string
 	Password string
 

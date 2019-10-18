@@ -210,7 +210,11 @@ func NewClient(config db.DatabaseInfo) (client interfaces.StoreClient, err error
 		uri = fmt.Sprintf("mongodb://%s:%s@%s:%s", config.Username, config.Password, config.Host, strconv.Itoa(config.Port))
 	}
 
-	timeout := time.Duration(config.Timeout) * time.Millisecond
+	timeout, err := time.ParseDuration(config.Timeout)
+	if err != nil {
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 

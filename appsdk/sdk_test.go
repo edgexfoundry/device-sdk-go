@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +48,7 @@ func init() {
 		Path:        clients.ApiIntervalActionRoute,
 		UseRegistry: false,
 		Url:         "http://test" + clients.ApiIntervalActionRoute,
-		Interval:    clients.ClientMonitorDefault,
+		Interval:    int(clients.ClientMonitorDefault / time.Millisecond),
 	}
 }
 
