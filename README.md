@@ -14,7 +14,7 @@ Table of contents
       * [Encryption](#encryption)
       * [Conversion](#conversion)
       * [Compressions](#compressions)
-	  * [Core Data](#CoreData-Functions)
+      * [Core Data](#CoreData-Functions)
       * [Export Functions](#export-functions)    
    * [Configuration](#configuration)
    * [Error Handling](#error-handling)
@@ -22,10 +22,9 @@ Table of contents
      * [Target Type](#target-type)
      * [Command Line Options](#command_line_options)
      * [Environment Variable Overrides](#environment_variable_overrides)
-       * [edgex_registry](#edgex_registry)
-       * [edgex_service](#edgex_service)
+     * [Store and Forward](#store-and-forward)
 
-  <!--te-->
+ <!--te-->
 
 ## Getting Started
 
@@ -194,6 +193,9 @@ type Context struct {
 	
 	// NotificationsClient exposes Support Notification's Notifications API
 	NotificationsClient notifications.NotificationsClient
+	
+	// RetryData holds the data to be stored for later retry when the pipeline function returns an error
+	RetryData []byte
 }
 ```
 
@@ -249,11 +251,18 @@ Each of the clients above is only initialized if the Clients section of the conf
 `.MarkAsPushed()` is used to indicate to EdgeX Core Data that an event has been "pushed" and is no longer required to be stored. The scheduler service will purge all events that have been marked as pushed based on the configured schedule. By default, it is once daily at midnight. If you leverage the built in export functions (i.e. HTTP Export, or MQTT Export), then the event will automatically be marked as pushed upon a successful export. 
 ### .PushToCore()
 `.PushToCore(string deviceName, string readingName, byte[] value)` is used to push data to EdgeX Core Data so that it can be shared with other applications that are subscribed to the message bus that core-data publishes to. `deviceName` can be set as you like along with the `readingName` which will be set on the EdgeX event sent to CoreData. This function will return the new EdgeX Event with the ID populated, however the CorrelationId will not be available.
+
  > NOTE: If validation is turned on in CoreServices then your `deviceName` and `readingName` must exist in the CoreMetadata and be properly registered in EdgeX. 
 
  > WARNING: Be aware that without a filter in your pipeline, it is possible to create an infinite loop when the messagebus trigger is used. Choose your device-name and reading name appropriately.
 ### .Complete()
 `.Complete([]byte outputData)` can be used to return data back to the configured trigger. In the case of an HTTP trigger, this would be an HTTP Response to the caller. In the case of a message bus trigger, this is how data can be published to a new topic per the configuration. 
+
+### .SetRetryData()
+
+`.SetRetryData(payload []byte)` can be used to store data for later retry. This is useful when creating a custom export function that needs to retry on failure sending the data. The payload data will be stored for later retry based on `Store and Forward` configuration. When the retry is triggered, the function pipeline will be re-executed starting with the function that called this API. That function will be passed the stored data, so it is important that all transformations occur in functions prior to the export function. The `Context` will also be restored to the state when the function called this API. See [Store and Forward](#store-and-forward) for more details.
+
+> NOTE: `Store and Forward` be must enabled when calling this API. 
 
 ## Built-In Transforms/Functions 
 
@@ -300,10 +309,10 @@ These are functions that enable interactions with the CoreData REST API.
 
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
-- `NewHTTPSender(url string, mimeType string)` - This function returns a `HTTPSender` instance initialized with the passed in url and mime type values. This `HTTPSender` instance is used to access the following functions that will use the required url and mime type:
-  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future.
-- `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, cert string, key string, qos byte, retain bool, autoreconnect bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
-  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used.
+- `NewHTTPSender(url string, mimeType string, persistOnError bool)` - This function returns a `HTTPSender` instance initialized with the passed in url, mime type and persistOnError values. This `HTTPSender` instance is used to access the following functions that will use the required url and optional mime type and persistOnError:
+  - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
+- `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig *MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
+  - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. If the send fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
 
 ### Output Functions
 
@@ -497,18 +506,9 @@ This sets the Service information fields as follows:
 
 #### edgex_profile
 
-This environment variable overrides the command line `profile` argument. It will replace the current value passed via the `-p` or `--profile`, if one exists. If not specified it will add the `--profile` argument. This is useful when running the service via snaps or docker compose.
+This environment variable overrides the command line `profile` argument. It will replace the current value passed via the `-p` or `--profile`, if one exists. If not specified it will add the `--profile` argument. This is useful when running the service via docker-compose.
 
-Using snaps:
-
-```
-sudo snap set app-service-configurable edgex_profile=http-export
-sudo snap start --enable edgex-app-service-configurable.app-service-configurable
-```
-
-This sets the `--profile=http-export` command line argument so that the application service uses the `http-export` configuration profile which resides at  `/res/http-export/configuration.toml`
-
-Using docker compose:
+Using docker-compose:
 
 ```
   app-service-configurable-rules:
@@ -528,4 +528,68 @@ Using docker compose:
       - command
 ```
 
-This sets the `--profile=docker-rules-engine` command line argument so that the application service uses the `docker-rules-engine` configuration profile which resides at  `/res/docker-rules-engine/configuration.toml`
+This sets the `--profile=docker-rules-engine` command line argument so that the application service uses the `docker-rules-engine` configuration profile which resides at `/res/docker-rules-engine/configuration.toml`
+
+### Store and Forward
+
+The Store and Forward capability allows for export functions to persist data on failure and for the export of the data to be retried at a later time. 
+
+> *Note: The order the data exported via this retry mechanism is not guaranteed to be the same order in which the data was initial received from Core Data*
+
+#### Configuration
+
+Two sections of configuration have been added for Store and Forward.
+
+`Writable.StoreAndForward` allows enabling, setting the interval between retries and the max number of retries. If running with Registry, these setting can be changed on the fly without having to restart the service. 
+
+```
+  [Writable.StoreAndForward]
+    Enabled = false
+    RetryInterval = 50000 # 5mins
+    MaxRetryCount = 10
+```
+
+> *Note: RetryInterval is specified in microseconds and can be 1000 or greater. If a value less than 1000 is specified, 1000 will be used.*
+
+> *Note: Endless retries will occur when MaxRetryCount is set to 0.*
+
+> *Note: If MaxRetryCount is set to less than 0, a default of 1 retry will be used.*
+
+Database describes which database type to use, `mongodb` or `redisdb`, and the information required to connect to the database. This section is required if Store and Forward is enabled, otherwise it is currently optional.
+
+```
+[Database]
+Type = "mongodb"
+Host = "localhost"
+Port = 27017
+Timeout = 5000
+Username = ""
+Password = ""
+```
+
+#### How it works
+
+When an export function encounters an error sending data it can call `SetRetryData(payload []byte)` on the Context. This will store the data for later retry. If the application service is stop and then restarted while stored data hasn't been successfully exported, the export retry will resume once the service is up and running again.
+
+> *Note: It is important that export functions return an error and stop pipeline execution* after the call to `SetRetryData`. See [HTTPPost](https://github.com/edgexfoundry/app-functions-sdk-go/blob/master/pkg/transforms/http.go) function in SDK as an example
+
+When the `RetryInterval` expires, the function pipeline will be re-executed starting with the export function that saved the data. The saved data will be passed to the export function which can then attempt to resend the data. 
+
+> *NOTE: The export function will receive the data as it was stored, so it is important that any transformation of the data occur in functions prior to the export function. The export function should only export the data that it receives.*
+
+One of three out comes can occur after the export retried has completed. 
+
+1. Export retry was successful
+
+   In this case the stored data is removed from the database and the execution of the pipeline functions after the export function, if any, continues. 
+
+2. Export retry fails and retry count `has not been` exceeded
+
+   In this case the store data is updated in the database with the incremented retry count
+
+3. Export retry fails and retry count `has been` exceeded
+
+   In this case the store data is removed from the database and never retried again.
+
+> *NOTE: Changing Writable.Pipeline.ExecutionOrder will invalidate all currently stored data and result in it all being removed from the database on the next retry.* This is because the position of the export function can no longer be guaranteed and no way to ensure it is properly executed on the retry.
+
