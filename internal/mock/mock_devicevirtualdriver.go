@@ -44,8 +44,8 @@ func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]con
 			default:
 				v, _ = dsModels.NewInt8Value(req.DeviceResourceName, now, Int8Value)
 			case "NoDeviceResourceForResult":
-				ro := contract.ResourceOperation{Object: ""}
-				v, _ = dsModels.NewInt8Value(ro.Object, now, Int8Value)
+				ro := contract.ResourceOperation{DeviceResource: ""}
+				v, _ = dsModels.NewInt8Value(ro.DeviceResource, now, Int8Value)
 			case "Error":
 				err = fmt.Errorf("error occurred in HandleReadCommands")
 			}

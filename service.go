@@ -86,7 +86,7 @@ func (s *Service) Start(errChan chan error) (err error) {
 		return fmt.Errorf("Couldn't register to metadata service")
 	}
 
-	// initialize devices, objects & profiles
+	// initialize devices, deviceResources & profiles
 	cache.InitCache()
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {
@@ -189,7 +189,7 @@ func createNewDeviceService() (contract.DeviceService, error) {
 		return contract.DeviceService{}, err
 	}
 
-	// NOTE - this differs from Addressable and Device objects,
+	// NOTE - this differs from Addressable and Device Resources,
 	// neither of which require the '.Service'prefix
 	ds.Id = id
 	common.LoggingClient.Debug("New deviceservice Id: " + ds.Id)

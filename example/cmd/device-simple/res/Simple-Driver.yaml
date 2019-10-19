@@ -51,23 +51,23 @@ deviceCommands:
   -
     name: "Switch"
     get:
-      - { operation: "get", object: "SwitchButton" }
+      - { operation: "get", deviceResource: "SwitchButton" }
     set:
-      - { operation: "set", object: "SwitchButton", parameter: "false" }
+      - { operation: "set", deviceResource: "SwitchButton", parameter: "false" }
   -
     name: "Image"
     get:
-      - { operation: "get", object: "Image" }
+      - { operation: "get", deviceResource: "Image" }
   -
     name: "Rotation"
     get:
-      - { operation: "get", object: "Xrotation" }
-      - { operation: "get", object: "Yrotation" }
-      - { operation: "get", object: "Zrotation" }
+      - { operation: "get", deviceResource: "Xrotation" }
+      - { operation: "get", deviceResource: "Yrotation" }
+      - { operation: "get", deviceResource: "Zrotation" }
     set:
-      - { operation: "set", object: "Xrotation", parameter: "0" }
-      - { operation: "set", object: "Yrotation", parameter: "0" }
-      - { operation: "set", object: "Zrotation", parameter: "0" }
+      - { operation: "set", deviceResource: "Xrotation", parameter: "0" }
+      - { operation: "set", deviceResource: "Yrotation", parameter: "0" }
+      - { operation: "set", deviceResource: "Zrotation", parameter: "0" }
 
 coreCommands:
   -

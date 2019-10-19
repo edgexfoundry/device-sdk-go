@@ -37,7 +37,7 @@
         {
           "index": "1",
           "operation": "get",
-          "object": "randfloat32"
+          "deviceResource": "randfloat32"
         }
       ]
     }

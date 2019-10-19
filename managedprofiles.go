@@ -121,14 +121,14 @@ func (*Service) UpdateDeviceProfile(profile contract.DeviceProfile) error {
 }
 
 // ResourceOperation retrieves the first matched ResourceOpereation instance from cache according to
-// the Device name, Device Resource (object) name, and the method (get or set).
-func (*Service) ResourceOperation(deviceName string, object string, method string) (contract.ResourceOperation, bool) {
+// the Device name, Device Resource name, and the method (get or set).
+func (*Service) ResourceOperation(deviceName string, deviceResource string, method string) (contract.ResourceOperation, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		common.LoggingClient.Error(fmt.Sprintf("retrieving ResourceOperation - Device %s not found", deviceName))
 	}
 
-	ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, object, method)
+	ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, deviceResource, method)
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
 		return ro, false
@@ -137,14 +137,14 @@ func (*Service) ResourceOperation(deviceName string, object string, method strin
 }
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
-// the Device name and Device Resource (object) name
-func (*Service) DeviceResource(deviceName string, object string, method string) (contract.DeviceResource, bool) {
+// the Device name and Device Resource name
+func (*Service) DeviceResource(deviceName string, deviceResource string, method string) (contract.DeviceResource, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		common.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))
 	}
 
-	dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, object)
+	dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, deviceResource)
 	if !ok {
 		return dr, false
 	}

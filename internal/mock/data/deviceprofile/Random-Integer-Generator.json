@@ -265,17 +265,17 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int8"
+          "deviceResource": "RandomValue_Int8"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Int8"
+          "deviceResource": "RandomValue_Int8"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Int8",
+          "deviceResource": "EnableRandomization_Int8",
           "parameter": "false"
         }
       ]
@@ -285,18 +285,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int16"
+          "deviceResource": "RandomValue_Int16"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Int16",
+          "deviceResource": "RandomValue_Int16",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Int16",
+          "deviceResource": "EnableRandomization_Int16",
           "parameter": "false"
         }
       ]
@@ -306,17 +306,17 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int32"
+          "deviceResource": "RandomValue_Int32"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Int32"
+          "deviceResource": "RandomValue_Int32"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Int32",
+          "deviceResource": "EnableRandomization_Int32",
           "parameter": "false"
         }
       ]
@@ -326,18 +326,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Int64"
+          "deviceResource": "RandomValue_Int64"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Int64",
+          "deviceResource": "RandomValue_Int64",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Int64",
+          "deviceResource": "EnableRandomization_Int64",
           "parameter": "false"
         }
       ]
@@ -347,13 +347,13 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestTransform_Fail"
+          "deviceResource": "ResourceTestTransform_Fail"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "ResourceTestTransform_Fail",
+          "deviceResource": "ResourceTestTransform_Fail",
           "parameter": "0"
         }
       ]
@@ -363,13 +363,13 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestAssertion_Pass"
+          "deviceResource": "ResourceTestAssertion_Pass"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "ResourceTestAssertion_Pass",
+          "deviceResource": "ResourceTestAssertion_Pass",
           "parameter": "0"
         }
       ]
@@ -379,13 +379,13 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestAssertion_Fail"
+          "deviceResource": "ResourceTestAssertion_Fail"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "ResourceTestAssertion_Fail",
+          "deviceResource": "ResourceTestAssertion_Fail",
           "parameter": "0"
         }
       ]
@@ -395,7 +395,7 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestMapping_Pass",
+          "deviceResource": "ResourceTestMapping_Pass",
           "mappings": {
             "123": "Pass"
           }
@@ -404,7 +404,7 @@
       "set": [
         {
           "operation": "set",
-          "object": "ResourceTestMapping_Pass",
+          "deviceResource": "ResourceTestMapping_Pass",
           "parameter": "0",
           "mappings": {
             "Pass": "123"
@@ -417,7 +417,7 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceTestMapping_Fail",
+          "deviceResource": "ResourceTestMapping_Fail",
           "mappings": {
             "12": "Pass"
           }
@@ -426,7 +426,7 @@
       "set": [
         {
           "operation": "set",
-          "object": "ResourceTestMapping_Fail",
+          "deviceResource": "ResourceTestMapping_Fail",
           "parameter": "0",
           "mappings": {
             "Pass": "12"
@@ -439,13 +439,13 @@
       "get": [
         {
           "operation": "get",
-          "object": "ResourceNotFound"
+          "deviceResource": "ResourceNotFound"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "ResourceNotFound"
+          "deviceResource": "ResourceNotFound"
         }
       ]
     },
@@ -454,7 +454,7 @@
       "get": [
         {
           "operation": "get",
-          "object": "NoDeviceResourceForResult"
+          "deviceResource": "NoDeviceResourceForResult"
         }
       ]
     },
@@ -464,25 +464,25 @@
         {
           "index": "1",
           "operation": "get",
-          "object": "Error"
+          "deviceResource": "Error"
         },
         {
           "index": "2",
           "operation": "get",
-          "object": "Error"
+          "deviceResource": "Error"
         }
       ],
       "set": [
         {
           "index": "1",
           "operation": "set",
-          "object": "Error",
+          "deviceResource": "Error",
           "parameter": "Error"
         },
         {
           "index": "2",
           "operation": "set",
-          "object": "Error",
+          "deviceResource": "Error",
           "parameter": "Error"
         }
       ]

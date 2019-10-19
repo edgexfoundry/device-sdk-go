@@ -122,8 +122,8 @@ func CompareDeviceProfiles(a contract.DeviceProfile, b contract.DeviceProfile) b
 	devResourcesOk := CompareDeviceResources(a.DeviceResources, b.DeviceResources)
 	resourcesOk := CompareDeviceCommands(a.DeviceCommands, b.DeviceCommands)
 
-	// TODO: Objects fields aren't compared as to dr properly
-	// requires introspection as Obects is a slice of interface{}
+	// TODO: DeviceResource fields aren't compared as to dr properly
+	// requires introspection as DeviceResource is a slice of interface{}
 
 	return a.DescribedObject == b.DescribedObject &&
 		a.Id == b.Id &&
@@ -189,9 +189,9 @@ func CompareResourceOperations(a []contract.ResourceOperation, b []contract.Reso
 
 		if a[i].Index != b[i].Index ||
 			a[i].Operation != b[i].Operation ||
-			a[i].Object != b[i].Object ||
+			a[i].DeviceResource != b[i].DeviceResource ||
 			a[i].Parameter != b[i].Parameter ||
-			a[i].Resource != b[i].Resource ||
+			a[i].DeviceCommand != b[i].DeviceCommand ||
 			!secondaryOk ||
 			!mappingsOk {
 			return false

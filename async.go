@@ -64,7 +64,7 @@ func processAsyncResults() {
 				if ok {
 					cv = newCV
 				} else {
-					common.LoggingClient.Warn(fmt.Sprintf("processAsyncResults - Mapping failed for Device Resource Operation: %s, with value: %s, %v", ro.Resource, cv.String(), err))
+					common.LoggingClient.Warn(fmt.Sprintf("processAsyncResults - Mapping failed for Device Resource Operation: %s, with value: %s, %v", ro.DeviceCommand, cv.String(), err))
 				}
 			}
 
