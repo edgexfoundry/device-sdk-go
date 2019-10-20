@@ -88,6 +88,17 @@ func (s *Service) Start(errChan chan error) (err error) {
 
 	// initialize devices, deviceResources & profiles
 	cache.InitCache()
+
+	// Setup REST API.
+	// Must occur before initialize driver in case driver needs to add route(s)
+	s.controller = controller.NewRestController()
+	s.controller.InitRestRoutes()
+	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
+	go func() {
+		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.controller.Router())
+	}()
+	common.LoggingClient.Info("Listening on port: " + strconv.Itoa(common.CurrentConfig.Service.Port))
+
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {
 		return fmt.Errorf("Failed to create the pre-defined Device Profiles")
@@ -99,11 +110,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 	}
 
 	s.cw = newWatchers()
-
-	// Setup REST API.
-	// Must occur before initialize driver in case driver needs to add route(s)
-	s.controller = controller.NewRestController()
-	s.controller.InitRestRoutes()
 
 	// initialize driver
 	if common.CurrentConfig.Service.EnableAsyncReadings {
@@ -118,15 +124,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 	autoevent.GetManager().StartAutoEvents()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
 
-	// TODO: call ListenAndServe in a goroutine
-
-	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
-
-	go func() {
-		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.controller.Router())
-	}()
-
-	common.LoggingClient.Info("Listening on port: " + strconv.Itoa(common.CurrentConfig.Service.Port))
 	common.LoggingClient.Info("Service started in: " + time.Since(s.startTime).String())
 
 	common.LoggingClient.Debug("*Service Start() exit")
