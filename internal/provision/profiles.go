@@ -9,13 +9,20 @@ package provision
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -105,6 +112,11 @@ func profileSliceToMap(profiles []contract.DeviceProfile) map[string]contract.De
 }
 
 func CreateDescriptorsFromProfile(profile *contract.DeviceProfile) {
+	if isValueDescriptorManagedByMetadata() {
+		common.LoggingClient.Debug("Value Descriptor is now managed by Core Metadata")
+		return
+	}
+
 	dcs := profile.DeviceCommands
 	for _, dc := range dcs {
 		for _, op := range dc.Get {
@@ -114,7 +126,51 @@ func CreateDescriptorsFromProfile(profile *contract.DeviceProfile) {
 			createDescriptorFromResourceOperation(profile.Name, op)
 		}
 	}
+}
 
+// This is a temporary solution and will move the whole
+// Value Descriptor management logic to Core Metadata in Geneva
+func isValueDescriptorManagedByMetadata() bool {
+	common.LoggingClient.Debug("Getting EnableValueDescriptorManagement configuration value from Core Metadata")
+	metadataURL := common.CurrentConfig.Clients[common.ClientMetadata].Url()
+	params := types.EndpointParams{
+		ServiceKey:  common.ClientMetadata,
+		Path:        clients.ApiConfigRoute,
+		UseRegistry: common.UseRegistry,
+		Url:         metadataURL,
+		Interval:    clients.ClientMonitorDefault,
+	}
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
+	gc := general.NewGeneralClient(params, endpoint.Endpoint{RegistryClient: config.RegistryClient, WG: &waitGroup})
+	correlation := uuid.New().String()
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlation)
+
+	configString, err := gc.FetchConfiguration(ctx)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("Error when getting configuration from Core Metadata: %v ", err))
+		return false
+	}
+
+	var metadataConfig map[string]interface{}
+	err = json.Unmarshal([]byte(configString), &metadataConfig)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("Error when parsing configuration from Core Metadata: %v ", err))
+		return false
+	}
+
+	writable, ok := metadataConfig["Writable"].(map[string]interface{})
+	if !ok {
+		common.LoggingClient.Error(fmt.Sprintf("Error when retrieving Writable configuration from Core Metadata: %v", metadataConfig))
+		return false
+	}
+	enableValueDescriptorManagement, ok := writable["EnableValueDescriptorManagement"].(bool)
+	if !ok {
+		common.LoggingClient.Error(fmt.Sprintf("Error when retrieving EnableValueDescriptorManagement configuration from Core Metadata: %v", writable))
+		return false
+	}
+
+	return enableValueDescriptorManagement
 }
 
 func createDescriptorFromResourceOperation(profileName string, op contract.ResourceOperation) {
