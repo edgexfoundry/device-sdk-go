@@ -78,6 +78,9 @@ func LoadProfiles(path string) error {
 				continue
 			}
 
+			// TODO: this section will be removed after the deprecated fields are truly removed
+			handleDeprecatedFields(&profile)
+
 			// if profile already exists in metadata, skip it
 			if p, ok := pMap[profile.Name]; ok {
 				cache.Profiles().Add(p)
@@ -101,6 +104,31 @@ func LoadProfiles(path string) error {
 		}
 	}
 	return nil
+}
+
+func handleDeprecatedFields(profile *contract.DeviceProfile) {
+	for _, pr := range profile.DeviceCommands {
+		for i, ro := range pr.Get {
+			pr.Get[i] = handleRODeprecatedFields(ro)
+		}
+		for i, ro := range pr.Set {
+			pr.Set[i] = handleRODeprecatedFields(ro)
+		}
+	}
+}
+
+func handleRODeprecatedFields(ro contract.ResourceOperation) contract.ResourceOperation {
+	if ro.DeviceResource != "" {
+		ro.Object = ro.DeviceResource
+	} else if ro.Object != "" {
+		ro.DeviceResource = ro.Object
+	}
+	if ro.DeviceCommand != "" {
+		ro.Resource = ro.DeviceCommand
+	} else if ro.Resource != "" {
+		ro.DeviceCommand = ro.Resource
+	}
+	return ro
 }
 
 func profileSliceToMap(profiles []contract.DeviceProfile) map[string]contract.DeviceProfile {
