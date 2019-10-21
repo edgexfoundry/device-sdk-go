@@ -145,7 +145,11 @@ func TestApplicationSettings(t *testing.T) {
 	sdk := AppFunctionsSDK{}
 
 	sdk.configDir = "../examples/simple-filter-xml/res"
-	err := sdk.initializeConfiguration()
+
+	config, err := readConfigurationFromFile(sdk.configProfile, sdk.configDir)
+	assert.NoError(t, err, "failed to load configuration from TOML file")
+
+	err = sdk.initializeConfiguration(config)
 
 	assert.NoError(t, err, "failed to initialize configuration")
 
@@ -167,7 +171,11 @@ func TestApplicationSettingsNil(t *testing.T) {
 	sdk := AppFunctionsSDK{}
 
 	sdk.configDir = "../examples/simple-filter-xml-post/res"
-	err := sdk.initializeConfiguration()
+
+	config, err := readConfigurationFromFile(sdk.configProfile, sdk.configDir)
+	assert.NoError(t, err, "failed to load configuration from TOML file")
+
+	err = sdk.initializeConfiguration(config)
 	assert.NoError(t, err, "failed to initialize configuration")
 
 	appSettings := sdk.ApplicationSettings()

@@ -2,7 +2,7 @@
 LogLevel = 'INFO'
     [Writable.StoreAndForward]
     Enabled = false
-    RetryInterval = '300s'
+    RetryInterval = '5m'
     MaxRetryCount = 10
 
 [Service]
@@ -25,7 +25,7 @@ Type = 'consul'
 Type = "mongodb"
 Host = "localhost"
 Port = 27017
-Timeout = '30s'
+Timeout = "30s"
 Username = ""
 Password = ""
 

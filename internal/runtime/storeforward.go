@@ -60,9 +60,13 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 		retryInterval, err := time.ParseDuration(config.Writable.StoreAndForward.RetryInterval)
 		if err != nil {
 			edgeXClients.LoggingClient.Warn(
-				fmt.Sprintf("StoreAndForward RetryInterval failed to parse, defaulting to %d", defaultMinRetryInterval))
+				fmt.Sprintf("StoreAndForward RetryInterval failed to parse, defaulting to %s",
+					defaultMinRetryInterval.String()))
 			retryInterval = defaultMinRetryInterval
 		} else if retryInterval < defaultMinRetryInterval {
+			edgeXClients.LoggingClient.Warn(
+				fmt.Sprintf("StoreAndForward RetryInterval value %s is less than the allowed minimum value, defaulting to %s",
+					retryInterval.String(), defaultMinRetryInterval.String()))
 			retryInterval = defaultMinRetryInterval
 		}
 
@@ -73,8 +77,8 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 		}
 
 		edgeXClients.LoggingClient.Info(
-			fmt.Sprintf("Starting StoreAndForward Retry Loop with %d RetryInterval and %d max retries",
-				retryInterval, config.Writable.StoreAndForward.MaxRetryCount))
+			fmt.Sprintf("Starting StoreAndForward Retry Loop with %s RetryInterval and %d max retries",
+				retryInterval.String(), config.Writable.StoreAndForward.MaxRetryCount))
 
 	exit:
 		for {

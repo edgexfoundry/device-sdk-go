@@ -212,7 +212,7 @@ func NewClient(config db.DatabaseInfo) (client interfaces.StoreClient, err error
 
 	timeout, err := time.ParseDuration(config.Timeout)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("failed to parse Database.Timeout: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

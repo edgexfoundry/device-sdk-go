@@ -545,7 +545,7 @@ Two sections of configuration have been added for Store and Forward.
 ```toml
   [Writable.StoreAndForward]
     Enabled = false
-    RetryInterval = '300s'
+    RetryInterval = '5m'
     MaxRetryCount = 10
 ```
 

@@ -304,11 +304,26 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	configurationInitialized := false
 	bootstrapComplete := false
 
+	timeStart := time.Now()
+	// Currently have to load configuration from filesystem first in order to obtain
+	// Registry Host/Port and BootTimeout
+	configuration, err := readConfigurationFromFile(sdk.configProfile, sdk.configDir)
+	if err != nil {
+		return err
+	}
+	bootTimeout, err := time.ParseDuration(configuration.Service.BootTimeout)
+	if err != nil {
+		fmt.Printf("warning- failed to parse Service.BootTimeout, use the default %s: %v\n",
+			internal.BootTimeoutDefault.String(), err)
+		bootTimeout = internal.BootTimeoutDefault
+	}
+	timeElapsed := time.Since(timeStart)
+
 	// Bootstrap retry loop to ensure all dependencies are ready before continuing.
-	until := time.Now().Add(internal.BootTimeoutDefault)
+	until := time.Now().Add(bootTimeout - timeElapsed)
 	for time.Now().Before(until) {
 		if !configurationInitialized {
-			err := sdk.initializeConfiguration()
+			err := sdk.initializeConfiguration(configuration)
 			if err != nil {
 				fmt.Printf("failed to initialize Registry: %v\n", err)
 				goto ContinueWithSleep
@@ -337,9 +352,9 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 					// Error already logged
 					goto ContinueWithSleep
 				}
-			}
 
-			databaseInitialized = true
+				databaseInitialized = true
+			}
 		}
 
 		if !clientsInitialized {
@@ -451,18 +466,15 @@ func (sdk *AppFunctionsSDK) getClientParams(serviceKey string, clientName string
 	}
 }
 
-func (sdk *AppFunctionsSDK) initializeConfiguration() error {
-
-	// Currently have to load configuration from filesystem first in order to obtain Registry Host/Port
-	configuration, err := common.LoadFromFile(sdk.configProfile, sdk.configDir)
-	if err != nil {
-		return err
-	}
-
+func (sdk *AppFunctionsSDK) initializeConfiguration(configuration *common.ConfigurationStruct) error {
 	if sdk.useRegistry {
 		e := config.NewEnvironment()
 		configuration.Registry = e.OverrideRegistryInfoFromEnvironment(configuration.Registry)
 		configuration.Service = e.OverrideServiceInfoFromEnvironment(configuration.Service)
+
+		if _, err := time.ParseDuration(configuration.Service.CheckInterval); err != nil {
+			return fmt.Errorf("failed to parse Service.CheckInterval: %v", err)
+		}
 
 		registryConfig := types.Config{
 			Host:            configuration.Registry.Host,
@@ -702,4 +714,12 @@ func applyCommandlineEnvironmentOverrides() {
 	if !found {
 		os.Args = append(os.Args, "--profile="+profileName)
 	}
+}
+
+func readConfigurationFromFile(profileName string, configDir string) (*common.ConfigurationStruct, error) {
+	configuration, err := common.LoadFromFile(profileName, configDir)
+	if err != nil {
+		return nil, err
+	}
+	return configuration, nil
 }
