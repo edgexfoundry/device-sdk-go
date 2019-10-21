@@ -310,8 +310,25 @@ These are functions that enable interactions with the CoreData REST API.
 ### Export Functions
 There are two export functions included in the SDK that can be added to your pipeline. 
 - `NewHTTPSender(url string, mimeType string, persistOnError bool)` - This function returns a `HTTPSender` instance initialized with the passed in url, mime type and persistOnError values. This `HTTPSender` instance is used to access the following functions that will use the required url and optional mime type and persistOnError:
+  
   - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
-- `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig *MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
+- `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
+  
+  - `KeyCertPair` - This structure holds the Key and Certificate information for when using secure **TLS** connection to the broker. Can be `nil` if not using secure **TLS** connection. 
+  
+  - `MqttConfig` - This structure holds addition MQTT configuration settings. 
+  
+    ```
+    	Qos            byte
+    	Retain         bool
+    	AutoReconnect  bool
+    	SkipCertVerify bool
+    	User           string
+    	Password       string
+    ```
+  
+    The `GO` complier will default these to `0`, `false` and `""`, so you only need to set the fields that your usage requires that differ from the default.
+  
   - `MQTTSend` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and sends it to the specified MQTT broker. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. If the send fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
 
 ### Output Functions

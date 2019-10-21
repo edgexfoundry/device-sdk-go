@@ -55,7 +55,8 @@ func main() {
 		Topic:     "sampleTopic",
 	}
 
-	mqttConfig := transforms.NewMqttConfig()
+	// Using default settings, so not changing any fields in MqttConfig
+	mqttConfig := transforms.MqttConfig{}
 
 	// Make sure you change KeyFile and CertFile here to point to actual key/cert files
 	// or an error will be logged for failing to load key/cert files
