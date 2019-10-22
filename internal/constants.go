@@ -25,7 +25,6 @@ const (
 	ConfigRegistryStem   = "edgex/appservices/1.0/"
 	WritableKey          = "/Writable"
 	ApiTriggerRoute      = "/api/v1/trigger"
-	LogDurationKey       = "duration"
 	DatabaseName         = "application-service"
 )
 

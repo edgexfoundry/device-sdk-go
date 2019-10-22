@@ -453,6 +453,9 @@ The following command line options are available
   -r    
   --registry
         Indicates the service should use the registry.
+  -i    
+  -ignoreVersion
+        Indicates the service should ignore version check error.
 ```
 
 Examples:

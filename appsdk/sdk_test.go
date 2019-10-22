@@ -18,8 +18,12 @@ package appsdk
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -404,6 +408,75 @@ func TestInitializeClientsJustData(t *testing.T) {
 
 	assert.Nil(t, sdk.edgexClients.CommandClient)
 	assert.Nil(t, sdk.edgexClients.NotificationsClient)
+}
+
+func TestValidateVersionMatch(t *testing.T) {
+	clients := make(map[string]common.ClientInfo)
+	clients[common.CoreDataClientName] = common.ClientInfo{
+		Protocol: "http",
+		Host:     "localhost",
+		Port:     0, // Will be replaced by local test webserver's port
+	}
+
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		config: common.ConfigurationStruct{
+			Clients: clients,
+		},
+	}
+
+	tests := []struct {
+		Name               string
+		CoreVersion        string
+		SdkVersion         string
+		IgnoreVersionError bool
+		ExpectFailure      bool
+	}{
+		{"Released match", "1.1.0", "v1.0.0", false, false},
+		{"Dev WIP Match", "2.0.0", "v2.0.0-dev.11", false, false},
+		{"Released mis-Match", "2.0.0", "v1.0.0", false, true},
+		{"Ignore Released mis-Match", "2.0.0", "v1.0.0", true, false},
+		{"Running in Debugger", "1.0.0", "v0.0.0", false, false},
+		{"SDK Beta Version", "1.0.0", "v0.2.0", false, false},
+		{"SDK Version malformed", "1.0.0", "", false, true},
+		{"Core version malformed", "12", "v1.0.0", false, true},
+		{"Core version JSON bad", "", "v1.0.0", false, true},
+		{"Core version JSON empty", "{}", "v1.0.0", false, true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+
+			internal.SDKVersion = test.SdkVersion
+
+			handler := func(w http.ResponseWriter, r *http.Request) {
+				var versionJson string
+				if test.CoreVersion == "{}" {
+					versionJson = "{}"
+				} else if test.CoreVersion == "" {
+					versionJson = ""
+				} else {
+					versionJson = fmt.Sprintf(`{"version" : "%s"}`, test.CoreVersion)
+				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(versionJson))
+			}
+
+			// create test server with handler
+			testServer := httptest.NewServer(http.HandlerFunc(handler))
+			defer testServer.Close()
+
+			testServerUrl, _ := url.Parse(testServer.URL)
+			port, _ := strconv.Atoi(testServerUrl.Port())
+			coreService := sdk.config.Clients[common.CoreDataClientName]
+			coreService.Port = port
+			sdk.config.Clients[common.CoreDataClientName] = coreService
+
+			result := sdk.validateVersionMatch(test.IgnoreVersionError)
+			assert.Equal(t, test.ExpectFailure, !result)
+		})
+	}
 }
 
 type mockEventEndpoint struct {
