@@ -19,9 +19,10 @@ import (
 )
 
 type Options struct {
-	UseRegistry string `short:"r" long:"registry" description:"Indicates the service should use the registry and provide the registry url." optional:"true" optional-value:"LOAD_FROM_FILE"`
-	ConfProfile string `short:"p" long:"profile" description:"Specify a profile other than default."`
-	ConfDir string `short:"c" long:"confdir" description:"Specify an alternate configuration directory."`
+	UseRegistry   string `short:"r" long:"registry" description:"Indicates the service should use the registry and provide the registry url." optional:"true" optional-value:"LOAD_FROM_FILE"`
+	ConfProfile   string `short:"p" long:"profile" description:"Specify a profile other than default."`
+	ConfDir       string `short:"c" long:"confdir" description:"Specify an alternate configuration directory."`
+	OverwriteConf bool   `short:"o" long:"overwrite" description:"Overwrite configuration in the registry."`
 }
 
 var opts Options
@@ -34,6 +35,7 @@ func Bootstrap(serviceName string, serviceVersion string, driver dsModels.Protoc
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
 
+	device.SetOverwriteConfig(opts.OverwriteConf)
 	if err := startService(serviceName, serviceVersion, driver); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)

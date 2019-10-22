@@ -240,6 +240,13 @@ func (s *Service) Stop(force bool) error {
 	return nil
 }
 
+// SetOverwriteConfig sets whether or not configuration will be unconditionally loaded
+// from file to the registry.
+// NOTE this will be removed in the next release and made a parameter to NewService
+func SetOverwriteConfig(oc bool) {
+	common.OverwriteConfig = oc
+}
+
 // NewService creates a new Device Service instance with the given
 // version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
 // Note - this function is a singleton, if called more than once,
