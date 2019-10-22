@@ -31,7 +31,9 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 )
 
-const defaultMinRetryInterval = 5000 // 5 secs
+const (
+	defaultMinRetryInterval = time.Duration(1 * time.Second)
+)
 
 type storeForwardInfo struct {
 	runtime      *GolangRuntime
@@ -55,8 +57,16 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 		defer appWg.Done()
 		defer enabledWg.Done()
 
-		retryInterval := config.Writable.StoreAndForward.RetryInterval
-		if retryInterval < defaultMinRetryInterval {
+		retryInterval, err := time.ParseDuration(config.Writable.StoreAndForward.RetryInterval)
+		if err != nil {
+			edgeXClients.LoggingClient.Warn(
+				fmt.Sprintf("StoreAndForward RetryInterval failed to parse, defaulting to %s",
+					defaultMinRetryInterval.String()))
+			retryInterval = defaultMinRetryInterval
+		} else if retryInterval < defaultMinRetryInterval {
+			edgeXClients.LoggingClient.Warn(
+				fmt.Sprintf("StoreAndForward RetryInterval value %s is less than the allowed minimum value, defaulting to %s",
+					retryInterval.String(), defaultMinRetryInterval.String()))
 			retryInterval = defaultMinRetryInterval
 		}
 
@@ -67,8 +77,8 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 		}
 
 		edgeXClients.LoggingClient.Info(
-			fmt.Sprintf("Starting StoreAndForward Retry Loop with %d RetryInterval and %d max retries",
-				retryInterval, config.Writable.StoreAndForward.MaxRetryCount))
+			fmt.Sprintf("Starting StoreAndForward Retry Loop with %s RetryInterval and %d max retries",
+				retryInterval.String(), config.Writable.StoreAndForward.MaxRetryCount))
 
 	exit:
 		for {
@@ -82,7 +92,7 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 				// Exit the loop and function when Store and Forward has been disabled.
 				break exit
 
-			case <-time.After(time.Millisecond * time.Duration(retryInterval)):
+			case <-time.After(retryInterval):
 				sf.retryStoredData(serviceKey, config, edgeXClients)
 			}
 		}

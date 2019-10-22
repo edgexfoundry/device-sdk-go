@@ -24,8 +24,13 @@ import (
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
-// WritableInfo ...
+// WritableInfo is used to hold configuration information that is considered "live" or can be changed on the fly without a restart of the service.
 type WritableInfo struct {
+	// Set level of logging to report
+	//
+	// example: TRACE
+	// required: true
+	// enum: TRACE,DEBUG,INFO,WARN,ERROR
 	LogLevel        string
 	Pipeline        PipelineInfo
 	StoreAndForward StoreAndForwardInfo
@@ -46,49 +51,63 @@ func (c ClientInfo) Url() string {
 	return url
 }
 
-// ConfigurationStruct ...
+// ConfigurationStruct
+// swagger:model ConfigurationStruct
 type ConfigurationStruct struct {
-	Writable            WritableInfo
-	Logging             LoggingInfo
-	Registry            RegistryInfo
-	Service             ServiceInfo
-	MessageBus          types.MessageBusConfig
-	Binding             BindingInfo
+	// Writable
+	Writable WritableInfo
+	// Logging
+	Logging LoggingInfo
+	// Registry
+	Registry RegistryInfo
+	// Service
+	Service ServiceInfo
+	// MessageBus
+	MessageBus types.MessageBusConfig
+	// Binding
+	Binding BindingInfo
+	// ApplicationSettings
 	ApplicationSettings map[string]string
-	Clients             map[string]ClientInfo
-	Database            db.DatabaseInfo
+	// Clients
+	Clients map[string]ClientInfo
+	// Database
+	Database db.DatabaseInfo
 }
 
-// RegistryInfo ...
+// RegistryInfo is used for defining settings for connection to the registry.
 type RegistryInfo struct {
 	Host string
 	Port int
 	Type string
 }
 
-// LoggingInfo ...
+// LoggingInfo is used to indicate whether remote logging should be used or not. If not, File designates the location of the log file to output logs to
 type LoggingInfo struct {
 	EnableRemote bool
 	File         string
 }
 
-// ServiceInfo ...
+// ServiceInfo is used to hold and configure various settings related to the hosting of this service
 type ServiceInfo struct {
-	BootTimeout   int
+	BootTimeout   string
 	CheckInterval string
-	ClientMonitor int
+	ClientMonitor string
 	Host          string
 	Port          int
 	Protocol      string
 	StartupMsg    string
 	ReadMaxLimit  int
-	Timeout       int
+	Timeout       string
 }
 
 // BindingInfo contains Metadata associated with each binding
 type BindingInfo struct {
+	// Type of trigger to start pipeline
+	//
+	// example: messagebus
+	// required: true
+	// enum: messagebus,http
 	Type           string
-	Name           string
 	SubscribeTopic string
 	PublishTopic   string
 }
@@ -107,6 +126,6 @@ type PipelineFunction struct {
 
 type StoreAndForwardInfo struct {
 	Enabled       bool
-	RetryInterval int
+	RetryInterval string
 	MaxRetryCount int
 }

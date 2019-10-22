@@ -1,3 +1,5 @@
+// +build brokerRunning
+
 //
 // Copyright (c) 2019 Intel Corporation
 //
@@ -13,6 +15,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+// This test will only be executed if the tag brokerRunning is added when running
+// the tests with a command like:
+// go test -tags brokerRunning
 package transforms
 
 import (
@@ -23,6 +29,7 @@ import (
 )
 
 var addr models.Addressable
+var badAddr models.Addressable
 
 func init() {
 	addr = models.Addressable{
@@ -33,12 +40,19 @@ func init() {
 		Password:  "",
 		Topic:     "testMQTTTopic",
 	}
+
+	badAddr = models.Addressable{
+		Address:   "localhost",
+		Port:      1993,
+		Protocol:  "tcp",
+		Publisher: "",
+		Password:  "",
+		Topic:     "testMQTTTopic",
+	}
 }
 
 func TestMQTTSend(t *testing.T) {
-	t.SkipNow()
-
-	mqttConfig := NewMqttConfig()
+	mqttConfig := MqttConfig{}
 	sender := NewMQTTSender(lc, addr, nil, mqttConfig, false)
 
 	dataToSend := "SOME DATA TO SEND"
@@ -58,10 +72,9 @@ func TestMQTTSendNoData(t *testing.T) {
 }
 
 func TestMQTTSendInvalidData(t *testing.T) {
-	t.SkipNow()
-
 	expected := "passed in data must be of type []byte, string or implement json.Marshaler"
-	mqttConfig := NewMqttConfig()
+	mqttConfig := MqttConfig{}
+
 	sender := NewMQTTSender(lc, addr, nil, mqttConfig, false)
 
 	type RandomObject struct {
@@ -79,8 +92,8 @@ func TestMQTTSendInvalidData(t *testing.T) {
 
 func TestMQTTSendPersistData(t *testing.T) {
 	expected := "Could not connect to mqtt server"
-	mqttConfig := NewMqttConfig()
-	sender := NewMQTTSender(lc, addr, nil, mqttConfig, true)
+	mqttConfig := MqttConfig{}
+	sender := NewMQTTSender(lc, badAddr, nil, mqttConfig, true)
 
 	dataToSend := "Random data"
 	continuePipeline, result := sender.MQTTSend(context, dataToSend)
@@ -99,11 +112,11 @@ func TestNewMQTTSender(t *testing.T) {
 		Path:      "/path",
 		Publisher: "publisher",
 		User:      "user",
-		Password:  "password",
+		Password:  "Password",
 		Topic:     "testMQTTTopic",
 	}
 
-	mqttConfig := NewMqttConfig()
+	mqttConfig := MqttConfig{}
 	sender := NewMQTTSender(lc, addr1, nil, mqttConfig, false)
 	assert.NotNil(t, sender.client, "Client should not be nil")
 	opts := sender.client.OptionsReader()
@@ -115,6 +128,6 @@ func TestNewMQTTSender(t *testing.T) {
 	assert.Equal(t, "/path", servers[0].Path, "Server connection path should be path")
 	assert.Equal(t, "publisher", opts.ClientID(), "ClientID should be publisher")
 	assert.Equal(t, "user", opts.Username(), "Username should be user")
-	assert.Equal(t, "password", opts.Password(), "Password should be password")
+	assert.Equal(t, "Password", opts.Password(), "Password should be Password")
 	assert.False(t, opts.AutoReconnect(), "Autoreconnect should be false")
 }

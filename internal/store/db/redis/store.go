@@ -201,11 +201,18 @@ func (c Client) Disconnect() error {
 
 // NewClient provides a factory for building a StoreClient
 func NewClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
+	var retErr error
 	once.Do(func() {
 		connectionString := fmt.Sprintf("%s:%d", config.Host, config.Port)
+		connectTimeout, err := time.ParseDuration(config.Timeout)
+		if err != nil {
+			retErr = fmt.Errorf("config.Timeout failed to parse: %v", err)
+			return
+		}
+
 		opts := []redis.DialOption{
 			redis.DialPassword(config.Password),
-			redis.DialConnectTimeout(time.Duration(config.Timeout) * time.Millisecond),
+			redis.DialConnectTimeout(connectTimeout),
 		}
 
 		dialFunc := func() (redis.Conn, error) {
@@ -219,7 +226,7 @@ func NewClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 		}
 		currClient = &Client{
 			Pool: &redis.Pool{
-				IdleTimeout: time.Duration(config.Timeout) * time.Millisecond,
+				IdleTimeout: connectTimeout,
 				/* The current implementation processes nested structs using concurrent connections.
 				 * With the deepest nesting level being 3, three shall be the number of maximum open
 				 * idle connections in the pool, to allow reuse.
@@ -234,5 +241,5 @@ func NewClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 		}
 	})
 
-	return currClient, nil
+	return currClient, retErr
 }
