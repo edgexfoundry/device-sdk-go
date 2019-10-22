@@ -126,6 +126,10 @@ func (webserver *WebServer) StartHTTPServer(errChannel chan error) {
 	webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTP Server on port :%d", webserver.Config.Service.Port))
 	go func() {
 		p := fmt.Sprintf(":%d", webserver.Config.Service.Port)
-		errChannel <- http.ListenAndServe(p, http.TimeoutHandler(webserver.router, time.Millisecond*time.Duration(webserver.Config.Service.Timeout), "Request timed out"))
+		if serviceTimeout, err := time.ParseDuration(webserver.Config.Service.Timeout); err != nil {
+			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
+		} else {
+			errChannel <- http.ListenAndServe(p, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+		}
 	}()
 }
