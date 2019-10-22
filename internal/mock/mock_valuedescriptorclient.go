@@ -159,18 +159,18 @@ func CreateDescriptorsFromProfile(profile contract.DeviceProfile) error {
 }
 
 func createDescriptorFromResourceOperation(profileName string, drs []contract.DeviceResource, op contract.ResourceOperation) error {
-	if _, ok := descMap[op.Object]; ok {
+	if _, ok := descMap[op.DeviceResource]; ok {
 		return nil
 	}
 	drMap := make(map[string]map[string]contract.DeviceResource, 0)
 	drMap[profileName] = deviceResourceSliceToMap(drs)
-	dr := drMap[profileName][op.Object]
+	dr := drMap[profileName][op.DeviceResource]
 
-	desc, err := createDescriptor(op.Object, dr)
+	desc, err := createDescriptor(op.DeviceResource, dr)
 	if err != nil {
 		return err
 	}
-	descMap[op.Object] = desc
+	descMap[op.DeviceResource] = desc
 	return nil
 }
 

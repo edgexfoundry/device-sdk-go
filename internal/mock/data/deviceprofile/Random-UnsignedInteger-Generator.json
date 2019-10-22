@@ -145,18 +145,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint8"
+          "deviceResource": "RandomValue_Uint8"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Uint8",
+          "deviceResource": "RandomValue_Uint8",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Uint8",
+          "deviceResource": "EnableRandomization_Uint8",
           "parameter": "false"
         }
       ]
@@ -166,18 +166,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint16"
+          "deviceResource": "RandomValue_Uint16"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Uint16",
+          "deviceResource": "RandomValue_Uint16",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Uint16",
+          "deviceResource": "EnableRandomization_Uint16",
           "parameter": "false"
         }
       ]
@@ -187,18 +187,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint32"
+          "deviceResource": "RandomValue_Uint32"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Uint32",
+          "deviceResource": "RandomValue_Uint32",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Uint32",
+          "deviceResource": "EnableRandomization_Uint32",
           "parameter": "false"
         }
       ]
@@ -208,18 +208,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Uint64"
+          "deviceResource": "RandomValue_Uint64"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Uint64",
+          "deviceResource": "RandomValue_Uint64",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Uint64",
+          "deviceResource": "EnableRandomization_Uint64",
           "parameter": "false"
         }
       ]

@@ -202,15 +202,15 @@ func isValueDescriptorManagedByMetadata() bool {
 }
 
 func createDescriptorFromResourceOperation(profileName string, op contract.ResourceOperation) {
-	if _, ok := cache.ValueDescriptors().ForName(op.Object); ok {
+	if _, ok := cache.ValueDescriptors().ForName(op.DeviceResource); ok {
 		// Value Descriptor has been created
 		return
 	} else {
-		dr, ok := cache.Profiles().DeviceResource(profileName, op.Object)
+		dr, ok := cache.Profiles().DeviceResource(profileName, op.DeviceResource)
 		if !ok {
-			common.LoggingClient.Error(fmt.Sprintf("can't find Device Resource %s to match Device Command (Resource Operation) %v in Device Profile %s", op.Object, op, profileName))
+			common.LoggingClient.Error(fmt.Sprintf("can't find Device Resource %s to match Device Command (Resource Operation) %v in Device Profile %s", op.DeviceResource, op, profileName))
 		}
-		desc, err := createDescriptor(op.Object, dr)
+		desc, err := createDescriptor(op.DeviceResource, dr)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
 		} else {

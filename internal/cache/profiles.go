@@ -31,7 +31,7 @@ type ProfileCache interface {
 	DeviceResource(profileName string, resourceName string) (contract.DeviceResource, bool)
 	CommandExists(profileName string, cmd string) (bool, error)
 	ResourceOperations(profileName string, cmd string, method string) ([]contract.ResourceOperation, error)
-	ResourceOperation(profileName string, object string, method string) (contract.ResourceOperation, error)
+	ResourceOperation(profileName string, deviceResource string, method string) (contract.ResourceOperation, error)
 }
 
 type profileCache struct {
@@ -232,7 +232,7 @@ func (p *profileCache) ResourceOperations(profileName string, cmd string, method
 }
 
 // Return the first matched ResourceOperation
-func (p *profileCache) ResourceOperation(profileName string, object string, method string) (contract.ResourceOperation, error) {
+func (p *profileCache) ResourceOperation(profileName string, deviceResource string, method string) (contract.ResourceOperation, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -249,16 +249,16 @@ func (p *profileCache) ResourceOperation(profileName string, object string, meth
 		}
 	}
 
-	if ro, ok = retrieveFirstRObyObject(rosMap, object); !ok {
-		return ro, fmt.Errorf("specified ResourceOperation by object %s not found", object)
+	if ro, ok = retrieveFirstRObyDeviceResource(rosMap, deviceResource); !ok {
+		return ro, fmt.Errorf("specified ResourceOperation by deviceResource %s not found", deviceResource)
 	}
 	return ro, nil
 }
 
-func retrieveFirstRObyObject(rosMap map[string][]contract.ResourceOperation, object string) (contract.ResourceOperation, bool) {
+func retrieveFirstRObyDeviceResource(rosMap map[string][]contract.ResourceOperation, deviceResource string) (contract.ResourceOperation, bool) {
 	for _, ros := range rosMap {
 		for _, ro := range ros {
-			if ro.Object == object {
+			if ro.DeviceResource == deviceResource {
 				return ro, true
 			}
 		}

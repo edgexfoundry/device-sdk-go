@@ -49,18 +49,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Bool"
+          "deviceResource": "RandomValue_Bool"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "EnableRandomization_Bool",
+          "deviceResource": "EnableRandomization_Bool",
           "parameter": "false"
         },
         {
           "operation": "set",
-          "object": "RandomValue_Bool",
+          "deviceResource": "RandomValue_Bool",
           "parameter": "false"
         }
       ]

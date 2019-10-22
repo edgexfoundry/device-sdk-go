@@ -83,18 +83,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Float32"
+          "deviceResource": "RandomValue_Float32"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Float32",
+          "deviceResource": "RandomValue_Float32",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Float32",
+          "deviceResource": "EnableRandomization_Float32",
           "parameter": "false"
         }
       ]
@@ -104,18 +104,18 @@
       "get": [
         {
           "operation": "get",
-          "object": "RandomValue_Float64"
+          "deviceResource": "RandomValue_Float64"
         }
       ],
       "set": [
         {
           "operation": "set",
-          "object": "RandomValue_Float64",
+          "deviceResource": "RandomValue_Float64",
           "parameter": "0"
         },
         {
           "operation": "set",
-          "object": "EnableRandomization_Float64",
+          "deviceResource": "EnableRandomization_Float64",
           "parameter": "false"
         }
       ]

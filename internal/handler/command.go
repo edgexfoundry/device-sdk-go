@@ -147,14 +147,14 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 			if ok {
 				cv = newCV
 			} else {
-				common.LoggingClient.Warn(fmt.Sprintf("Handler - execReadCmd: Resource Operation (%s) mapping value (%s) failed with the mapping table: %v", ro.Resource, cv.String(), ro.Mappings))
+				common.LoggingClient.Warn(fmt.Sprintf("Handler - execReadCmd: Resource Operation (%s) mapping value (%s) failed with the mapping table: %v", ro.DeviceCommand, cv.String(), ro.Mappings))
 				//transformsOK = false  // issue #89 will discuss how to handle there is no mapping matched
 			}
 		}
 
-		// TODO: the Java SDK supports a RO secondary device resource(object).
+		// TODO: the Java SDK supports a RO secondary device resource.
 		// If defined, then a RO result will generate a reading for the
-		// secondary object. As this use case isn't defined and/or used in
+		// secondary device resource. As this use case isn't defined and/or used in
 		// any of the existing Java device services, this concept hasn't
 		// been implemened in gxds. TBD at the devices f2f whether this
 		// be killed completely.
@@ -202,7 +202,7 @@ func execReadCmd(device *contract.Device, cmd string, queryParams string) (*dsMo
 	reqs := make([]dsModels.CommandRequest, len(ros))
 
 	for i, op := range ros {
-		drName := op.Object
+		drName := op.DeviceResource
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", drName))
 
 		// TODO: add recursive support for resource command chaining. This occurs when a
@@ -413,9 +413,9 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 }
 
 func createCommandValueFromRO(profileName string, ro *contract.ResourceOperation, v string) (*dsModels.CommandValue, error) {
-	dr, ok := cache.Profiles().DeviceResource(profileName, ro.Object)
+	dr, ok := cache.Profiles().DeviceResource(profileName, ro.DeviceResource)
 	if !ok {
-		msg := fmt.Sprintf("createCommandValueForParam: no deviceResource: %s", ro.Object)
+		msg := fmt.Sprintf("createCommandValueForParam: no deviceResource: %s", ro.DeviceResource)
 		common.LoggingClient.Error(msg)
 		return nil, fmt.Errorf(msg)
 	}

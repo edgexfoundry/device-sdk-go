@@ -190,25 +190,25 @@ func TestProfileCache_ResourceOperations(t *testing.T) {
 func TestProfileCache_ResourceOperation(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, common.GetCmdMethod); err == nil {
+	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].DeviceResource, common.GetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].Object, common.SetCmdMethod); err == nil {
+	if _, err := dpc.ResourceOperation(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.DeviceCommands[0].Get[0].DeviceResource, common.SetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
 
-	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, common.GetCmdMethod); err != nil {
+	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].DeviceResource, common.GetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
 		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0], ro)
 	}
-	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].Object, common.GetCmdMethod); err != nil {
+	if ro, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0].DeviceResource, common.GetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else {
 		assert.Equal(t, mock.DeviceProfileRandomBoolGenerator.DeviceCommands[0].Get[0], ro)
 	}
 
 	if _, err := dpc.ResourceOperation(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", common.GetCmdMethod); err == nil {
-		t.Error("the input object name of resource operation is not belong to DeviceProfileRandomBoolGenerator, supposed to get an error")
+		t.Error("the input deviceResource name of resource operation is not belong to DeviceProfileRandomBoolGenerator, supposed to get an error")
 	}
 }
