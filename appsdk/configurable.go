@@ -36,6 +36,7 @@ const (
 	MimeType         = "mimetype"
 	PersistOnError   = "persistOnError"
 	Cert             = "cert"
+	SkipVerify       = "skipverify"
 	Qos              = "qos"
 	Retain           = "retain"
 	AutoReconnect    = "autoreconnect"
@@ -280,10 +281,11 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 	var err error
 	qos := 0
 	retain := false
-	autoreconnect := false
+	autoReconnect := false
 	// optional string params
 	cert := parameters[Cert]
 	key := parameters[Key]
+	skipVerify := parameters[SkipVerify]
 
 	qosVal, ok := parameters[Qos]
 	if ok {
@@ -303,7 +305,7 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 	}
 	autoreconnectVal, ok := parameters[AutoReconnect]
 	if ok {
-		autoreconnect, err = strconv.ParseBool(autoreconnectVal)
+		autoReconnect, err = strconv.ParseBool(autoreconnectVal)
 		if err != nil {
 			dynamic.Sdk.LoggingClient.Error("Unable to parse " + AutoReconnect + " value")
 			return nil
@@ -331,11 +333,22 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 		}
 	}
 
-	mqttconfig := transforms.NewMqttConfig()
-	mqttconfig.SetQos(byte(qos))
-	mqttconfig.SetRetain(retain)
-	mqttconfig.SetAutoreconnect(autoreconnect)
-	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, pair, mqttconfig, persistOnError)
+	mqttConfig := transforms.MqttConfig{}
+	mqttConfig.Qos = byte(qos)
+	mqttConfig.Retain = retain
+	mqttConfig.AutoReconnect = autoReconnect
+
+	if skipVerify != "" {
+		skipCertVerify, err := strconv.ParseBool(skipVerify)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", skipVerify, SkipVerify), "error", err)
+			return nil
+		}
+
+		mqttConfig.SkipCertVerify = skipCertVerify
+	}
+
+	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, pair, mqttConfig, persistOnError)
 	return sender.MQTTSend
 }
 
