@@ -18,7 +18,6 @@ package appsdk
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -31,6 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"

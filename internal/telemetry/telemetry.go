@@ -23,17 +23,20 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
+// SystemUsage
+// swagger:model
 type SystemUsage struct {
 	Memory     memoryUsage
 	CpuBusyAvg float64
 }
 
+// swagger:model
 type memoryUsage struct {
-	Alloc,
-	TotalAlloc,
-	Sys,
-	Mallocs,
-	Frees,
+	Alloc       uint64
+	TotalAlloc  uint64
+	Sys         uint64
+	Mallocs     uint64
+	Frees       uint64
 	LiveObjects uint64
 }
 
