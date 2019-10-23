@@ -100,13 +100,13 @@ func (s *Service) Start(errChan chan error) (err error) {
 	common.LoggingClient.Info("Listening on port: " + strconv.Itoa(common.CurrentConfig.Service.Port))
 
 	// initialize driver
-	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
-	if err != nil {
-		return fmt.Errorf("Driver.Initialize failure: %v", err)
-	}
 	if common.CurrentConfig.Service.EnableAsyncReadings {
 		s.asyncCh = make(chan *dsModels.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
 		go processAsyncResults()
+	}
+	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
+	if err != nil {
+		return fmt.Errorf("Driver.Initialize failure: %v", err)
 	}
 
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
