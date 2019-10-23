@@ -426,16 +426,16 @@ func TestValidateVersionMatch(t *testing.T) {
 	}
 
 	tests := []struct {
-		Name               string
-		CoreVersion        string
-		SdkVersion         string
-		IgnoreVersionError bool
-		ExpectFailure      bool
+		Name             string
+		CoreVersion      string
+		SdkVersion       string
+		skipVersionCheck bool
+		ExpectFailure    bool
 	}{
-		{"Released match", "1.1.0", "v1.0.0", false, false},
-		{"Dev WIP Match", "2.0.0", "v2.0.0-dev.11", false, false},
-		{"Released mis-Match", "2.0.0", "v1.0.0", false, true},
-		{"Ignore Released mis-Match", "2.0.0", "v1.0.0", true, false},
+		{"Compatible Versions", "1.1.0", "v1.0.0", false, false},
+		{"Dev Compatible Versions", "2.0.0", "v2.0.0-dev.11", false, false},
+		{"Un-compatible Versions", "2.0.0", "v1.0.0", false, true},
+		{"Skip Version Check", "2.0.0", "v1.0.0", true, false},
 		{"Running in Debugger", "1.0.0", "v0.0.0", false, false},
 		{"SDK Beta Version", "1.0.0", "v0.2.0", false, false},
 		{"SDK Version malformed", "1.0.0", "", false, true},
@@ -448,6 +448,7 @@ func TestValidateVersionMatch(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 
 			internal.SDKVersion = test.SdkVersion
+			sdk.skipVersionCheck = test.skipVersionCheck
 
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				var versionJson string
@@ -473,7 +474,7 @@ func TestValidateVersionMatch(t *testing.T) {
 			coreService.Port = port
 			sdk.config.Clients[common.CoreDataClientName] = coreService
 
-			result := sdk.validateVersionMatch(test.IgnoreVersionError)
+			result := sdk.validateVersionMatch()
 			assert.Equal(t, test.ExpectFailure, !result)
 		})
 	}
