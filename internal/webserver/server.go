@@ -38,6 +38,12 @@ type WebServer struct {
 	router        *mux.Router
 }
 
+// swagger:model
+type Version struct {
+	Version    string `json:"version"`
+	SDKVersion string `json:"sdk_version"`
+}
+
 // NewWebserver returns a new instance of *WebServer
 func NewWebServer(config *common.ConfigurationStruct, lc logger.LoggingClient, router *mux.Router) *WebServer {
 	ws := &WebServer{
@@ -49,12 +55,50 @@ func NewWebServer(config *common.ConfigurationStruct, lc logger.LoggingClient, r
 	return ws
 }
 
+//
+// swagger:operation GET /ping System_Management_Agent Ping
+//
+// Ping
+//
 // Test if the service is working
+//
+// ---
+// produces:
+// - application/text
+//
+// Schemes:
+//  - http
+//
+// Responses:
+//  '200':
+//    description: \"pong\" response
+//    schema:
+//      type: string
+//
 func (webserver *WebServer) pingHandler(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.Write([]byte("pong"))
 }
 
+// swagger:operation GET /config System_Management_Agent Config
+//
+// Config
+//
+// Gets the currently defined configuration
+//
+// ---
+// produces:
+// - application/json
+//
+// Schemes:
+//  - http
+//
+// Responses:
+//  '200':
+//    description: Get configuration
+//    schema:
+//      "$ref": "#/definitions/ConfigurationStruct"
+//
 func (webserver *WebServer) configHandler(writer http.ResponseWriter, _ *http.Request) {
 	webserver.encode(webserver.Config, writer)
 }
@@ -73,6 +117,25 @@ func (webserver *WebServer) encode(data interface{}, writer http.ResponseWriter)
 	}
 }
 
+// swagger:operation GET /metrics System_Management_Agent Metrics
+//
+// Metrics
+//
+// Gets the current metrics
+//
+// ---
+// produces:
+// - application/json
+//
+// Schemes:
+//  - http
+//
+// Responses:
+//  '200':
+//    description: Get metrics
+//    schema:
+//      "$ref": "#/definitions/SystemUsage"
+//
 func (webserver *WebServer) metricsHandler(writer http.ResponseWriter, _ *http.Request) {
 	telem := telemetry.NewSystemUsage()
 
@@ -80,11 +143,27 @@ func (webserver *WebServer) metricsHandler(writer http.ResponseWriter, _ *http.R
 
 	return
 }
+
+// swagger:operation GET /version System_Management_Agent Version
+//
+// Version
+//
+// Gets the current version of both the SDK and the version of this application that uses the SDK.
+//
+// ---
+// produces:
+// - application/json
+//
+// Schemes:
+//  - http
+//
+// Responses:
+//  '200':
+//    description: Get current version
+//    schema:
+//      "$ref": "#/definitions/Version"
+//
 func (webserver *WebServer) versionHandler(writer http.ResponseWriter, _ *http.Request) {
-	type Version struct {
-		Version    string `json:"version"`
-		SDKVersion string `json:"sdk_version"`
-	}
 	version := Version{
 		Version:    internal.ApplicationVersion,
 		SDKVersion: internal.SDKVersion,
@@ -117,6 +196,33 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
+// swagger:operation POST /trigger Trigger Trigger
+//
+// Trigger
+//
+// Available when HTTPTrigger is specified as the binding in configuration. This API
+// provides a way to initiate and start processing the defined pipeline using the data submitted.
+//
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+//   - in: body
+//     name: Data Event
+//     description: |
+//       This is the data that will processed the configured pipeline. Typically this is an EdgeX event as described below, however, it can
+//       ingest other forms of data if a custom Target Type (https://github.com/edgexfoundry/app-functions-sdk-go/blob/master/README.md#target-type) is being used.
+//     required: true
+//     schema:
+//       "$ref": "#/definitions/Event"
+// Responses:
+//  '200':
+//    description: Get current version
+//    schema:
+//      "$ref": "#/definitions/Version"
+//
 func (webserver *WebServer) SetupTriggerRoute(handlerForTrigger func(http.ResponseWriter, *http.Request)) {
 	webserver.router.HandleFunc(internal.ApiTriggerRoute, handlerForTrigger)
 }
