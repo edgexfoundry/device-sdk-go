@@ -94,6 +94,7 @@ type AppFunctionsSDK struct {
 	configDir                 string
 	useRegistry               bool
 	skipVersionCheck          bool
+	overwriteConfig           bool
 	usingConfigurablePipeline bool
 	httpErrors                chan error
 	runtime                   *runtime.GolangRuntime
@@ -286,6 +287,9 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	flag.BoolVar(&sdk.skipVersionCheck, "skipVersionCheck", false, "Indicates the service should skip the Core Service's version compatibility check.")
 	flag.BoolVar(&sdk.skipVersionCheck, "s", false, "Indicates the service should skip the Core Service's version compatibility check.")
+
+	flag.BoolVar(&sdk.overwriteConfig, "overwrite", false, "Overwrite configuration in the Registry with local values")
+	flag.BoolVar(&sdk.overwriteConfig, "o", false, "Overwrite configuration in the Registry with local values")
 
 	flag.Parse()
 
@@ -580,7 +584,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration(configuration *common.Config
 			return fmt.Errorf("Could not determine if registry has configuration: %v", err)
 		}
 
-		if hasConfig {
+		if !sdk.overwriteConfig && hasConfig {
 			rawConfig, err := sdk.registryClient.GetConfiguration(configuration)
 			if err != nil {
 				return fmt.Errorf("Could not get configuration from Registry: %v", err)
