@@ -69,5 +69,6 @@ func createDevice(dc common.DeviceConfig) error {
 	}
 	device.Id = id
 
+	cache.Devices().Add(*device)
 	return nil
 }
