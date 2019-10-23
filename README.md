@@ -453,6 +453,9 @@ The following command line options are available
   -r    
   --registry
         Indicates the service should use the registry.
+  -s    
+  -skipVersionCheck
+        Indicates the service should skip the Core Service's version compatibility check.
 ```
 
 Examples:

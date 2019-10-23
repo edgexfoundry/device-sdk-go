@@ -18,6 +18,7 @@ package appsdk
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -62,6 +63,8 @@ const (
 	// ProfileSuffixPlaceholder is used to create unique names for profiles
 	ProfileSuffixPlaceholder   = "<profile>"
 	ProfileEnvironmentVariable = "edgex_profile"
+	CoreServiceVersionKey      = "version"
+	MajorIndex                 = 0
 )
 
 // The key type is unexported to prevent collisions with context keys defined in
@@ -90,6 +93,7 @@ type AppFunctionsSDK struct {
 	configProfile             string
 	configDir                 string
 	useRegistry               bool
+	skipVersionCheck          bool
 	usingConfigurablePipeline bool
 	httpErrors                chan error
 	runtime                   *runtime.GolangRuntime
@@ -280,6 +284,9 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	flag.StringVar(&sdk.configDir, "confdir", "", "Specify an alternate configuration directory.")
 	flag.StringVar(&sdk.configDir, "c", "", "Specify an alternate configuration directory.")
 
+	flag.BoolVar(&sdk.skipVersionCheck, "skipVersionCheck", false, "Indicates the service should skip the Core Service's version compatibility check.")
+	flag.BoolVar(&sdk.skipVersionCheck, "s", false, "Indicates the service should skip the Core Service's version compatibility check.")
+
 	flag.Parse()
 
 	// Service keys must be unique. If an executable is run multiple times, it must have a different
@@ -311,12 +318,14 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	if err != nil {
 		return err
 	}
+
 	bootTimeout, err := time.ParseDuration(configuration.Service.BootTimeout)
 	if err != nil {
 		fmt.Printf("warning- failed to parse Service.BootTimeout, use the default %s: %v\n",
 			internal.BootTimeoutDefault.String(), err)
 		bootTimeout = internal.BootTimeoutDefault
 	}
+
 	timeElapsed := time.Since(timeStart)
 
 	// Bootstrap retry loop to ensure all dependencies are ready before continuing.
@@ -343,6 +352,11 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			sdk.LoggingClient.Info("Logger successfully initialized")
 			sdk.edgexClients.LoggingClient = sdk.LoggingClient
 			loggerInitialized = true
+		}
+
+		// Verify that Core Services major version matches this SDK's major version
+		if !sdk.validateVersionMatch() {
+			return fmt.Errorf("core service's version is not compatible with SDK's version")
 		}
 
 		// Currently only need the database if store and forward is enabled
@@ -389,6 +403,66 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
+}
+
+func (sdk *AppFunctionsSDK) validateVersionMatch() bool {
+	if sdk.skipVersionCheck {
+		sdk.LoggingClient.Info("Skipping core service version compatibility check")
+		return true
+	}
+
+	// SDK version is set via the SemVer TAG at build time
+	// and has the format "v{major}.{minor}.{patch}[-dev.{build}]"
+	sdkVersionParts := strings.Split(internal.SDKVersion, ".")
+	if len(sdkVersionParts) < 3 {
+		sdk.LoggingClient.Error("SDK version is malformed", "version", internal.SDKVersion)
+		return false
+	}
+
+	sdkVersionParts[MajorIndex] = strings.Replace(sdkVersionParts[MajorIndex], "v", "", 1)
+	if sdkVersionParts[MajorIndex] == "0" {
+		sdk.LoggingClient.Info("Skipping core service version compatibility check for SDK Beta version or running in debugger", "version", internal.SDKVersion)
+		return true
+	}
+
+	url := sdk.config.Clients[common.CoreDataClientName].Url() + clients.ApiVersionRoute
+	data, err := clients.GetRequest(url, context.Background())
+	if err != nil {
+		sdk.LoggingClient.Error("Unable to get version of Core Services", "error", err)
+		return false
+	}
+
+	versionJson := map[string]string{}
+	err = json.Unmarshal(data, &versionJson)
+	if err != nil {
+		sdk.LoggingClient.Error("Unable to un-marshal Core Services version data", "error", err)
+		return false
+	}
+
+	version, ok := versionJson[CoreServiceVersionKey]
+	if !ok {
+		sdk.LoggingClient.Error(fmt.Sprintf("Core Services version data missing '%s' information", CoreServiceVersionKey))
+		return false
+	}
+
+	// Core Service version is reported as "{major}.{minor}.{patch}"
+	coreVersionParts := strings.Split(version, ".")
+	if len(coreVersionParts) != 3 {
+		sdk.LoggingClient.Error("Core Services version is malformed", "version", version)
+		return false
+	}
+
+	// Do Major versions match?
+	if coreVersionParts[0] == sdkVersionParts[0] {
+		sdk.LoggingClient.Debug(
+			fmt.Sprintf("Confirmed Core Services version (%s) is compatible with SDK's version (%s)",
+				version, internal.SDKVersion))
+		return true
+	}
+
+	sdk.LoggingClient.Error(fmt.Sprintf("Core services version (%s) is not compatible with SDK's version(%s)",
+		version, internal.SDKVersion))
+	return false
 }
 
 func (sdk *AppFunctionsSDK) createStoreClient() error {
