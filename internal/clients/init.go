@@ -19,6 +19,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
@@ -212,6 +213,10 @@ func initializeClients() {
 	params.Path = clients.ApiDeviceProfileRoute
 	params.Url = metaAddr + params.Path
 	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, endpoint)
+
+	params.Path = clients.ApiConfigRoute
+	params.Url = metaAddr
+	common.MetadataGeneralClient = general.NewGeneralClient(params, endpoint)
 
 	// initialize Core Data clients
 	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name
