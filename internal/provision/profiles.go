@@ -14,15 +14,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -160,21 +154,10 @@ func CreateDescriptorsFromProfile(profile *contract.DeviceProfile) {
 // Value Descriptor management logic to Core Metadata in Geneva
 func isValueDescriptorManagedByMetadata() bool {
 	common.LoggingClient.Debug("Getting EnableValueDescriptorManagement configuration value from Core Metadata")
-	metadataURL := common.CurrentConfig.Clients[common.ClientMetadata].Url()
-	params := types.EndpointParams{
-		ServiceKey:  common.ClientMetadata,
-		Path:        clients.ApiConfigRoute,
-		UseRegistry: common.UseRegistry,
-		Url:         metadataURL,
-		Interval:    clients.ClientMonitorDefault,
-	}
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(1)
-	gc := general.NewGeneralClient(params, endpoint.Endpoint{RegistryClient: config.RegistryClient, WG: &waitGroup})
 	correlation := uuid.New().String()
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlation)
 
-	configString, err := gc.FetchConfiguration(ctx)
+	configString, err := common.MetadataGeneralClient.FetchConfiguration(ctx)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Error when getting configuration from Core Metadata: %v ", err))
 		return false
