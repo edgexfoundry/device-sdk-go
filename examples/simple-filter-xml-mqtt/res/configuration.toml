@@ -25,6 +25,7 @@ Type = 'consul'
 EnableRemote = false
 File = './logs/simple-filter-xml-mqtt.log'
 
+# Database is require when Store and Forward is enabled
 [Database]
 Type = "mongodb"
 Host = "localhost"
@@ -32,6 +33,18 @@ Port = 27017
 Timeout = "30s"
 Username = ""
 Password = ""
+
+# SecretStore is required when Store and Forward is enabled and running with security
+# so Databse credentails can be pulled from Vault.
+[SecretStore]
+  Host = 'localhost'
+  Port = 8200
+  Path = '/v1/secret/edgex/application-service/'
+  Protocol = 'https'
+
+  [SecretStore.Authentication]
+  AuthType = 'X-Vault-Token'
+  AuthToken = 'edgex'
 
 [Clients]
   [Clients.CoreData]

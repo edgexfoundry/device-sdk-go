@@ -21,8 +21,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/BurntSushi/toml"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	"github.com/pelletier/go-toml"
 )
 
 const (

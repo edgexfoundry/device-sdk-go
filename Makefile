@@ -33,6 +33,8 @@ examples/advanced-target-type/advanced-target-type:
 
 docker:
 	docker build \
+	    --build-arg http_proxy \
+	    --build-arg https_proxy \
 		-f examples/simple-filter-xml/Dockerfile \
 		--label "git_sha=$(GIT_SHA)" \
 		-t edgexfoundry/docker-app-functions-sdk-go-simple:$(GIT_SHA) \

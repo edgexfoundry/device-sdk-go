@@ -22,6 +22,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
 
 // WritableInfo is used to hold configuration information that is considered "live" or can be changed on the fly without a restart of the service.
@@ -72,6 +73,8 @@ type ConfigurationStruct struct {
 	Clients map[string]ClientInfo
 	// Database
 	Database db.DatabaseInfo
+	// SecretStore
+	SecretStore SecretStoreInfo
 }
 
 // RegistryInfo is used for defining settings for connection to the registry.
@@ -128,4 +131,17 @@ type StoreAndForwardInfo struct {
 	Enabled       bool
 	RetryInterval string
 	MaxRetryCount int
+}
+
+// SecretStoreInfo encapsulates configuration properties used to create a SecretClient.
+type SecretStoreInfo struct {
+	vault.SecretConfig
+	// TokenFile provides a location to a token file.
+	TokenFile string
+}
+
+// Credentials encapsulates username-password attributes.
+type Credentials struct {
+	Username string
+	Password string
 }

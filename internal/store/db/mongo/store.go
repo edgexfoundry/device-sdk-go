@@ -202,12 +202,15 @@ func (c Client) Disconnect() error {
 
 // NewClient provides a factory for building a StoreClient
 func NewClient(config db.DatabaseInfo) (client interfaces.StoreClient, err error) {
-	var uri string
-	if config.Username == "" && config.Password == "" {
-		// no auth path
-		uri = fmt.Sprintf("mongodb://%s:%s", config.Host, strconv.Itoa(config.Port))
-	} else {
-		uri = fmt.Sprintf("mongodb://%s:%s@%s:%s", config.Username, config.Password, config.Host, strconv.Itoa(config.Port))
+	dbHost := fmt.Sprintf("%s:%s", config.Host, strconv.Itoa(config.Port))
+	dbOptions := &options.ClientOptions{
+		Hosts: []string{dbHost},
+		Auth: &options.Credential{
+			AuthSource:  internal.DatabaseName,
+			Username:    config.Username,
+			Password:    config.Password,
+			PasswordSet: config.Password != "",
+		},
 	}
 
 	timeout, err := time.ParseDuration(config.Timeout)
@@ -223,7 +226,7 @@ func NewClient(config db.DatabaseInfo) (client interfaces.StoreClient, err error
 	var mongoDatabase *mongo.Database
 	var mongoClient *mongo.Client
 	go func() {
-		mongoClient, err = mongo.Connect(ctx, options.Client().ApplyURI(uri))
+		mongoClient, err = mongo.Connect(ctx, dbOptions)
 		if err != nil {
 			cancel()
 			return
