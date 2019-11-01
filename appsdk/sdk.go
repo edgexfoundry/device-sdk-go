@@ -39,6 +39,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
@@ -366,7 +367,8 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		// Currently only need the database if store and forward is enabled
 		if sdk.config.Writable.StoreAndForward.Enabled {
 			if !databaseInitialized {
-				if sdk.createStoreClient() != nil {
+				if sdk.initializeStoreClient() != nil {
+
 					// Error already logged
 					goto ContinueWithSleep
 				}
@@ -407,6 +409,30 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
+}
+
+func (sdk *AppFunctionsSDK) initializeStoreClient() error {
+	var err error
+
+	secret := security.NewSecret()
+	secret.CreateClient(sdk.LoggingClient, sdk.config)
+
+	credentials, err := secret.GetDatabaseCredentials(sdk.config.Database)
+
+	if err != nil {
+		sdk.LoggingClient.Error("Unable to get Database Credentials", "error", err)
+		return err
+	}
+
+	sdk.config.Database.Username = credentials.Username
+	sdk.config.Database.Password = credentials.Password
+
+	sdk.storeClient, err = store.NewStoreClient(sdk.config.Database)
+	if err != nil {
+		sdk.LoggingClient.Error(fmt.Sprintf("unable to initialize Database for Store and Forward: %s", err.Error()))
+	}
+
+	return err
 }
 
 func (sdk *AppFunctionsSDK) validateVersionMatch() bool {
@@ -467,16 +493,6 @@ func (sdk *AppFunctionsSDK) validateVersionMatch() bool {
 	sdk.LoggingClient.Error(fmt.Sprintf("Core services version (%s) is not compatible with SDK's version(%s)",
 		version, internal.SDKVersion))
 	return false
-}
-
-func (sdk *AppFunctionsSDK) createStoreClient() error {
-	var err error
-	sdk.storeClient, err = store.NewStoreClient(sdk.config.Database)
-	if err != nil {
-		sdk.LoggingClient.Error(fmt.Sprintf("unable to initialize Database for Store and Forward: %s", err.Error()))
-	}
-
-	return err
 }
 
 // setupTrigger configures the appropriate trigger as specified by configuration.
@@ -712,7 +728,7 @@ func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardEnabled(previousStor
 	if sdk.config.Writable.StoreAndForward.Enabled {
 		// StoreClient must be set up for StoreAndForward
 		if sdk.storeClient == nil {
-			if sdk.createStoreClient() != nil {
+			if sdk.initializeStoreClient() != nil {
 				// Error already logged
 				sdk.config.Writable.StoreAndForward.Enabled = false
 				return

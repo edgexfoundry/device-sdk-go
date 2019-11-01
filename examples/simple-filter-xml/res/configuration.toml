@@ -33,6 +33,16 @@ Timeout = "30s"
 Username = ""
 Password = ""
 
+[SecretStore]
+  Host = 'localhost'
+  Port = 8200
+  Path = '/v1/secret/edgex/appservice/'
+  Protocol = 'https'
+
+  [SecretStore.Authentication]
+  AuthType = 'X-Vault-Token'
+  AuthToken = 'edgex'
+
 [Clients]
   [Clients.CoreData]
   Protocol = 'http'
