@@ -21,6 +21,7 @@ const (
 	HttpScheme = "http://"
 	HttpProto  = "HTTP"
 
+	RegistryDefault    = "LOAD_FROM_FILE"
 	ConfigDirectory    = "./res"
 	ConfigFileName     = "configuration.toml"
 	ConfigRegistryStem = "edgex/devices/1.0/"
