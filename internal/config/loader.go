@@ -34,7 +34,7 @@ var (
 // LoadConfig loads the local configuration file based upon the
 // specified parameters and returns a pointer to the global Config
 // struct which holds all of the local configuration settings for
-// the DS. The string useRegisty indicates whether the registry
+// the DS. The string useRegistry indicates whether the registry
 // should be used to read config settings, and it might contain the registry path.
 // This also controls whether the service registers itself the registry.
 // The profile and confDir are used to locate the local TOML config file.
@@ -45,12 +45,20 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 	var registryMsg string
 
 	e := NewEnvironment()
-	if useRegistry != "" {
+	if useRegistry == "" {
+		registryMsg = "Load configuration from local file and bypassing registration in Registry..."
+		configuration, _, err = loadConfigFromFile(profile, confDir)
+	} else {
 		configuration = &common.Config{}
 		useRegistry = e.OverrideUseRegistryFromEnvironment(useRegistry)
-		err = parseRegistryPath(useRegistry, configuration)
-		if err != nil {
-			return
+		fmt.Fprintf(os.Stdout, "Source of registry url: %s\n", useRegistry)
+		if useRegistry == common.RegistryDefault {
+			configuration, _, err = loadConfigFromFile(profile, confDir)
+		} else {
+			err = parseRegistryPath(useRegistry, configuration)
+			if err != nil {
+				return
+			}
 		}
 
 		registryMsg = "Register in registry..."
@@ -94,7 +102,6 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 		} else {
 			// Self bootstrap the Registry with the device service's configuration
 			fmt.Fprintln(os.Stdout, "Pushing configuration into Registry...")
-
 			_, configTree, err := loadConfigFromFile(profile, confDir)
 			if err != nil {
 				return nil, err
@@ -134,12 +141,6 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 		err = RegistryClient.Register()
 		if err != nil {
 			return nil, fmt.Errorf("could not register service with Registry: %v", err.Error())
-		}
-	} else {
-		registryMsg = "Bypassing registration in registry..."
-		configuration, _, err = loadConfigFromFile(profile, confDir)
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -187,7 +188,7 @@ func loadConfigFromFile(profile string, confDir string) (config *common.Config, 
 
 	// As the toml package can panic if TOML is invalid,
 	// or elements are found that don't match members of
-	// the given struct, use a defered func to recover
+	// the given struct, use a deferred func to recover
 	// from the panic and output a useful error.
 	defer func() {
 		if r := recover(); r != nil {
