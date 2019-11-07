@@ -1,0 +1,43 @@
+                         EdgeX Foundry Go Device SDK
+                                 Version 1.1.0
+                                 Release Notes
+
+INTRODUCTION
+============
+This document contains the release notes for the 1.1.0 version of EdgeX Foundry Go Device SDK.
+
+
+Changes for 1.1.0 "Fuji":
+============
+o PR#330:  Listen to the OS signal during service startup
+o PR#333:  Support setting registry location with a single environment variable
+o PR#334:  Add CUD callbacks into ProtocolDriver
+o PR#336:  Handle QueryParams from EdgeX Command Service
+o PR#341:  Remove the additional calls for Device cache
+o PR#344:  Fix panic if attributes isn't initalized
+o PR#349:  Add /version API
+o PR#351:  Remove the duplicated service name in config stem
+o PR#357:  Add device-sdk API document
+o PR#362:  Implement default values for parameters to SET cmd
+o PR#363:  Make 0 is valid for Float32 and Float64 reading
+o PR#364:  Fix the wrong transformation for base
+o PR#367:  Make data for mock things readable and maintainable
+o PR#369:  Add lock into cache to make sure the thread safety
+o PR#374:  Add API to allow adding additional routes to internal Webserver
+o PR#375:  Update core-contracts reference to v0.1.30
+o PR#377:  Rename fields within ResourceOperation
+o PR#378:  Provide example of aggregating device resources
+o PR#379:  Handle the field name change in RO
+o PR#381:  Move web server listening before device provision
+o PR#382:  Move Creation of ValueDescriptors to Metadata
+o PR#384:  Move protocol driver init before provision
+o PR#386:  Revert to previous ordering between async channel create and driver init
+o PR#389:  Move Metadata GeneralClient to global variable
+
+
+Known issues:
+=======
+o ISSUE#261:  The OnChange option for AutoEvents is not effective on Binary data. So in the case where two successive Binary readings are identical, both will be sent to core-data regardless of the OnChange setting.
+o ISSUE#342:  --overwrite flag (re-upload text-based config to the registry) is not implemented.
+o ISSUE#345:  NewCommandValue function makes an unnecessary CBOR encoding.
+o ISSUE#354:  Query parameters whose names start with "ds-" will be allowed. They should not be and they will be blocked in future versions.
