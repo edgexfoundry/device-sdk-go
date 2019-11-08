@@ -35,7 +35,7 @@ Please see the [edgex-go README](https://github.com/edgexfoundry/edgex-go/blob/m
 ### The SDK
 
 The SDK is built around the idea of a "Functions Pipeline". A functions pipeline is a collection of various functions that process the data in the order that you've specified. The functions pipeline is executed by the specified [trigger](#triggers) in the `configuration.toml` . The first function in the pipeline is called with the event that triggered the pipeline (ex. `events.Model`). Each successive call in the pipeline is called with the return result of the previous function. Let's take a look at a simple example that creates a pipeline to filter particular device ids and subsequently transform the data to XML:
-```golang
+```go
 package main
 
 import (
@@ -94,7 +94,7 @@ func main() {
 
 The above example is meant to merely demonstrate the structure of your application. Notice that the output of the last function is not available anywhere inside this application. You must provide a function in order to work with the data from the previous function. Let's go ahead and add the following function that prints the output to the console.
 
-```golang
+```go
 func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) (bool,interface{}) {
   if len(params) < 1 { 
   	// We didn't receive a result
@@ -106,7 +106,7 @@ func printXMLToConsole(edgexcontext *appcontext.Context, params ...interface{}) 
 ```
 After placing the above function in your code, the next step is to modify the pipeline to call this function:
 
-```golang
+```go
 edgexSdk.SetFunctionsPipeline(
   transforms.NewFilter(deviceNames).FilterByDeviceName, 
   transforms.NewConversion().TransformToXML,
@@ -118,6 +118,9 @@ After making the above modifications, you should now see data printing out to th
 
 Up until this point, the pipeline has been [triggered](#triggers) by an event over HTTP and the data at the end of that pipeline lands in the last function specified. In the example, data ends up printed to the console. Perhaps we'd like to send the data back to where it came from. In the case of an HTTP trigger, this would be the HTTP response. In the case of a message bus, this could be a new topic to send the data back to for other applications that wish to receive it. To do this, simply call `edgexcontext.Complete([]byte outputData)` passing in the data you wish to "respond" with. In the above `printXMLToConsole(...)` function, replace `println(params[0].(string))` with `edgexcontext.Complete([]byte(params[0].(string)))`. You should now see the response in your postman window when testing the pipeline.
 
+## Examples
+
+The [App Service Examples](https://github.com/edgexfoundry-holding/app-service-examples) repo contains a variety of simple to advanced example **Application Services** built upon the **App Functions SDK**. Examples that once were in the examples folder of the SDK have been moved to this `Examples` repo.
 
 ## Triggers
 
@@ -537,7 +540,7 @@ Using docker-compose:
   app-service-configurable-rules:
     image: edgexfoundry/docker-app-service-configurable:1.1.0
     environment: 
-      - edgex_profile : "docker-rules-engine"
+      - edgex_profile : "rules-engine"
     ports:
       - "48095:48095"
     container_name: edgex-app-service-configurable
@@ -552,6 +555,8 @@ Using docker-compose:
 ```
 
 This sets the `--profile=docker-rules-engine` command line argument so that the application service uses the `docker-rules-engine` configuration profile which resides at `/res/docker-rules-engine/configuration.toml`
+
+> *Note that Application Services no longer use docker profiles. They use Environment Overrides in the docker compose file to make the necessary changes to the configuration for running in Docker. See the **Environment Variable Overrides For Docker** section in [App Service Configurable's README](https://github.com/edgexfoundry/app-service-configurable/blob/master/README.md#environment-variable-overrides-for-docker)* for more details and an example. 
 
 ### Store and Forward
 

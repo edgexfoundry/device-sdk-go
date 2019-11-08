@@ -47,7 +47,6 @@ pipeline {
                     steps {
                         sh 'make test'
                         edgeXCodecov('app-functions-sdk-go-codecov-token')
-                        sh 'make build docker'
                     }
                 }
                 stage('Test arm64') {
@@ -61,7 +60,6 @@ pipeline {
                     steps {
                         sh 'make test'
                         edgeXCodecov('app-functions-sdk-go-codecov-token')
-                        sh 'make build docker'
                     }
                 }
             }

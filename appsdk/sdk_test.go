@@ -146,16 +146,13 @@ func TestApplicationSettings(t *testing.T) {
 	expectedSettingKey := "ApplicationName"
 	expectedSettingValue := "simple-filter-xml"
 
-	sdk := AppFunctionsSDK{}
-
-	sdk.configDir = "../examples/simple-filter-xml/res"
-
-	config, err := readConfigurationFromFile(sdk.configProfile, sdk.configDir)
-	assert.NoError(t, err, "failed to load configuration from TOML file")
-
-	err = sdk.initializeConfiguration(config)
-
-	assert.NoError(t, err, "failed to initialize configuration")
+	sdk := AppFunctionsSDK{
+		config: common.ConfigurationStruct{
+			ApplicationSettings: map[string]string{
+				"ApplicationName": "simple-filter-xml",
+			},
+		},
+	}
 
 	appSettings := sdk.ApplicationSettings()
 	if !assert.NotNil(t, appSettings, "returned application settings is nil") {
@@ -172,15 +169,9 @@ func TestApplicationSettings(t *testing.T) {
 }
 
 func TestApplicationSettingsNil(t *testing.T) {
-	sdk := AppFunctionsSDK{}
-
-	sdk.configDir = "../examples/simple-filter-xml-post/res"
-
-	config, err := readConfigurationFromFile(sdk.configProfile, sdk.configDir)
-	assert.NoError(t, err, "failed to load configuration from TOML file")
-
-	err = sdk.initializeConfiguration(config)
-	assert.NoError(t, err, "failed to initialize configuration")
+	sdk := AppFunctionsSDK{
+		config: common.ConfigurationStruct{},
+	}
 
 	appSettings := sdk.ApplicationSettings()
 	if !assert.Nil(t, appSettings, "returned application settings expected to be nil") {
