@@ -11,7 +11,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/url"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -260,4 +262,19 @@ func GetUniqueOrigin() int64 {
 	}
 	previousOrigin = now
 	return now
+}
+
+func FilterQueryParams(queryParams string) url.Values {
+	m, err := url.ParseQuery(queryParams)
+	if err != nil {
+		LoggingClient.Error("Error parsing query parameters: %s\n", err)
+	}
+	// Filter out parameters with ds- prefix
+	for k, _ := range m {
+		if strings.HasPrefix(k, SDKReservedPrefix) {
+			delete(m, k)
+		}
+	}
+
+	return m
 }

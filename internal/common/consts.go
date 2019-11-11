@@ -48,4 +48,5 @@ const (
 
 	CorrelationHeader = clients.CorrelationHeader
 	URLRawQuery       = "urlRawQuery"
+	SDKReservedPrefix = "ds-"
 )

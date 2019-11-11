@@ -85,3 +85,20 @@ func TestGetUniqueOrigin(t *testing.T) {
 		t.Errorf("origin1: %d should <= origin2: %d", origin1, origin2)
 	}
 }
+
+func TestFilterQueryParams(t *testing.T) {
+	query := "test1=test1&ds-name=name&test2=tset2&ds-id=id"
+	m := FilterQueryParams(query)
+
+	if _, ok := m["ds-name"]; ok {
+		t.Errorf("Parameters with -ds prefix should be filtered out.")
+	}
+
+	if _, ok := m["ds-id"]; ok {
+		t.Errorf("Parameters with -ds prefix should be filtered out.")
+	}
+
+	if _, ok := m["test1"]; !ok {
+		t.Errorf("Error while parsing parameters.")
+	}
+}
