@@ -39,5 +39,4 @@ Known issues:
 =======
 o ISSUE#261:  The OnChange option for AutoEvents is not effective on Binary data. So in the case where two successive Binary readings are identical, both will be sent to core-data regardless of the OnChange setting.
 o ISSUE#342:  --overwrite flag (re-upload text-based config to the registry) is not implemented.
-o ISSUE#345:  NewCommandValue function makes an unnecessary CBOR encoding.
 o ISSUE#354:  Query parameters whose names start with "ds-" will be allowed. They should not be and they will be blocked in future versions.

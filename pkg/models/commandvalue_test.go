@@ -21,6 +21,153 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
+// Test NewCommandValue function
+func TestNewCommandValue(t *testing.T) {
+	// Test Bool
+	cv, err := NewCommandValue("resource", 0, true, Bool)
+	test, err2 := NewBoolValue("resource", 0, true)
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewBoolValue")
+	}
+
+	// Test int8
+	cv, err = NewCommandValue("resource", 0, int8(5), Int8)
+	test, err2 = NewInt8Value("resource", 0, int8(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt8Value")
+	}
+
+	// Test int16
+	cv, err = NewCommandValue("resource", 0, int16(5), Int16)
+	test, err2 = NewInt16Value("resource", 0, int16(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt16Value")
+	}
+
+	// Test int32
+	cv, err = NewCommandValue("resource", 0, int32(5), Int32)
+	test, err2 = NewInt32Value("resource", 0, int32(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt32Value")
+	}
+
+	// Test uint8
+	cv, err = NewCommandValue("resource", 0, uint8(5), Uint8)
+	test, err2 = NewUint8Value("resource", 0, uint8(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewUint8Value")
+	}
+
+	// Test uint16
+	cv, err = NewCommandValue("resource", 0, uint16(5), Uint16)
+	test, err2 = NewUint16Value("resource", 0, uint16(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewUint16Value")
+	}
+
+	// Test uint32
+	cv, err = NewCommandValue("resource", 0, uint32(5), Uint32)
+	test, err2 = NewUint32Value("resource", 0, uint32(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt8Value")
+	}
+
+	// Test float32
+	cv, err = NewCommandValue("resource", 0, float32(5.8), Float32)
+	test, err2 = NewFloat32Value("resource", 0, float32(5.8))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewFloat32Value")
+	}
+
+	// Test float64
+	cv, err = NewCommandValue("resource", 0, float64(5.8), Float64)
+	test, err2 = NewFloat64Value("resource", 0, float64(5.8))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewFloat64Value")
+	}
+
+	// Test string
+	cv, err = NewCommandValue("resource", 0, "test value", String)
+	test = NewStringValue("resource", 0, "test value")
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewStringValue")
+	}
+
+	// Test binary
+	cv, err = NewCommandValue("resource", 0, []byte{1, 2, 3, 5, 8, 13}, Binary)
+	test, err2 = NewBinaryValue("resource", 0, []byte{1, 2, 3, 5, 8, 13})
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewBinaryValue")
+	}
+
+}
+
 // Test NewBoolValue function.
 func TestNewBoolValue(t *testing.T) {
 	var value bool
@@ -599,19 +746,18 @@ func TestNewBinaryValue(t *testing.T) {
 	var origin int64 = time.Now().UnixNano()
 	// assign instance of mockStructB as a CBOR encoded CommandValue payload
 	var mock1 contract.Event
-	var mock2 contract.Event
 	mock1.Device = "Device01234567890"
 	mock1.Created = origin
 	mock1.ID = "MyStringIdentifier"
 	mock1.Modified = origin + 123
 	mock1.Pushed = 12345
-	// To extend coverage cborMock1 becomes encoded byte array.
+	// To extend coverage cborMock becomes encoded byte array.
 	// We will then confirm CommandValue particulars of binary payload are valid
-	cborMock1, err := encodeMockEvent(mock1)
+	cborMock, err := encodeMockEvent(mock1)
 	if err != nil {
 		t.Errorf("NewBinaryValue: Error encoding struct as binary value")
 	}
-	cv, errAssign := NewBinaryValue("resource", origin, cborMock1)
+	cv, errAssign := NewBinaryValue("resource", origin, cborMock)
 	if errAssign != nil {
 		t.Errorf("NewBinaryValue: Error invoking NewBinaryValue [%v]", errAssign)
 	}
@@ -622,28 +768,12 @@ func TestNewBinaryValue(t *testing.T) {
 	if cv.Origin != origin {
 		t.Errorf("Expected matching value! invalid Origin: %d != %d", cv.Origin, origin)
 	}
-	// Populate cv.BinValue as CBOR encoded CommandValue and decode back
-	err1 := encodeBinaryValue(cv, mock1)
-	if err1 != nil {
-		t.Errorf("NewBinaryValue: Error encoding binary value")
+	val, err := cv.BinaryValue()
+	if err != nil {
+		t.Errorf("BinaryValue: error retrieving binary value from command value")
 	}
-	// decode the original encoded value, compare original raw struct to decoded mock2 and mock3
-	mock2 = contract.Event{}
-	err2 := decodeBinaryValue(bytes.NewReader(cborMock1), &mock2)
-	if err2 != nil {
-		t.Errorf("NewBinaryValue: Error decoding binary value")
-	}
-	if !reflect.DeepEqual(mock1, mock2) {
-		t.Errorf("NewBinaryValue: cv.BinValue: %v doesn't match value: %v", mock2, mock1)
-	}
-
-	mock3 := contract.Event{}
-	err3 := decodeBinaryValue(bytes.NewReader(cv.BinValue), &mock3)
-	if err3 != nil {
-		t.Errorf("NewBinaryValue: Error decoding binary value")
-	}
-	if !reflect.DeepEqual(mock2, mock3) {
-		t.Errorf("NewBinaryValue: cv.BinValue: %v doesn't match value: %v", mock2, mock3)
+	if !reflect.DeepEqual(val, cborMock) {
+		t.Errorf("BinaryValue() result doesn't match expected payload")
 	}
 }
 

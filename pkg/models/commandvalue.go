@@ -8,7 +8,6 @@
 package models
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
@@ -18,7 +17,6 @@ import (
 	"strings"
 
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/ugorji/go/codec"
 )
 
 // ValueType indicates the type of value being passed back
@@ -228,7 +226,7 @@ func NewCommandValue(DeviceResourceName string, origin int64, value interface{},
 	switch t {
 	case Binary:
 		// assign cv.BinValue
-		err = encodeBinaryValue(cv, value)
+		cv.BinValue = value.([]byte)
 	case String:
 		cv.stringValue = value.(string)
 	default:
@@ -539,28 +537,7 @@ func (cv *CommandValue) Float64Value() (float64, error) {
 func (cv *CommandValue) BinaryValue() ([]byte, error) {
 	var value []byte
 	if cv.Type != Binary {
-		return value, fmt.Errorf("the CommandValue (%s) data type (%v) is not binary!", cv.String(), cv.Type)
+		return value, fmt.Errorf("the CommandValue (%s) data type (%v) is not binary", cv.String(), cv.Type)
 	}
-	err := decodeBinaryValue(bytes.NewReader(cv.BinValue), &value)
-	return value, err
-}
-
-func encodeBinaryValue(cv *CommandValue, value interface{}) error {
-	buf := new(bytes.Buffer)
-	hCbor := new(codec.CborHandle)
-	enc := codec.NewEncoder(buf, hCbor)
-	err := enc.Encode(value)
-	if err == nil {
-		cv.BinValue = buf.Bytes()
-	}
-	return err
-}
-
-func decodeBinaryValue(reader io.Reader, value interface{}) error {
-	// Provide a buffered reader for go-codec performance
-	var bufReader = bufio.NewReader(reader)
-	var h codec.Handle = new(codec.CborHandle)
-	var dec *codec.Decoder = codec.NewDecoder(bufReader, h)
-	var err error = dec.Decode(value)
-	return err
+	return cv.BinValue, nil
 }
