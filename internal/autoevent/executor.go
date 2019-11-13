@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/OneOfOne/xxhash"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -25,7 +26,7 @@ type Executor interface {
 type executor struct {
 	deviceName   string
 	autoEvent    contract.AutoEvent
-	lastReadings map[string]string
+	lastReadings map[string]interface{}
 	duration     time.Duration
 	stop         bool
 	rwmutex      sync.RWMutex
@@ -49,11 +50,10 @@ func (e *executor) Run() {
 
 		if evt != nil {
 			if e.autoEvent.OnChange {
-				if compareReadings(e, evt.Readings) {
+				if compareReadings(e, evt.Readings, evt.HasBinaryValue()) {
 					common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - readings are the same as previous one %v", e.lastReadings))
 					continue
 				}
-				cacheReadings(e, evt.Readings)
 			}
 			common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
 			event := &dsModels.Event{Event: evt.Event}
@@ -62,9 +62,7 @@ func (e *executor) Run() {
 				event.Origin = common.GetUniqueOrigin()
 			}
 			go common.SendEvent(event)
-		}
-
-		if evt == nil {
+		} else {
 			common.LoggingClient.Info(fmt.Sprintf("AutoEvent - no event generated when reading resource %s",
 				e.autoEvent.Resource))
 			continue
@@ -81,24 +79,34 @@ func readResource(e *executor) (*dsModels.Event, common.AppError) {
 	return evt, appErr
 }
 
-func cacheReadings(e *executor, readings []contract.Reading) {
-	e.rwmutex.Lock()
-	defer e.rwmutex.Unlock()
-	for _, r := range readings {
-		e.lastReadings[r.Name] = r.Value
-	}
-}
-
-func compareReadings(e *executor, readings []contract.Reading) bool {
+func compareReadings(e *executor, readings []contract.Reading, hasBinary bool) bool {
+	var identical bool = true
 	e.rwmutex.RLock()
 	defer e.rwmutex.RUnlock()
 	for _, r := range readings {
-		v, ok := e.lastReadings[r.Name]
-		if !ok || v != r.Value {
-			return false
+		switch e.lastReadings[r.Name].(type) {
+		case uint64:
+			checksum := xxhash.Checksum64(r.BinaryValue)
+			if e.lastReadings[r.Name] != checksum {
+				e.lastReadings[r.Name] = checksum
+				identical = false
+			}
+		case string:
+			v, ok := e.lastReadings[r.Name]
+			if !ok || v != r.Value {
+				e.lastReadings[r.Name] = r.Value
+				identical = false
+			}
+		case nil:
+			if hasBinary && len(r.BinaryValue) > 0 {
+				e.lastReadings[r.Name] = xxhash.Checksum64(r.BinaryValue)
+			} else {
+				e.lastReadings[r.Name] = r.Value
+			}
+			identical = false
 		}
 	}
-	return true
+	return identical
 }
 
 // Stop marks this Executor stopped
@@ -116,5 +124,5 @@ func NewExecutor(deviceName string, ae contract.AutoEvent) (Executor, error) {
 	}
 
 	return &executor{deviceName: deviceName, autoEvent: ae,
-		lastReadings: make(map[string]string), duration: duration, stop: false}, nil
+		lastReadings: make(map[string]interface{}), duration: duration, stop: false}, nil
 }
