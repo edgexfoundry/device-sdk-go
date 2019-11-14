@@ -45,12 +45,12 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 	var registryMsg string
 
 	e := NewEnvironment()
+	useRegistry = e.OverrideUseRegistryFromEnvironment(useRegistry)
 	if useRegistry == "" {
 		registryMsg = "Load configuration from local file and bypassing registration in Registry..."
 		configuration, _, err = loadConfigFromFile(profile, confDir)
 	} else {
 		configuration = &common.Config{}
-		useRegistry = e.OverrideUseRegistryFromEnvironment(useRegistry)
 		fmt.Fprintf(os.Stdout, "Source of registry url: %s\n", useRegistry)
 		if useRegistry == common.RegistryDefault {
 			configuration, _, err = loadConfigFromFile(profile, confDir)
