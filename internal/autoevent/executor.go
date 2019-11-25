@@ -104,6 +104,9 @@ func compareReadings(e *executor, readings []contract.Reading, hasBinary bool) b
 				e.lastReadings[r.Name] = r.Value
 			}
 			identical = false
+		default:
+			common.LoggingClient.Error("Error: unsupported reading type (%T) in autoevent - %v\n", e.lastReadings[r.Name], e.autoEvent)
+			identical = false
 		}
 	}
 	return identical
