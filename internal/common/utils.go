@@ -269,7 +269,7 @@ func FilterQueryParams(queryParams string) url.Values {
 	if err != nil {
 		LoggingClient.Error("Error parsing query parameters: %s\n", err)
 	}
-	// Filter out parameters with ds- prefix
+	// Filter out parameters with predefined prefix
 	for k, _ := range m {
 		if strings.HasPrefix(k, SDKReservedPrefix) {
 			delete(m, k)
