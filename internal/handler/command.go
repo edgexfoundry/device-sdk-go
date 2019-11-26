@@ -94,7 +94,8 @@ func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource
 		if len(req.Attributes) <= 0 {
 			req.Attributes = make(map[string]string)
 		}
-		req.Attributes[common.URLRawQuery] = queryParams
+		m := common.FilterQueryParams(queryParams)
+		req.Attributes[common.URLRawQuery] = m.Encode()
 	}
 	req.Type = dsModels.ParseValueType(dr.Properties.Value.Type)
 	reqs = append(reqs, req)
@@ -223,7 +224,8 @@ func execReadCmd(device *contract.Device, cmd string, queryParams string) (*dsMo
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]string)
 			}
-			reqs[i].Attributes[common.URLRawQuery] = queryParams
+			m := common.FilterQueryParams(queryParams)
+			reqs[i].Attributes[common.URLRawQuery] = m.Encode()
 		}
 		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
 	}
