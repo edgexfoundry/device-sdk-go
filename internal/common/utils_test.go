@@ -8,6 +8,7 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -83,5 +84,31 @@ func TestGetUniqueOrigin(t *testing.T) {
 
 	if origin1 >= origin2 {
 		t.Errorf("origin1: %d should <= origin2: %d", origin1, origin2)
+	}
+}
+
+func TestFilterQueryParams(t *testing.T) {
+	var tests = []struct {
+		query    string
+		key      string
+		expected bool
+	}{
+		{fmt.Sprintf("key1=value1&%sname=name&key2=value2", SDKReservedPrefix),
+			"key1", true},
+		{fmt.Sprintf("key1=value1&%sname=name&key2=value2", SDKReservedPrefix),
+			fmt.Sprintf("%sname", SDKReservedPrefix), false},
+		{fmt.Sprintf("key1=value2&in-%sname-in=name&key2=value2", SDKReservedPrefix),
+			fmt.Sprintf("in-%sname-in", SDKReservedPrefix), true},
+		{fmt.Sprintf("key1=value1&name=%sname&key2=value2", SDKReservedPrefix),
+			"name", true},
+		{fmt.Sprintf("%sname=name1&%sname=name2&%sname=name3", SDKReservedPrefix, SDKReservedPrefix, SDKReservedPrefix),
+			fmt.Sprintf("%sname", SDKReservedPrefix), false},
+	}
+
+	for _, tt := range tests {
+		actual := FilterQueryParams(tt.query)
+		if _, ok := actual[tt.key]; ok != tt.expected {
+			t.Errorf("Parameters with ds- prefix should be filtered out.")
+		}
 	}
 }
