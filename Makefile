@@ -29,6 +29,8 @@ test:
 	$(GO) vet ./...
 	gofmt -l .
 	$(GO) test -coverprofile=coverage.out ./...
+	./bin/test-attribution-txt.sh
+	./bin/test-go-mod-tidy.sh
 
 clean:
 	rm -f $(MICROSERVICES)
