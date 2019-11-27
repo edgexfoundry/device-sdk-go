@@ -48,6 +48,12 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		return nil, common.NewLockedError(msg, nil)
 	}
 
+	if d.OperatingState == contract.Disabled {
+		msg := fmt.Sprintf("%s is disabled; %s", d.Name, method)
+		common.LoggingClient.Error(msg)
+		return nil, common.NewLockedError(msg, nil)
+	}
+
 	// TODO: need to mark device when operation in progress, so it can't be removed till completed
 
 	cmdExists, err := cache.Profiles().CommandExists(d.Profile.Name, cmd)
