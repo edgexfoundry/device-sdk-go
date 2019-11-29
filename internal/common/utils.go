@@ -82,6 +82,14 @@ func SendEvent(event *dsModels.Event) {
 	if errPost != nil {
 		LoggingClient.Error("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost)
 	} else {
+		if CurrentConfig.Device.UpdateLastConnected {
+			t := time.Now().UnixNano() / int64(time.Millisecond)
+			err = DeviceClient.UpdateLastConnectedByName(event.Device, t, ctx)
+			if err != nil {
+				LoggingClient.Error(fmt.Sprintf("Error updating device's lastConnected attribute: %v", err))
+			}
+		}
+
 		LoggingClient.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation)
 		LoggingClient.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation, "event", event)
 	}

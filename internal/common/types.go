@@ -87,6 +87,9 @@ type DeviceInfo struct {
 	// ProfilesDir specifies a directory which contains deviceprofile
 	// files which should be imported on startup.
 	ProfilesDir string
+	// UpdateLastConnected specifies whether to update device's LastConnected
+	// timestamp in metadata.
+	UpdateLastConnected bool
 }
 
 // LoggingInfo is a struct which contains logging specific configuration settings.
