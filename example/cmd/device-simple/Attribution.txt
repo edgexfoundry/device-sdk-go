@@ -56,3 +56,48 @@ https://github.com/jessevdk/go-flags/blob/master/LICENSE
 
 OneOfOne/xxhash (Apache 2.0) https://github.com/OneOfOne/xxhash
 https://github.com/OneOfOne/xxhash/blob/master/LICENSE
+
+cenkalti/backoff (MIT) https://github.com/cenkalti/backoff
+https://github.com/cenkalti/backoff/blob/v3/LICENSE
+
+davecgh/go-spew (ISC) https://github.com/davecgh/go-spew
+https://github.com/davecgh/go-spew/blob/master/LICENSE
+
+edgexfoundry/go-mod-core-contracts (Apache 2.0) https://github.com/edgexfoundry/go-mod-core-contracts
+https://github.com/edgexfoundry/go-mod-core-contracts/blob/master/LICENSE
+
+edgexfoundry/go-mod-registry (Apache 2.0) https://github.com/edgexfoundry/go-mod-registry
+https://github.com/edgexfoundry/go-mod-registry/blob/master/LICENSE
+
+go-kit/kit (MIT) https://github.com/go-kit/kit
+https://github.com/go-kit/kit/blob/master/LICENSE
+
+go-logfmt/logfmt (MIT) https://github.com/go-logfmt/logfmt
+https://github.com/go-logfmt/logfmt/blob/master/LICENSE
+
+gorilla/context (BSD-3) https://github.com/gorilla/context
+https://github.com/gorilla/context/blob/master/LICENSE
+
+mitchellh/consulstructure (MIT) https://github.com/mitchellh/consulstructure
+https://github.com/mitchellh/consulstructure/blob/master/LICENSE
+
+mitchellh/copystructure (MIT) https://github.com/mitchellh/copystructure
+https://github.com/mitchellh/copystructure/blob/master/LICENSE
+
+mitchellh/reflectwalk (MIT) https://github.com/mitchellh/reflectwalk
+https://github.com/mitchellh/reflectwalk/blob/master/LICENSE
+
+pelletier/go-toml (MIT) https://github.com/pelletier/go-toml
+https://github.com/pelletier/go-toml/blob/master/LICENSE
+
+pmezard/go-difflib (View) https://github.com/pmezard/go-difflib
+https://github.com/pmezard/go-difflib/blob/master/LICENSE
+
+stretchr/testify (MIT) https://github.com/stretchr/testify
+https://github.com/stretchr/testify/blob/master/LICENSE
+
+ugorji/go (MIT) https://github.com/ugorji/go
+https://github.com/ugorji/go/blob/master/LICENSE
+
+kr/logfmt (MIT) https://github.com/kr/logfmt
+https://github.com/kr/logfmt/blob/master/Readme
