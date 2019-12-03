@@ -74,6 +74,7 @@ func init() {
 
 	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
 	common.CurrentConfig = &common.Config{Device: deviceInfo}
+	common.LoggingClient = logger.NewClient("command_test", false, "./device-simple.log", "INFO")
 }
 
 func TestParseWriteParamsWrongParamName(t *testing.T) {
@@ -400,14 +401,15 @@ func TestCommandAllHandler(t *testing.T) {
 
 func TestCommandHandler(t *testing.T) {
 	var (
-		varsFindDeviceByValidId     = map[string]string{"id": mock.ValidDeviceRandomIntegerGenerator.Id, "command": "RandomValue_Int8"}
+		varsFindDeviceByValidId     = map[string]string{"id": mock.ValidDeviceRandomUnsignedIntegerGenerator.Id, "command": "RandomValue_Uint8"}
 		varsFindDeviceByInvalidId   = map[string]string{"id": mock.InvalidDeviceId, "command": "RandomValue_Int8"}
-		varsFindDeviceByValidName   = map[string]string{"name": "Random-Integer-Generator01", "command": "RandomValue_Int8"}
+		varsFindDeviceByValidName   = map[string]string{"name": "Random-UnsignedInteger-Generator01", "command": "RandomValue_Uint8"}
 		varsFindDeviceByInvalidName = map[string]string{"name": "Random-Integer-Generator09", "command": "RandomValue_Int8"}
 		varsAdminStateLocked        = map[string]string{"name": "Random-Float-Generator01", "command": "RandomValue_Float32"}
+		varsOperatingStateDisabled  = map[string]string{"name": mock.OperatingStateDisabled.Name, "command": "testrandfloat32"}
 		varsProfileNotFound         = map[string]string{"name": "Random-Boolean-Generator01", "command": "error"}
 		varsCmdNotFound             = map[string]string{"name": "Random-Integer-Generator01", "command": "error"}
-		varsWriteInt8               = map[string]string{"name": "Random-Integer-Generator01", "command": "RandomValue_Int8"}
+		varsWriteUint8              = map[string]string{"name": "Random-UnsignedInteger-Generator01", "command": "RandomValue_Uint8"}
 	)
 	if err := cache.Devices().UpdateAdminState(mock.ValidDeviceRandomFloatGenerator.Id, contract.Locked); err != nil {
 		t.Errorf("Fail to update adminState, error: %v", err)
@@ -430,9 +432,10 @@ func TestCommandHandler(t *testing.T) {
 		{"ValidDeviceName", varsFindDeviceByValidName, "", methodGet, "", false},
 		{"InvalidDeviceName", varsFindDeviceByInvalidName, "", methodGet, "", true},
 		{"AdminStateLocked", varsAdminStateLocked, "", methodGet, "", true},
+		{"OperatingStateDisabled", varsOperatingStateDisabled, "", methodGet, "", true},
 		{"ProfileNotFound", varsProfileNotFound, "", methodGet, "", true},
 		{"CmdNotFound", varsCmdNotFound, "", methodGet, "", true},
-		{"WriteCommand", varsWriteInt8, `{"RandomValue_Int8":"123"}`, methodSet, "", false},
+		{"WriteCommand", varsWriteUint8, `{"RandomValue_Uint8":"123"}`, methodSet, "", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {

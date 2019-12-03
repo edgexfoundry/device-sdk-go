@@ -6,6 +6,7 @@ const (
 	DeviceUint  = "Random-UnsignedInteger-Generator"
 	DeviceFloat = "Random-Float-Generator"
 	DeviceNew   = "New-Device"
+	DeviceNew02 = "New-Device-02"
 
 	ProfileBool  = "Random-Boolean-Generator"
 	ProfileInt   = "Random-Integer-Generator"

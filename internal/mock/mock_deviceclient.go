@@ -28,6 +28,7 @@ var (
 	ValidDeviceRandomFloatGenerator           = contract.Device{}
 	DuplicateDeviceRandomFloatGenerator       = contract.Device{}
 	NewValidDevice                            = contract.Device{}
+	OperatingStateDisabled                    = contract.Device{}
 )
 
 type DeviceClientMock struct{}
@@ -95,6 +96,7 @@ func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string, ctx cont
 		ValidDeviceRandomIntegerGenerator,
 		ValidDeviceRandomUnsignedIntegerGenerator,
 		ValidDeviceRandomFloatGenerator,
+		OperatingStateDisabled,
 	}, nil
 }
 
@@ -157,6 +159,8 @@ func populateDeviceMock() error {
 	json.Unmarshal(profiles[DeviceFloat], &DuplicateDeviceRandomFloatGenerator.Profile)
 	json.Unmarshal(devices[DeviceNew], &NewValidDevice)
 	json.Unmarshal(profiles[DeviceNew], &NewValidDevice.Profile)
+	json.Unmarshal(devices[DeviceNew02], &OperatingStateDisabled)
+	json.Unmarshal(profiles[DeviceNew], &OperatingStateDisabled.Profile)
 
 	return nil
 }
