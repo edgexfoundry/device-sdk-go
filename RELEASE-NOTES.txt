@@ -1,11 +1,18 @@
                          EdgeX Foundry Go Device SDK
-                                 Version 1.1.0
+                                 Version 1.1.1
                                  Release Notes
 
 INTRODUCTION
 ============
-This document contains the release notes for the 1.1.0 version of EdgeX Foundry Go Device SDK.
+This document contains the release notes for the 1.1.1 version of EdgeX Foundry Go Device SDK.
 
+Changes for 1.1.1 "Fuji":
+============
+o PR#405:  Update the --registry command line options
+o PR#409:  Add Binary Support for OnChange Autoevents
+o PR#411:  Filter out query parameters with prefix "ds-" to ProtocolDriver
+o PR#415:  Move Attribution.txt and add test target for out-of-date in Makefile
+o PR#417:  Cmd should return 423 for operatingState DISABLED device
 
 Changes for 1.1.0 "Fuji":
 ============
@@ -33,10 +40,3 @@ o PR#382:  Move Creation of ValueDescriptors to Metadata
 o PR#384:  Move protocol driver init before provision
 o PR#386:  Revert to previous ordering between async channel create and driver init
 o PR#389:  Move Metadata GeneralClient to global variable
-
-
-Known issues:
-=======
-o ISSUE#261:  The OnChange option for AutoEvents is not effective on Binary data. So in the case where two successive Binary readings are identical, both will be sent to core-data regardless of the OnChange setting.
-o ISSUE#342:  --overwrite flag (re-upload text-based config to the registry) is not implemented.
-o ISSUE#354:  Query parameters whose names start with "ds-" will be allowed. They should not be and they will be blocked in future versions.
