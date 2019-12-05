@@ -56,7 +56,7 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 
 	// TODO: need to mark device when operation in progress, so it can't be removed till completed
 
-	cmdExists, err := cache.Profiles().CommandExists(d.Profile.Name, cmd)
+	cmdExists, err := cache.Profiles().CommandExists(d.Profile.Name, cmd, method)
 
 	// TODO: once cache locking has been implemented, this should never happen
 	if err != nil {
@@ -145,11 +145,8 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 
 		ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: getting resource operation failed: %s", err.Error()))
-			transformsOK = false
-		}
-
-		if len(ro.Mappings) > 0 {
+			common.LoggingClient.Debug(fmt.Sprintf("getting resource operation failed: %s", err.Error()))
+		} else if len(ro.Mappings) > 0 {
 			newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
 			if ok {
 				cv = newCV

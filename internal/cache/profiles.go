@@ -29,7 +29,7 @@ type ProfileCache interface {
 	Remove(id string) error
 	RemoveByName(name string) error
 	DeviceResource(profileName string, resourceName string) (contract.DeviceResource, bool)
-	CommandExists(profileName string, cmd string) (bool, error)
+	CommandExists(profileName string, cmd string, method string) (bool, error)
 	ResourceOperations(profileName string, cmd string, method string) ([]contract.ResourceOperation, error)
 	ResourceOperation(profileName string, deviceResource string, method string) (contract.ResourceOperation, error)
 }
@@ -38,7 +38,7 @@ type profileCache struct {
 	dpMap    map[string]contract.DeviceProfile // key is DeviceProfile name
 	nameMap  map[string]string                 // key is id, and value is DeviceProfile name
 	drMap    map[string]map[string]contract.DeviceResource
-	dcMap    map[string]map[string][]contract.ResourceOperation
+	getOpMap map[string]map[string][]contract.ResourceOperation
 	setOpMap map[string]map[string][]contract.ResourceOperation
 	ccMap    map[string]map[string]contract.Command
 	mutex    sync.Mutex
@@ -92,7 +92,7 @@ func (p *profileCache) add(profile contract.DeviceProfile) error {
 	p.dpMap[profile.Name] = profile
 	p.nameMap[profile.Id] = profile.Name
 	p.drMap[profile.Name] = deviceResourceSliceToMap(profile.DeviceResources)
-	p.dcMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.DeviceCommands)
+	p.getOpMap[profile.Name], p.setOpMap[profile.Name] = profileResourceSliceToMaps(profile.DeviceCommands)
 	p.ccMap[profile.Name] = commandSliceToMap(profile.CoreCommands)
 	return nil
 }
@@ -169,7 +169,7 @@ func (p *profileCache) removeByName(name string) error {
 	delete(p.dpMap, name)
 	delete(p.nameMap, profile.Id)
 	delete(p.drMap, name)
-	delete(p.dcMap, name)
+	delete(p.getOpMap, name)
 	delete(p.setOpMap, name)
 	delete(p.ccMap, name)
 	return nil
@@ -190,18 +190,28 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 
 // CommandExists returns a bool indicating whether the specified command exists for the
 // specified (by name) device. If the specified device doesn't exist, an error is returned.
-func (p *profileCache) CommandExists(profileName string, cmd string) (bool, error) {
+func (p *profileCache) CommandExists(profileName string, cmd string, method string) (bool, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	commands, ok := p.ccMap[profileName]
-	if !ok {
+	coreCommands, profileExist := p.ccMap[profileName]
+	if !profileExist {
 		err := fmt.Errorf("specified profile: %s not found", profileName)
 		return false, err
 	}
+	// Check whether cmd exists in either coreCommands or deviceCommands.
+	if _, ccExist := coreCommands[cmd]; !ccExist {
+		var deviceCommands map[string][]contract.ResourceOperation
 
-	if _, ok := commands[cmd]; !ok {
-		return false, nil
+		if strings.ToLower(method) == common.GetCmdMethod {
+			deviceCommands, _ = p.getOpMap[profileName]
+		} else {
+			deviceCommands, _ = p.setOpMap[profileName]
+		}
+
+		if _, dcExist := deviceCommands[cmd]; !dcExist {
+			return false, nil
+		}
 	}
 
 	return true, nil
@@ -216,7 +226,7 @@ func (p *profileCache) ResourceOperations(profileName string, cmd string, method
 	var rosMap map[string][]contract.ResourceOperation
 	var ok bool
 	if strings.ToLower(method) == common.GetCmdMethod {
-		if rosMap, ok = p.dcMap[profileName]; !ok {
+		if rosMap, ok = p.getOpMap[profileName]; !ok {
 			return nil, fmt.Errorf("specified profile: %s not found", profileName)
 		}
 	} else if strings.ToLower(method) == common.SetCmdMethod {
@@ -240,7 +250,7 @@ func (p *profileCache) ResourceOperation(profileName string, deviceResource stri
 	var rosMap map[string][]contract.ResourceOperation
 	var ok bool
 	if strings.ToLower(method) == common.GetCmdMethod {
-		if rosMap, ok = p.dcMap[profileName]; !ok {
+		if rosMap, ok = p.getOpMap[profileName]; !ok {
 			return ro, fmt.Errorf("specified profile: %s not found", profileName)
 		}
 	} else if strings.ToLower(method) == common.SetCmdMethod {
@@ -281,7 +291,7 @@ func newProfileCache(profiles []contract.DeviceProfile) ProfileCache {
 		getOpMap[dp.Name], setOpMap[dp.Name] = profileResourceSliceToMaps(dp.DeviceCommands)
 		cmdMap[dp.Name] = commandSliceToMap(dp.CoreCommands)
 	}
-	pc = &profileCache{dpMap: dpMap, nameMap: nameMap, drMap: drMap, dcMap: getOpMap, setOpMap: setOpMap, ccMap: cmdMap}
+	pc = &profileCache{dpMap: dpMap, nameMap: nameMap, drMap: drMap, getOpMap: getOpMap, setOpMap: setOpMap, ccMap: cmdMap}
 	return pc
 }
 

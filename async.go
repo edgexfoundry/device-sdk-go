@@ -55,11 +55,8 @@ func processAsyncResults() {
 
 			ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("processAsyncResults - getting resource operation failed: %s", err.Error()))
-				continue
-			}
-
-			if len(ro.Mappings) > 0 {
+				common.LoggingClient.Debug(fmt.Sprintf("processAsyncResults - getting resource operation failed: %s", err.Error()))
+			} else if len(ro.Mappings) > 0 {
 				newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
 				if ok {
 					cv = newCV
