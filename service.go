@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -43,7 +43,6 @@ type Service struct {
 	initAttempts int
 	initialized  bool
 	stopped      bool
-	cw           *Watchers
 	asyncCh      chan *dsModels.AsyncValues
 	startTime    time.Time
 	controller   controller.RestController
@@ -118,8 +117,6 @@ func (s *Service) Start(errChan chan error) (err error) {
 	if err != nil {
 		return fmt.Errorf("Failed to create the pre-defined Devices")
 	}
-
-	s.cw = newWatchers()
 
 	autoevent.GetManager().StartAutoEvents()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
