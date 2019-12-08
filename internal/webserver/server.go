@@ -239,3 +239,16 @@ func (webserver *WebServer) StartHTTPServer(errChannel chan error) {
 		}
 	}()
 }
+
+// StartHTTPSServer starts the https server
+func (webserver *WebServer) StartHTTPSServer(errChannel chan error) {
+	webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTPS Server on port :%d", webserver.Config.Service.Port))
+	go func() {
+		p := fmt.Sprintf(":%d", webserver.Config.Service.Port)
+		if serviceTimeout, err := time.ParseDuration(webserver.Config.Service.Timeout); err != nil {
+			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
+		} else {
+			errChannel <- http.ListenAndServeTLS(p, webserver.Config.Service.HTTPSCert, webserver.Config.Service.HTTPSKey,  http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+		}
+	}()
+}

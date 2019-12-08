@@ -96,6 +96,8 @@ type ServiceInfo struct {
 	CheckInterval string
 	ClientMonitor string
 	Host          string
+	HTTPSCert      string
+	HTTPSKey      string
 	Port          int
 	Protocol      string
 	StartupMsg    string
