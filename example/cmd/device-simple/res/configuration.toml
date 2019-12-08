@@ -49,6 +49,7 @@ FailWaitTime = 10
   RemoveCmd = ""
   RemoveCmdArgs = ""
   ProfilesDir = "./res"
+  UpdateLastConnected = false
 
 [Logging]
 EnableRemote = false
