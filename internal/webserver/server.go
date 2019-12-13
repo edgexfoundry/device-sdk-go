@@ -227,28 +227,27 @@ func (webserver *WebServer) SetupTriggerRoute(handlerForTrigger func(http.Respon
 	webserver.router.HandleFunc(internal.ApiTriggerRoute, handlerForTrigger)
 }
 
-// StartHTTPServer starts the http server
-func (webserver *WebServer) StartHTTPServer(errChannel chan error) {
-	webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTP Server on port :%d", webserver.Config.Service.Port))
+// StartWebServer starts the web server
+func (webserver *WebServer) StartWebServer(errChannel chan error) {
 	go func() {
-		p := fmt.Sprintf(":%d", webserver.Config.Service.Port)
 		if serviceTimeout, err := time.ParseDuration(webserver.Config.Service.Timeout); err != nil {
 			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
 		} else {
-			errChannel <- http.ListenAndServe(p, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+			listenAndServe(webserver, serviceTimeout, errChannel)
 		}
 	}()
 }
 
-// StartHTTPSServer starts the https server
-func (webserver *WebServer) StartHTTPSServer(errChannel chan error) {
-	webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTPS Server on port :%d", webserver.Config.Service.Port))
-	go func() {
-		p := fmt.Sprintf(":%d", webserver.Config.Service.Port)
-		if serviceTimeout, err := time.ParseDuration(webserver.Config.Service.Timeout); err != nil {
-			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
-		} else {
-			errChannel <- http.ListenAndServeTLS(p, webserver.Config.Service.HTTPSCert, webserver.Config.Service.HTTPSKey,  http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
-		}
-	}()
+// Helper function to handle HTTPs or HTTP connection based on the configured protocol
+func listenAndServe(webserver *WebServer, serviceTimeout time.Duration, errChannel chan error) {
+
+	p := fmt.Sprintf(":%d", webserver.Config.Service.Port)
+
+	if webserver.Config.Service.Protocol == "https" {
+		webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTPS Web Server on port :%d", webserver.Config.Service.Port))
+		errChannel <- http.ListenAndServeTLS(p, webserver.Config.Service.HTTPSCert, webserver.Config.Service.HTTPSKey, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+	} else {
+		webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTP Web Server on port :%d", webserver.Config.Service.Port))
+		errChannel <- http.ListenAndServe(p, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+	}
 }
