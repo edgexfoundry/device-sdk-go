@@ -23,25 +23,23 @@ type Endpoint struct {
 	WG             *sync.WaitGroup
 }
 
-func (endpoint Endpoint) Monitor(params types.EndpointParams, ch chan string) {
-	for {
-		url, err := endpoint.buildURL(params)
-		if err != nil {
-			fmt.Fprintln(os.Stdout, err.Error())
+func (e Endpoint) Monitor(params types.EndpointParams) chan string {
+	ch := make(chan string, 1)
+	ch <- e.fetch(params)
+	go func() {
+		for {
+			url, err := e.buildURL(params)
+			if err != nil {
+				fmt.Fprintln(os.Stdout, err.Error())
+			}
+			ch <- url
+			time.Sleep(time.Second * time.Duration(params.Interval))
 		}
-		ch <- url
-
-		// After the first run, the client can be indicated initialized
-		if !endpoint.passFirstRun {
-			endpoint.WG.Done()
-			endpoint.passFirstRun = true
-		}
-
-		time.Sleep(time.Second * time.Duration(params.Interval))
-	}
+	}()
+	return ch
 }
 
-func (e Endpoint) Fetch(params types.EndpointParams) string {
+func (e Endpoint) fetch(params types.EndpointParams) string {
 	url, err := e.buildURL(params)
 	if err != nil {
 		fmt.Fprintln(os.Stdout, err.Error())
