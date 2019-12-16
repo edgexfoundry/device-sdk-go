@@ -159,7 +159,7 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	signals := make(chan os.Signal)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	sdk.webserver.StartHTTPServer(sdk.httpErrors)
+	sdk.webserver.StartWebServer(sdk.httpErrors)
 
 	select {
 	case httpError := <-sdk.httpErrors:
