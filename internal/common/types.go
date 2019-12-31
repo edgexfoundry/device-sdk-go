@@ -11,6 +11,7 @@ package common
 import (
 	"fmt"
 
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 	dsModels "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -23,34 +24,20 @@ type WritableInfo struct {
 // ServiceInfo is a struct which contains service related configuration
 // settings.
 type ServiceInfo struct {
-	// Host is the hostname or IP address of the service.
-	Host string
-	// Port is the HTTP port of the service.
-	Port int
+	bootstrapConfig.ServiceInfo
 	// ConnectRetries is the number of times the DS will try to connect to all dependent services.
 	// If exceeded for even one dependent service, the DS will exit.
 	ConnectRetries int
 	// Labels are...
 	Labels []string
-	// OpenMsg specifies a string logged on DS startup.
-	OpenMsg string
-	// Timeout (in milliseconds) specifies both
-	// - timeout for processing REST calls and
-	// - interval time the DS will wait between each retry call.
-	Timeout int
 	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
 	EnableAsyncReadings bool
 	// AsyncBufferSize defines the size of asynchronous channel
 	AsyncBufferSize int
 }
 
-type RegistryService struct {
-	// Host is the hostname or IP address of a RegistryService.
-	Host string
-	// Port is the HTTP port of a RegistryService.
-	Port int
-	// Type of Registry implementation to use, i.e. consul
-	Type string
+type RegistryInfo struct {
+	bootstrapConfig.RegistryInfo
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int
@@ -94,10 +81,7 @@ type DeviceInfo struct {
 
 // LoggingInfo is a struct which contains logging specific configuration settings.
 type LoggingInfo struct {
-	// EnableRemote defines whether to use Logging Service
-	EnableRemote bool
-	// File is the pathname of a local log file to be created.
-	File string
+	bootstrapConfig.LoggingInfo
 }
 
 // Config is a struct which contains all of a DS's configuration settings.
@@ -107,7 +91,7 @@ type Config struct {
 	// Service contains RegistryService-specific settings.
 	Service ServiceInfo
 	// Registry contains registry-specific settings.
-	Registry RegistryService
+	Registry RegistryInfo
 	// Clients is a map of services used by a DS.
 	Clients map[string]ClientInfo
 	// Device contains device-specific configuration settings.
@@ -138,14 +122,9 @@ type DeviceConfig struct {
 
 // ClientInfo provides the host and port of another service in the eco-system.
 type ClientInfo struct {
+	bootstrapConfig.ClientInfo
 	// Name is the client service name
 	Name string
-	// Host is the hostname or IP address of a service.
-	Host string
-	// Port defines the port on which to access a given service
-	Port int
-	// Protocol indicates the protocol to use when accessing a given service
-	Protocol string
 	// Timeout specifies a timeout (in milliseconds) for
 	// processing REST calls from other services.
 	Timeout int

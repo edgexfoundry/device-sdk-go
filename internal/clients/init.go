@@ -15,12 +15,10 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 )
@@ -36,8 +34,6 @@ func InitDependencyClients() error {
 	if err := validateClientConfig(); err != nil {
 		return err
 	}
-
-	initializeLoggingClient()
 
 	if err := checkDependencyServices(); err != nil {
 		return err
@@ -72,21 +68,6 @@ func validateClientConfig() error {
 	return nil
 }
 
-func initializeLoggingClient() {
-	var logTarget string
-	config := common.CurrentConfig
-
-	if config.Logging.EnableRemote {
-		logTarget = config.Clients[common.ClientLogging].Url() + clients.ApiLoggingRoute
-		fmt.Println("EnableRemote is true, using remote logging service")
-	} else {
-		logTarget = config.Logging.File
-		fmt.Println("EnableRemote is false, using local log file")
-	}
-
-	common.LoggingClient = logger.NewClient(common.ServiceName, config.Logging.EnableRemote, logTarget, config.Writable.LogLevel)
-}
-
 func checkDependencyServices() error {
 	var dependencyList = []string{common.ClientData, common.ClientMetadata}
 
@@ -116,7 +97,7 @@ func checkDependencyServices() error {
 
 func checkServiceAvailable(serviceId string) error {
 	for i := 0; i < common.CurrentConfig.Service.ConnectRetries; i++ {
-		if common.UseRegistry {
+		if common.RegistryClient != nil {
 			if checkServiceAvailableViaRegistry(common.CurrentConfig.Clients[serviceId].Name) == true {
 				return nil
 			}
@@ -154,13 +135,13 @@ func checkServiceAvailableByPing(serviceId string) error {
 func checkServiceAvailableViaRegistry(serviceId string) bool {
 	common.LoggingClient.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceId))
 
-	if !config.RegistryClient.IsAlive() {
+	if !common.RegistryClient.IsAlive() {
 		common.LoggingClient.Error("unable to check status of %s service: Registry not running")
 
 		return false
 	}
 
-	err := config.RegistryClient.IsServiceAvailable(serviceId)
+	_, err := common.RegistryClient.IsServiceAvailable(serviceId)
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
 		return false
@@ -181,14 +162,13 @@ func checkConsulAvailable() bool {
 }
 
 func initializeClients() {
-	isRegistry := common.UseRegistry
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(clientCount)
 
-	endpoint := &endpoint.Endpoint{RegistryClient: config.RegistryClient, WG: &waitGroup}
-
+	endpoint := &endpoint.Endpoint{RegistryClient: common.RegistryClient, WG: &waitGroup}
 	metaAddr := common.CurrentConfig.Clients[common.ClientMetadata].Url()
 	dataAddr := common.CurrentConfig.Clients[common.ClientData].Url()
+	isRegistry := common.RegistryClient != nil
 
 	params := types.EndpointParams{
 		UseRegistry: isRegistry,

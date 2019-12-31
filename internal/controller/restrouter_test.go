@@ -45,7 +45,8 @@ func TestAddRoute(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		controller := NewRestController()
+		r := mux.NewRouter()
+		controller := NewRestController(r)
 		controller.InitRestRoutes()
 
 		err := controller.AddRoute(test.Route, func(http.ResponseWriter, *http.Request) {}, http.MethodPost)
@@ -83,9 +84,10 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestInitRestRoutes(t *testing.T) {
-	controller := NewRestController()
-
+	r := mux.NewRouter()
+	controller := NewRestController(r)
 	controller.InitRestRoutes()
+
 	err := controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, err := route.GetPathTemplate()
 		if err != nil {

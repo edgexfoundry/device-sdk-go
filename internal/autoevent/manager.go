@@ -1,15 +1,17 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package autoevent
 
 import (
+	"context"
 	"fmt"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"sync"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -31,13 +33,15 @@ var (
 type manager struct {
 	execsMap  map[string][]Executor
 	startOnce sync.Once
+	ctx       context.Context
+	wg        *sync.WaitGroup
 }
 
 func (m *manager) StartAutoEvents() {
 	mutex.Lock()
 	m.startOnce.Do(func() {
 		for _, d := range cache.Devices().All() {
-			execs := triggerExecutors(d.Name, d.AutoEvents)
+			execs := triggerExecutors(d.Name, d.AutoEvents, m.ctx, m.wg)
 			m.execsMap[d.Name] = execs
 		}
 	})
@@ -55,7 +59,7 @@ func (m *manager) StopAutoEvents() {
 	mutex.Unlock()
 }
 
-func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent) []Executor {
+func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, ctx context.Context, wg *sync.WaitGroup) []Executor {
 	var execs []Executor
 	for _, autoEvent := range autoEvents {
 		exec, err := NewExecutor(deviceName, autoEvent)
@@ -65,7 +69,7 @@ func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent) []Exec
 			continue
 		}
 		execs = append(execs, exec)
-		go exec.Run()
+		go exec.Run(ctx, wg)
 	}
 	return execs
 }
@@ -79,7 +83,7 @@ func (m *manager) RestartForDevice(deviceName string) {
 	}
 
 	mutex.Lock()
-	execs := triggerExecutors(deviceName, d.AutoEvents)
+	execs := triggerExecutors(deviceName, d.AutoEvents, m.ctx, m.wg)
 	m.execsMap[deviceName] = execs
 	mutex.Unlock()
 }
@@ -97,10 +101,14 @@ func (m *manager) StopForDevice(deviceName string) {
 	mutex.Unlock()
 }
 
-// GetManager initiates the AutoEvent manager once and returns its instance
-func GetManager() Manager {
+// NewManager initiates the AutoEvent manager once
+func NewManager(ctx context.Context, wg *sync.WaitGroup) {
 	createOnce.Do(func() {
-		m = &manager{execsMap: make(map[string][]Executor)}
+		m = &manager{execsMap: make(map[string][]Executor), ctx: ctx, wg: wg}
 	})
+}
+
+// GetManager returns Manager instance
+func GetManager() Manager {
 	return m
 }

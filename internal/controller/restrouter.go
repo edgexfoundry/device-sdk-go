@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -15,6 +15,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller/correlation"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/gorilla/mux"
 )
 
@@ -23,33 +24,38 @@ type RestController struct {
 	reservedRoutes map[string]bool
 }
 
-func NewRestController() RestController {
+func NewRestController(r *mux.Router) RestController {
 	return RestController{
-		router:         mux.NewRouter(),
+		router:         r,
 		reservedRoutes: make(map[string]bool),
 	}
 }
 
+func LoadRestRoutes(r *mux.Router, dic *di.Container) {
+	c := NewRestController(r)
+	c.InitRestRoutes()
+	dic.Update(di.ServiceConstructorMap{
+		"RestController": func(dic di.Get) interface{} {
+			return c
+		},
+	})
+}
+
 func (c RestController) InitRestRoutes() {
-	common.LoggingClient.Debug("init status rest controller")
+	// Status
 	c.addReservedRoute(common.APIPingRoute, statusFunc).Methods(http.MethodGet)
-
-	common.LoggingClient.Debug("init version rest controller")
+	// Version
 	c.addReservedRoute(common.APIVersionRoute, versionFunc).Methods(http.MethodGet)
-
-	common.LoggingClient.Debug("init command rest controller")
+	// Command
 	c.addReservedRoute(common.APIAllCommandRoute, commandAllFunc).Methods(http.MethodGet, http.MethodPut)
 	c.addReservedRoute(common.APIIdCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
 	c.addReservedRoute(common.APINameCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
-
-	common.LoggingClient.Debug("init callback rest controller")
+	// Callback
 	c.addReservedRoute(common.APICallbackRoute, callbackFunc)
-
-	common.LoggingClient.Debug("init other rest controller")
+	// Discovery and Transform
 	c.addReservedRoute(common.APIDiscoveryRoute, discoveryFunc).Methods(http.MethodPost)
 	c.addReservedRoute(common.APITransformRoute, transformFunc).Methods(http.MethodGet)
-
-	common.LoggingClient.Debug("init the metrics and config rest controller each")
+	// Metric and Config
 	c.addReservedRoute(common.APIMetricsRoute, metricsHandler).Methods(http.MethodGet)
 	c.addReservedRoute(common.APIConfigRoute, configHandler).Methods(http.MethodGet)
 

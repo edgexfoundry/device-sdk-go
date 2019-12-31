@@ -11,26 +11,20 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
-func TestInitializeLoggingClientByFile(test *testing.T) {
-	var loggingConfig = common.LoggingInfo{File: "./device-simple.log", EnableRemote: false}
-	var config = common.Config{Logging: loggingConfig}
-	common.CurrentConfig = &config
-
-	initializeLoggingClient()
-
-	if common.LoggingClient == nil {
-		test.Fatal("New file logging fail")
-	}
-
-}
-
 func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
-	var clientConfig = map[string]common.ClientInfo{common.ClientData: common.ClientInfo{Protocol: "http", Host: "www.google.com", Port: 81, Timeout: 3000}}
-	var config = common.Config{Clients: clientConfig}
-	common.CurrentConfig = &config
+	var clientConfig = map[string]common.ClientInfo{
+		common.ClientData: common.ClientInfo{
+			ClientInfo: bootstrapConfig.ClientInfo{Host: "www.google.com", Port: 81, Protocol: "http"},
+			Name:       "",
+			Timeout:    3000,
+		},
+	}
+	var config = &common.ConfigurationStruct{Clients: clientConfig}
+	common.CurrentConfig = config
 	common.LoggingClient = logger.NewClient("test_service", false, "./device-simple.log", "DEBUG")
 
 	err := checkServiceAvailableByPing(common.ClientData)
@@ -38,5 +32,4 @@ func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 	if err, ok := err.(net.Error); ok && !err.Timeout() {
 		test.Fatal("Should be timeout error")
 	}
-
 }

@@ -13,17 +13,17 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 var (
 	ServiceName            string
 	ServiceVersion         string
-	CurrentConfig          *Config
+	CurrentConfig          *ConfigurationStruct
 	CurrentDeviceService   contract.DeviceService
-	UseRegistry            bool
-	OverwriteConfig        bool
 	ServiceLocked          bool
 	Driver                 dsModels.ProtocolDriver
+	RegistryClient         registry.Client
 	EventClient            coredata.EventClient
 	AddressableClient      metadata.AddressableClient
 	DeviceClient           metadata.DeviceClient
