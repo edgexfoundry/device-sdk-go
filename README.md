@@ -55,7 +55,12 @@ func main() {
 
 	// 2) Next, we need to initialize the SDK
 	if err := edgexSdk.Initialize(); err != nil {
-		edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK initialization failed: %v\n", err))
+		message := fmt.Sprintf("SDK initialization failed: %v\n", err)
+		if edgexSdk.LoggingClient != nil {
+			edgexSdk.LoggingClient.Error(message)
+		} else {
+			fmt.Println(message)
+		}
 		os.Exit(-1)
 	}
 
