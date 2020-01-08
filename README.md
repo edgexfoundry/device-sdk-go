@@ -64,37 +64,33 @@ func main() {
 		os.Exit(-1)
 	}
 
-	// 3) Since our FilterByDeviceName Function requires the list of Device Names we would
-	// like to search for, we'll go ahead and define that now.
-	deviceNames := []string{"Random-Float-Device"}
+	// 3) Shows how to access the application's specific configuration settings.
+	deviceNames, err := edgexSdk.GetAppSettingStrings("DeviceNames")
+	if err != nil {
+		edgexSdk.LoggingClient.Error(err.Error())
+		os.Exit(-1)
+	}    
 
 	// 4) This is our pipeline configuration, the collection of functions to
 	// execute every time an event is triggered.
-	if err := edgexSdk.SetFunctionsPipeline(
+	if err = edgexSdk.SetFunctionsPipeline(
 			transforms.NewFilter(deviceNames).FilterByDeviceName, 
 			transforms.NewConversion().TransformToXML,
 		); err != nil {
-			edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK SetPipeline failed: %v\n", err))
-			os.Exit(-1)
-		}
-
-	// 5) shows how to access the application's specific configuration settings.
-	appSettings := edgexSdk.ApplicationSettings()
-	if appSettings != nil {
-		appName, ok := appSettings["ApplicationName"]
-		if ok {
-			edgexSdk.LoggingClient.Info(fmt.Sprintf("%s now running...", appName))
-		} else {
-			edgexSdk.LoggingClient.Error("ApplicationName application setting not found")
-			os.Exit(-1)
-		}
-	} else {
-		edgexSdk.LoggingClient.Error("No application settings found")
+		edgexSdk.LoggingClient.Error(fmt.Sprintf("SDK SetPipeline failed: %v\n", err))
 		os.Exit(-1)
 	}
 
-	// 6) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events to trigger the pipeline.
-	edgexSdk.MakeItRun()
+	// 5) Lastly, we'll go ahead and tell the SDK to "start" and begin listening for events to trigger the pipeline.
+	err = edgexSdk.MakeItRun()
+	if err != nil {
+		edgexSdk.LoggingClient.Error("MakeItRun returned error: ", err.Error())
+		os.Exit(-1)
+	}
+
+	// Do any required cleanup here
+
+	os.Exit(0)
 }
 ```
 

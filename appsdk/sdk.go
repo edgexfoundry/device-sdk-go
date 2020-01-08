@@ -272,6 +272,22 @@ func (sdk *AppFunctionsSDK) ApplicationSettings() map[string]string {
 	return sdk.config.ApplicationSettings
 }
 
+// GetAppSettingStrings returns the strings slice for the specified App Setting.
+func (sdk *AppFunctionsSDK) GetAppSettingStrings(setting string) ([]string, error) {
+	if sdk.config.ApplicationSettings == nil {
+		return nil, fmt.Errorf("%s setting not found: ApplicationSettings section is missing", setting)
+	}
+
+	settingValue, ok := sdk.config.ApplicationSettings[setting]
+	if !ok {
+		return nil, fmt.Errorf("%s setting not found in ApplicationSettings", setting)
+	}
+
+	valueStrings := util.DeleteEmptyAndTrim(strings.FieldsFunc(settingValue, util.SplitComma))
+
+	return valueStrings, nil
+}
+
 // Initialize will parse command line flags, register for interrupts,
 // initialize the logging system, and ingest configuration.
 func (sdk *AppFunctionsSDK) Initialize() error {
