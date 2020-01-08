@@ -179,6 +179,60 @@ func TestApplicationSettingsNil(t *testing.T) {
 	}
 }
 
+func TestGetAppSettingStrings(t *testing.T) {
+	setting := "DeviceNames"
+	expected := []string{"dev1", "dev2"}
+
+	sdk := AppFunctionsSDK{
+		config: common.ConfigurationStruct{
+			ApplicationSettings: map[string]string{
+				"DeviceNames": "dev1,   dev2",
+			},
+		},
+	}
+
+	actual, err := sdk.GetAppSettingStrings(setting)
+	if !assert.NoError(t, err, "unexpected error") {
+		t.Fatal()
+	}
+
+	assert.EqualValues(t, expected, actual, "actual application setting values not as expected")
+}
+
+func TestGetAppSettingStringsSettingMissing(t *testing.T) {
+	setting := "DeviceNames"
+	expected := "setting not found in ApplicationSettings"
+
+	sdk := AppFunctionsSDK{
+		config: common.ConfigurationStruct{
+			ApplicationSettings: map[string]string{},
+		},
+	}
+
+	_, err := sdk.GetAppSettingStrings(setting)
+	if !assert.Error(t, err, "Expected an error") {
+		t.Fatal()
+	}
+
+	assert.Contains(t, err.Error(), expected, "Error not as expected")
+}
+
+func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
+	setting := "DeviceNames"
+	expected := "ApplicationSettings section is missing"
+
+	sdk := AppFunctionsSDK{
+		config: common.ConfigurationStruct{},
+	}
+
+	_, err := sdk.GetAppSettingStrings(setting)
+	if !assert.Error(t, err, "Expected an error") {
+		t.Fatal()
+	}
+
+	assert.Contains(t, err.Error(), expected, "Error not as expected")
+}
+
 func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
