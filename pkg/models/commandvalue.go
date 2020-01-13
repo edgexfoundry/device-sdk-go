@@ -130,10 +130,8 @@ type CommandValue struct {
 	NumericValue []byte
 	// stringValue is a string value returned as a value by a ProtocolDriver instance.
 	stringValue string
-	// BinValue is a CBOR encoded binary value with a maximum
-	// capacity of 1MB, used to hold binary values returned
-	// by a ProtocolDriver instance. Its decoded value is externally accessed
-	// using BinaryValue() method
+	// BinValue is a binary value with a maximum capacity of 16 MB,
+	// used to hold binary values returned by a ProtocolDriver instance.
 	BinValue []byte
 }
 
