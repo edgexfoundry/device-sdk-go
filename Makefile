@@ -26,9 +26,10 @@ docker:
 		.
 
 test:
+	$(GO) test -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l .
-	$(GO) test -coverprofile=coverage.out ./...
+	[ "`gofmt -l .`" = "" ]
 	./bin/test-attribution-txt.sh
 	./bin/test-go-mod-tidy.sh
 

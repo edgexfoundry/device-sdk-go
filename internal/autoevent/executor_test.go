@@ -73,4 +73,3 @@ func TestCompareReadings(t *testing.T) {
 		t.Error("compare readings with cache failed, the result should be true with unchanged readings")
 	}
 }
-
