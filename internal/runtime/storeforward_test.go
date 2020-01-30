@@ -90,7 +90,7 @@ func TestProcessRetryItems(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			targetTransformWasCalled = false
 
-			runtime.Initialize(creatMockStoreClient())
+			runtime.Initialize(creatMockStoreClient(), nil)
 			runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
 
 			version := runtime.storeForward.pipelineHash
@@ -144,7 +144,7 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			runtime := GolangRuntime{ServiceKey: serviceKey}
-			runtime.Initialize(creatMockStoreClient())
+			runtime.Initialize(creatMockStoreClient(), nil)
 			runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, test.TargetTransform})
 
 			object := contracts.NewStoredObject(serviceKey, payload, 1, runtime.storeForward.calculatePipelineHash())

@@ -88,7 +88,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 		},
 	}
 	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms(sdk.transforms)
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
@@ -104,7 +104,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 		},
 	}
 	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms(sdk.transforms)
 	trigger := sdk.setupTrigger(sdk.config, runtime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
@@ -137,7 +137,7 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 		return true, nil
 	}
 
-	sdk.runtime.Initialize(nil)
+	sdk.runtime.Initialize(nil, nil)
 	err := sdk.SetFunctionsPipeline(function)
 	assert.Nil(t, err, "There should be no error")
 	assert.Equal(t, 1, len(sdk.transforms))

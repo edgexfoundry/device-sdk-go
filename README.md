@@ -201,6 +201,9 @@ type Context struct {
 	
 	// RetryData holds the data to be stored for later retry when the pipeline function returns an error
 	RetryData []byte
+	
+	// SecretProvider exposes the support for getting and storing secrets
+	SecretProvider *security.SecretProvider
 }
 ```
 
@@ -268,6 +271,10 @@ Each of the clients above is only initialized if the Clients section of the conf
 `.SetRetryData(payload []byte)` can be used to store data for later retry. This is useful when creating a custom export function that needs to retry on failure sending the data. The payload data will be stored for later retry based on `Store and Forward` configuration. When the retry is triggered, the function pipeline will be re-executed starting with the function that called this API. That function will be passed the stored data, so it is important that all transformations occur in functions prior to the export function. The `Context` will also be restored to the state when the function called this API. See [Store and Forward](#store-and-forward) for more details.
 
 > NOTE: `Store and Forward` be must enabled when calling this API. 
+
+### .GetSecrets()
+
+`.GetSecrets(path string, keys ...string)` is used to retrieve secrets from the secret store. `path` describes the type or location of the secrets to retrieve. `keys` specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the specified path will be returned.
 
 ## Built-In Transforms/Functions 
 
