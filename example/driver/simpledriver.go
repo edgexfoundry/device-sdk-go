@@ -83,6 +83,15 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 		if reqs[0].DeviceResourceName == "SwitchButton" {
 			cv, _ := dsModels.NewBoolValue(reqs[0].DeviceResourceName, now, s.switchButton)
 			res[0] = cv
+		} else if reqs[0].DeviceResourceName == "Xrotation" {
+			cv, _ := dsModels.NewInt32Value(reqs[0].DeviceResourceName, now, s.xRotation)
+			res[0] = cv
+		} else if reqs[0].DeviceResourceName == "Yrotation" {
+			cv, _ := dsModels.NewInt32Value(reqs[0].DeviceResourceName, now, s.yRotation)
+			res[0] = cv
+		} else if reqs[0].DeviceResourceName == "Zrotation" {
+			cv, _ := dsModels.NewInt32Value(reqs[0].DeviceResourceName, now, s.zRotation)
+			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Image" {
 			// Show a binary/image representation of the switch's on/off value
 			buf := new(bytes.Buffer)
@@ -120,31 +129,30 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 // command.
 func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest,
 	params []*dsModels.CommandValue) error {
-	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleWriteCommands: protocols: %v, resource: %v, parameters: %v", protocols, reqs[0].DeviceResourceName, params))
 	var err error
-	if len(reqs) == 1 {
-		if s.switchButton, err = params[0].BoolValue(); err != nil {
-			err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Boolean, parameter: %s", params[0].String())
-			return err
-		}
-	} else if len(reqs) == 3 {
-		for i, r := range reqs {
-			switch r.DeviceResourceName {
-			case "Xrotation":
-				if s.xRotation, err = params[i].Int32Value(); err != nil {
-					err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
-					return err
-				}
-			case "Yrotation":
-				if s.yRotation, err = params[i].Int32Value(); err != nil {
-					err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
-					return err
-				}
-			case "Zrotation":
-				if s.zRotation, err = params[i].Int32Value(); err != nil {
-					err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
-					return err
-				}
+
+	for i, r := range reqs {
+		s.lc.Info(fmt.Sprintf("SimpleDriver.HandleWriteCommands: protocols: %v, resource: %v, parameters: %v", protocols, reqs[i].DeviceResourceName, params[i]))
+		switch r.DeviceResourceName {
+		case "SwitchButton":
+			if s.switchButton, err = params[i].BoolValue(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Boolean, parameter: %s", params[0].String())
+				return err
+			}
+		case "Xrotation":
+			if s.xRotation, err = params[i].Int32Value(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
+				return err
+			}
+		case "Yrotation":
+			if s.yRotation, err = params[i].Int32Value(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
+				return err
+			}
+		case "Zrotation":
+			if s.zRotation, err = params[i].Int32Value(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
+				return err
 			}
 		}
 	}
