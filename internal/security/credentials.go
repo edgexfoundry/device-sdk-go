@@ -40,3 +40,43 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 		Password: secrets["password"],
 	}, nil
 }
+
+// GetSecrets retrieves secrets from a secret store.
+// path specifies the type or location of the secrets to retrieve.
+// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
+// specified path will be returned.
+func (s *SecretProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
+
+	// check cache for keys
+	allKeysExistsInCache := false
+	cachedSecrets, cacheExists := s.secrets[path]
+
+	if cacheExists {
+		for _, key := range keys {
+			if _, allKeysExistsInCache = cachedSecrets[key]; !allKeysExistsInCache {
+				break
+			}
+		}
+
+		// return cached secrets if they exist in cache
+		if allKeysExistsInCache {
+			return cachedSecrets, nil
+		}
+	}
+
+	newSecrets, err := s.secretClient.GetSecrets(path, keys...)
+	if err != nil {
+		return nil, err
+	}
+
+	s.secrets[path] = newSecrets
+	return s.secrets[path], nil
+}
+
+// StoreSecrets stores the secrets to a secret store.
+// it sets the values requested at provided keys
+// path specifies the type or location of the secrets to store
+// secrets map specifies the "key": "value" pairs of secrets to store
+func (s *SecretProvider) StoreSecrets(path string, secrets map[string]string) error {
+	return nil // TODO: returning nil until interface is implemented
+}

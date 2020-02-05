@@ -142,7 +142,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	}
 
 	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 	trigger.Initialize(&sync.WaitGroup{}, context.Background())
@@ -218,7 +218,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	}
 
 	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 

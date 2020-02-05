@@ -60,7 +60,7 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 		LoggingClient: lc,
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 
 	result := runtime.ProcessMessage(context, envelope)
 	if result != nil {
@@ -100,7 +100,7 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	result := runtime.ProcessMessage(context, envelope)
 	if result != nil {
@@ -155,7 +155,7 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -223,7 +223,7 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2, transform3})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -261,7 +261,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 	}
 	// Let the Runtime know we are sending a RegistryInfo so it passes it to the first function
 	runtime := GolangRuntime{TargetType: &common.RegistryInfo{}}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	// FilterByDeviceName with return an error if it doesn't receive and Event
 	runtime.SetTransforms([]appcontext.AppFunction{transforms.NewFilter([]string{"SomeDevice"}).FilterByDeviceName})
 	err := runtime.ProcessMessage(context, envelope)
@@ -324,7 +324,7 @@ func TestProcessMessageJSON(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -390,7 +390,7 @@ func TestProcessMessageCBOR(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
+	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
@@ -463,7 +463,7 @@ func TestProcessMessageTargetType(t *testing.T) {
 		}
 
 		runtime := GolangRuntime{TargetType: currentTest.TargetType}
-		runtime.Initialize(nil)
+		runtime.Initialize(nil, nil)
 		runtime.SetTransforms([]appcontext.AppFunction{transforms.NewOutputData().SetOutputData})
 
 		err := runtime.ProcessMessage(context, envelope)
@@ -503,7 +503,7 @@ func TestExecutePipelinePersist(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{ServiceKey: serviceKey}
-	runtime.Initialize(creatMockStoreClient())
+	runtime.Initialize(creatMockStoreClient(), nil)
 
 	httpPost := transforms.NewHTTPSender("http://nowhere", "", true).HTTPPost
 	runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, httpPost})

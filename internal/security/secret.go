@@ -26,18 +26,18 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
 
+// SecretProvider cache storage for the secrets
 type SecretProvider struct {
 	secretClient pkg.SecretClient
+	secrets      map[string]map[string]string
 }
 
-func NewSecret() *SecretProvider {
-	return &SecretProvider{}
+// NewSecretProvider returns a new secret provider
+func NewSecretProvider() *SecretProvider {
+	return &SecretProvider{secrets: make(map[string]map[string]string)}
 }
 
-// SecretClientBootstrapHandler creates a secretClient to be used for obtaining secrets from a SecretProvider store manager.
-// NOTE: This BootstrapHandler is responsible for creating a utility that will most likely be used by other
-// BootstrapHandlers to obtain sensitive data, such as database credentials. This BootstrapHandler should be processed
-// before other BootstrapHandlers, possibly even first since it has not other dependencies.
+// CreateClient creates a SecretClient to be used for obtaining secrets from a secrets store manager.
 func (s *SecretProvider) CreateClient(
 	loggingClient logger.LoggingClient,
 	configuration common.ConfigurationStruct) bool {

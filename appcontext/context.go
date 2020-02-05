@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
@@ -60,6 +61,8 @@ type Context struct {
 	NotificationsClient notifications.NotificationsClient
 	// RetryData holds the data to be stored for later retry when the pipeline function returns an error
 	RetryData []byte
+	// SecretProvider exposes the support for getting and storing secrets
+	SecretProvider *security.SecretProvider
 }
 
 // Complete is optional and provides a way to return the specified data.
@@ -125,4 +128,12 @@ func (context *Context) PushToCoreData(deviceName string, readingName string, va
 	}
 	newEdgeXEvent.ID = result
 	return newEdgeXEvent, nil
+}
+
+// GetSecrets retrieves secrets from a secret store.
+// path specifies the type or location of the secrets to retrieve.
+// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
+// specified path will be returned.
+func (context *Context) GetSecrets(path string, keys ...string) (map[string]string, error) {
+	return context.SecretProvider.GetSecrets(path, keys...)
 }
