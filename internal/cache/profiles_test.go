@@ -147,16 +147,16 @@ func TestProfileCache_DeviceResource(t *testing.T) {
 func TestProfileCache_CommandExists(t *testing.T) {
 	dpc := newProfileCache(dps)
 
-	if _, err := dpc.CommandExists(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name); err == nil {
+	if _, err := dpc.CommandExists(mock.NewDeviceProfile.Name, mock.NewDeviceProfile.CoreCommands[0].Name, common.GetCmdMethod); err == nil {
 		t.Error("DeviceProfileRandomFloatGenerator is not in cache, supposed to get an error")
 	}
-	if exists, err := dpc.CommandExists(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name); err != nil {
+	if exists, err := dpc.CommandExists(mock.DeviceProfileRandomBoolGenerator.Name, mock.DeviceProfileRandomBoolGenerator.CoreCommands[0].Name, common.GetCmdMethod); err != nil {
 		t.Error("DeviceProfileRandomBoolGenerator exists in cache, not supposed to get an error")
 	} else if !exists {
 		t.Error("DeviceProfileRandomBoolGenerator.Commands[0] exists in cache, the returned value should be true")
 	}
 
-	if exists, _ := dpc.CommandExists(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX"); exists {
+	if exists, _ := dpc.CommandExists(mock.DeviceProfileRandomBoolGenerator.Name, "arbitaryNameXXX", common.GetCmdMethod); exists {
 		t.Error("arbitaryNameXXX doesn't belong to any command in DeviceProfileRandomBoolGenerator.Commands, the returned value should be false")
 	}
 }
