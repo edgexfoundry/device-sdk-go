@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -217,6 +217,10 @@ func initializeClients() {
 	params.Path = clients.ApiConfigRoute
 	params.Url = metaAddr
 	common.MetadataGeneralClient = general.NewGeneralClient(params, endpoint)
+
+	params.Path = clients.ApiProvisionWatcherRoute
+	params.Url = metaAddr + params.Path
+	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, endpoint)
 
 	// initialize Core Data clients
 	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name

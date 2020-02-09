@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -100,13 +100,6 @@ type LoggingInfo struct {
 	File string
 }
 
-// WatcherInfo is a struct which contains provisionwatcher configuration settings.
-type WatcherInfo struct {
-	Profile     string
-	Key         string
-	MatchString string
-}
-
 // Config is a struct which contains all of a DS's configuration settings.
 type Config struct {
 	// WritableInfo contains configuration settings that can be changed in the Registry .
@@ -121,8 +114,6 @@ type Config struct {
 	Device DeviceInfo
 	// Logging contains logging-specific configuration settings.
 	Logging LoggingInfo
-	// Watchers is a map provisionwatchers to be created on startup.
-	Watchers map[string]WatcherInfo
 	// DeviceList is the list of pre-define Devices
 	DeviceList []DeviceConfig `consul:"-"`
 	// Driver is a string map contains customized configuration for the protocol driver implemented based on Device SDK
