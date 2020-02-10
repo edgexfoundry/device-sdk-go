@@ -32,13 +32,14 @@ import (
 
 // SecretProvider cache storage for the secrets
 type SecretProvider struct {
-	secretClient pkg.SecretClient
-	secrets      map[string]map[string]string
+	secretClient  pkg.SecretClient
+	secretsCache  map[string]map[string]string // secret's path, key, value
+	configuration *common.ConfigurationStruct
 }
 
 // NewSecretProvider returns a new secret provider
 func NewSecretProvider() *SecretProvider {
-	return &SecretProvider{secrets: make(map[string]map[string]string)}
+	return &SecretProvider{secretsCache: make(map[string]map[string]string)}
 }
 
 // CreateClient creates a SecretClient to be used for obtaining secrets from a secrets store manager.
@@ -47,6 +48,7 @@ func (s *SecretProvider) CreateClient(
 	loggingClient logger.LoggingClient,
 	configuration common.ConfigurationStruct) bool {
 
+	s.configuration = &configuration
 	secretConfig, err := s.getSecretConfig(configuration.SecretStore)
 	if err != nil {
 		loggingClient.Error(fmt.Sprintf("unable to parse secret store configuration: %s", err.Error()))

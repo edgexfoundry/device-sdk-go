@@ -9,7 +9,7 @@ require (
 	github.com/edgexfoundry/go-mod-core-contracts v0.1.48
 	github.com/edgexfoundry/go-mod-messaging v0.1.11
 	github.com/edgexfoundry/go-mod-registry v0.1.11
-	github.com/edgexfoundry/go-mod-secrets v0.0.15
+	github.com/edgexfoundry/go-mod-secrets v0.0.17
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/go-cmp v0.3.1 // indirect

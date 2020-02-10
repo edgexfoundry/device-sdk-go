@@ -18,14 +18,12 @@ package security
 
 import (
 	"errors"
-	"fmt"
+	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/stretchr/testify/require"
 )
-
-func init() {
-}
 
 type mockSecretClient struct {
 	testIndex int
@@ -40,109 +38,206 @@ type getSecretsTestObj struct {
 	resetSecretsCache bool
 }
 
-var getSecretsTestData = []getSecretsTestObj{
+var getSecretsTestData []getSecretsTestObj
 
-	getSecretsTestObj{
-		testName:          "Empty keys",
-		path:              "db_secrets",
-		keys:              []string{"", ""},
-		expectedSecrets:   nil,
-		expectedErr:       errors.New("Couldn't get secrets: No value for the keys: [] exists"),
-		resetSecretsCache: true,
-	},
+func TestMain(m *testing.M) {
+	getSecretsTestData = []getSecretsTestObj{
+		getSecretsTestObj{
+			testName:          "Empty path",
+			path:              "",
+			keys:              []string{"key1", "key2"},
+			expectedSecrets:   map[string]string{"key1": "value1", "key2": "value2"},
+			expectedErr:       nil,
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Empty path, keys list empty",
+			path:              "",
+			keys:              []string{},
+			expectedSecrets:   map[string]string{"key1": "value1", "key2": "value2"},
+			expectedErr:       nil,
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Fake path",
+			path:              "fakepath",
+			keys:              []string{"key1", "key2"},
+			expectedSecrets:   nil,
+			expectedErr:       errors.New("Error, path (fakepath) doesn't exist in secret store"),
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Empty keys",
+			path:              "db_secrets",
+			keys:              []string{"", ""},
+			expectedSecrets:   nil,
+			expectedErr:       errors.New("No value for the keys: [,] exists"),
+			resetSecretsCache: true,
+		},
 
-	getSecretsTestObj{
-		testName:          "One valid key, one empty key",
-		path:              "db_secrets",
-		keys:              []string{"key1", ""},
-		expectedSecrets:   nil,
-		expectedErr:       errors.New("Couldn't get secrets: No value for the keys: [] exists"),
-		resetSecretsCache: true,
-	},
-	getSecretsTestObj{
-		testName:          "One valid key one not found key",
-		path:              "db_secrets",
-		keys:              []string{"key1", "notFoundKey"},
-		expectedSecrets:   nil,
-		expectedErr:       errors.New("Couldn't get secrets: No value for the keys: [notFoundKey] exists"),
-		resetSecretsCache: true,
-	},
-	getSecretsTestObj{
-		testName:          "Not found key",
-		path:              "db_secrets",
-		keys:              []string{"notFoundKey"},
-		expectedSecrets:   nil,
-		expectedErr:       errors.New("Couldn't get secrets: No value for the keys: [notFoundKey] exists"),
-		resetSecretsCache: true,
-	},
-	getSecretsTestObj{
-		testName:          "Valid key",
-		path:              "db_secrets",
-		keys:              []string{"key1"},
-		expectedSecrets:   map[string]string{"key1": "value1"},
-		resetSecretsCache: true,
-		expectedErr:       nil,
-	},
-	getSecretsTestObj{
-		testName:          "Two valid keys",
-		path:              "db_secrets",
-		keys:              []string{"key1", "key2"},
-		expectedSecrets:   map[string]string{"key1": "value1", "key2": "value2"},
-		resetSecretsCache: true,
-		expectedErr:       nil,
-	},
-	getSecretsTestObj{
-		testName:          "Valid key (key1 not cached)",
-		path:              "db_secrets",
-		keys:              []string{"key1"},
-		expectedSecrets:   map[string]string{"key1": "value1"},
-		expectedErr:       nil,
-		resetSecretsCache: false,
-	},
-	getSecretsTestObj{
-		testName:          "One valid key (key1 cached)",
-		path:              "db_secrets",
-		keys:              []string{"key1"},
-		expectedSecrets:   map[string]string{"key1": "value1"},
-		expectedErr:       nil,
-		resetSecretsCache: false,
-	},
-	getSecretsTestObj{
-		testName:          "Two valid keys (key1 cached, key2 not cached)",
-		path:              "db_secrets",
-		keys:              []string{"key1", "key2"},
-		expectedSecrets:   map[string]string{"key1": "value1", "key2": "value2"},
-		expectedErr:       nil,
-		resetSecretsCache: false,
-	},
+		getSecretsTestObj{
+			testName:          "One valid key, one empty key",
+			path:              "db_secrets",
+			keys:              []string{"key1", ""},
+			expectedSecrets:   nil,
+			expectedErr:       errors.New("No value for the keys: [] exists"),
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "One valid key one not found key",
+			path:              "db_secrets",
+			keys:              []string{"key1", "notFoundKey"},
+			expectedSecrets:   nil,
+			expectedErr:       errors.New("No value for the keys: [notFoundKey] exists"),
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Not found key",
+			path:              "db_secrets",
+			keys:              []string{"notFoundKey"},
+			expectedSecrets:   nil,
+			expectedErr:       errors.New("No value for the keys: [notFoundKey] exists"),
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Two missing keys",
+			path:              "db_secrets",
+			keys:              []string{"notFoundKey1", "notFoundKey2"},
+			expectedSecrets:   nil,
+			expectedErr:       errors.New("No value for the keys: [notFoundKey1,notFoundKey2] exists"),
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Valid key",
+			path:              "db_secrets",
+			keys:              []string{"key1"},
+			expectedSecrets:   map[string]string{"key1": "value1"},
+			expectedErr:       nil,
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Two valid keys",
+			path:              "db_secrets",
+			keys:              []string{"key1", "key2"},
+			expectedSecrets:   map[string]string{"key1": "value1", "key2": "value2"},
+			expectedErr:       nil,
+			resetSecretsCache: true,
+		},
+		getSecretsTestObj{
+			testName:          "Valid key (key1 not cached)",
+			path:              "db_secrets",
+			keys:              []string{"key1"},
+			expectedSecrets:   map[string]string{"key1": "value1"},
+			expectedErr:       nil,
+			resetSecretsCache: false,
+		},
+		getSecretsTestObj{
+			testName:          "One valid key (key1 already cached)",
+			path:              "db_secrets",
+			keys:              []string{"key1"},
+			expectedSecrets:   map[string]string{"key1": "value1"},
+			expectedErr:       nil,
+			resetSecretsCache: false,
+		},
+		getSecretsTestObj{
+			testName:          "Two valid keys (key1 cached, key2 not cached)",
+			path:              "db_secrets",
+			keys:              []string{"key1", "key2"},
+			expectedSecrets:   map[string]string{"key1": "value1", "key2": "value2"},
+			expectedErr:       nil,
+			resetSecretsCache: false,
+		},
+	}
+
+	m.Run()
 }
 
 func TestGetSecrets(t *testing.T) {
 
-	secretProvider := newMockSecretProvider()
+	secretProvider := newMockSecretProvider(nil)
 
 	for i, test := range getSecretsTestData {
+		i := i
+		test := test
+		t.Run(test.testName, func(t *testing.T) {
+			secretProvider.secretClient.(*mockSecretClient).testIndex = i
+			secrets, err := secretProvider.GetSecrets(test.path, test.keys...)
 
-		testNameInfo := fmt.Sprintf("Test: %v", test.testName)
-		secretProvider.secretClient.(*mockSecretClient).testIndex = i
+			require.Equal(t, test.expectedErr, err)
+			require.Equal(t, test.expectedSecrets, secrets)
 
-		path := test.path
-		keys := test.keys
-
-		secrets, err := secretProvider.GetSecrets(path, keys...)
-
-		assert.Equal(t, test.expectedErr, err, testNameInfo)
-		assert.Equal(t, test.expectedSecrets, secrets, testNameInfo)
-
-		// not re-newing the secretProvider will test the cache for the next item in the getSecretsTestData slice
-		if test.resetSecretsCache {
-			secretProvider = newMockSecretProvider()
-		}
+			// not re-newing the secretProvider will test the cache for the next item in the getSecretsTestData slice
+			if test.resetSecretsCache {
+				secretProvider = newMockSecretProvider(nil)
+			}
+		})
 	}
 }
 
-func newMockSecretProvider() *SecretProvider {
-	return &SecretProvider{secretClient: &mockSecretClient{}, secrets: make(map[string]map[string]string)}
+func TestGetInsecureSecrets(t *testing.T) {
+
+	secretProvider, origEnv := setupGetInsecureSecrets(t)
+
+	for _, test := range getSecretsTestData {
+		test := test
+		t.Run(test.testName, func(t *testing.T) {
+			secrets, err := secretProvider.getInsecureSecrets(test.path, test.keys...)
+
+			require.Equal(t, test.expectedErr, err)
+			require.Equal(t, test.expectedSecrets, secrets)
+		})
+	}
+
+	tearDownGetInsecureSecrets(t, origEnv)
+}
+
+func setupGetInsecureSecrets(t *testing.T) (sp *SecretProvider, origEnv string) {
+	insecureSecrets := common.InsecureSecrets{
+		"no_path": common.InsecureSecretsInfo{
+			Path: "",
+			Secrets: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		},
+		"db_secrets": common.InsecureSecretsInfo{
+			Path: "db_secrets",
+			Secrets: map[string]string{
+				"key1": "value1",
+				"key2": "value2",
+			},
+		},
+	}
+
+	configuration := common.ConfigurationStruct{
+		Writable: common.WritableInfo{
+			InsecureSecrets: insecureSecrets,
+		},
+	}
+	secretProvider := newMockSecretProvider(&configuration)
+
+	origEnv = os.Getenv("EDGEX_SECURITY_SECRET_STORE")
+
+	//	disable secure store
+	if err := os.Setenv("EDGEX_SECURITY_SECRET_STORE", "false"); err != nil {
+		t.Fatalf("Failed to set env variable: EDGEX_SECURITY_SECRET_STORE")
+	}
+
+	return secretProvider, origEnv
+}
+
+func tearDownGetInsecureSecrets(t *testing.T, origEnv string) {
+	if err := os.Setenv("EDGEX_SECURITY_SECRET_STORE", origEnv); err != nil {
+		t.Fatalf("Failed to set env variable: EDGEX_SECURITY_SECRET_STORE back to original value")
+	}
+}
+
+func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretProvider {
+	return &SecretProvider{
+		secretClient:  &mockSecretClient{},
+		secretsCache:  make(map[string]map[string]string),
+		configuration: configuration,
+	}
 }
 
 func (s *mockSecretClient) GetSecrets(path string, keys ...string) (map[string]string, error) {
