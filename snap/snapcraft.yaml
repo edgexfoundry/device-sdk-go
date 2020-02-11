@@ -52,7 +52,7 @@ parts:
   # This go part is necessary because it's expected that this snapcraft.yaml
   # will be build on Linux Foundation infrastructure and as such runs in a 
   # docker container. Since this may be run in a docker container, we can't 
-  # use the default (and convenient) `build-snaps: [go/1.12]` inside the 
+  # use the default (and convenient) `build-snaps: [go/1.13]` inside the
   # device-simple part which requires a working snapd which isn't available
   # inside a docker container
   go:
