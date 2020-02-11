@@ -1,10 +1,14 @@
                          EdgeX Foundry Go Device SDK
-                                 Version 1.1.1
+                                 Version 1.1.2
                                  Release Notes
 
 INTRODUCTION
 ============
-This document contains the release notes for the 1.1.1 version of EdgeX Foundry Go Device SDK.
+This document contains the release notes for the 1.1.2 version of EdgeX Foundry Go Device SDK.
+
+Changes for 1.1.2 "Fuji":
+============
+o PR#428:  Update to latest go-mod-contracts for PropertyValue.MediaType fix
 
 Changes for 1.1.1 "Fuji":
 ============
