@@ -24,6 +24,7 @@ var (
 	ServiceLocked          bool
 	Driver                 dsModels.ProtocolDriver
 	RegistryClient         registry.Client
+	Discovery              dsModels.ProtocolDiscovery
 	EventClient            coredata.EventClient
 	AddressableClient      metadata.AddressableClient
 	DeviceClient           metadata.DeviceClient

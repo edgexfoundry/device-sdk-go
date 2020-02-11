@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -24,7 +24,10 @@ import (
 )
 
 const (
-	statusOK string = "OK"
+	statusOK             string = "OK"
+	statusNotImplemented string = "Discovery not implemented"
+	statusUnavailable    string = "Discovery disabled by configuration"
+	statusLocked         string = "OperatingState disabled"
 )
 
 type ConfigRespMap struct {
@@ -49,11 +52,20 @@ func discoveryFunc(w http.ResponseWriter, req *http.Request) {
 	if checkServiceLocked(w, req) {
 		return
 	}
+	if common.CurrentDeviceService.OperatingState == "DISABLED" {
+		http.Error(w, statusLocked, http.StatusLocked) // status=423
+		return
+	}
+	if !common.CurrentConfig.Device.Discovery.Enabled {
+		http.Error(w, statusUnavailable, http.StatusServiceUnavailable) // status=503
+		return
+	}
+	if common.Discovery == nil {
+		http.Error(w, statusNotImplemented, http.StatusNotImplemented) // status=501
+		return
+	}
 
-	vars := mux.Vars(req)
-	go handler.DiscoveryHandler(vars)
-	io.WriteString(w, statusOK)
-	w.WriteHeader(http.StatusAccepted)
+	handler.DiscoveryHandler(w)
 }
 
 func transformFunc(w http.ResponseWriter, req *http.Request) {

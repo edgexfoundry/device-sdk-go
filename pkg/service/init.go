@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/clients"
@@ -66,11 +67,15 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 		go processAsyncResults(ctx, wg)
 	}
 
-	err = common.Driver.Initialize(common.LoggingClient, svc.asyncCh)
+	err = common.Driver.Initialize(common.LoggingClient, svc.asyncCh, svc.deviceCh)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Driver.Initialize failed: %v\n", err)
 		return false
 	}
+
+	svc.deviceCh = make(chan []dsModels.DiscoveredDevice)
+	go processAsyncFilterAndAdd(ctx, wg)
+	go autodiscovery.Run()
 
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -21,10 +21,11 @@ import (
 // by other components of an EdgeX Device Service to interact with
 // a specific class of devices.
 type ProtocolDriver interface {
-	// Initialize performs protocol-specific initialization for the device
-	// service. The given *AsyncValues channel can be used to push asynchronous
-	// events and readings to Core Data.
-	Initialize(lc logger.LoggingClient, asyncCh chan<- *AsyncValues) error
+	// Initialize performs protocol-specific initialization for the device service.
+	// The given *AsyncValues channel can be used to push asynchronous events and
+	// readings to Core Data. The given []DiscoveredDevice channel is used to send
+	// discovered devices that will be filtered and added to Core Metadata asynchronously.
+	Initialize(lc logger.LoggingClient, asyncCh chan<- *AsyncValues, deviceCh chan<- []DiscoveredDevice) error
 
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource.
