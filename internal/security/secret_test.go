@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -25,6 +25,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/mock"
@@ -64,25 +66,23 @@ func TestInitializeClientFromSecretProvider(t *testing.T) {
 
 	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 
-	testSecretStoreInfo := common.SecretStoreInfo{
-		SecretConfig: vault.SecretConfig{
-			Host:                    host,
-			Port:                    portNum,
-			Protocol:                "http",
-			ServerName:              "mockVaultServer",
-			AdditionalRetryAttempts: 2,
-			RetryWaitPeriod:         "100ms",
-		},
+	testSecretStoreInfo := config.SecretStoreInfo{
+		Host:                    host,
+		Port:                    portNum,
+		Protocol:                "http",
+		ServerName:              "mockVaultServer",
+		AdditionalRetryAttempts: 2,
+		RetryWaitPeriod:         "100ms",
 	}
 
-	emptySecretStoreInfo := common.SecretStoreInfo{}
+	emptySecretStoreInfo := config.SecretStoreInfo{}
 
 	tests := []struct {
 		name                             string
 		tokenFileForShared               string
 		tokenFileForExclusive            string
-		sharedSecretStore                common.SecretStoreInfo
-		exclusiveSecretStore             common.SecretStoreInfo
+		sharedSecretStore                config.SecretStoreInfo
+		exclusiveSecretStore             config.SecretStoreInfo
 		expectError                      bool
 		expectSharedSecretClientEmpty    bool
 		expectExclusiveSecretClientEmpty bool
@@ -221,15 +221,13 @@ func TestConfigAdditonalRetryAttempts(t *testing.T) {
 
 	os.Setenv("EDGEX_SECURITY_SECRET_STORE", "true")
 
-	testSecretStoreInfo := common.SecretStoreInfo{
+	testSecretStoreInfo := config.SecretStoreInfo{
 		// configuration with AdditionalRetryAttempts omitted
-		SecretConfig: vault.SecretConfig{
-			Host:       host,
-			Port:       portNum,
-			Protocol:   "http",
-			ServerName: "mockVaultServer",
-		},
-		TokenFile: "client/testdata/testToken.json",
+		Host:       host,
+		Port:       portNum,
+		Protocol:   "http",
+		ServerName: "mockVaultServer",
+		TokenFile:  "client/testdata/testToken.json",
 	}
 
 	config := &common.ConfigurationStruct{

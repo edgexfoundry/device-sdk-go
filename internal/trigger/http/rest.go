@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,13 +27,14 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 )
 
 // Trigger implements Trigger to support Triggers
 type Trigger struct {
-	Configuration common.ConfigurationStruct
+	Configuration *common.ConfigurationStruct
 	Runtime       *runtime.GolangRuntime
 	outputData    []byte
 	Webserver     *webserver.WebServer
@@ -41,14 +42,14 @@ type Trigger struct {
 }
 
 // Initialize initializes the Trigger for logging and REST route
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) error {
+func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) (bootstrap.Deferred, error) {
 	logger := trigger.EdgeXClients.LoggingClient
 
 	logger.Info("Initializing HTTP Trigger")
 	trigger.Webserver.SetupTriggerRoute(trigger.requestHandler)
 	logger.Info("HTTP Trigger Initialized")
 
-	return nil
+	return nil, nil
 }
 
 func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {

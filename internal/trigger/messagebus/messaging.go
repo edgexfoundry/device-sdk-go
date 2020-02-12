@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
@@ -31,7 +32,7 @@ import (
 
 // Trigger implements Trigger to support MessageBusData
 type Trigger struct {
-	Configuration common.ConfigurationStruct
+	Configuration *common.ConfigurationStruct
 	Runtime       *runtime.GolangRuntime
 	client        messaging.MessageClient
 	topics        []types.TopicChannel
@@ -39,7 +40,7 @@ type Trigger struct {
 }
 
 // Initialize ...
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) error {
+func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) (bootstrap.Deferred, error) {
 	var err error
 	logger := trigger.EdgeXClients.LoggingClient
 
@@ -47,14 +48,14 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 
 	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	trigger.topics = []types.TopicChannel{{Topic: trigger.Configuration.Binding.SubscribeTopic, Messages: make(chan types.MessageEnvelope)}}
 	messageErrors := make(chan error)
 
 	err = trigger.client.Connect()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	trigger.client.Subscribe(trigger.topics, messageErrors)
@@ -111,5 +112,12 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 		}
 	}()
 
-	return nil
+	deferred := func() {
+		logger.Info("Disconnecting from the message bus")
+		err := trigger.client.Disconnect()
+		if err != nil {
+			logger.Error("Unable to disconnect from the message bus", "error", err.Error())
+		}
+	}
+	return deferred, nil
 }

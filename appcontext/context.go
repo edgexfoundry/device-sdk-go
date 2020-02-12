@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ type Context struct {
 	// OutputData is used for specifying the data that is to be outputted. Leverage the .Complete() function to set.
 	OutputData []byte
 	// This holds the configuration for your service. This is the preferred way to access your custom application settings that have been set in the configuration.
-	Configuration common.ConfigurationStruct
+	Configuration *common.ConfigurationStruct
 	// LoggingClient is exposed to allow logging following the preferred logging strategy within EdgeX.
 	LoggingClient logger.LoggingClient
 	// EventClient exposes Core Data's EventClient API
@@ -99,6 +99,10 @@ func (context *Context) SetRetryData(payload []byte) {
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
 func (context *Context) PushToCoreData(deviceName string, readingName string, value interface{}) (*models.Event, error) {
 	context.LoggingClient.Debug("Pushing to CoreData")
+	if context.EventClient == nil {
+		return nil, fmt.Errorf("unable to Push To CoreData: '%s' is missing from Clients configuration", common.CoreDataClientName)
+	}
+
 	now := time.Now().UnixNano()
 	val, err := util.CoerceType(value)
 	if err != nil {
