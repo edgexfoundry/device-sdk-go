@@ -21,7 +21,7 @@ import (
 func handleProfile(method string, id string) common.AppError {
 	if method == http.MethodPut {
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		profile, err := common.DeviceProfileClient.DeviceProfile(id, ctx)
+		profile, err := common.DeviceProfileClient.DeviceProfile(ctx, id)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device profile %s from Core Metadata: %v", id, err))

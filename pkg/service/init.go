@@ -49,7 +49,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 
 	svc = newService(dic)
 
-	err := clients.InitDependencyClients()
+	err := clients.InitDependencyClients(wg)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return false

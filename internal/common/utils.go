@@ -17,10 +17,11 @@ import (
 	"sync"
 	"time"
 
-	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
+
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 )
 
 var (
@@ -78,12 +79,12 @@ func SendEvent(event *dsModels.Event) {
 		LoggingClient.Debug("SendEvent: EventClient.MarshalEvent passed through encoded event", clients.CorrelationHeader, correlation)
 	}
 	// Call AddBytes to post event to core data
-	responseBody, errPost := EventClient.AddBytes(event.EncodedEvent, ctx)
+	responseBody, errPost := EventClient.AddBytes(ctx, event.EncodedEvent)
 	if errPost != nil {
 		LoggingClient.Error("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost)
 	} else {
-		LoggingClient.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation)
-		LoggingClient.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(clients.ContentType, ctx), clients.CorrelationHeader, correlation, "event", event)
+		LoggingClient.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation)
+		LoggingClient.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation, "event", event)
 	}
 }
 
@@ -270,7 +271,7 @@ func FilterQueryParams(queryParams string) url.Values {
 		LoggingClient.Error("Error parsing query parameters: %s\n", err)
 	}
 	// Filter out parameters with predefined prefix
-	for k, _ := range m {
+	for k := range m {
 		if strings.HasPrefix(k, SDKReservedPrefix) {
 			delete(m, k)
 		}
@@ -286,7 +287,7 @@ func UpdateLastConnected(name string) {
 	}
 
 	t := time.Now().UnixNano() / int64(time.Millisecond)
-	err := DeviceClient.UpdateLastConnectedByName(name, t, context.Background())
+	err := DeviceClient.UpdateLastConnectedByName(context.Background(), name, t)
 	if err != nil {
 		LoggingClient.Error("Failed to update last connected value for device: " + name)
 	}

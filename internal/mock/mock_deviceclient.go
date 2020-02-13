@@ -33,60 +33,60 @@ var (
 
 type DeviceClientMock struct{}
 
-func (dc *DeviceClientMock) Add(dev *contract.Device, ctx context.Context) (string, error) {
+func (dc *DeviceClientMock) Add(_ context.Context, _ *contract.Device) (string, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) Delete(id string, ctx context.Context) error {
+func (dc *DeviceClientMock) Delete(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DeleteByName(name string, ctx context.Context) error {
+func (dc *DeviceClientMock) DeleteByName(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) CheckForDevice(token string, ctx context.Context) (contract.Device, error) {
+func (dc *DeviceClientMock) CheckForDevice(_ context.Context, _ string) (contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) Device(id string, ctx context.Context) (contract.Device, error) {
+func (dc *DeviceClientMock) Device(_ context.Context, id string) (contract.Device, error) {
 	if id == InvalidDeviceId {
 		return contract.Device{}, fmt.Errorf("invalid id")
 	}
 	return contract.Device{}, nil
 }
 
-func (dc *DeviceClientMock) DeviceForName(name string, ctx context.Context) (contract.Device, error) {
+func (dc *DeviceClientMock) DeviceForName(_ context.Context, name string) (contract.Device, error) {
 	var device = contract.Device{Id: "5b977c62f37ba10e36673802", Name: name}
 	var err error = nil
 	if name == "" {
-		err = errors.New("Item not found")
+		err = errors.New("item not found")
 	}
 
 	return device, err
 }
 
-func (dc *DeviceClientMock) Devices(ctx context.Context) ([]contract.Device, error) {
+func (dc *DeviceClientMock) Devices(_ context.Context) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesByLabel(label string, ctx context.Context) ([]contract.Device, error) {
+func (dc *DeviceClientMock) DevicesByLabel(_ context.Context, _ string) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForProfile(profileid string, ctx context.Context) ([]contract.Device, error) {
+func (dc *DeviceClientMock) DevicesForProfile(_ context.Context, _ string) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForProfileByName(profileName string, ctx context.Context) ([]contract.Device, error) {
+func (dc *DeviceClientMock) DevicesForProfileByName(_ context.Context, _ string) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForService(serviceid string, ctx context.Context) ([]contract.Device, error) {
+func (dc *DeviceClientMock) DevicesForService(_ context.Context, _ string) ([]contract.Device, error) {
 	panic("implement me")
 }
 
-func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string, ctx context.Context) ([]contract.Device, error) {
+func (dc *DeviceClientMock) DevicesForServiceByName(_ context.Context, _ string) ([]contract.Device, error) {
 	err := populateDeviceMock()
 	if err != nil {
 		return nil, err
@@ -100,39 +100,39 @@ func (dc *DeviceClientMock) DevicesForServiceByName(serviceName string, ctx cont
 	}, nil
 }
 
-func (dc *DeviceClientMock) Update(dev contract.Device, ctx context.Context) error {
+func (dc *DeviceClientMock) Update(_ context.Context, _ contract.Device) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateAdminState(id string, adminState string, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateAdminState(_ context.Context, _ string, _ string) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateAdminStateByName(name string, adminState string, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateAdminStateByName(_ context.Context, _ string, _ string) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateLastConnected(id string, time int64, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateLastConnected(_ context.Context, _ string, _ int64) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateLastConnectedByName(name string, time int64, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateLastConnectedByName(_ context.Context, _ string, _ int64) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateLastReported(id string, time int64, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateLastReported(_ context.Context, _ string, _ int64) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateLastReportedByName(name string, time int64, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateLastReportedByName(_ context.Context, _ string, _ int64) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateOpState(id string, opState string, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateOpState(_ context.Context, _ string, _ string) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateOpStateByName(name string, opState string, ctx context.Context) error {
+func (dc *DeviceClientMock) UpdateOpStateByName(_ context.Context, _ string, _ string) error {
 	return nil
 }
 
@@ -147,20 +147,20 @@ func populateDeviceMock() error {
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(devices[DeviceBool], &ValidDeviceRandomBoolGenerator)
-	json.Unmarshal(profiles[DeviceBool], &ValidDeviceRandomBoolGenerator.Profile)
-	json.Unmarshal(devices[DeviceInt], &ValidDeviceRandomIntegerGenerator)
-	json.Unmarshal(profiles[DeviceInt], &ValidDeviceRandomIntegerGenerator.Profile)
-	json.Unmarshal(devices[DeviceUint], &ValidDeviceRandomUnsignedIntegerGenerator)
-	json.Unmarshal(profiles[DeviceUint], &ValidDeviceRandomUnsignedIntegerGenerator.Profile)
-	json.Unmarshal(devices[DeviceFloat], &ValidDeviceRandomFloatGenerator)
-	json.Unmarshal(profiles[DeviceFloat], &ValidDeviceRandomFloatGenerator.Profile)
-	json.Unmarshal(devices[DeviceFloat], &DuplicateDeviceRandomFloatGenerator)
-	json.Unmarshal(profiles[DeviceFloat], &DuplicateDeviceRandomFloatGenerator.Profile)
-	json.Unmarshal(devices[DeviceNew], &NewValidDevice)
-	json.Unmarshal(profiles[DeviceNew], &NewValidDevice.Profile)
-	json.Unmarshal(devices[DeviceNew02], &OperatingStateDisabled)
-	json.Unmarshal(profiles[DeviceNew], &OperatingStateDisabled.Profile)
+	_ = json.Unmarshal(devices[DeviceBool], &ValidDeviceRandomBoolGenerator)
+	_ = json.Unmarshal(profiles[DeviceBool], &ValidDeviceRandomBoolGenerator.Profile)
+	_ = json.Unmarshal(devices[DeviceInt], &ValidDeviceRandomIntegerGenerator)
+	_ = json.Unmarshal(profiles[DeviceInt], &ValidDeviceRandomIntegerGenerator.Profile)
+	_ = json.Unmarshal(devices[DeviceUint], &ValidDeviceRandomUnsignedIntegerGenerator)
+	_ = json.Unmarshal(profiles[DeviceUint], &ValidDeviceRandomUnsignedIntegerGenerator.Profile)
+	_ = json.Unmarshal(devices[DeviceFloat], &ValidDeviceRandomFloatGenerator)
+	_ = json.Unmarshal(profiles[DeviceFloat], &ValidDeviceRandomFloatGenerator.Profile)
+	_ = json.Unmarshal(devices[DeviceFloat], &DuplicateDeviceRandomFloatGenerator)
+	_ = json.Unmarshal(profiles[DeviceFloat], &DuplicateDeviceRandomFloatGenerator.Profile)
+	_ = json.Unmarshal(devices[DeviceNew], &NewValidDevice)
+	_ = json.Unmarshal(profiles[DeviceNew], &NewValidDevice.Profile)
+	_ = json.Unmarshal(devices[DeviceNew02], &OperatingStateDisabled)
+	_ = json.Unmarshal(profiles[DeviceNew], &OperatingStateDisabled.Profile)
 
 	return nil
 }

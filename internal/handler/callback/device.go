@@ -22,7 +22,7 @@ import (
 func handleDevice(method string, id string) common.AppError {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	if method == http.MethodPost {
-		device, err := common.DeviceClient.Device(id, ctx)
+		device, err := common.DeviceClient.Device(ctx, id)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))
@@ -63,7 +63,7 @@ func handleDevice(method string, id string) common.AppError {
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
 		autoevent.GetManager().RestartForDevice(device.Name)
 	} else if method == http.MethodPut {
-		device, err := common.DeviceClient.Device(id, ctx)
+		device, err := common.DeviceClient.Device(ctx, id)
 		if err != nil {
 			appErr := common.NewBadRequestError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Cannot find the device %s from Core Metadata: %v", id, err))

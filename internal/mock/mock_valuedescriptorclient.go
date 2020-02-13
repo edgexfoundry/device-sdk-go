@@ -12,9 +12,10 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
 )
 
 var (
@@ -30,19 +31,18 @@ var (
 	ValueDescriptorUint64              = contract.ValueDescriptor{}
 	ValueDescriptorFloat32             = contract.ValueDescriptor{}
 	ValueDescriptorFloat64             = contract.ValueDescriptor{}
-	//ValueDescriptorString              = contract.ValueDescriptor{}
-	NewValueDescriptor            = contract.ValueDescriptor{}
-	DuplicateValueDescriptorInt16 = contract.ValueDescriptor{}
-	descMap                       = make(map[string]contract.ValueDescriptor, 0)
+	NewValueDescriptor                 = contract.ValueDescriptor{}
+	DuplicateValueDescriptorInt16      = contract.ValueDescriptor{}
+	descMap                            = make(map[string]contract.ValueDescriptor, 0)
 )
 
 type ValueDescriptorMock struct{}
 
-func (ValueDescriptorMock) ValueDescriptorsUsage(names []string, ctx context.Context) (map[string]bool, error) {
+func (ValueDescriptorMock) ValueDescriptorsUsage(_ context.Context, _ []string) (map[string]bool, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptors(ctx context.Context) ([]contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptors(_ context.Context) ([]contract.ValueDescriptor, error) {
 	err := populateValueDescriptorMock()
 	if err != nil {
 		return nil, err
@@ -60,47 +60,46 @@ func (ValueDescriptorMock) ValueDescriptors(ctx context.Context) ([]contract.Val
 		ValueDescriptorUint64,
 		ValueDescriptorFloat32,
 		ValueDescriptorFloat64,
-		//ValueDescriptorString,
 	}, nil
 }
 
-func (ValueDescriptorMock) ValueDescriptor(id string, ctx context.Context) (contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptor(_ context.Context, _ string) (contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorForName(name string, ctx context.Context) (contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorForName(_ context.Context, _ string) (contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsByLabel(label string, ctx context.Context) ([]contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsByLabel(_ context.Context, _ string) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsForDevice(deviceId string, ctx context.Context) ([]contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsForDevice(_ context.Context, _ string) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsForDeviceByName(deviceName string, ctx context.Context) ([]contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsForDeviceByName(_ context.Context, _ string) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) ValueDescriptorsByUomLabel(uomLabel string, ctx context.Context) ([]contract.ValueDescriptor, error) {
+func (ValueDescriptorMock) ValueDescriptorsByUomLabel(_ context.Context, _ string) ([]contract.ValueDescriptor, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) Add(vdr *contract.ValueDescriptor, ctx context.Context) (string, error) {
+func (ValueDescriptorMock) Add(_ context.Context, _ *contract.ValueDescriptor) (string, error) {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) Update(vdr *contract.ValueDescriptor, ctx context.Context) error {
+func (ValueDescriptorMock) Update(_ context.Context, _ *contract.ValueDescriptor) error {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) Delete(id string, ctx context.Context) error {
+func (ValueDescriptorMock) Delete(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
-func (ValueDescriptorMock) DeleteByName(name string, ctx context.Context) error {
+func (ValueDescriptorMock) DeleteByName(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
@@ -115,7 +114,7 @@ func populateValueDescriptorMock() error {
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(profiles["New-Device"], &NewDeviceProfile)
+	_ = json.Unmarshal(profiles["New-Device"], &NewDeviceProfile)
 	dps = append(dps, NewDeviceProfile)
 
 	for _, dp := range dps {

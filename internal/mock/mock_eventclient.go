@@ -14,60 +14,62 @@ import (
 
 type EventClientMock struct{}
 
-func (EventClientMock) AddBytes(event []byte, ctx context.Context) (string, error) {
+func (e EventClientMock) Events(_ context.Context) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) MarshalEvent(e contract.Event) ([]byte, error) {
+func (e EventClientMock) Event(_ context.Context, _ string) (contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) Events(ctx context.Context) ([]contract.Event, error) {
+func (e EventClientMock) EventCount(_ context.Context) (int, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) Event(id string, ctx context.Context) (contract.Event, error) {
+func (e EventClientMock) EventCountForDevice(_ context.Context, _ string) (int, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventCount(ctx context.Context) (int, error) {
+func (e EventClientMock) EventsForDevice(_ context.Context, _ string, _ int) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventCountForDevice(deviceId string, ctx context.Context) (int, error) {
+func (e EventClientMock) EventsForInterval(_ context.Context, _ int, _ int, _ int) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventsForDevice(id string, limit int, ctx context.Context) ([]contract.Event, error) {
+func (e EventClientMock) EventsForDeviceAndValueDescriptor(_ context.Context, _ string, _ string, _ int) ([]contract.Event, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventsForInterval(start int, end int, limit int, ctx context.Context) ([]contract.Event, error) {
+func (e EventClientMock) Add(_ context.Context, _ *contract.Event) (string, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) EventsForDeviceAndValueDescriptor(deviceId string, vd string, limit int, ctx context.Context) ([]contract.Event, error) {
+func (e EventClientMock) AddBytes(_ context.Context, _ []byte) (string, error) {
 	panic("implement me")
 }
 
-func (EventClientMock) Add(event *contract.Event, ctx context.Context) (string, error) {
-	return "", nil
-}
-
-func (EventClientMock) DeleteForDevice(id string, ctx context.Context) error {
+func (e EventClientMock) DeleteForDevice(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
-func (EventClientMock) DeleteOld(age int, ctx context.Context) error {
+func (e EventClientMock) DeleteOld(_ context.Context, _ int) error {
 	panic("implement me")
 }
 
-func (EventClientMock) Delete(id string, ctx context.Context) error {
+func (e EventClientMock) Delete(_ context.Context, _ string) error {
 	panic("implement me")
 }
-func (EventClientMock) MarkPushed(id string, ctx context.Context) error {
+
+func (e EventClientMock) MarkPushed(_ context.Context, _ string) error {
 	panic("implement me")
 }
-func (EventClientMock) MarkPushedByChecksum(id string, ctx context.Context) error {
+
+func (e EventClientMock) MarkPushedByChecksum(_ context.Context, _ string) error {
+	panic("implement me")
+}
+
+func (e EventClientMock) MarshalEvent(_ contract.Event) ([]byte, error) {
 	panic("implement me")
 }

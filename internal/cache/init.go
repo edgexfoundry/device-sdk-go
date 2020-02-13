@@ -32,14 +32,14 @@ func InitCache() {
 		}
 		newValueDescriptorCache(vds)
 
-		ds, err := common.DeviceClient.DevicesForServiceByName(common.ServiceName, ctx)
+		ds, err := common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Device cache initialization failed: %v", err))
 			ds = make([]contract.Device, 0)
 		}
 		newDeviceCache(ds)
 
-		pws, err := common.ProvisionWatcherClient.ProvisionWatchersForServiceByName(common.ServiceName, ctx)
+		pws, err := common.ProvisionWatcherClient.ProvisionWatchersForServiceByName(ctx, common.ServiceName)
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("Provision Watcher cache initialization failed %v", err))
 			pws = make([]contract.ProvisionWatcher, 0)

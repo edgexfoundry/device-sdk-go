@@ -10,11 +10,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 )
 
 func TestInitCache(t *testing.T) {
@@ -29,7 +30,7 @@ func TestInitCache(t *testing.T) {
 		t.Errorf("the expected number of valuedescriptors in cache is %d but got: %d:", len(vdsBeforeAddingToCache), vl)
 	}
 
-	dsBeforeAddingToCache, _ := common.DeviceClient.DevicesForServiceByName(common.ServiceName, ctx)
+	dsBeforeAddingToCache, _ := common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
 	if dl := len(Devices().All()); dl != len(dsBeforeAddingToCache) {
 		t.Errorf("the expected number of devices in cache is %d but got: %d:", len(dsBeforeAddingToCache), dl)
 	}

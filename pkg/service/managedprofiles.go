@@ -31,7 +31,7 @@ func (s *Service) AddDeviceProfile(profile contract.DeviceProfile) (id string, e
 	profile.Origin = millis
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err = common.DeviceProfileClient.Add(&profile, ctx)
+	id, err = common.DeviceProfileClient.Add(ctx, &profile)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Profile failed %s, error: %v", profile.Name, err))
 		return "", err
@@ -40,7 +40,7 @@ func (s *Service) AddDeviceProfile(profile contract.DeviceProfile) (id string, e
 		return "", err
 	}
 	profile.Id = id
-	cache.Profiles().Add(profile)
+	_ = cache.Profiles().Add(profile)
 
 	provision.CreateDescriptorsFromProfile(&profile)
 
@@ -64,7 +64,7 @@ func (s *Service) RemoveDeviceProfile(id string) error {
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %s", profile.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceProfileClient.Delete(id, ctx)
+	err := common.DeviceProfileClient.Delete(ctx, id)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete DeviceProfile %s from Core Metadata failed", id))
 		return err
@@ -86,7 +86,7 @@ func (*Service) RemoveDeviceProfileByName(name string) error {
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %s", profile.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceProfileClient.DeleteByName(name, ctx)
+	err := common.DeviceProfileClient.DeleteByName(ctx, name)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete DeviceProfile %s from Core Metadata failed", name))
 		return err
@@ -108,7 +108,7 @@ func (*Service) UpdateDeviceProfile(profile contract.DeviceProfile) error {
 
 	common.LoggingClient.Debug(fmt.Sprintf("Updating managed DeviceProfile: : %s", profile.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceProfileClient.Update(profile, ctx)
+	err := common.DeviceProfileClient.Update(ctx, profile)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Update DeviceProfile %s from Core Metadata failed: %v", profile.Name, err))
 		return err
@@ -138,7 +138,7 @@ func (*Service) ResourceOperation(deviceName string, deviceResource string, meth
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
 // the Device name and Device Resource name
-func (*Service) DeviceResource(deviceName string, deviceResource string, method string) (contract.DeviceResource, bool) {
+func (*Service) DeviceResource(deviceName string, deviceResource string, _ string) (contract.DeviceResource, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		common.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))
