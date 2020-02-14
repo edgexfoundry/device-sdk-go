@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 package util
 
 import (
@@ -77,7 +78,8 @@ func TestCoerceTypeJSONMarshalerToByteArray(t *testing.T) {
 	assert.IsType(t, reflect.TypeOf(expectedType), reflect.TypeOf(result))
 }
 func TestCoerceTypeNotSupportedToByteArray(t *testing.T) {
-	myData := 25
+	// Channels are not marshalable to JSON and generate an error
+	myData := make(chan int)
 	var expectedType []byte
 	result, err := CoerceType(myData)
 	assert.Error(t, err)

@@ -34,6 +34,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pelletier/go-toml"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-registry/pkg/types"
+	"github.com/edgexfoundry/go-mod-registry/registry"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -47,17 +56,8 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/urlclient"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
-	coreTypes "github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/edgexfoundry/go-mod-registry/pkg/types"
-	"github.com/edgexfoundry/go-mod-registry/registry"
 )
 
 const (
@@ -119,7 +119,7 @@ func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.Response
 		route == clients.ApiMetricsRoute ||
 		route == clients.ApiVersionRoute ||
 		route == internal.ApiTriggerRoute {
-		return errors.New("Route is reserved")
+		return errors.New("route is reserved")
 	}
 	sdk.webserver.AddRoute(route, sdk.addContext(handler), methods...)
 	return nil
@@ -140,10 +140,10 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	sdk.runtime.Initialize(sdk.storeClient, sdk.secretProvider)
 	sdk.runtime.SetTransforms(sdk.transforms)
 	// determine input type and create trigger for it
-	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
+	t := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-	err := trigger.Initialize(sdk.appWg, sdk.appCtx)
+	err := t.Initialize(sdk.appWg, sdk.appCtx)
 	if err != nil {
 		sdk.LoggingClient.Error(err.Error())
 	}
@@ -199,7 +199,8 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 	executionOrder := util.DeleteEmptyAndTrim(strings.FieldsFunc(pipelineConfig.ExecutionOrder, util.SplitComma))
 
 	if len(executionOrder) <= 0 {
-		return nil, errors.New("Execution Order has 0 functions specified. You must have a least one function in the pipeline")
+		return nil, errors.New(
+			"execution Order has 0 functions specified. You must have a least one function in the pipeline")
 	}
 	sdk.LoggingClient.Debug("Execution Order", "Functions", strings.Join(executionOrder, ","))
 
@@ -207,19 +208,19 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 		functionName = strings.TrimSpace(functionName)
 		configuration, ok := pipelineConfig.Functions[functionName]
 		if !ok {
-			return nil, fmt.Errorf("Function %s configuration not found in Pipeline.Functions section", functionName)
+			return nil, fmt.Errorf("function %s configuration not found in Pipeline.Functions section", functionName)
 		}
 
 		result := valueOfType.MethodByName(functionName)
 		if result.Kind() == reflect.Invalid {
-			return nil, fmt.Errorf("Function %s is not a built in SDK function", functionName)
+			return nil, fmt.Errorf("function %s is not a built in SDK function", functionName)
 		} else if result.IsNil() {
-			return nil, fmt.Errorf("Invalid/Missing configuration for %s", functionName)
+			return nil, fmt.Errorf("invalid/missing configuration for %s", functionName)
 		}
 
-		//determine number of parameters required for function call
+		// determine number of parameters required for function call
 		inputParameters := make([]reflect.Value, result.Type().NumIn())
-		//set keys to be all lowercase to avoid casing issues from configuration
+		// set keys to be all lowercase to avoid casing issues from configuration
 		for key := range configuration.Parameters {
 			configuration.Parameters[strings.ToLower(key)] = configuration.Parameters[key]
 		}
@@ -234,13 +235,17 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 				inputParameters[index] = reflect.ValueOf(configuration.Addressable)
 
 			default:
-				return nil, fmt.Errorf("Function %s has an unsupported parameter type: %s", functionName, parameter.String())
+				return nil, fmt.Errorf(
+					"function %s has an unsupported parameter type: %s",
+					functionName,
+					parameter.String(),
+				)
 			}
 		}
 
 		function, ok := result.Call(inputParameters)[0].Interface().(appcontext.AppFunction)
 		if !ok {
-			return nil, fmt.Errorf("Failed to cast function %s as AppFunction type", functionName)
+			return nil, fmt.Errorf("failed to cast function %s as AppFunction type", functionName)
 		}
 		pipeline = append(pipeline, function)
 		configurable.Sdk.LoggingClient.Debug(fmt.Sprintf("%s function added to configurable pipeline", functionName))
@@ -249,12 +254,11 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 	return pipeline, nil
 }
 
-//
 // SetFunctionsPipeline allows you to define each fgitunction to execute and the order in which each function
 // will be called as each event comes in.
 func (sdk *AppFunctionsSDK) SetFunctionsPipeline(transforms ...appcontext.AppFunction) error {
 	if len(transforms) == 0 {
-		return errors.New("No transforms provided to pipeline")
+		return errors.New("no transforms provided to pipeline")
 	}
 
 	sdk.transforms = transforms
@@ -330,7 +334,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	// is being used inside sdk.initializeSecretProvider() call below
 	sdk.appCtx, sdk.appCancelCtx = context.WithCancel(context.Background())
 
-	clientsInitialized := false
 	loggerInitialized := false
 	databaseInitialized := false
 	configurationInitialized := false
@@ -374,7 +377,12 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 				goto ContinueWithSleep
 			}
 
-			sdk.LoggingClient = logger.NewClient(sdk.ServiceKey, sdk.config.Logging.EnableRemote, loggingTarget, sdk.config.Writable.LogLevel)
+			sdk.LoggingClient = logger.NewClient(
+				sdk.ServiceKey,
+				sdk.config.Logging.EnableRemote,
+				loggingTarget,
+				sdk.config.Writable.LogLevel,
+			)
 			sdk.LoggingClient.Info("Logger successfully initialized")
 			sdk.edgexClients.LoggingClient = sdk.LoggingClient
 			loggerInitialized = true
@@ -405,10 +413,8 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			}
 		}
 
-		if !clientsInitialized {
-			sdk.initializeClients()
-			sdk.LoggingClient.Info("Clients initialized")
-		}
+		sdk.initializeClients()
+		sdk.LoggingClient.Info("Clients initialized")
 
 		// This is the last dependency so can break out of the retry loop.
 		bootstrapComplete = true
@@ -442,7 +448,7 @@ func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
 	sdk.secretProvider = security.NewSecretProvider()
 	ok := sdk.secretProvider.CreateClient(sdk.appCtx, sdk.LoggingClient, sdk.config)
 	if !ok {
-		err := errors.New("Unable to initialize secret provider")
+		err := errors.New("unable to initialize secret provider")
 		sdk.LoggingClient.Error(err.Error())
 		return err
 	}
@@ -490,7 +496,7 @@ func (sdk *AppFunctionsSDK) validateVersionMatch() bool {
 	}
 
 	url := sdk.config.Clients[common.CoreDataClientName].Url() + clients.ApiVersionRoute
-	data, err := clients.GetRequest(url, context.Background())
+	data, err := clients.GetRequestWithURL(context.Background(), url)
 	if err != nil {
 		sdk.LoggingClient.Error("Unable to get version of Core Services", "error", err)
 		return false
@@ -531,66 +537,101 @@ func (sdk *AppFunctionsSDK) validateVersionMatch() bool {
 
 // setupTrigger configures the appropriate trigger as specified by configuration.
 func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
-	var trigger trigger.Trigger
+	var t trigger.Trigger
 	// Need to make dynamic, search for the binding that is input
 
 	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
 		sdk.LoggingClient.Info("HTTP trigger selected")
-		trigger = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
+		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
 	case "MESSAGEBUS":
 		sdk.LoggingClient.Info("MessageBus trigger selected")
-		trigger = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
+		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
 	}
 
-	return trigger
+	return t
 }
 
 func (sdk *AppFunctionsSDK) addContext(next func(nethttp.ResponseWriter, *nethttp.Request)) func(nethttp.ResponseWriter, *nethttp.Request) {
-	return nethttp.HandlerFunc(func(w nethttp.ResponseWriter, r *nethttp.Request) {
+	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
 		ctx := context.WithValue(r.Context(), SDKKey, sdk)
 		next(w, r.WithContext(ctx))
-	})
+	}
 }
 
 func (sdk *AppFunctionsSDK) initializeClients() {
 	// Need when passing all Clients to other components
 	sdk.edgexClients.LoggingClient = sdk.LoggingClient
+	wg := &sync.WaitGroup{}
+	clientMonitor, err := time.ParseDuration(sdk.config.Service.ClientMonitor)
+	if err != nil {
+		sdk.LoggingClient.Warn(
+			fmt.Sprintf(
+				"Service.ClientMonitor failed to parse: %s, use the default value: %v",
+				err,
+				internal.ClientMonitorDefault,
+			),
+		)
+		// fall back to default value
+		clientMonitor = internal.ClientMonitorDefault
+	}
+
+	interval := int(clientMonitor / time.Millisecond)
 
 	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
 	// sending commands, then don't need to have the Command client in the configuration.
 	if _, ok := sdk.config.Clients[common.CoreDataClientName]; ok {
-		params := sdk.getClientParams(clients.CoreDataServiceKey, common.CoreDataClientName, clients.ApiEventRoute)
-		sdk.edgexClients.EventClient = coredata.NewEventClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+		sdk.edgexClients.EventClient = coredata.NewEventClient(
+			urlclient.New(
+				context.Background(),
+				wg,
+				sdk.registryClient,
+				clients.CoreDataServiceKey,
+				clients.ApiEventRoute,
+				interval,
+				sdk.config.Clients[common.CoreDataClientName].Url()+clients.ApiEventRoute,
+			),
+		)
 
-		params = sdk.getClientParams(clients.CoreDataServiceKey, common.CoreDataClientName, clients.ApiValueDescriptorRoute)
-		sdk.edgexClients.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+		sdk.edgexClients.ValueDescriptorClient = coredata.NewValueDescriptorClient(
+			urlclient.New(
+				context.Background(),
+				wg,
+				sdk.registryClient,
+				clients.CoreDataServiceKey,
+				clients.ApiValueDescriptorRoute,
+				interval,
+				sdk.config.Clients[common.CoreDataClientName].Url()+clients.ApiValueDescriptorRoute,
+			),
+		)
 	}
 
 	if _, ok := sdk.config.Clients[common.CoreCommandClientName]; ok {
-		params := sdk.getClientParams(clients.CoreCommandServiceKey, common.CoreCommandClientName, clients.ApiDeviceRoute)
-		sdk.edgexClients.CommandClient = command.NewCommandClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
+		sdk.edgexClients.CommandClient = command.NewCommandClient(
+			urlclient.New(
+				context.Background(),
+				wg,
+				sdk.registryClient,
+				clients.CoreCommandServiceKey,
+				clients.ApiDeviceRoute,
+				interval,
+				sdk.config.Clients[common.CoreCommandClientName].Url()+clients.ApiDeviceRoute,
+			),
+		)
 	}
 
 	if _, ok := sdk.config.Clients[common.NotificationsClientName]; ok {
-		params := sdk.getClientParams(clients.SupportNotificationsServiceKey, common.NotificationsClientName, clients.ApiNotificationRoute)
-		sdk.edgexClients.NotificationsClient = notifications.NewNotificationsClient(params, startup.Endpoint{RegistryClient: &sdk.registryClient})
-	}
-}
-
-func (sdk *AppFunctionsSDK) getClientParams(serviceKey string, clientName string, route string) coreTypes.EndpointParams {
-	clientMonitor, err := time.ParseDuration(sdk.config.Service.ClientMonitor)
-	if err != nil {
-		sdk.LoggingClient.Warn(fmt.Sprintf("Service.ClientMonitor failed to parse: %s, use the default value: %v", err, internal.ClientMonitorDefault))
-		// fall back to default value
-		clientMonitor = internal.ClientMonitorDefault
-	}
-	return coreTypes.EndpointParams{
-		ServiceKey:  serviceKey,
-		Path:        route,
-		UseRegistry: sdk.useRegistry,
-		Url:         sdk.config.Clients[clientName].Url() + route,
-		Interval:    int(clientMonitor / time.Millisecond),
+		sdk.edgexClients.NotificationsClient = notifications.NewNotificationsClient(
+			urlclient.New(
+				context.Background(),
+				wg,
+				sdk.registryClient,
+				clients.SupportNotificationsServiceKey,
+				clients.ApiNotificationRoute,
+				interval,
+				sdk.config.Clients[common.NotificationsClientName].Url()+clients.ApiNotificationRoute,
+			),
+		)
 	}
 }
 
@@ -619,34 +660,34 @@ func (sdk *AppFunctionsSDK) initializeConfiguration(configuration *common.Config
 
 		client, err := registry.NewRegistryClient(registryConfig)
 		if err != nil {
-			return fmt.Errorf("Connection to Registry could not be made: %v", err)
+			return fmt.Errorf("connection to Registry could not be made: %v", err)
 		}
 
-		//set registryClient
+		// set registryClient
 		sdk.registryClient = client
 
 		if !sdk.registryClient.IsAlive() {
-			return fmt.Errorf("Registry (%s) is not running", registryConfig.Type)
+			return fmt.Errorf("registry (%s) is not running", registryConfig.Type)
 		}
 
 		hasConfig, err := sdk.registryClient.HasConfiguration()
 		if err != nil {
-			return fmt.Errorf("Could not determine if registry has configuration: %v", err)
+			return fmt.Errorf("could not determine if registry has configuration: %v", err)
 		}
 
 		if !sdk.overwriteConfig && hasConfig {
 			rawConfig, err := sdk.registryClient.GetConfiguration(configuration)
 			if err != nil {
-				return fmt.Errorf("Could not get configuration from Registry: %v", err)
+				return fmt.Errorf("could not get configuration from Registry: %v", err)
 			}
 
 			actual, ok := rawConfig.(*common.ConfigurationStruct)
 			if !ok {
-				return fmt.Errorf("Configuration from Registry failed type check")
+				return fmt.Errorf("configuration from Registry failed type check")
 			}
 			configuration = actual
 
-			//Check that information was successfully read from Consul
+			// Check that information was successfully read from Consul
 			if configuration.Service.Port == 0 {
 				sdk.LoggingClient.Error("Error reading from registry")
 			}
@@ -677,7 +718,7 @@ func (sdk *AppFunctionsSDK) initializeConfiguration(configuration *common.Config
 		// Register the service with Registry
 		err = sdk.registryClient.Register()
 		if err != nil {
-			return fmt.Errorf("Could not register service with Registry: %v", err)
+			return fmt.Errorf("could not register service with Registry: %v", err)
 		}
 	}
 
@@ -727,7 +768,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 			//       then skip updating the pipeline
 			switch {
 			case previousLogLevel != sdk.config.Writable.LogLevel:
-				sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
+				_ = sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
 				sdk.LoggingClient.Info(fmt.Sprintf("Logging level changed to %s", sdk.config.Writable.LogLevel))
 
 			case previousStoreForward.MaxRetryCount != sdk.config.Writable.StoreAndForward.MaxRetryCount:
@@ -741,7 +782,7 @@ func (sdk *AppFunctionsSDK) listenForConfigChanges() {
 				sdk.processConfigChangedStoreForwardRetryInterval()
 
 			case previousStoreForward.Enabled != sdk.config.Writable.StoreAndForward.Enabled:
-				sdk.processConfigChangedStoreForwardEnabled(previousStoreForward)
+				sdk.processConfigChangedStoreForwardEnabled()
 
 			default:
 				// Must have been a change to the pipeline configuration, so now attempt to update it.
@@ -758,7 +799,7 @@ func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardRetryInterval() {
 	}
 }
 
-func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardEnabled(previousStoreForward common.StoreAndForwardInfo) {
+func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardEnabled() {
 	if sdk.config.Writable.StoreAndForward.Enabled {
 		// StoreClient must be set up for StoreAndForward
 		if sdk.storeClient == nil {

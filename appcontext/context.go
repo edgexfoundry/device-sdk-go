@@ -81,9 +81,9 @@ func (context *Context) MarkAsPushed() error {
 	}
 
 	if context.EventID != "" {
-		return context.EventClient.MarkPushed(context.EventID, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
+		return context.EventClient.MarkPushed(syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID), context.EventID)
 	} else if context.EventChecksum != "" {
-		return context.EventClient.MarkPushedByChecksum(context.EventChecksum, syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID))
+		return context.EventClient.MarkPushedByChecksum(syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID), context.EventChecksum)
 	} else {
 		return errors.New("No EventID or EventChecksum Provided")
 	}
@@ -122,7 +122,7 @@ func (context *Context) PushToCoreData(deviceName string, readingName string, va
 
 	correlation := uuid.New().String()
 	ctx := syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, correlation)
-	result, err := context.EventClient.Add(newEdgeXEvent, ctx)
+	result, err := context.EventClient.Add(ctx, newEdgeXEvent)
 	if err != nil {
 		return nil, err
 	}

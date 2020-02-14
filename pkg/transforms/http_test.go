@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 package transforms
 
 import (
@@ -103,10 +104,12 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 func TestHTTPPostInvalidParameter(t *testing.T) {
 
 	sender := NewHTTPSender("", "", false)
-	data := 25
+	// Channels are not marshalable to JSON and generate an error
+	data := make(chan int)
 	continuePipeline, result := sender.HTTPPost(context, data)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
-	assert.Equal(t, result.(error).Error(), "passed in data must be of type []byte, string or implement json.Marshaler")
+	assert.Equal(t, result.(error).Error(), "marshaling input data to JSON failed, "+
+		"passed in data must be of type []byte, string, or support marshaling to JSON")
 }
