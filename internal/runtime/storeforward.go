@@ -236,7 +236,7 @@ func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject, con
 
 	edgexContext.LoggingClient.Trace("Retrying stored data", clients.CorrelationHeader, edgexContext.CorrelationID)
 
-	return sf.runtime.executePipeline(
+	return sf.runtime.ExecutePipeline(
 		item.Payload,
 		"",
 		edgexContext,

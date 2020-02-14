@@ -104,6 +104,7 @@ type AppFunctionsSDK struct {
 	registryClient            registry.Client
 	config                    common.ConfigurationStruct
 	storeClient               interfaces.StoreClient
+	secretProvider            *security.SecretProvider
 	storeForwardWg            *sync.WaitGroup
 	storeForwardCancelCtx     context.CancelFunc
 	appWg                     *sync.WaitGroup
@@ -136,9 +137,8 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 		ServiceKey: sdk.ServiceKey,
 	}
 
-	sdk.runtime.Initialize(sdk.storeClient)
+	sdk.runtime.Initialize(sdk.storeClient, sdk.secretProvider)
 	sdk.runtime.SetTransforms(sdk.transforms)
-
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
@@ -331,6 +331,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	databaseInitialized := false
 	configurationInitialized := false
 	bootstrapComplete := false
+	secretProviderInitialized := false
 
 	timeStart := time.Now()
 	// Currently have to load configuration from filesystem first in order to obtain
@@ -380,6 +381,13 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			return fmt.Errorf("core service's version is not compatible with SDK's version")
 		}
 
+		if !secretProviderInitialized {
+			if err := sdk.initializeSecretProvider(); err != nil {
+				return err
+			}
+			secretProviderInitialized = true
+		}
+
 		// Currently only need the database if store and forward is enabled
 		if sdk.config.Writable.StoreAndForward.Enabled {
 			if !databaseInitialized {
@@ -427,17 +435,25 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	return nil
 }
 
+func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
+
+	sdk.secretProvider = security.NewSecretProvider()
+	ok := sdk.secretProvider.CreateClient(sdk.LoggingClient, sdk.config)
+	if !ok {
+		err := errors.New("Unable to initialize secret provider")
+		sdk.LoggingClient.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
 func (sdk *AppFunctionsSDK) initializeStoreClient() error {
 	var err error
 
-	secret := security.NewSecret()
-	secret.CreateClient(sdk.LoggingClient, sdk.config)
-
-	credentials, err := secret.GetDatabaseCredentials(sdk.config.Database)
-
+	credentials, err := sdk.secretProvider.GetDatabaseCredentials(sdk.config.Database)
 	if err != nil {
 		sdk.LoggingClient.Error("Unable to get Database Credentials", "error", err)
-		return err
 	}
 
 	sdk.config.Database.Username = credentials.Username
@@ -750,7 +766,7 @@ func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardEnabled(previousStor
 				return
 			}
 
-			sdk.runtime.Initialize(sdk.storeClient)
+			sdk.runtime.Initialize(sdk.storeClient, sdk.secretProvider)
 		}
 
 		sdk.startStoreForward()
@@ -789,6 +805,22 @@ func (sdk *AppFunctionsSDK) stopStoreForward() {
 	sdk.LoggingClient.Info("Canceling Store and Forward retry loop")
 	sdk.storeForwardCancelCtx()
 	sdk.storeForwardWg.Wait()
+}
+
+// GetSecrets retrieves secrets from a secret store.
+// path specifies the type or location of the secrets to retrieve.
+// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
+// specified path will be returned.
+func (sdk *AppFunctionsSDK) GetSecrets(path string, keys ...string) (map[string]string, error) {
+	return sdk.secretProvider.GetSecrets(path, keys...)
+}
+
+// StoreSecrets stores the secrets to a secret store.
+// it sets the values requested at provided keys
+// path specifies the type or location of the secrets to store
+// secrets map specifies the "key": "value" pairs of secrets to store
+func (sdk *AppFunctionsSDK) StoreSecrets(path string, secrets map[string]string) error {
+	return sdk.secretProvider.StoreSecrets(path, secrets)
 }
 
 func (sdk *AppFunctionsSDK) setLoggingTarget() (string, error) {

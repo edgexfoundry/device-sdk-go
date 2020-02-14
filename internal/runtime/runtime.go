@@ -20,14 +20,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/ugorji/go/codec"
 	"net/http"
 	"reflect"
 	"strconv"
 	"sync"
 
+	"github.com/ugorji/go/codec"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -38,11 +40,12 @@ const unmarshalErrorMessage = "Unable to unmarshal message payload as %s"
 
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
-	TargetType    interface{}
-	transforms    []appcontext.AppFunction
-	isBusyCopying sync.Mutex
-	storeForward  storeForwardInfo
-	ServiceKey    string
+	TargetType     interface{}
+	ServiceKey     string
+	transforms     []appcontext.AppFunction
+	isBusyCopying  sync.Mutex
+	storeForward   storeForwardInfo
+	secretProvider *security.SecretProvider
 }
 
 type MessageError struct {
@@ -132,14 +135,15 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
 
-	return gr.executePipeline(target, contentType, edgexcontext, transforms, 0, false)
+	return gr.ExecutePipeline(target, contentType, edgexcontext, transforms, 0, false)
 
 }
 
 // Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
-func (gr *GolangRuntime) Initialize(storeClient interfaces.StoreClient) {
+func (gr *GolangRuntime) Initialize(storeClient interfaces.StoreClient, secretProvider *security.SecretProvider) {
 	gr.storeForward.storeClient = storeClient
 	gr.storeForward.runtime = gr
+	gr.secretProvider = secretProvider
 }
 
 // SetTransforms is thread safe to set transforms
@@ -150,11 +154,13 @@ func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
 	gr.isBusyCopying.Unlock()
 }
 
-func (gr *GolangRuntime) executePipeline(target interface{}, contentType string, edgexcontext *appcontext.Context,
+func (gr *GolangRuntime) ExecutePipeline(target interface{}, contentType string, edgexcontext *appcontext.Context,
 	transforms []appcontext.AppFunction, startPosition int, isRetry bool) *MessageError {
 
 	var result interface{}
 	var continuePipeline = true
+
+	edgexcontext.SecretProvider = gr.secretProvider
 
 	for functionIndex, trxFunc := range transforms {
 		if functionIndex < startPosition {
