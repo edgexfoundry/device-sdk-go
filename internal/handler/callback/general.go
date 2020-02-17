@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -25,6 +25,8 @@ func CallbackHandler(cbAlert contract.CallbackAlert, method string) common.AppEr
 		return handleDevice(method, cbAlert.Id)
 	} else if cbAlert.ActionType == contract.PROFILE {
 		return handleProfile(method, cbAlert.Id)
+	} else if cbAlert.ActionType == contract.PROVISIONWATCHER {
+		return handleProvisionWatcher(method, cbAlert.Id)
 	}
 
 	common.LoggingClient.Error(fmt.Sprintf("Invalid callback action type: %s", cbAlert.ActionType))
