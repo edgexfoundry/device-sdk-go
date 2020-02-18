@@ -436,7 +436,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 }
 
 func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
-
 	sdk.secretProvider = security.NewSecretProvider()
 	ok := sdk.secretProvider.CreateClient(sdk.LoggingClient, sdk.config)
 	if !ok {
