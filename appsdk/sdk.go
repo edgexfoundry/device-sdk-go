@@ -326,6 +326,10 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		}
 	}
 
+	// to first initialize the app context and cancel function as the context
+	// is being used inside sdk.initializeSecretProvider() call below
+	sdk.appCtx, sdk.appCancelCtx = context.WithCancel(context.Background())
+
 	clientsInitialized := false
 	loggerInitialized := false
 	databaseInitialized := false
@@ -418,7 +422,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		return fmt.Errorf("bootstrap retry timed out")
 	}
 
-	sdk.appCtx, sdk.appCancelCtx = context.WithCancel(context.Background())
 	sdk.appWg = &sync.WaitGroup{}
 
 	if sdk.useRegistry {
@@ -437,7 +440,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
 	sdk.secretProvider = security.NewSecretProvider()
-	ok := sdk.secretProvider.CreateClient(sdk.LoggingClient, sdk.config)
+	ok := sdk.secretProvider.CreateClient(sdk.appCtx, sdk.LoggingClient, sdk.config)
 	if !ok {
 		err := errors.New("Unable to initialize secret provider")
 		sdk.LoggingClient.Error(err.Error())

@@ -15,13 +15,17 @@
 package security
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/authtokenloader"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/client"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/fileioperformer"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+
 	"github.com/edgexfoundry/go-mod-secrets/pkg"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
@@ -39,6 +43,7 @@ func NewSecretProvider() *SecretProvider {
 
 // CreateClient creates a SecretClient to be used for obtaining secrets from a secrets store manager.
 func (s *SecretProvider) CreateClient(
+	ctx context.Context,
 	loggingClient logger.LoggingClient,
 	configuration common.ConfigurationStruct) bool {
 
@@ -50,7 +55,7 @@ func (s *SecretProvider) CreateClient(
 
 	// attempt to create a new SecretProvider client only if security is enabled.
 	if s.isSecurityEnabled() {
-		s.secretClient, err = vault.NewSecretClient(secretConfig)
+		s.secretClient, err = client.NewVault(ctx, secretConfig, loggingClient).Get(configuration.SecretStore)
 		if err != nil {
 			loggingClient.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
 			return false
