@@ -510,7 +510,7 @@ func TestExecutePipelinePersist(t *testing.T) {
 	payload := []byte("My Payload")
 
 	// Target of this test
-	err := runtime.executePipeline(payload, "", &ctx, runtime.transforms, 0, false)
+	err := runtime.ExecutePipeline(payload, "", &ctx, runtime.transforms, 0, false)
 
 	if assert.NotNil(t, err, "Error expected from export function") {
 		storedObjects := mockRetrieveObjects(serviceKey)

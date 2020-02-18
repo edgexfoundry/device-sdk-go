@@ -135,7 +135,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
 
-	return gr.executePipeline(target, contentType, edgexcontext, transforms, 0, false)
+	return gr.ExecutePipeline(target, contentType, edgexcontext, transforms, 0, false)
 
 }
 
@@ -154,7 +154,7 @@ func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
 	gr.isBusyCopying.Unlock()
 }
 
-func (gr *GolangRuntime) executePipeline(target interface{}, contentType string, edgexcontext *appcontext.Context,
+func (gr *GolangRuntime) ExecutePipeline(target interface{}, contentType string, edgexcontext *appcontext.Context,
 	transforms []appcontext.AppFunction, startPosition int, isRetry bool) *MessageError {
 
 	var result interface{}

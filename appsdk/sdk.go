@@ -139,7 +139,6 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.runtime.Initialize(sdk.storeClient, sdk.secretProvider)
 	sdk.runtime.SetTransforms(sdk.transforms)
-
 	// determine input type and create trigger for it
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
@@ -437,7 +436,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 }
 
 func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
-
 	sdk.secretProvider = security.NewSecretProvider()
 	ok := sdk.secretProvider.CreateClient(sdk.LoggingClient, sdk.config)
 	if !ok {
