@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -96,9 +95,8 @@ func TestSetOutputDataMultipleParametersValid(t *testing.T) {
 func TestSetOutputDataBadType(t *testing.T) {
 	target := NewOutputData()
 
-	data := startup.Endpoint{}
-
-	continuePipeline, result := target.SetOutputData(context, data)
+	// Channels are not marshalable to JSON and generate an error
+	continuePipeline, result := target.SetOutputData(context, make(chan int))
 
 	assert.False(t, continuePipeline)
 	if !assert.NotNil(t, result) {

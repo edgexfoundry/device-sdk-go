@@ -22,11 +22,11 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/startup"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/urlclient"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -34,23 +34,15 @@ var context *appcontext.Context
 var lc logger.LoggingClient
 
 const (
-	devID1        = "id1"
-	devID2        = "id2"
-	readingName1  = "sensor1"
-	readingValue1 = "123.45"
+	devID1 = "id1"
+	devID2 = "id2"
 )
 
 func init() {
 	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
-	//Setup eventClient
-	params := types.EndpointParams{
-		ServiceKey:  clients.CoreDataServiceKey,
-		Path:        clients.ApiEventRoute,
-		UseRegistry: false,
-		Url:         "http://test" + clients.ApiEventRoute,
-		Interval:    1000,
-	}
-	eventClient := coredata.NewEventClient(params, startup.Endpoint{RegistryClient: nil})
+	eventClient := coredata.NewEventClient(
+		urlclient.New(nil, nil, nil, "", "", 0, "http://test"+clients.ApiEventRoute),
+	)
 
 	context = &appcontext.Context{
 		LoggingClient: lc,

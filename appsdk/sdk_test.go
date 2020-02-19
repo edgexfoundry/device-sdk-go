@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -36,24 +35,15 @@ import (
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var lc logger.LoggingClient
-var params types.EndpointParams
 
 func init() {
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
-	params = types.EndpointParams{
-		ServiceKey:  clients.SupportSchedulerServiceKey,
-		Path:        clients.ApiIntervalActionRoute,
-		UseRegistry: false,
-		Url:         "http://test" + clients.ApiIntervalActionRoute,
-		Interval:    int(clients.ClientMonitorDefault / time.Millisecond),
-	}
 }
 
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {
@@ -66,8 +56,8 @@ func TestAddRoute(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		webserver: ws,
 	}
-	sdk.AddRoute("/test", func(http.ResponseWriter, *http.Request) {}, "GET")
-	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+	_ = sdk.AddRoute("/test", func(http.ResponseWriter, *http.Request) {}, "GET")
+	_ = router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, err := route.GetPathTemplate()
 		if err != nil {
 			return err
@@ -87,10 +77,10 @@ func TestSetupHTTPTrigger(t *testing.T) {
 			},
 		},
 	}
-	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms(sdk.transforms)
-	trigger := sdk.setupTrigger(sdk.config, runtime)
+	testRuntime := &runtime.GolangRuntime{}
+	testRuntime.Initialize(nil, nil)
+	testRuntime.SetTransforms(sdk.transforms)
+	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of HTTP Trigger")
 }
@@ -103,10 +93,10 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 			},
 		},
 	}
-	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms(sdk.transforms)
-	trigger := sdk.setupTrigger(sdk.config, runtime)
+	testRuntime := &runtime.GolangRuntime{}
+	testRuntime.Initialize(nil, nil)
+	testRuntime.SetTransforms(sdk.transforms)
+	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }
@@ -121,7 +111,7 @@ func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 	}
 	err := sdk.SetFunctionsPipeline()
 	assert.NotNil(t, err, "There should be an error")
-	assert.Equal(t, err.Error(), "No transforms provided to pipeline")
+	assert.Equal(t, err.Error(), "no transforms provided to pipeline")
 }
 func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 	sdk := AppFunctionsSDK{
@@ -248,7 +238,7 @@ func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
 	assert.Error(t, err, "expected error for function not found in config")
-	assert.Equal(t, err.Error(), "Function Bogus configuration not found in Pipeline.Functions section")
+	assert.Equal(t, err.Error(), "function Bogus configuration not found in Pipeline.Functions section")
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
 }
 
@@ -270,7 +260,7 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
 	assert.Error(t, err, "expected error")
-	assert.Equal(t, err.Error(), "Function Bogus is not a built in SDK function")
+	assert.Equal(t, err.Error(), "function Bogus is not a built in SDK function")
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
 }
 
@@ -399,7 +389,7 @@ func TestSetLoggingTargetRemote(t *testing.T) {
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
 			Clients: map[string]common.ClientInfo{
-				"Logging": common.ClientInfo{
+				"Logging": {
 					Protocol: "http",
 					Host:     "logs",
 					Port:     8080,
@@ -415,15 +405,15 @@ func TestSetLoggingTargetRemote(t *testing.T) {
 	assert.Equal(t, "http://logs:8080/api/v1/logs", result, "File path is incorrect")
 }
 func TestInitializeClientsAll(t *testing.T) {
-	clients := make(map[string]common.ClientInfo)
-	clients[common.CoreDataClientName] = common.ClientInfo{}
-	clients[common.NotificationsClientName] = common.ClientInfo{}
-	clients[common.CoreCommandClientName] = common.ClientInfo{}
+	coreClients := make(map[string]common.ClientInfo)
+	coreClients[common.CoreDataClientName] = common.ClientInfo{}
+	coreClients[common.NotificationsClientName] = common.ClientInfo{}
+	coreClients[common.CoreCommandClientName] = common.ClientInfo{}
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Clients: clients,
+			Clients: coreClients,
 		},
 	}
 
@@ -436,13 +426,13 @@ func TestInitializeClientsAll(t *testing.T) {
 }
 
 func TestInitializeClientsJustData(t *testing.T) {
-	clients := make(map[string]common.ClientInfo)
-	clients[common.CoreDataClientName] = common.ClientInfo{}
+	coreClients := make(map[string]common.ClientInfo)
+	coreClients[common.CoreDataClientName] = common.ClientInfo{}
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Clients: clients,
+			Clients: coreClients,
 		},
 	}
 
@@ -456,8 +446,8 @@ func TestInitializeClientsJustData(t *testing.T) {
 }
 
 func TestValidateVersionMatch(t *testing.T) {
-	clients := make(map[string]common.ClientInfo)
-	clients[common.CoreDataClientName] = common.ClientInfo{
+	coreClients := make(map[string]common.ClientInfo)
+	coreClients[common.CoreDataClientName] = common.ClientInfo{
 		Protocol: "http",
 		Host:     "localhost",
 		Port:     0, // Will be replaced by local test webserver's port
@@ -466,7 +456,7 @@ func TestValidateVersionMatch(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: common.ConfigurationStruct{
-			Clients: clients,
+			Clients: coreClients,
 		},
 	}
 
@@ -506,7 +496,7 @@ func TestValidateVersionMatch(t *testing.T) {
 				}
 
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(versionJson))
+				_, _ = w.Write([]byte(versionJson))
 			}
 
 			// create test server with handler
@@ -522,19 +512,5 @@ func TestValidateVersionMatch(t *testing.T) {
 			result := sdk.validateVersionMatch()
 			assert.Equal(t, test.ExpectFailure, !result)
 		})
-	}
-}
-
-type mockEventEndpoint struct {
-}
-
-func (e mockEventEndpoint) Monitor(params types.EndpointParams, ch chan string) {
-	switch params.ServiceKey {
-	case clients.SupportSchedulerServiceKey:
-		url := fmt.Sprintf("http://%s:%v%s", "localhost", 48080, params.Path)
-		ch <- url
-		break
-	default:
-		ch <- ""
 	}
 }

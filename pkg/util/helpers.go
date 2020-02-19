@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 package util
 
 import (
@@ -51,15 +52,15 @@ func CoerceType(param interface{}) ([]byte, error) {
 	case []byte:
 		data = param.([]byte)
 
-	case json.Marshaler:
-		marshaler := param.(json.Marshaler)
-		data, err = marshaler.MarshalJSON()
-		if err != nil {
-			return nil, errors.New("marshaling input data to JSON failed")
-		}
-
 	default:
-		return nil, errors.New("passed in data must be of type []byte, string or implement json.Marshaler")
+		data, err = json.Marshal(param)
+		if err != nil {
+			return nil, errors.New(
+				"marshaling input data to JSON failed, " +
+					"passed in data must be of type []byte, string, or support marshaling to JSON",
+			)
+		}
 	}
+
 	return data, nil
 }
