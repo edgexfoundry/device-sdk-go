@@ -79,7 +79,7 @@ func TestBatchInTimeAndCountMode_CountMet(t *testing.T) {
 
 	go func() {
 		go func() {
-			time.Sleep(200)
+			time.Sleep(400)
 			wgFirst.Done()
 		}()
 		continuePipeline1, _ := bs.Batch(context, []byte(dataToBatch[0]))
