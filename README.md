@@ -296,7 +296,13 @@ There is one encryption transform included in the SDK that can be added to your 
 
 - `NewEncryption(key string, initializationVector string)` - This function returns a `Encryption` instance initialized with the passed in key and initialization vector. This `Encryption` instance is used to access the following encryption function that will use the specified key and initialization vector.
   - `EncryptWithAES` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte` to the pipeline.
-
+### Batch
+Included in the SDK is an in-memory batch function that will hold on to your data before continuing the pipeline. There are three functions provided for batching each with their own strategy.
+- `NewBatchByTime(timeInterval string)` - This function returns a `BatchConfig` instance with time being the strategy that is used for determining when to release the batched data and continue the pipeline. `timeInterval` is the duration to wait (i.e. `10s`). The time begins after the first piece of data is received. If no data has been received no data will be sent forward. 
+- `NewBatchByCount(batchThreshold int)` - This function returns a `BatchConfig` instance with count being the strategy that is used for determining when to release the batched data and continue the pipeline. `batchThreshold` is how many events to hold on to (i.e. `25`). The count begins after the first piece of data is received and once the threshold is met, the batched data will continue forward and the counter will be reset.
+- `NewBatchByTimeAndCount(timeInterval string, batchThreshold int)` - This function returns a `BatchConfig` instance with a combination of both time and count being the strategy that is used for determining when to release the batched data and continue the pipeline. Whichever occurs first will trigger the data to continue and be reset.
+  - `Batch` - This function will apply the selected strategy in your pipeline.
+  
 ### Conversion
 There are two conversions included in the SDK that can be added to your pipeline. These transforms return a `string`.
 
@@ -304,7 +310,7 @@ There are two conversions included in the SDK that can be added to your pipeline
     - `TransformToXML`  - This function receives an `events.Model` type, converts it to XML format and returns the XML string to the pipeline. 
     - `TransformToJSON` - This function receives an `events.Model` type and converts it to JSON format and returns the JSON string to the pipeline.
 
- ### Compressions
+### Compressions
 There are two compression types included in the SDK that can be added to your pipeline. These transforms return a `[]byte`.
 
  - `NewCompression()` - This function returns a `Compression` instance that is used to access the following compression functions:
