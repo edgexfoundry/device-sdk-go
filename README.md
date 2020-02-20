@@ -12,6 +12,7 @@ Table of contents
    * [Built-In Functions](#built-in-transformsfunctions)
       * [Filtering](#filtering)
       * [Encryption](#encryption)
+      * [Batch](#batch)
       * [Conversion](#conversion)
       * [Compressions](#compressions)
       * [Core Data](#CoreData-Functions)
@@ -296,6 +297,7 @@ There is one encryption transform included in the SDK that can be added to your 
 
 - `NewEncryption(key string, initializationVector string)` - This function returns a `Encryption` instance initialized with the passed in key and initialization vector. This `Encryption` instance is used to access the following encryption function that will use the specified key and initialization vector.
   - `EncryptWithAES` - This function receives a either a `string`, `[]byte`, or `json.Marshaller` type and encrypts it using AES encryption and returns a `[]byte` to the pipeline.
+
 ### Batch
 Included in the SDK is an in-memory batch function that will hold on to your data before continuing the pipeline. There are three functions provided for batching each with their own strategy.
 - `NewBatchByTime(timeInterval string)` - This function returns a `BatchConfig` instance with time being the strategy that is used for determining when to release the batched data and continue the pipeline. `timeInterval` is the duration to wait (i.e. `10s`). The time begins after the first piece of data is received. If no data has been received no data will be sent forward. 
