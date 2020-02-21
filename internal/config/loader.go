@@ -39,7 +39,7 @@ var (
 // This also controls whether the service registers itself the registry.
 // The profile and confDir are used to locate the local TOML config file.
 func LoadConfig(useRegistry string, profile string, confDir string) (configuration *common.Config, err error) {
-	fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
+	_, _ = fmt.Fprintf(os.Stdout, "Init: useRegistry: %v profile: %s confDir: %s\n",
 		useRegistry, profile, confDir)
 
 	var registryMsg string
@@ -49,15 +49,21 @@ func LoadConfig(useRegistry string, profile string, confDir string) (configurati
 	if useRegistry == "" {
 		registryMsg = "Load configuration from local file and bypassing registration in Registry..."
 		configuration, _, err = loadConfigFromFile(profile, confDir)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		configuration = &common.Config{}
-		fmt.Fprintf(os.Stdout, "Source of registry url: %s\n", useRegistry)
+		_, _ = fmt.Fprintf(os.Stdout, "Source of registry url: %s\n", useRegistry)
 		if useRegistry == common.RegistryDefault {
 			configuration, _, err = loadConfigFromFile(profile, confDir)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			err = parseRegistryPath(useRegistry, configuration)
 			if err != nil {
-				return
+				return nil, err
 			}
 		}
 
