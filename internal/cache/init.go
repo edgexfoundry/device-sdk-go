@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -38,6 +38,13 @@ func InitCache() {
 			ds = make([]contract.Device, 0)
 		}
 		newDeviceCache(ds)
+
+		pws, err := common.ProvisionWatcherClient.ProvisionWatchersForServiceByName(common.ServiceName, ctx)
+		if err != nil {
+			common.LoggingClient.Error(fmt.Sprintf("Provision Watcher cache initialization failed %v", err))
+			pws = make([]contract.ProvisionWatcher, 0)
+		}
+		newProvisionWatcherCache(pws)
 
 		dps := make([]contract.DeviceProfile, len(ds))
 		for i, d := range ds {

@@ -1,6 +1,6 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -16,20 +16,21 @@ import (
 )
 
 var (
-	ServiceName           string
-	ServiceVersion        string
-	CurrentConfig         *Config
-	CurrentDeviceService  contract.DeviceService
-	UseRegistry           bool
-	OverwriteConfig       bool
-	ServiceLocked         bool
-	Driver                dsModels.ProtocolDriver
-	EventClient           coredata.EventClient
-	AddressableClient     metadata.AddressableClient
-	DeviceClient          metadata.DeviceClient
-	DeviceServiceClient   metadata.DeviceServiceClient
-	DeviceProfileClient   metadata.DeviceProfileClient
-	LoggingClient         logger.LoggingClient
-	ValueDescriptorClient coredata.ValueDescriptorClient
-	MetadataGeneralClient general.GeneralClient
+	ServiceName            string
+	ServiceVersion         string
+	CurrentConfig          *Config
+	CurrentDeviceService   contract.DeviceService
+	UseRegistry            bool
+	OverwriteConfig        bool
+	ServiceLocked          bool
+	Driver                 dsModels.ProtocolDriver
+	EventClient            coredata.EventClient
+	AddressableClient      metadata.AddressableClient
+	DeviceClient           metadata.DeviceClient
+	DeviceServiceClient    metadata.DeviceServiceClient
+	DeviceProfileClient    metadata.DeviceProfileClient
+	LoggingClient          logger.LoggingClient
+	ValueDescriptorClient  coredata.ValueDescriptorClient
+	MetadataGeneralClient  general.GeneralClient
+	ProvisionWatcherClient metadata.ProvisionWatcherClient
 )

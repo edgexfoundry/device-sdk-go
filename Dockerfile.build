@@ -15,7 +15,7 @@
 #
 
 # This is the base build image for 
-ARG BASE=golang:1.12-alpine
+ARG BASE=golang:1.13-alpine
 FROM ${BASE}
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \

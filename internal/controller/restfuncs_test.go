@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -99,7 +99,9 @@ func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewClient("command_test", false, "./command_test.log", "DEBUG")
 	common.LoggingClient = lc
 	common.ServiceLocked = false
+	common.DeviceClient = &mock.DeviceClientMock{}
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
+	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
 	controller := NewRestController()
 	controller.InitRestRoutes()
 

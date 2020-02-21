@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -50,6 +50,7 @@ var (
 
 func init() {
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
+	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
 	common.DeviceClient = &mock.DeviceClientMock{}
 	common.EventClient = &mock.EventClientMock{}
 	common.LoggingClient = logger.MockLogger{}
