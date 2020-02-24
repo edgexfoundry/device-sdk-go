@@ -37,7 +37,6 @@ func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id str
 	watcher.Origin = millis
 	watcher.Service = common.CurrentDeviceService
 	watcher.Profile = prf
-	common.LoggingClient.Debug(fmt.Sprintf("Adding Watcher: %s", watcher.Name))
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err = common.ProvisionWatcherClient.Add(&watcher, ctx)
@@ -49,7 +48,6 @@ func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id str
 		return "", err
 	}
 	watcher.Id = id
-	cache.ProvisionWatchers().Add(watcher)
 
 	return id, nil
 }
@@ -88,8 +86,7 @@ func (s *Service) RemoveProvisionWatcher(id string) error {
 		return err
 	}
 
-	err = cache.ProvisionWatchers().Remove(id)
-	return err
+	return nil
 }
 
 // UpdateProvisionWatcher updates the Watcher in the cache and ensures that the
@@ -110,5 +107,5 @@ func (s *Service) UpdateProvisionWatcher(watcher contract.ProvisionWatcher) erro
 		return err
 	}
 
-	return cache.ProvisionWatchers().Update(watcher)
+	return nil
 }

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -38,7 +38,6 @@ func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 	device.Origin = millis
 	device.Service = common.CurrentDeviceService
 	device.Profile = prf
-	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %s", device.Name))
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err = common.DeviceClient.Add(&device, ctx)
