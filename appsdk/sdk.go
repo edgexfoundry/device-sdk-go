@@ -851,7 +851,8 @@ func (sdk *AppFunctionsSDK) stopStoreForward() {
 }
 
 // GetSecrets retrieves secrets from a secret store.
-// path specifies the type or location of the secrets to retrieve.
+// path specifies the type or location of the secrets to retrieve. If specified it is appended
+// to the base path from the SecretConfig
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
 func (sdk *AppFunctionsSDK) GetSecrets(path string, keys ...string) (map[string]string, error) {
@@ -860,7 +861,8 @@ func (sdk *AppFunctionsSDK) GetSecrets(path string, keys ...string) (map[string]
 
 // StoreSecrets stores the secrets to a secret store.
 // it sets the values requested at provided keys
-// path specifies the type or location of the secrets to store
+// path specifies the type or location of the secrets to store. If specified it is appended
+// to the base path from the SecretConfig
 // secrets map specifies the "key": "value" pairs of secrets to store
 func (sdk *AppFunctionsSDK) StoreSecrets(path string, secrets map[string]string) error {
 	return sdk.secretProvider.StoreSecrets(path, secrets)

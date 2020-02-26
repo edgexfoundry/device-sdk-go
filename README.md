@@ -25,6 +25,7 @@ Table of contents
      * [Command Line Options](#command_line_options)
      * [Environment Variable Overrides](#environment_variable_overrides)
      * [Store and Forward](#store-and-forward)
+     * [Secrets](#secrets)
 
  <!--te-->
 
@@ -275,7 +276,7 @@ Each of the clients above is only initialized if the Clients section of the conf
 
 ### .GetSecrets()
 
-`.GetSecrets(path string, keys ...string)` is used to retrieve secrets from the secret store. `path` describes the type or location of the secrets to retrieve. `keys` specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the specified path will be returned.
+`.GetSecrets(path string, keys ...string)` is used to retrieve secrets from the secret store. `path` specifies the type or location of the secrets to retrieve. If specified it is appended to the base path from the secret store configuration. `keys` specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the specified path will be returned.
 
 ## Built-In Transforms/Functions 
 
@@ -638,3 +639,37 @@ One of three out comes can occur after the export retried has completed.
 
 > *NOTE: Changing Writable.Pipeline.ExecutionOrder will invalidate all currently stored data and result in it all being removed from the database on the next retry.* This is because the position of the export function can no longer be guaranteed and no way to ensure it is properly executed on the retry.
 
+### Secrets
+
+#### Getting Secrets
+
+Application Services can retrieve their secrets from the underlying secret store using the [GetSecrets()](#.GetSecrets()) API in the SDK. 
+
+##### Vault Secrets
+
+If in secure mode, the secrets are retrieved from Vault based on the SecretStore configuration values. The path parameter in the GetSecrets() API call is appended to the SecretStore.Path configuration and used as the secret's location in Vault. 
+
+##### Insecure Secrets
+
+When running in insecure mode, the secrets are retrieved from the *Writable.InsecureSecrets* section of the configuration file. Insecure secrets and their paths can be configured as below.
+
+```toml
+   [Writable.InsecureSecrets]    
+      [Writable.InsecureSecrets.AWS]
+        Path = 'aws'
+        [Writable.InsecureSecrets.AWS.Secrets]
+          username = 'aws-user'
+          password = 'aws-pw'
+      
+      [Writable.InsecureSecrets.MongoDB]
+        Path = ''
+        [Writable.InsecureSecrets.MongoDB.Secrets]
+          username = 'mongo-user'
+          password = 'mongo-pw'
+```
+
+`NOTE: An empty path is a valid configuration for a secret's location  `
+
+#### Storing Secrets
+
+<placeholder>

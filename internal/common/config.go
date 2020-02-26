@@ -35,6 +35,7 @@ type WritableInfo struct {
 	LogLevel        string
 	Pipeline        PipelineInfo
 	StoreAndForward StoreAndForwardInfo
+	InsecureSecrets InsecureSecrets
 }
 
 // ClientInfo provides the host and port of another service in the eco-system.
@@ -146,4 +147,13 @@ type SecretStoreInfo struct {
 type Credentials struct {
 	Username string
 	Password string
+}
+
+// InsecureSecrets is used to hold the secrets stored in the configuration
+type InsecureSecrets map[string]InsecureSecretsInfo
+
+// InsecureSecretsInfo encapsulates info used to retrieve insecure secrets
+type InsecureSecretsInfo struct {
+	Path    string
+	Secrets map[string]string
 }

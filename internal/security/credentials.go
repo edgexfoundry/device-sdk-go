@@ -15,29 +15,38 @@
 package security
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 )
 
+// GetDatabaseCredentials retrieves the login credentials for the database
+// If security is disabled then we use the insecure credentials supplied by the configuration.
 func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (common.Credentials, error) {
-	// If security is disabled or the database is Redis then we are to use the credentials supplied by the
-	// configuration. The reason we do this for Redis is because Redis does not have an authentication nor an
-	// authorization mechanism.
-	if !s.isSecurityEnabled() || database.Type == db.RedisDB {
-		return common.Credentials{
-			Username: database.Username,
-			Password: database.Password,
-		}, nil
+	var credentials map[string]string
+	var err error
+
+	// TODO: remove once Redis has credentials
+	if database.Type == db.RedisDB {
+		return common.Credentials{}, err
 	}
 
-	secrets, err := s.secretClient.GetSecrets(database.Type, "username", "password")
+	// If security is disabled then we are to use the insecure credentials supplied by the configuration.
+	if !s.isSecurityEnabled() {
+		credentials, err = s.getInsecureSecrets(database.Type, "username", "password")
+	} else {
+		credentials, err = s.secretClient.GetSecrets(database.Type, "username", "password")
+	}
+
 	if err != nil {
 		return common.Credentials{}, err
 	}
 
 	return common.Credentials{
-		Username: secrets["username"],
-		Password: secrets["password"],
+		Username: credentials["username"],
+		Password: credentials["password"],
 	}, nil
 }
 
@@ -46,31 +55,100 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
 func (s *SecretProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
-
-	// check cache for keys
-	allKeysExistsInCache := false
-	cachedSecrets, cacheExists := s.secrets[path]
-
-	if cacheExists {
-		for _, key := range keys {
-			if _, allKeysExistsInCache = cachedSecrets[key]; !allKeysExistsInCache {
-				break
-			}
-		}
-
-		// return cached secrets if they exist in cache
-		if allKeysExistsInCache {
-			return cachedSecrets, nil
-		}
+	if !s.isSecurityEnabled() {
+		return s.getInsecureSecrets(path, keys...)
 	}
 
-	newSecrets, err := s.secretClient.GetSecrets(path, keys...)
+	if cachedSecrets := s.getSecretsCache(path, keys...); cachedSecrets != nil {
+		return cachedSecrets, nil
+	}
+
+	secrets, err := s.secretClient.GetSecrets(path, keys...)
 	if err != nil {
 		return nil, err
 	}
 
-	s.secrets[path] = newSecrets
-	return s.secrets[path], nil
+	s.updateSecretsCache(path, secrets)
+	return secrets, nil
+}
+
+// GetInsecureSecrets retrieves secrets from the Writable.InsecureSecrets section of the configuration
+// path specifies the type or location of the secrets to retrieve.
+// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
+// specified path will be returned.
+func (s *SecretProvider) getInsecureSecrets(path string, keys ...string) (map[string]string, error) {
+	secrets := make(map[string]string)
+	pathExists := false
+	var missingKeys []string
+
+	for _, insecureSecrets := range s.configuration.Writable.InsecureSecrets {
+		if insecureSecrets.Path == path {
+			if len(keys) == 0 {
+				// If no keys are provided then all the keys associated with the specified path will be returned
+				for k, v := range insecureSecrets.Secrets {
+					secrets[k] = v
+				}
+				return secrets, nil
+			}
+
+			pathExists = true
+			for _, key := range keys {
+				value, keyExists := insecureSecrets.Secrets[key]
+				if !keyExists {
+					missingKeys = append(missingKeys, key)
+					continue
+				}
+				secrets[key] = value
+			}
+		}
+	}
+
+	if len(missingKeys) > 0 {
+		err := fmt.Errorf("No value for the keys: [%s] exists", strings.Join(missingKeys, ","))
+		return nil, err
+	}
+
+	if !pathExists {
+		// if path is not in secret store
+		err := fmt.Errorf("Error, path (%v) doesn't exist in secret store", path)
+		return nil, err
+	}
+
+	return secrets, nil
+}
+
+func (s *SecretProvider) getSecretsCache(path string, keys ...string) map[string]string {
+	secrets := make(map[string]string)
+
+	allKeysExistInCache := false
+	cachedSecrets, cacheExists := s.secretsCache[path]
+
+	if cacheExists {
+		for _, key := range keys {
+			value, allKeysExistInCache := cachedSecrets[key]
+			if !allKeysExistInCache {
+				return nil
+			}
+			secrets[key] = value
+		}
+
+		// return secrets if the requested keys exist in cache
+		if allKeysExistInCache {
+			return secrets
+		}
+	}
+
+	return nil
+}
+
+func (s *SecretProvider) updateSecretsCache(path string, secrets map[string]string) {
+	if _, cacheExists := s.secretsCache[path]; !cacheExists {
+		s.secretsCache[path] = secrets
+	}
+
+	for key, value := range secrets {
+		s.secretsCache[path][key] = value
+	}
 }
 
 // StoreSecrets stores the secrets to a secret store.
