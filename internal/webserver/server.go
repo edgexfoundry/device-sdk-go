@@ -24,6 +24,7 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -33,9 +34,10 @@ import (
 
 // WebServer handles the webserver configuration
 type WebServer struct {
-	Config        *common.ConfigurationStruct
-	LoggingClient logger.LoggingClient
-	router        *mux.Router
+	Config         *common.ConfigurationStruct
+	LoggingClient  logger.LoggingClient
+	router         *mux.Router
+	secretProvider *security.SecretProvider
 }
 
 // swagger:model
@@ -44,12 +46,17 @@ type Version struct {
 	SDKVersion string `json:"sdk_version"`
 }
 
+const (
+	secretsRoute = "/secrets"
+)
+
 // NewWebserver returns a new instance of *WebServer
-func NewWebServer(config *common.ConfigurationStruct, lc logger.LoggingClient, router *mux.Router) *WebServer {
+func NewWebServer(config *common.ConfigurationStruct, secretProvider *security.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
 	ws := &WebServer{
-		Config:        config,
-		LoggingClient: lc,
-		router:        router,
+		Config:         config,
+		LoggingClient:  lc,
+		router:         router,
+		secretProvider: secretProvider,
 	}
 
 	return ws
@@ -173,9 +180,93 @@ func (webserver *WebServer) versionHandler(writer http.ResponseWriter, _ *http.R
 	return
 }
 
+// swagger:operation POST /secrets Secret
+//
+// Secret
+//
+// Posts secret(s) to the SDK that the SDK will add to the secret client.
+//
+// ---
+//
+// requestBody:
+// content:
+//   application/json:
+// 	schema:
+// 	  $ref: '#/definitions/SecretData'
+// 	example:
+//  {
+//   "path" : "MyPath"
+//   "secrets":[
+//       {
+//         "key" : "MySecretKey",
+//         "value" : "MySecretValue"
+//       }
+//    ]
+//  }
+//
+// produces:
+//
+// Schemes:
+//  - http
+//
+// Responses:
+//  '201':
+//    description: Posted secret(s) to the SDK
+//    schema:
+//      "$ref": "#/definitions/SecretData"
+//  '400':
+//    description: Bad request could not decode JSON payload
+//    schema:
+//      "$ref": "#/definitions/SecretData"
+//  '500':
+//    description: Internal Server Error
+//    schema:
+//      "$ref": "#/definitions/SecretData"
+//
+func (webserver *WebServer) secretHandler(writer http.ResponseWriter, req *http.Request) {
+	decoder := json.NewDecoder(req.Body)
+	var secretData SecretData
+
+	err := decoder.Decode(&secretData)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to parse json payload: %v", err)
+		webserver.writeResponse(writer, msg, http.StatusBadRequest)
+		return
+	}
+
+	if err = secretData.validateSecretData(); err != nil {
+		webserver.writeResponse(writer, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	var secretsKV = make(map[string]string)
+	for _, secret := range secretData.Secrets {
+		secretsKV[secret.Key] = secret.Value
+	}
+
+	if err := webserver.secretProvider.StoreSecrets(secretData.Path, secretsKV); err != nil {
+		msg := fmt.Sprintf("Storing secret failed: %v", err)
+		webserver.writeResponse(writer, msg, http.StatusInternalServerError)
+		return
+	}
+
+	writer.WriteHeader(http.StatusCreated)
+	return
+}
+
+func (webserver *WebServer) writeResponse(writer http.ResponseWriter, msg string, statusCode int) {
+	webserver.LoggingClient.Error(msg)
+	writer.WriteHeader(statusCode)
+	writer.Write([]byte(msg))
+}
+
 // AddRoute enables support to leverage the existing webserver to add routes.
-func (webserver *WebServer) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) {
-	webserver.router.HandleFunc(route, handler).Methods(methods...)
+func (webserver *WebServer) AddRoute(routePath string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+	route := webserver.router.HandleFunc(routePath, handler).Methods(methods...)
+	if routeErr := route.GetError(); routeErr != nil {
+		return routeErr
+	}
+	return nil
 }
 
 // ConfigureStandardRoutes loads up some default routes
@@ -193,6 +284,10 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 
 	// Version
 	webserver.router.HandleFunc(clients.ApiVersionRoute, webserver.versionHandler).Methods(http.MethodGet)
+
+	// Secrets
+	webserver.router.HandleFunc(secretsRoute, webserver.secretHandler).Methods(http.MethodPost)
+
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request

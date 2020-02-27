@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/stretchr/testify/require"
 )
 
@@ -233,19 +234,16 @@ func tearDownGetInsecureSecrets(t *testing.T, origEnv string) {
 }
 
 func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretProvider {
-	return &SecretProvider{
-		secretClient:  &mockSecretClient{},
-		secretsCache:  make(map[string]map[string]string),
-		configuration: configuration,
-	}
+	logClient := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	mockSP := NewSecretProvider(logClient, configuration)
+	mockSP.secretClient = &mockSecretClient{}
+	return mockSP
 }
 
 func (s *mockSecretClient) GetSecrets(path string, keys ...string) (map[string]string, error) {
-
 	return getSecretsTestData[s.testIndex].expectedSecrets, getSecretsTestData[s.testIndex].expectedErr
 }
 
 func (s *mockSecretClient) StoreSecrets(path string, secrets map[string]string) error {
-
 	return nil
 }

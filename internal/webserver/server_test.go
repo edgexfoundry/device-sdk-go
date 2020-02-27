@@ -17,10 +17,14 @@
 package webserver
 
 import (
+	"bytes"
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -34,14 +38,42 @@ import (
 var logClient logger.LoggingClient
 var config *common.ConfigurationStruct
 
-func init() {
+func TestMain(m *testing.M) {
 	logClient = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 	config = &common.ConfigurationStruct{}
+	m.Run()
+}
+
+func TestAddRoute(t *testing.T) {
+	routePath := "/testRoute"
+	testHandler := func(_ http.ResponseWriter, _ *http.Request) {}
+	sp := security.NewSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
+	err := webserver.AddRoute(routePath, testHandler)
+	assert.NoError(t, err, "Not expecting an error")
+
+	// Malformed path no slash
+	routePath = "testRoute"
+	err = webserver.AddRoute(routePath, testHandler)
+	assert.Error(t, err, "Expecting an error")
+}
+
+func TestEncode(t *testing.T) {
+	sp := security.NewSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
+	writer := httptest.NewRecorder()
+	var junkData interface{}
+	// something that will always fail to marshal
+	junkData = math.Inf(1)
+	webserver.encode(junkData, writer)
+	body := writer.Body.String()
+	assert.NotEqual(t, math.Inf(1), body)
 }
 
 func TestConfigureAndPingRoute(t *testing.T) {
 
-	webserver := NewWebServer(config, logClient, mux.NewRouter())
+	sp := security.NewSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiPingRoute, nil)
@@ -55,7 +87,8 @@ func TestConfigureAndPingRoute(t *testing.T) {
 
 func TestConfigureAndVersionRoute(t *testing.T) {
 
-	webserver := NewWebServer(config, logClient, mux.NewRouter())
+	sp := security.NewSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiVersionRoute, nil)
@@ -68,7 +101,8 @@ func TestConfigureAndVersionRoute(t *testing.T) {
 }
 func TestConfigureAndConfigRoute(t *testing.T) {
 
-	webserver := NewWebServer(config, logClient, mux.NewRouter())
+	sp := security.NewSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiConfigRoute, nil)
@@ -82,7 +116,8 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-	webserver := NewWebServer(config, logClient, mux.NewRouter())
+	sp := newMockSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
 	req, _ := http.NewRequest("GET", clients.ApiMetricsRoute, nil)
@@ -103,7 +138,8 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	webserver := NewWebServer(config, logClient, mux.NewRouter())
+	sp := newMockSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 
 	handlerFunctionNotCalled := true
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -122,5 +158,79 @@ func TestSetupTriggerRoute(t *testing.T) {
 
 	assert.Equal(t, "test", body)
 	assert.False(t, handlerFunctionNotCalled, "expected handler function to be called")
+}
 
+func TestPostSecretRoute(t *testing.T) {
+
+	sp := newMockSecretProvider(logClient, config)
+	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
+	webserver.ConfigureStandardRoutes()
+
+	tests := []struct {
+		name           string
+		payload        []byte
+		expectedStatus int
+	}{
+		{
+			name:           "PostSecretRoute: Good case with one secret",
+			payload:        []byte(`{"path":"MyPath","secrets":[{"key":"MySecretKey","value":"MySecretValue"}]}`),
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "PostSecretRoute: Good case with two secrets",
+			payload:        []byte(`{"path":"MyPath","secrets":[{"key":"MySecretKey1","value":"MySecretValue1"}, {"key":"MySecretKey2","value":"MySecretValue2"}]}`),
+			expectedStatus: http.StatusCreated,
+		},
+		{
+			name:           "PostSecretRoute: missing secrets",
+			payload:        []byte(`{"path":"MyPath"}`),
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "PostSecretRoute: malformed payload",
+			payload:        []byte(`<"path"="MyPath">`),
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, test := range tests {
+		currentTest := test
+		t.Run(test.name, func(t *testing.T) {
+			req, _ := http.NewRequest("POST", secretsRoute, bytes.NewReader(currentTest.payload))
+			rr := httptest.NewRecorder()
+			webserver.router.ServeHTTP(rr, req)
+			assert.Equal(t, currentTest.expectedStatus, rr.Result().StatusCode, "Expected secret doesn't match postSecret")
+		})
+	}
+}
+
+func TestValidateSecretRoute(t *testing.T) {
+	secretDataBadPath := SecretData{Path: "/!$%&/foo", Secrets: []KeyValue{KeyValue{Key: "key", Value: "val"}}}
+	assert.Error(t, secretDataBadPath.validateSecretData())
+
+	secretDataEmptyKey := SecretData{Path: "/foo/bar", Secrets: []KeyValue{KeyValue{Key: "", Value: "val"}}}
+	assert.Error(t, secretDataEmptyKey.validateSecretData())
+
+	secretDataGoodPath := SecretData{Path: "/foo/bar", Secrets: []KeyValue{KeyValue{Key: "key", Value: "val"}}}
+	assert.NoError(t, secretDataGoodPath.validateSecretData())
+}
+
+// mockSecretClient is fake vault client
+type mockSecretClient struct {
+}
+
+// NewMockSecretProvider provides a mocked version of the mockSecretClient to avoiding using vault in our tests
+func newMockSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) *security.SecretProvider {
+	mockSP := security.NewSecretProvider(logClient, config)
+	return mockSP
+}
+
+// GetSecrets mock implementation of GetSecrets
+func (s *mockSecretClient) GetSecrets(path string, keys ...string) (map[string]string, error) {
+	return nil, nil
+}
+
+// StoreSecrets mock implementation of StoreSecrets
+func (s *mockSecretClient) StoreSecrets(path string, secrets map[string]string) error {
+	return nil
 }
