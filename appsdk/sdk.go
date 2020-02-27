@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/pelletier/go-toml"
+	toml "github.com/pelletier/go-toml"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
@@ -121,8 +121,7 @@ func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.Response
 		route == internal.ApiTriggerRoute {
 		return errors.New("route is reserved")
 	}
-	sdk.webserver.AddRoute(route, sdk.addContext(handler), methods...)
-	return nil
+	return sdk.webserver.AddRoute(route, sdk.addContext(handler), methods...)
 }
 
 // MakeItRun will initialize and start the trigger as specifed in the
@@ -438,15 +437,16 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.appWg.Add(1)
 	go telemetry.StartCpuUsageAverage(sdk.appWg, sdk.appCtx, sdk.LoggingClient)
 
-	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.LoggingClient, mux.NewRouter())
+	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.secretProvider, sdk.LoggingClient, mux.NewRouter())
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
 }
 
 func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
-	sdk.secretProvider = security.NewSecretProvider()
-	ok := sdk.secretProvider.CreateClient(sdk.appCtx, sdk.LoggingClient, sdk.config)
+
+	sdk.secretProvider = security.NewSecretProvider(sdk.LoggingClient, &sdk.config)
+	ok := sdk.secretProvider.Initialize(sdk.appCtx)
 	if !ok {
 		err := errors.New("unable to initialize secret provider")
 		sdk.LoggingClient.Error(err.Error())

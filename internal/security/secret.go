@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/authtokenloader"
@@ -35,31 +36,35 @@ type SecretProvider struct {
 	secretClient  pkg.SecretClient
 	secretsCache  map[string]map[string]string // secret's path, key, value
 	configuration *common.ConfigurationStruct
+	cacheMuxtex   *sync.Mutex
+	loggingClient logger.LoggingClient
 }
 
 // NewSecretProvider returns a new secret provider
-func NewSecretProvider() *SecretProvider {
-	return &SecretProvider{secretsCache: make(map[string]map[string]string)}
+func NewSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) *SecretProvider {
+	sp := &SecretProvider{
+		secretsCache:  make(map[string]map[string]string),
+		cacheMuxtex:   &sync.Mutex{},
+		configuration: configuration,
+		loggingClient: loggingClient,
+	}
+
+	return sp
 }
 
-// CreateClient creates a SecretClient to be used for obtaining secrets from a secrets store manager.
-func (s *SecretProvider) CreateClient(
-	ctx context.Context,
-	loggingClient logger.LoggingClient,
-	configuration common.ConfigurationStruct) bool {
-
-	s.configuration = &configuration
-	secretConfig, err := s.getSecretConfig(configuration.SecretStore)
+// Initialize creates a SecretClient to be used for obtaining secrets from a secrets store manager.
+func (s *SecretProvider) Initialize(ctx context.Context) bool {
+	secretConfig, err := s.getSecretConfig(s.configuration.SecretStore)
 	if err != nil {
-		loggingClient.Error(fmt.Sprintf("unable to parse secret store configuration: %s", err.Error()))
+		s.loggingClient.Error(fmt.Sprintf("unable to parse secret store configuration: %s", err.Error()))
 		return false
 	}
 
 	// attempt to create a new SecretProvider client only if security is enabled.
 	if s.isSecurityEnabled() {
-		s.secretClient, err = client.NewVault(ctx, secretConfig, loggingClient).Get(configuration.SecretStore)
+		s.secretClient, err = client.NewVault(ctx, secretConfig, s.loggingClient).Get(s.configuration.SecretStore)
 		if err != nil {
-			loggingClient.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
+			s.loggingClient.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
 			return false
 		}
 	}

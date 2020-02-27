@@ -37,11 +37,14 @@ import (
 )
 
 func TestNewSecretProvider(t *testing.T) {
-	secretProvider := NewSecretProvider()
+	config := &common.ConfigurationStruct{}
+	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+
+	secretProvider := NewSecretProvider(lc, config)
 	assert.NotNil(t, secretProvider, "secretProvider from NewSecretProvider should not be nil")
 }
 
-func TestCreateClientFromSecretProvider(t *testing.T) {
+func TestInitializeClientFromSecretProvider(t *testing.T) {
 	// setup
 	tokenPeriod := 6
 	tokenDataMap := initTokenData(tokenPeriod)
@@ -69,7 +72,6 @@ func TestCreateClientFromSecretProvider(t *testing.T) {
 		},
 	}
 
-	secretProvider := NewSecretProvider()
 	tests := []struct {
 		name        string
 		tokenFile   string
@@ -101,7 +103,7 @@ func TestCreateClientFromSecretProvider(t *testing.T) {
 		// inject testing data
 		testSecretStoreInfo.TokenFile = test.tokenFile
 
-		config := common.ConfigurationStruct{
+		config := &common.ConfigurationStruct{
 			SecretStore: testSecretStoreInfo,
 		}
 
@@ -109,7 +111,8 @@ func TestCreateClientFromSecretProvider(t *testing.T) {
 		currentTest := test
 
 		t.Run(test.name, func(t *testing.T) {
-			ok := secretProvider.CreateClient(ctx, lc, config)
+			secretProvider := NewSecretProvider(lc, config)
+			ok := secretProvider.Initialize(ctx)
 
 			if currentTest.expectError {
 				assert.False(t, ok, "Expect error but none was received")

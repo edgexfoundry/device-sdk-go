@@ -15,6 +15,7 @@
 package security
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -61,6 +62,10 @@ func (s *SecretProvider) GetSecrets(path string, keys ...string) (map[string]str
 
 	if cachedSecrets := s.getSecretsCache(path, keys...); cachedSecrets != nil {
 		return cachedSecrets, nil
+	}
+
+	if s.secretClient == nil {
+		return nil, errors.New("can't get secret(s) 'SecretProvider' is not properly initialized")
 	}
 
 	secrets, err := s.secretClient.GetSecrets(path, keys...)
@@ -120,6 +125,11 @@ func (s *SecretProvider) getInsecureSecrets(path string, keys ...string) (map[st
 func (s *SecretProvider) getSecretsCache(path string, keys ...string) map[string]string {
 	secrets := make(map[string]string)
 
+	// Synchronize cache access
+	s.cacheMuxtex.Lock()
+	defer s.cacheMuxtex.Unlock()
+
+	// check cache for keys
 	allKeysExistInCache := false
 	cachedSecrets, cacheExists := s.secretsCache[path]
 
@@ -142,6 +152,10 @@ func (s *SecretProvider) getSecretsCache(path string, keys ...string) map[string
 }
 
 func (s *SecretProvider) updateSecretsCache(path string, secrets map[string]string) {
+	// Synchronize cache access
+	s.cacheMuxtex.Lock()
+	defer s.cacheMuxtex.Unlock()
+
 	if _, cacheExists := s.secretsCache[path]; !cacheExists {
 		s.secretsCache[path] = secrets
 	}
@@ -156,5 +170,24 @@ func (s *SecretProvider) updateSecretsCache(path string, secrets map[string]stri
 // path specifies the type or location of the secrets to store
 // secrets map specifies the "key": "value" pairs of secrets to store
 func (s *SecretProvider) StoreSecrets(path string, secrets map[string]string) error {
-	return nil // TODO: returning nil until interface is implemented
+	if !s.isSecurityEnabled() {
+		return errors.New("Storing secrets is not supported when running in insecure mode")
+	}
+
+	if s.secretClient == nil {
+		return errors.New("can't store secret(s) 'SecretProvider' is not properly initialized")
+	}
+
+	err := s.secretClient.StoreSecrets(path, secrets)
+	if err != nil {
+		return err
+	}
+
+	// Synchronize cache access before clearing
+	s.cacheMuxtex.Lock()
+	// Clearing cache because adding a new secret(s) possibly invalidates the previous cache
+	s.secretsCache = make(map[string]map[string]string)
+	s.cacheMuxtex.Unlock()
+
+	return nil
 }

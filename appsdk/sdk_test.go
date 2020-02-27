@@ -42,8 +42,9 @@ import (
 
 var lc logger.LoggingClient
 
-func init() {
+func TestMain(m *testing.M) {
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	m.Run()
 }
 
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {
@@ -51,7 +52,7 @@ func IsInstanceOf(objectPtr, typePtr interface{}) bool {
 }
 func TestAddRoute(t *testing.T) {
 	router := mux.NewRouter()
-	ws := webserver.NewWebServer(&common.ConfigurationStruct{}, lc, router)
+	ws := webserver.NewWebServer(&common.ConfigurationStruct{}, nil, lc, router)
 
 	sdk := AppFunctionsSDK{
 		webserver: ws,

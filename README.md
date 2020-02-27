@@ -400,7 +400,7 @@ It is not uncommon to require your own API endpoints when building an app servic
 - /api/v1/metrics
 - /api/v1/config
 - /api/v1/trigger
-To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string)` function provided on the sdk. Here's an example:
+To add your own route, use the `AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) error` function provided on the sdk. Here's an example:
 ```golang
 edgexSdk.AddRoute("/myroute", func(writer http.ResponseWriter, req *http.Request) {
     context := req.Context().Value(appsdk.SDKKey).(*appsdk.AppFunctionsSDK) 
@@ -672,4 +672,18 @@ When running in insecure mode, the secrets are retrieved from the *Writable.Inse
 
 #### Storing Secrets
 
-<placeholder>
+When running an application service in secure mode, secrets for can be stored in the secret store (Vault) by making an HTTP `POST` call to `http://[host]:[port]/secrets`.  If running in insecure mode, secrets can be configured in consul or in the config yaml file, for more information on insecure secrets see [Insecure Secrets](#insecure-secrets).
+
+An example of the message body JSON is below.  Once a secret is stored, only the service that added the secret will be able to retrieve it.  For secret retrieval see [Getting Secrets](#getting-secrets) above.
+
+```json
+{
+  "path" : "MyPath",
+  "secrets" : [
+    {
+      "key" : "MySecretKey",
+      "value" : "MySecretValue"
+    }
+  ]
+}
+```
