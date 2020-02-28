@@ -678,7 +678,7 @@ An example of the message body JSON is below.  Once a secret is stored, only the
 
 ```json
 {
-  "path" : "MyPath",
+  "path" : "/MyPath",
   "secrets" : [
     {
       "key" : "MySecretKey",

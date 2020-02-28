@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
@@ -45,10 +46,6 @@ type Version struct {
 	Version    string `json:"version"`
 	SDKVersion string `json:"sdk_version"`
 }
-
-const (
-	secretsRoute = "/secrets"
-)
 
 // NewWebserver returns a new instance of *WebServer
 func NewWebServer(config *common.ConfigurationStruct, secretProvider *security.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
@@ -244,6 +241,11 @@ func (webserver *WebServer) secretHandler(writer http.ResponseWriter, req *http.
 		secretsKV[secret.Key] = secret.Value
 	}
 
+	secretData.Path = strings.TrimSpace(secretData.Path)
+	if secretData.Path != "" && !strings.HasPrefix(secretData.Path, "/") {
+		secretData.Path = "/" + secretData.Path
+	}
+
 	if err := webserver.secretProvider.StoreSecrets(secretData.Path, secretsKV); err != nil {
 		msg := fmt.Sprintf("Storing secret failed: %v", err)
 		webserver.writeResponse(writer, msg, http.StatusInternalServerError)
@@ -286,8 +288,7 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 	webserver.router.HandleFunc(clients.ApiVersionRoute, webserver.versionHandler).Methods(http.MethodGet)
 
 	// Secrets
-	webserver.router.HandleFunc(secretsRoute, webserver.secretHandler).Methods(http.MethodPost)
-
+	webserver.router.HandleFunc(internal.SecretsAPIRoute, webserver.secretHandler).Methods(http.MethodPost)
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
