@@ -196,7 +196,7 @@ func TestPostSecretRoute(t *testing.T) {
 	for _, test := range tests {
 		currentTest := test
 		t.Run(test.name, func(t *testing.T) {
-			req, _ := http.NewRequest("POST", secretsRoute, bytes.NewReader(currentTest.payload))
+			req, _ := http.NewRequest("POST", internal.SecretsAPIRoute, bytes.NewReader(currentTest.payload))
 			rr := httptest.NewRecorder()
 			webserver.router.ServeHTTP(rr, req)
 			assert.Equal(t, currentTest.expectedStatus, rr.Result().StatusCode, "Expected secret doesn't match postSecret")

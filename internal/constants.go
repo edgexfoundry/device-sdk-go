@@ -16,7 +16,11 @@
 
 package internal
 
-import "time"
+import (
+	"time"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+)
 
 const (
 	BootTimeoutDefault   = time.Duration(30 * time.Second)
@@ -33,3 +37,6 @@ var SDKVersion string = "0.0.0"
 
 // ApplicationVersion indicates the version of the application itself, not the SDK - will be overwritten by build
 var ApplicationVersion string = "0.0.0"
+
+// SecretsAPIRoute api route for posting secrets
+var SecretsAPIRoute = clients.ApiBase + "/secrets"
