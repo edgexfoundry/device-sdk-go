@@ -74,12 +74,14 @@ func TestBatchInTimeAndCountMode_CountMet(t *testing.T) {
 	bs, _ := NewBatchByTimeAndCount("90s", 3)
 	var wgAll sync.WaitGroup
 	var wgFirst sync.WaitGroup
+	var wgSecond sync.WaitGroup
 	wgAll.Add(3)
 	wgFirst.Add(1)
+	wgSecond.Add(1)
 
 	go func() {
 		go func() {
-			time.Sleep(400)
+			time.Sleep(200)
 			wgFirst.Done()
 		}()
 		continuePipeline1, _ := bs.Batch(context, []byte(dataToBatch[0]))
@@ -88,12 +90,17 @@ func TestBatchInTimeAndCountMode_CountMet(t *testing.T) {
 	}()
 	go func() {
 		wgFirst.Wait()
+		go func() {
+			time.Sleep(200)
+			wgSecond.Done()
+		}()
 		continuePipeline2, _ := bs.Batch(context, []byte(dataToBatch[0]))
 		assert.False(t, continuePipeline2)
 		wgAll.Done()
 	}()
 	go func() {
 		wgFirst.Wait()
+		wgSecond.Wait()
 		continuePipeline3, result := bs.Batch(context, []byte(dataToBatch[0]))
 		assert.True(t, continuePipeline3)
 		assert.Equal(t, 3, len(result.([][]byte)))
