@@ -39,7 +39,7 @@ func TestReadCreateTokenJSON(t *testing.T) {
 	p := NewAuthTokenLoader(mockFileIoPerformer)
 
 	token, err := p.Load("/dev/null")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expectedToken, token)
 }
 
@@ -51,7 +51,7 @@ func TestReadVaultInitJSON(t *testing.T) {
 	p := NewAuthTokenLoader(mockFileIoPerformer)
 
 	token, err := p.Load("/dev/null")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expectedToken, token)
 }
 

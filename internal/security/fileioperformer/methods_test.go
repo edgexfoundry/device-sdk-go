@@ -36,7 +36,7 @@ func TestFileIoPerformerReader(t *testing.T) {
 
 	if isLinux() {
 		reader, err := fileio.OpenFileReader("/dev/null", os.O_RDONLY, 0400)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, fileio)
 		assert.NotNil(t, reader)
 	}
@@ -48,7 +48,7 @@ func TestFileIoPerformerWriter(t *testing.T) {
 
 	if isLinux() {
 		writer, err := fileio.OpenFileWriter("/dev/null", os.O_RDONLY, 0400)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, fileio)
 		assert.NotNil(t, writer)
 	}
@@ -60,7 +60,7 @@ func TestFileIoPerformerMkdirAll(t *testing.T) {
 
 	if isLinux() {
 		err := fileio.MkdirAll("/tmp", 0777)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 	}
 }
 

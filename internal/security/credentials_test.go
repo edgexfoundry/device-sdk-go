@@ -43,7 +43,7 @@ var getSecretsTestData []getSecretsTestObj
 
 func TestMain(m *testing.M) {
 	getSecretsTestData = []getSecretsTestObj{
-		getSecretsTestObj{
+		{
 			testName:          "Empty path",
 			path:              "",
 			keys:              []string{"key1", "key2"},
@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       nil,
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Empty path, keys list empty",
 			path:              "",
 			keys:              []string{},
@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       nil,
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Fake path",
 			path:              "fakepath",
 			keys:              []string{"key1", "key2"},
@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       errors.New("Error, path (fakepath) doesn't exist in secret store"),
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Empty keys",
 			path:              "db_secrets",
 			keys:              []string{"", ""},
@@ -75,8 +75,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       errors.New("No value for the keys: [,] exists"),
 			resetSecretsCache: true,
 		},
-
-		getSecretsTestObj{
+		{
 			testName:          "One valid key, one empty key",
 			path:              "db_secrets",
 			keys:              []string{"key1", ""},
@@ -84,7 +83,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       errors.New("No value for the keys: [] exists"),
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "One valid key one not found key",
 			path:              "db_secrets",
 			keys:              []string{"key1", "notFoundKey"},
@@ -92,7 +91,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       errors.New("No value for the keys: [notFoundKey] exists"),
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Not found key",
 			path:              "db_secrets",
 			keys:              []string{"notFoundKey"},
@@ -100,7 +99,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       errors.New("No value for the keys: [notFoundKey] exists"),
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Two missing keys",
 			path:              "db_secrets",
 			keys:              []string{"notFoundKey1", "notFoundKey2"},
@@ -108,7 +107,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       errors.New("No value for the keys: [notFoundKey1,notFoundKey2] exists"),
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Valid key",
 			path:              "db_secrets",
 			keys:              []string{"key1"},
@@ -116,7 +115,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       nil,
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Two valid keys",
 			path:              "db_secrets",
 			keys:              []string{"key1", "key2"},
@@ -124,7 +123,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       nil,
 			resetSecretsCache: true,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Valid key (key1 not cached)",
 			path:              "db_secrets",
 			keys:              []string{"key1"},
@@ -132,7 +131,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       nil,
 			resetSecretsCache: false,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "One valid key (key1 already cached)",
 			path:              "db_secrets",
 			keys:              []string{"key1"},
@@ -140,7 +139,7 @@ func TestMain(m *testing.M) {
 			expectedErr:       nil,
 			resetSecretsCache: false,
 		},
-		getSecretsTestObj{
+		{
 			testName:          "Two valid keys (key1 cached, key2 not cached)",
 			path:              "db_secrets",
 			keys:              []string{"key1", "key2"},

@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
@@ -71,7 +73,6 @@ func TestInitialize(t *testing.T) {
 	assert.Equal(t, 1, len(trigger.topics))
 	assert.Equal(t, "events", trigger.topics[0].Topic)
 	assert.NotNil(t, trigger.topics[0].Messages)
-
 }
 
 func TestInitializeBadConfiguration(t *testing.T) {
@@ -101,7 +102,7 @@ func TestInitializeBadConfiguration(t *testing.T) {
 
 	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 	err := trigger.Initialize(&sync.WaitGroup{}, context.Background())
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
@@ -163,19 +164,14 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	}
 
 	testClient, err := messaging.NewMessageClient(testClientConfig)
-	if !assert.NoError(t, err, "Unable to create to publisher") {
-		t.Fatal()
-	}
-
+	require.NoError(t, err, "Unable to create to publisher")
 	assert.False(t, transformWasCalled)
+
 	err = testClient.Publish(message, "") //transform1 should be called after this executes
-	if !assert.NoError(t, err, "Failed to publish message") {
-		t.Fatal()
-	}
+	require.NoError(t, err, "Failed to publish message")
 
 	time.Sleep(3 * time.Second)
 	assert.True(t, transformWasCalled, "Transform never called")
-
 }
 
 func TestInitializeAndProcessEventWithOutput(t *testing.T) {
@@ -236,9 +232,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 		Type: "zero",
 	}
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
-	if !assert.NoError(t, err, "Failed to create test client") {
-		t.Fatal()
-	}
+	require.NoError(t, err, "Failed to create test client")
 
 	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
@@ -255,13 +249,10 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	assert.False(t, transformWasCalled)
 	err = testClient.Publish(message, "SubscribeTopic")
-	if !assert.NoError(t, err, "Failed to publish message") {
-		t.Fatal()
-	}
+	require.NoError(t, err, "Failed to publish message")
+
 	time.Sleep(3 * time.Second)
-	if !assert.True(t, transformWasCalled, "Transform never called") {
-		t.Fatal()
-	}
+	require.True(t, transformWasCalled, "Transform never called")
 
 	receiveMessage := true
 

@@ -19,6 +19,8 @@ package transforms
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -86,10 +88,7 @@ func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 	expectedResult := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-
+	require.NotNil(t, result)
 	assert.True(t, continuePipeline)
 	assert.Equal(t, expectedResult, result.(string))
 }
@@ -136,9 +135,7 @@ func TestTransformToJSONNoEvent(t *testing.T) {
 func TestTransformToJSONNotAnEvent(t *testing.T) {
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, "")
-	if result.(error).Error() != "Unexpected type received" {
-		t.Fatal("Should have an error when wrong type was passed")
-	}
+	require.EqualError(t, result.(error), "Unexpected type received")
 	assert.False(t, continuePipeline)
 
 }

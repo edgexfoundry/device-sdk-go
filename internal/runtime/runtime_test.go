@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/ugorji/go/codec"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
@@ -44,6 +45,7 @@ const (
 func init() {
 	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 }
+
 func TestProcessMessageNoTransforms(t *testing.T) {
 	// Event from device 1
 
@@ -63,10 +65,9 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 	runtime.Initialize(nil, nil)
 
 	result := runtime.ProcessMessage(context, envelope)
-	if result != nil {
-		t.Fatal("result should be nil since no transforms have been passed")
-	}
+	require.Nil(t, result, "result should be nil since no transforms have been passed")
 }
+
 func TestProcessMessageOneCustomTransform(t *testing.T) {
 	// Event from device 1
 
@@ -84,17 +85,10 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 	}
 	transform1WasCalled := false
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		if len(params) < 1 {
-			t.Fatal("should have been passed the first event from CoreData")
-		}
+		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
 		if result, ok := params[0].(*models.Event); ok {
-			if ok == false {
-				t.Fatal("Should have receieved CoreData event")
-			}
-
-			if result.Device != devID1 {
-				t.Fatal("Did not receive expected CoreData event")
-			}
+			require.True(t, ok, "Should have receieved CoreData event")
+			require.Equal(t, devID1, result.Device, "Did not receive expected CoreData Event")
 		}
 		transform1WasCalled = true
 		return true, "Hello"
@@ -103,12 +97,8 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 	result := runtime.ProcessMessage(context, envelope)
-	if result != nil {
-		t.Fatal("result should be null")
-	}
-	if transform1WasCalled == false {
-		t.Fatal("transform1 should have been called")
-	}
+	require.Nil(t, result)
+	require.True(t, transform1WasCalled, "transform1 should have been called")
 }
 
 func TestProcessMessageTwoCustomTransforms(t *testing.T) {
@@ -131,17 +121,10 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
-		if len(params) < 1 {
-			t.Fatal("should have been passed the first event from CoreData")
-		}
+		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
 		if result, ok := params[0].(models.Event); ok {
-			if ok == false {
-				t.Fatal("Should have received Event")
-			}
-
-			if result.Device != devID1 {
-				t.Fatal("Did not receive expected Event")
-			}
+			require.True(t, ok, "Should have received Event")
+			assert.Equal(t, devID1, result.Device, "Did not receive expected Event")
 		}
 
 		return true, "Transform1Result"
@@ -149,9 +132,8 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 	transform2 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform2WasCalled = true
 
-		if params[0] != "Transform1Result" {
-			t.Fatal("Did not recieve result from previous transform")
-		}
+		require.Equal(t, "Transform1Result", params[0], "Did not receive result from previous transform")
+
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
@@ -159,15 +141,9 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2})
 
 	result := runtime.ProcessMessage(context, envelope)
-	if result != nil {
-		t.Fatal("result should be null")
-	}
-	if transform1WasCalled == false {
-		t.Fatal("transform1 should have been called")
-	}
-	if transform2WasCalled == false {
-		t.Fatal("transform2 should have been called")
-	}
+	require.Nil(t, result)
+	assert.True(t, transform1WasCalled, "transform1 should have been called")
+	assert.True(t, transform2WasCalled, "transform2 should have been called")
 }
 
 func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
@@ -191,35 +167,23 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
-		if len(params) < 1 {
-			t.Fatal("should have been passed the first event from CoreData")
-		}
-		if result, ok := params[0].(*models.Event); ok {
-			if ok == false {
-				t.Fatal("Should have receieved CoreData event")
-			}
+		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
 
-			if result.Device != devID1 {
-				t.Fatal("Did not receive expected CoreData event")
-			}
+		if result, ok := params[0].(*models.Event); ok {
+			require.True(t, ok, "Should have received CoreData event")
+			require.Equal(t, devID1, result.Device, "Did not receive expected CoreData event")
 		}
 
 		return false, "Transform1Result"
 	}
 	transform2 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform2WasCalled = true
-
-		if params[0] != "Transform1Result" {
-			t.Fatal("Did not recieve result from previous transform")
-		}
+		require.Equal(t, "Transform1Result", params[0], "Did not receive result from previous transform")
 		return true, "Hello"
 	}
 	transform3 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform3WasCalled = true
-
-		if params[0] != "Transform1Result" {
-			t.Fatal("Did not recieve result from previous transform")
-		}
+		require.Equal(t, "Transform1Result", params[0], "Did not receive result from previous transform")
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
@@ -227,18 +191,10 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2, transform3})
 
 	result := runtime.ProcessMessage(context, envelope)
-	if !assert.Nil(t, result) {
-		t.Fatal("unexpected error")
-	}
-	if transform1WasCalled == false {
-		t.Fatal("transform1 should have been called")
-	}
-	if transform2WasCalled == true {
-		t.Fatal("transform2 should NOT have been called")
-	}
-	if transform3WasCalled == true {
-		t.Fatal("transform3 should NOT have been called")
-	}
+	require.Nil(t, result)
+	assert.True(t, transform1WasCalled, "transform1 should have been called")
+	assert.False(t, transform2WasCalled, "transform2 should NOT have been called")
+	assert.False(t, transform3WasCalled, "transform3 should NOT have been called")
 }
 
 func TestProcessMessageTransformError(t *testing.T) {
@@ -266,15 +222,10 @@ func TestProcessMessageTransformError(t *testing.T) {
 	runtime.SetTransforms([]appcontext.AppFunction{transforms.NewFilter([]string{"SomeDevice"}).FilterByDeviceName})
 	err := runtime.ProcessMessage(context, envelope)
 
-	if !assert.NotNil(t, err, "Expected an error") {
-		t.Fatal()
-	}
-	if !assert.Error(t, err.Err, "Expected an error") {
-		t.Fatal()
-	}
-
-	assert.Equal(t, err.Err.Error(), expectedError)
-	assert.Equal(t, err.ErrorCode, expectedErrorCode)
+	require.NotNil(t, err, "Expected an error")
+	require.Error(t, err.Err, "Expected an error")
+	assert.Equal(t, expectedError, err.Err.Error())
+	assert.Equal(t, expectedErrorCode, err.ErrorCode)
 }
 
 func TestProcessMessageJSON(t *testing.T) {
@@ -303,19 +254,11 @@ func TestProcessMessageJSON(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		if !assert.Equal(t, expectedEventID, edgexcontext.EventID, "Context doesn't contain expected EventID") {
-			t.Fatal()
-		}
-
-		if !assert.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID") {
-			t.Fatal()
-		}
+		require.Equal(t, expectedEventID, edgexcontext.EventID, "Context doesn't contain expected EventID")
+		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
 
 		if result, ok := params[0].(*models.Event); ok {
-			if !assert.True(t, ok, "Should have received CoreData event") {
-				t.Fatal()
-			}
-
+			require.True(t, ok, "Should have received CoreData event")
 			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
 			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
 		}
@@ -328,13 +271,8 @@ func TestProcessMessageJSON(t *testing.T) {
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
-	if !assert.Nil(t, result, "result should be null") {
-		t.Fatal()
-	}
-
-	if !assert.True(t, transform1WasCalled, "transform1 should have been called") {
-		t.Fatal()
-	}
+	assert.Nil(t, result, "result should be null")
+	assert.True(t, transform1WasCalled, "transform1 should have been called")
 }
 
 func TestProcessMessageCBOR(t *testing.T) {
@@ -369,19 +307,11 @@ func TestProcessMessageCBOR(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		if !assert.Equal(t, expectedChecksum, edgexcontext.EventChecksum, "Context doesn't contain expected EventChecksum") {
-			t.Fatal()
-		}
-
-		if !assert.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID") {
-			t.Fatal()
-		}
+		require.Equal(t, expectedChecksum, edgexcontext.EventChecksum, "Context doesn't contain expected EventChecksum")
+		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
 
 		if result, ok := params[0].(*models.Event); ok {
-			if !assert.True(t, ok, "Should have received CoreData event") {
-				t.Fatal()
-			}
-
+			require.True(t, ok, "Should have received CoreData event")
 			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
 			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
 		}
@@ -394,13 +324,8 @@ func TestProcessMessageCBOR(t *testing.T) {
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
-	if !assert.Nil(t, result, "result should be null") {
-		t.Fatal()
-	}
-
-	if !assert.True(t, transform1WasCalled, "transform1 should have been called") {
-		t.Fatal()
-	}
+	assert.Nil(t, result, "result should be null")
+	assert.True(t, transform1WasCalled, "transform1 should have been called")
 }
 
 type CustomType struct {
@@ -510,15 +435,14 @@ func TestExecutePipelinePersist(t *testing.T) {
 	payload := []byte("My Payload")
 
 	// Target of this test
-	err := runtime.ExecutePipeline(payload, "", &ctx, runtime.transforms, 0, false)
+	actual := runtime.ExecutePipeline(payload, "", &ctx, runtime.transforms, 0, false)
 
-	if assert.NotNil(t, err, "Error expected from export function") {
-		storedObjects := mockRetrieveObjects(serviceKey)
-		if assert.Equal(t, expectedItemCount, len(storedObjects), "unexpected item count") {
-			assert.Equal(t, serviceKey, storedObjects[0].AppServiceKey, "AppServiceKey not as expected")
-			assert.Equal(t, ctx.CorrelationID, storedObjects[0].CorrelationID, "CorrelationID not as expected")
-			assert.Equal(t, ctx.EventID, storedObjects[0].EventID, "EventID not as expected")
-			assert.Equal(t, ctx.EventChecksum, storedObjects[0].EventChecksum, "EventChecksum not as expected")
-		}
-	}
+	require.NotNil(t, actual)
+	require.Error(t, actual.Err, "Error expected from export function")
+	storedObjects := mockRetrieveObjects(serviceKey)
+	require.Equal(t, expectedItemCount, len(storedObjects), "unexpected item count")
+	assert.Equal(t, serviceKey, storedObjects[0].AppServiceKey, "AppServiceKey not as expected")
+	assert.Equal(t, ctx.CorrelationID, storedObjects[0].CorrelationID, "CorrelationID not as expected")
+	assert.Equal(t, ctx.EventID, storedObjects[0].EventID, "EventID not as expected")
+	assert.Equal(t, ctx.EventChecksum, storedObjects[0].EventChecksum, "EventChecksum not as expected")
 }

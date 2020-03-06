@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -39,13 +41,11 @@ func TestSetOutputDataString(t *testing.T) {
 }
 
 func TestSetOutputDataBytes(t *testing.T) {
-
 	var expected []byte
 	expected = []byte(`<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`)
 	target := NewOutputData()
 
 	continuePipeline, result := target.SetOutputData(context, expected)
-
 	assert.True(t, continuePipeline)
 	assert.NotNil(t, result)
 
@@ -63,7 +63,6 @@ func TestSetOutputDataEvent(t *testing.T) {
 	expected, _ := json.Marshal(eventIn)
 
 	continuePipeline, result := target.SetOutputData(context, eventIn)
-
 	assert.True(t, continuePipeline)
 	assert.NotNil(t, result)
 
@@ -74,7 +73,6 @@ func TestSetOutputDataEvent(t *testing.T) {
 func TestSetOutputDataNoData(t *testing.T) {
 	target := NewOutputData()
 	continuePipeline, result := target.SetOutputData(context)
-
 	assert.Nil(t, result)
 	assert.False(t, continuePipeline)
 }
@@ -84,7 +82,6 @@ func TestSetOutputDataMultipleParametersValid(t *testing.T) {
 	target := NewOutputData()
 
 	continuePipeline, result := target.SetOutputData(context, expected, "", "", "")
-
 	assert.True(t, continuePipeline)
 	assert.NotNil(t, result)
 
@@ -97,13 +94,7 @@ func TestSetOutputDataBadType(t *testing.T) {
 
 	// Channels are not marshalable to JSON and generate an error
 	continuePipeline, result := target.SetOutputData(context, make(chan int))
-
 	assert.False(t, continuePipeline)
-	if !assert.NotNil(t, result) {
-		t.Fatal()
-	}
-
-	if !assert.Contains(t, result.(error).Error(), "passed in data must be of type") {
-		t.Fatal()
-	}
+	require.NotNil(t, result)
+	assert.Contains(t, result.(error).Error(), "passed in data must be of type")
 }
