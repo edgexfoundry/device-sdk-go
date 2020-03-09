@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -337,7 +337,16 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 			binary.Read(reader, binary.BigEndian, &res)
 			str = fmt.Sprintf("%e", res)
 		} else if floatEncoding == contract.Base64Encoding {
-			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+			val, err := cv.Float32Value()
+			if err != nil {
+				str = err.Error()
+			}
+			buf := new(bytes.Buffer)
+			err = binary.Write(buf, binary.LittleEndian, val)
+			if err != nil {
+				str = err.Error()
+			}
+			str = base64.StdEncoding.EncodeToString(buf.Bytes())
 		}
 	case Float64:
 		floatEncoding := getFloatEncoding(encoding)
@@ -347,7 +356,16 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 			binary.Read(reader, binary.BigEndian, &res)
 			str = fmt.Sprintf("%e", res)
 		} else if floatEncoding == contract.Base64Encoding {
-			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
+			val, err := cv.Float64Value()
+			if err != nil {
+				str = err.Error()
+			}
+			buf := new(bytes.Buffer)
+			err = binary.Write(buf, binary.LittleEndian, val)
+			if err != nil {
+				str = err.Error()
+			}
+			str = base64.StdEncoding.EncodeToString(buf.Bytes())
 		}
 	case Binary:
 		// produce string representation of first 20 bytes of binary value
