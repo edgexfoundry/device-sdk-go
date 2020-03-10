@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -642,7 +642,7 @@ func TestNewFloat32Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat32Value: float32 value is incorrect")
 	}
-	if cv.ValueToString(contract.Base64Encoding) != "AQAAAA==" {
+	if cv.ValueToString(contract.Base64Encoding) != "AAAAAQ==" {
 		t.Errorf("NewFloat32Value #1: invalid reading Value: %s", cv.ValueToString())
 	}
 
@@ -664,7 +664,7 @@ func TestNewFloat32Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat32Value: float32 value is incorrect")
 	}
-	if cv.ValueToString(contract.Base64Encoding) != "//9/fw==" {
+	if cv.ValueToString(contract.Base64Encoding) != "f3///w==" {
 		t.Errorf("NewFloat32Value #2: invalid reading Value: %s", cv.ValueToString())
 	}
 }
@@ -693,7 +693,7 @@ func TestNewFloat64Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat64Value: float64 value is incorrect")
 	}
-	if cv.ValueToString(contract.Base64Encoding) != "AQAAAAAAAAA=" {
+	if cv.ValueToString(contract.Base64Encoding) != "AAAAAAAAAAE=" {
 		t.Errorf("NewFloat64Value #1: invalid reading Value: %s", cv.ValueToString())
 	}
 
@@ -715,7 +715,7 @@ func TestNewFloat64Value(t *testing.T) {
 	if v != value {
 		t.Errorf("NewFloat64Value: float64 value is incorrect")
 	}
-	if cv.ValueToString(contract.Base64Encoding) != "////////738=" {
+	if cv.ValueToString(contract.Base64Encoding) != "f+////////8=" {
 		t.Errorf("NewFloat64Value #2: invalid reading Value: %s", cv.ValueToString())
 	}
 }
