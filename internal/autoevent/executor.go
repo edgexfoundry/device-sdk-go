@@ -75,7 +75,7 @@ func readResource(e *executor) (*dsModels.Event, common.AppError) {
 	vars[common.NameVar] = e.deviceName
 	vars[common.CommandVar] = e.autoEvent.Resource
 
-	evt, appErr := handler.CommandHandler(vars, "", common.GetCmdMethod, "")
+	evt, appErr := handler.CommandHandler(vars, "", common.GetCmdMethod, "", nil)
 	return evt, appErr
 }
 

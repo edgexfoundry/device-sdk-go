@@ -105,7 +105,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	event, appErr := handler.CommandHandler(vars, body, req.Method, req.URL.RawQuery)
+	event, appErr := handler.CommandHandler(vars, body, req.Method, req.URL.RawQuery, req)
 
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())

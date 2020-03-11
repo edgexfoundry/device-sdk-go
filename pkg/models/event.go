@@ -14,6 +14,8 @@ import (
 type Event struct {
 	contract.Event
 	EncodedEvent []byte
+	CorrelationId string
+	Checksum      string
 }
 
 // HasBinaryValue confirms whether an event contains one or more

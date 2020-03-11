@@ -10,6 +10,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,12 +20,22 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	"github.com/ugorji/go/codec"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func CommandHandler(vars map[string]string, body string, method string, queryParams string) (*dsModels.Event, common.AppError) {
+func CommandHandler(
+	vars map[string]string,
+	body string,
+	method string,
+	queryParams string,
+	r *http.Request) (*dsModels.Event, common.AppError) {
+
 	dKey := vars[common.IdVar]
 	cmd := vars[common.CommandVar]
 
@@ -84,12 +95,16 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 	if strings.ToLower(method) == common.GetCmdMethod {
 		return execReadCmd(&d, cmd, queryParams)
 	} else {
-		appErr := execWriteCmd(&d, cmd, body)
+		appErr := execWriteCmd(&d, cmd, body, r)
 		return nil, appErr
 	}
 }
 
-func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource, queryParams string) (*dsModels.Event, common.AppError) {
+func execReadDeviceResource(
+	device *contract.Device,
+	dr *contract.DeviceResource,
+	queryParams string) (*dsModels.Event, common.AppError) {
+
 	var reqs []dsModels.CommandRequest
 	var req dsModels.CommandRequest
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", dr.Name))
@@ -108,7 +123,11 @@ func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource
 
 	results, err := common.Driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
-		msg := fmt.Sprintf("Handler - execReadCmd: error for Device: %s DeviceResource: %s, %v", device.Name, dr.Name, err)
+		msg := fmt.Sprintf(
+			"Handler - execReadCmd: error for Device: %s DeviceResource: %s, %v",
+			device.Name,
+			dr.Name,
+			err)
 		return nil, common.NewServerError(msg, err)
 	}
 
@@ -124,7 +143,11 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 		// get the device resource associated with the rsp.RO
 		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.DeviceResourceName)
 		if !ok {
-			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s in Command Result %v", cv.DeviceResourceName, device.Name, cv)
+			msg := fmt.Sprintf(
+				"Handler - execReadCmd: no deviceResource: %s for dev: %s in Command Result %v",
+				cv.DeviceResourceName,
+				device.Name,
+				cv)
 			common.LoggingClient.Error(msg)
 			return nil, common.NewServerError(msg, nil)
 		}
@@ -132,15 +155,27 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 		if common.CurrentConfig.Device.DataTransform {
 			err = transformer.TransformReadResult(cv, dr.Properties.Value)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: CommandValue (%s) transformed failed: %v", cv.String(), err))
+				common.LoggingClient.Error(fmt.Sprintf(
+					"Handler - execReadCmd: CommandValue (%s) transformed failed: %v",
+					cv.String(),
+					err))
 				transformsOK = false
 			}
 		}
 
 		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, device)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
-			cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
+			common.LoggingClient.Error(fmt.Sprintf(
+				"Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v",
+				cv.String(),
+				err))
+			cv = dsModels.NewStringValue(
+				cv.DeviceResourceName,
+				cv.Origin,
+				fmt.Sprintf(
+					"Assertion failed for device resource, with value: %s and assertion: %s",
+					cv.String(),
+					dr.Properties.Value.Assertion))
 		}
 
 		ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
@@ -151,7 +186,11 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 			if ok {
 				cv = newCV
 			} else {
-				common.LoggingClient.Warn(fmt.Sprintf("Handler - execReadCmd: Resource Operation (%s) mapping value (%s) failed with the mapping table: %v", ro.DeviceCommand, cv.String(), ro.Mappings))
+				common.LoggingClient.Warn(fmt.Sprintf(
+					"Handler - execReadCmd: Resource Operation (%s) mapping value (%s) failed with the mapping table: %v",
+					ro.DeviceCommand,
+					cv.String(),
+					ro.Mappings))
 				//transformsOK = false  // issue #89 will discuss how to handle there is no mapping matched
 			}
 		}
@@ -166,7 +205,11 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.FloatEncoding)
 		readings = append(readings, *reading)
 
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: %v", device.Name, cv.DeviceResourceName, reading))
+		common.LoggingClient.Debug(fmt.Sprintf(
+			"Handler - execReadCmd: device: %s DeviceResource: %v reading: %v",
+			device.Name,
+			cv.DeviceResourceName,
+			reading))
 	}
 
 	if !transformsOK {
@@ -216,7 +259,11 @@ func execReadCmd(device *contract.Device, cmd string, queryParams string) (*dsMo
 		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %v", dr))
 		if !ok {
-			msg := fmt.Sprintf("Handler - execReadCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
+			msg := fmt.Sprintf(
+				"Handler - execReadCmd: no deviceResource: %s for dev: %s cmd: %s method: GET",
+				drName,
+				device.Name,
+				cmd)
 			common.LoggingClient.Error(msg)
 			return nil, common.NewServerError(msg, nil)
 		}
@@ -243,7 +290,7 @@ func execReadCmd(device *contract.Device, cmd string, queryParams string) (*dsMo
 }
 
 func execWriteDeviceResource(device *contract.Device, dr *contract.DeviceResource, params string) common.AppError {
-	paramMap, err := parseParams(params)
+	paramMap, err := parseParams(params, nil)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteDeviceResource: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -275,7 +322,10 @@ func execWriteDeviceResource(device *contract.Device, dr *contract.DeviceResourc
 	if common.CurrentConfig.Device.DataTransform {
 		err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
 		if err != nil {
-			msg := fmt.Sprintf("Handler - execWriteDeviceResource: CommandValue (%s) transformed failed: %v", cv.String(), err)
+			msg := fmt.Sprintf(
+				"Handler - execWriteDeviceResource: CommandValue (%s) transformed failed: %v",
+				cv.String(),
+				err)
 			common.LoggingClient.Error(msg)
 			return common.NewServerError(msg, err)
 		}
@@ -283,17 +333,25 @@ func execWriteDeviceResource(device *contract.Device, dr *contract.DeviceResourc
 
 	err = common.Driver.HandleWriteCommands(device.Name, device.Protocols, reqs, []*dsModels.CommandValue{cv})
 	if err != nil {
-		msg := fmt.Sprintf("Handler - execWriteDeviceResource: error for Device: %s Device Resource: %s, %v", device.Name, dr.Name, err)
+		msg := fmt.Sprintf(
+			"Handler - execWriteDeviceResource: error for Device: %s Device Resource: %s, %v",
+			device.Name,
+			dr.Name,
+			err)
 		return common.NewServerError(msg, err)
 	}
 
 	return nil
 }
 
-func execWriteCmd(device *contract.Device, cmd string, params string) common.AppError {
+func execWriteCmd(device *contract.Device, cmd string, params string, r *http.Request) common.AppError {
 	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, common.SetCmdMethod)
 	if err != nil {
-		msg := fmt.Sprintf("Handler - execWriteCmd: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.Profile.Name, cmd, err)
+		msg := fmt.Sprintf(
+			"Handler - execWriteCmd: can't find ResrouceOperations in Profile(%s) and Command(%s), %v",
+			device.Profile.Name,
+			cmd,
+			err)
 		common.LoggingClient.Error(msg)
 		return common.NewBadRequestError(msg, err)
 	}
@@ -305,7 +363,7 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 		return common.NewServerError(msg, nil)
 	}
 
-	cvs, err := parseWriteParams(device.Profile.Name, ros, params)
+	cvs, err := parseWriteParams(device.Profile.Name, ros, params, r)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -324,7 +382,11 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, drName)
 		common.LoggingClient.Debug(fmt.Sprintf("Handler - execWriteCmd: putting deviceResource: %s", drName))
 		if !ok {
-			msg := fmt.Sprintf("Handler - execWriteCmd: no deviceResource: %s for dev: %s cmd: %s method: GET", drName, device.Name, cmd)
+			msg := fmt.Sprintf(
+				"Handler - execWriteCmd: no deviceResource: %s for dev: %s cmd: %s method: GET",
+				drName,
+				device.Name,
+				cmd)
 			common.LoggingClient.Error(msg)
 			return common.NewServerError(msg, nil)
 		}
@@ -352,8 +414,12 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 	return nil
 }
 
-func parseWriteParams(profileName string, ros []contract.ResourceOperation, params string) ([]*dsModels.CommandValue, error) {
-	paramMap, err := parseParams(params)
+func parseWriteParams(profileName string,
+	ros []contract.ResourceOperation,
+	params string,
+	r *http.Request) ([]*dsModels.CommandValue, error) {
+
+	paramMap, err := parseParams(params, r)
 	if err != nil {
 		return []*dsModels.CommandValue{}, err
 	}
@@ -365,7 +431,9 @@ func parseWriteParams(profileName string, ros []contract.ResourceOperation, para
 		if !ok {
 			dr, ok := cache.Profiles().DeviceResource(profileName, ro.DeviceResource)
 			if !ok {
-				err := fmt.Errorf("the parameter %s does not match any DeviceResource in DeviceProfile", ro.DeviceResource)
+				err := fmt.Errorf(
+					"the parameter %s does not match any DeviceResource in DeviceProfile",
+					ro.DeviceResource)
 				return []*dsModels.CommandValue{}, err
 			}
 
@@ -376,7 +444,9 @@ func parseWriteParams(profileName string, ros []contract.ResourceOperation, para
 				common.LoggingClient.Debug(fmt.Sprintf("there is no %s in the request parameters, retrieving value from the DefaultValue field from the ValueProperty", ro.DeviceResource))
 				p = dr.Properties.Value.DefaultValue
 			} else {
-				err := fmt.Errorf("the parameter %s is not defined in the request body and there is no default value", ro.DeviceResource)
+				err := fmt.Errorf(
+					"the parameter %s is not defined in the request body and there is no default value",
+					ro.DeviceResource)
 				return []*dsModels.CommandValue{}, err
 			}
 		}
@@ -386,7 +456,11 @@ func parseWriteParams(profileName string, ros []contract.ResourceOperation, para
 			if ok {
 				p = newP
 			} else {
-				msg := fmt.Sprintf("parseWriteParams: Resource (%s) mapping value (%s) failed with the mapping table: %v", ro.DeviceResource, p, ro.Mappings)
+				msg := fmt.Sprintf(
+					"parseWriteParams: Resource (%s) mapping value (%s) failed with the mapping table: %v",
+					ro.DeviceResource,
+					p,
+					ro.Mappings)
 				common.LoggingClient.Warn(msg)
 				//return result, fmt.Errorf(msg) // issue #89 will discuss how to handle there is no mapping matched
 			}
@@ -403,8 +477,17 @@ func parseWriteParams(profileName string, ros []contract.ResourceOperation, para
 	return result, nil
 }
 
-func parseParams(params string) (paramMap map[string]string, err error) {
-	err = json.Unmarshal([]byte(params), &paramMap)
+func parseParams(params string, r *http.Request) (paramMap map[string]string, err error) {
+
+	// Check the header value
+	if r.Header.Get(clients.ContentType) == clients.ContentTypeCBOR {
+		// Handle Content-type CBOR and populate paramMap
+		err = codec.NewDecoderBytes([]byte(params), &codec.CborHandle{}).Decode(&paramMap)
+	} else if r.Header.Get(clients.ContentType) == clients.ContentTypeJSON {
+		// Handle Content-type JSON and populate paramMap
+		err = json.Unmarshal([]byte(params), &paramMap)
+	}
+
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("parsing Write parameters failed %s, %v", params, err))
 		return
@@ -417,7 +500,11 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func createCommandValueFromRO(profileName string, ro *contract.ResourceOperation, v string) (*dsModels.CommandValue, error) {
+func createCommandValueFromRO(
+	profileName string,
+	ro *contract.ResourceOperation,
+	v string) (*dsModels.CommandValue, error) {
+
 	dr, ok := cache.Profiles().DeviceResource(profileName, ro.DeviceResource)
 	if !ok {
 		msg := fmt.Sprintf("createCommandValueForParam: no deviceResource: %s", ro.DeviceResource)
@@ -489,7 +576,11 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 	}
 
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, dr.Properties.Value.Type, err))
+		common.LoggingClient.Error(fmt.Sprintf(
+			"Handler - Command: Parsing parameter value (%s) to %s failed: %v",
+			v,
+			dr.Properties.Value.Type,
+			err))
 		return result, err
 	}
 
@@ -498,8 +589,16 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 	return result, err
 }
 
-func CommandAllHandler(cmd string, body string, method string, queryParams string) ([]*dsModels.Event, common.AppError) {
-	common.LoggingClient.Debug(fmt.Sprintf("Handler - CommandAll: execute the %s command %s from all operational devices", method, cmd))
+func CommandAllHandler(
+	cmd string,
+	body string,
+	method string,
+	queryParams string) ([]*dsModels.Event, common.AppError) {
+
+	common.LoggingClient.Debug(fmt.Sprintf(
+		"Handler - CommandAll: execute the %s command %s from all operational devices",
+		method,
+		cmd))
 	devices := filterOperationalDevices(cache.Devices().All())
 
 	devCount := len(devices)
@@ -518,7 +617,7 @@ func CommandAllHandler(cmd string, body string, method string, queryParams strin
 			if strings.ToLower(method) == common.GetCmdMethod {
 				event, appErr = execReadCmd(device, cmd, queryParams)
 			} else {
-				appErr = execWriteCmd(device, cmd, body)
+				appErr = execWriteCmd(device, cmd, body, nil)
 			}
 			cmdResults <- struct {
 				event  *dsModels.Event

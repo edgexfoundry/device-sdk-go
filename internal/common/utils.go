@@ -10,7 +10,13 @@ package common
 import (
 	"bytes"
 	"context"
+	"crypto/md5"
+	"encoding/json"
 	"fmt"
+	"github.com/OneOfOne/xxhash"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
@@ -21,6 +27,13 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
+
+	"github.com/ugorji/go/codec"
+)
+
+const (
+	ChecksumAlgoxxHash = "xxHash"
+	checksumContextKey = "payload-checksum"
 )
 
 var (
@@ -285,4 +298,81 @@ func FilterQueryParams(queryParams string) url.Values {
 	}
 
 	return m
+}
+
+// Read reads and converts the request's JSON event data into an Event struct
+func (jsonReader) Read(reader io.Reader, ctx *context.Context) (dsModels.Event, error) {
+	c := context.WithValue(*ctx, clients.ContentType, clients.ContentTypeJSON)
+	*ctx = c
+
+	event := dsModels.Event{}
+	err := json.NewDecoder(reader).Decode(&event)
+	if err != nil {
+		return event, err
+	}
+
+	return event, nil
+}
+
+// Read reads and converts the request's CBOR event data into an Event struct
+func (cr cborReader) Read(reader io.Reader, ctx *context.Context) (dsModels.Event, error) {
+	c := context.WithValue(*ctx, clients.ContentType, clients.ContentTypeCBOR)
+	event := dsModels.Event{}
+	bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return event, err
+	}
+
+	x := codec.CborHandle{}
+	err = codec.NewDecoderBytes(bytes, &x).Decode(&event)
+	if err != nil {
+		return event, err
+	}
+
+	switch cr.configuration.Writable.ChecksumAlgo {
+	case ChecksumAlgoxxHash:
+		event.Checksum = fmt.Sprintf("%x", xxhash.Checksum64(bytes))
+	default:
+		event.Checksum = fmt.Sprintf("%x", md5.Sum(bytes))
+	}
+	c = context.WithValue(c, checksumContextKey, event.Checksum)
+	*ctx = c
+	event.EncodedEvent = bytes
+
+	return event, nil
+}
+
+// jsonReader handles unmarshaling of a JSON request body payload
+type jsonReader struct{}
+
+// NewJsonReader creates a new instance of jsonReader.
+func NewJsonReader() jsonReader {
+	return jsonReader{}
+}
+
+// cborReader handles unmarshaling of a CBOR request body payload
+type cborReader struct {
+	configuration *Config
+}
+
+// NewCborReader creates a new instance of cborReader.
+func NewCborReader(configuration *Config) cborReader {
+	return cborReader{configuration: configuration}
+}
+
+// EventReader unmarshals a request body into an Event type
+type EventReader interface {
+	Read(reader io.Reader, ctx *context.Context) (dsModels.Event, error)
+}
+
+// NewRequestReader returns a BodyReader capable of processing the request body
+func NewRequestReader(request *http.Request, configuration *Config) EventReader {
+	contentType := request.Header.Get(clients.ContentType)
+
+	switch strings.ToLower(contentType) {
+	case clients.ContentTypeCBOR:
+		return NewCborReader(configuration)
+	default:
+		return NewJsonReader()
+	}
 }
