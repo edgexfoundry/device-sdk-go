@@ -52,6 +52,11 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	trigger.topics = []types.TopicChannel{{Topic: trigger.Configuration.Binding.SubscribeTopic, Messages: make(chan types.MessageEnvelope)}}
 	messageErrors := make(chan error)
 
+	err = trigger.client.Connect()
+	if err != nil {
+		return err
+	}
+
 	trigger.client.Subscribe(trigger.topics, messageErrors)
 	receiveMessage := true
 
