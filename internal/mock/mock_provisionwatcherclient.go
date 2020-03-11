@@ -22,6 +22,7 @@ var (
 	ValidFloatWatcher           = contract.ProvisionWatcher{}
 	DuplicateFloatWatcher       = contract.ProvisionWatcher{}
 	NewProvisionWatcher         = contract.ProvisionWatcher{}
+	ValidBinaryWatcher          = contract.ProvisionWatcher{}
 )
 
 type ProvisionWatcherClientMock struct {
@@ -100,6 +101,7 @@ func populateProvisionWatcherMock() error {
 	_ = json.Unmarshal(watchers[WatcherFloat], &ValidFloatWatcher)
 	_ = json.Unmarshal(watchers[WatcherFloat], &DuplicateFloatWatcher)
 	_ = json.Unmarshal(watchers[WatcherNew], &NewProvisionWatcher)
+	_ = json.Unmarshal(watchers[WatcherBinary], &ValidBinaryWatcher)
 
 	return nil
 }

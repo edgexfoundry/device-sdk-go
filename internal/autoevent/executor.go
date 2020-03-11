@@ -12,11 +12,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/OneOfOne/xxhash"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	"github.com/OneOfOne/xxhash"
 )
 
 type Executor interface {
@@ -84,7 +85,7 @@ func readResource(e *executor) (*dsModels.Event, common.AppError) {
 	vars[common.NameVar] = e.deviceName
 	vars[common.CommandVar] = e.autoEvent.Resource
 
-	evt, appErr := handler.CommandHandler(vars, "", common.GetCmdMethod, "")
+	evt, appErr := handler.CommandHandler(vars, "", nil)
 	return evt, appErr
 }
 

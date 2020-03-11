@@ -96,6 +96,9 @@ https://github.com/pmezard/go-difflib/blob/master/LICENSE
 stretchr/testify (MIT) https://github.com/stretchr/testify
 https://github.com/stretchr/testify/blob/master/LICENSE
 
+ugorji/go (MIT) https://github.com/ugorji/go
+https://github.com/ugorji/go/blob/master/LICENSE
+
 kr/logfmt (MIT) https://github.com/kr/logfmt
 https://github.com/kr/logfmt/blob/master/Readme
 

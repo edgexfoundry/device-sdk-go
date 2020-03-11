@@ -33,6 +33,7 @@ var (
 	ValueDescriptorFloat64             = contract.ValueDescriptor{}
 	NewValueDescriptor                 = contract.ValueDescriptor{}
 	DuplicateValueDescriptorInt16      = contract.ValueDescriptor{}
+	ValueDescriptorBinary              = contract.ValueDescriptor{}
 	descMap                            = make(map[string]contract.ValueDescriptor, 0)
 )
 
@@ -136,6 +137,7 @@ func populateValueDescriptorMock() error {
 	ValueDescriptorFloat64 = descMap[ResourceObjectFloat64]
 	DuplicateValueDescriptorInt16 = descMap[ResourceObjectInt16]
 	NewValueDescriptor = descMap[ResourceObjectRandFloat32]
+	ValueDescriptorBinary = descMap[ResourceObjectBinary]
 
 	return nil
 }

@@ -84,6 +84,7 @@ func populateDeviceProfileMock() error {
 	_ = json.Unmarshal(profiles[ProfileFloat], &DeviceProfileRandomFloatGenerator)
 	_ = json.Unmarshal(profiles[ProfileFloat], &DuplicateDeviceProfileRandomFloatGenerator)
 	_ = json.Unmarshal(profiles[ProfileNew], &NewDeviceProfile)
+	_ = json.Unmarshal(profiles[ProfileBinary], &ValidDeviceRandomBinaryGenerator)
 
 	return nil
 }

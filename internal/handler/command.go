@@ -10,6 +10,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,12 +20,23 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	"github.com/ugorji/go/codec"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
 // means care needs to be taken with respect to shared data accessed through *Server.
-func CommandHandler(vars map[string]string, body string, method string, queryParams string) (*dsModels.Event, common.AppError) {
+func CommandHandler(vars map[string]string, body string, req *http.Request) (*dsModels.Event, common.AppError) {
+	if req == nil {
+		return nil, common.NewNotFoundError("error in request parameter that was passed in", nil)
+	}
+
+	method := req.Method
+	queryParams := req.URL.RawQuery
+
 	dKey := vars[common.IdVar]
 	cmd := vars[common.CommandVar]
 
@@ -78,13 +90,13 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		if strings.ToLower(method) == common.GetCmdMethod {
 			evt, appErr = execReadDeviceResource(&d, &dr, queryParams)
 		} else {
-			appErr = execWriteDeviceResource(&d, &dr, body)
+			appErr = execWriteDeviceResource(&d, &dr, body, req)
 		}
 	} else {
 		if strings.ToLower(method) == common.GetCmdMethod {
 			evt, appErr = execReadCmd(&d, cmd, queryParams)
 		} else {
-			appErr = execWriteCmd(&d, cmd, body)
+			appErr = execWriteCmd(&d, cmd, body, req)
 		}
 	}
 
@@ -92,7 +104,11 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 	return evt, appErr
 }
 
-func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource, queryParams string) (*dsModels.Event, common.AppError) {
+func execReadDeviceResource(
+	device *contract.Device,
+	dr *contract.DeviceResource,
+	queryParams string) (*dsModels.Event, common.AppError) {
+
 	var reqs []dsModels.CommandRequest
 	var req dsModels.CommandRequest
 	common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: deviceResource: %s", dr.Name))
@@ -249,8 +265,13 @@ func execReadCmd(device *contract.Device, cmd string, queryParams string) (*dsMo
 	return cvsToEvent(device, results, cmd)
 }
 
-func execWriteDeviceResource(device *contract.Device, dr *contract.DeviceResource, params string) common.AppError {
-	paramMap, err := parseParams(params)
+func execWriteDeviceResource(
+	device *contract.Device,
+	dr *contract.DeviceResource,
+	params string,
+	r *http.Request) common.AppError {
+
+	paramMap, err := parseParams(params, r)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteDeviceResource: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -297,7 +318,7 @@ func execWriteDeviceResource(device *contract.Device, dr *contract.DeviceResourc
 	return nil
 }
 
-func execWriteCmd(device *contract.Device, cmd string, params string) common.AppError {
+func execWriteCmd(device *contract.Device, cmd string, params string, r *http.Request) common.AppError {
 	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, common.SetCmdMethod)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: can't find ResrouceOperations in Profile(%s) and Command(%s), %v", device.Profile.Name, cmd, err)
@@ -312,7 +333,7 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 		return common.NewServerError(msg, nil)
 	}
 
-	cvs, err := parseWriteParams(device.Profile.Name, ros, params)
+	cvs, err := parseWriteParams(device.Profile.Name, ros, params, r)
 	if err != nil {
 		msg := fmt.Sprintf("Handler - execWriteCmd: Put parameters parsing failed: %s", params)
 		common.LoggingClient.Error(msg)
@@ -359,8 +380,12 @@ func execWriteCmd(device *contract.Device, cmd string, params string) common.App
 	return nil
 }
 
-func parseWriteParams(profileName string, ros []contract.ResourceOperation, params string) ([]*dsModels.CommandValue, error) {
-	paramMap, err := parseParams(params)
+func parseWriteParams(profileName string,
+	ros []contract.ResourceOperation,
+	params string,
+	r *http.Request) ([]*dsModels.CommandValue, error) {
+
+	paramMap, err := parseParams(params, r)
 	if err != nil {
 		return []*dsModels.CommandValue{}, err
 	}
@@ -410,8 +435,22 @@ func parseWriteParams(profileName string, ros []contract.ResourceOperation, para
 	return result, nil
 }
 
-func parseParams(params string) (paramMap map[string]string, err error) {
-	err = json.Unmarshal([]byte(params), &paramMap)
+func parseParams(params string, r *http.Request) (paramMap map[string]string, err error) {
+
+	if r == nil {
+		return nil, fmt.Errorf("error in request parameter that was passed in")
+	}
+
+	// Check the header value
+	switch r.Header.Get(clients.ContentType) {
+	case clients.ContentTypeCBOR:
+		err = codec.NewDecoderBytes([]byte(params), &codec.CborHandle{}).Decode(&paramMap)
+	case clients.ContentTypeJSON:
+		err = json.Unmarshal([]byte(params), &paramMap)
+	default:
+		common.LoggingClient.Error(fmt.Sprintf("header value was neither JSON nor CBOR, instead was: %s", r.Header.Get(clients.ContentType)))
+	}
+
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("parsing Write parameters failed %s, %v", params, err))
 		return
@@ -424,7 +463,11 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func createCommandValueFromRO(profileName string, ro *contract.ResourceOperation, v string) (*dsModels.CommandValue, error) {
+func createCommandValueFromRO(
+	profileName string,
+	ro *contract.ResourceOperation,
+	v string) (*dsModels.CommandValue, error) {
+
 	dr, ok := cache.Profiles().DeviceResource(profileName, ro.DeviceResource)
 	if !ok {
 		msg := fmt.Sprintf("createCommandValueForParam: no deviceResource: %s", ro.DeviceResource)
@@ -505,8 +548,18 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 	return result, err
 }
 
-func CommandAllHandler(cmd string, body string, method string, queryParams string) ([]*dsModels.Event, common.AppError) {
-	common.LoggingClient.Debug(fmt.Sprintf("Handler - CommandAll: execute the %s command %s from all operational devices", method, cmd))
+func CommandAllHandler(cmd string, body string, req *http.Request) ([]*dsModels.Event, common.AppError) {
+	if req == nil {
+		return nil, common.NewNotFoundError("error in request parameter that was passed in", nil)
+	}
+
+	method := req.Method
+	queryParams := req.URL.RawQuery
+
+	common.LoggingClient.Debug(fmt.Sprintf(
+		"Handler - CommandAll: execute the %s command %s from all operational devices",
+		method,
+		cmd))
 	devices := filterOperationalDevices(cache.Devices().All())
 
 	devCount := len(devices)
@@ -525,7 +578,7 @@ func CommandAllHandler(cmd string, body string, method string, queryParams strin
 			if strings.ToLower(method) == common.GetCmdMethod {
 				event, appErr = execReadCmd(device, cmd, queryParams)
 			} else {
-				appErr = execWriteCmd(device, cmd, body)
+				appErr = execWriteCmd(device, cmd, body, req)
 			}
 			cmdResults <- struct {
 				event  *dsModels.Event

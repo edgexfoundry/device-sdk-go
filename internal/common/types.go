@@ -16,7 +16,8 @@ import (
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
 type WritableInfo struct {
 	// Level is the logging level of writing log message
-	LogLevel string
+	LogLevel     string
+	ChecksumAlgo string
 }
 
 // ServiceInfo is a struct which contains service related configuration

@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/handler/callback"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
 	"github.com/gorilla/mux"
 )
 
@@ -105,7 +106,7 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	event, appErr := handler.CommandHandler(vars, body, req.Method, req.URL.RawQuery)
+	event, appErr := handler.CommandHandler(vars, body, req)
 
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
@@ -124,7 +125,6 @@ func commandFunc(w http.ResponseWriter, req *http.Request) {
 			} else {
 				common.LoggingClient.Trace("DeviceCommand: EventClient.MarshalEvent passed through encoded event", "device", event.Device, "event", event)
 			}
-			// TODO: Resolve why this header is not included in response from Core-Command to originating caller (while the written body is).
 			w.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
 			w.Write(event.EncodedEvent)
 		} else {
@@ -149,7 +149,7 @@ func commandAllFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	events, appErr := handler.CommandAllHandler(vars[common.CommandVar], body, req.Method, req.URL.RawQuery)
+	events, appErr := handler.CommandAllHandler(vars[common.CommandVar], body, req)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else if len(events) > 0 {

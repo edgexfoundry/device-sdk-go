@@ -8,19 +8,23 @@ package handler
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -83,8 +87,9 @@ func TestParseWriteParamsWrongParamName(t *testing.T) {
 	profileName := "notFound"
 	ro := []contract.ResourceOperation{{Index: ""}}
 	params := "{ \"key\": \"value\" }"
+	r := newRequestWithContentType(clients.ContentTypeJSON)
 
-	_, err := parseWriteParams(profileName, ro, params)
+	_, err := parseWriteParams(profileName, ro, params, r)
 
 	if err == nil {
 		t.Error("expected error")
@@ -96,7 +101,8 @@ func TestParseWriteParamsNoParams(t *testing.T) {
 	ro := []contract.ResourceOperation{{Index: ""}}
 	params := "{ }"
 
-	_, err := parseWriteParams(profileName, ro, params)
+	r := newRequestWithContentType(clients.ContentTypeJSON)
+	_, err := parseWriteParams(profileName, ro, params, r)
 
 	if err == nil {
 		t.Error("expected error")
@@ -237,6 +243,7 @@ func TestParseWriteParams(t *testing.T) {
 	rosTestDefaultValue, _ := cache.Profiles().ResourceOperations(profileName, "RandomValue_Int32", common.SetCmdMethod)
 	rosTestMappingPass, _ := cache.Profiles().ResourceOperations(profileName, "ResourceTestMapping_Pass", common.SetCmdMethod)
 	rosTestMappingFail, _ := cache.Profiles().ResourceOperations(profileName, "ResourceTestMapping_Fail", common.SetCmdMethod)
+	r := newRequestWithContentType(clients.ContentTypeJSON)
 
 	tests := []struct {
 		testName    string
@@ -258,7 +265,7 @@ func TestParseWriteParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, err := parseWriteParams(tt.profile, tt.resourceOps, tt.params)
+			_, err := parseWriteParams(tt.profile, tt.resourceOps, tt.params, r)
 			if !tt.expectErr && err != nil {
 				t.Errorf("unexpected parse error params:%s %s", tt.params, err.Error())
 				return
@@ -335,6 +342,9 @@ func TestExecWriteCmd(t *testing.T) {
 		paramsTransformFail             = `{"ResourceTestTransform_Fail":"123"}`
 		paramsNoDeviceResourceForResult = `{"error":""}`
 	)
+
+	r := newRequestWithContentType(clients.ContentTypeJSON)
+
 	tests := []struct {
 		testName  string
 		device    *contract.Device
@@ -358,7 +368,7 @@ func TestExecWriteCmd(t *testing.T) {
 					common.CurrentConfig.Device.MaxCmdOps = 128
 				}()
 			}
-			appErr := execWriteCmd(tt.device, tt.cmd, tt.params)
+			appErr := execWriteCmd(tt.device, tt.cmd, tt.params, r)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return
@@ -386,9 +396,10 @@ func TestCommandAllHandler(t *testing.T) {
 		{"PartOfWriteCommandExecutionSuccess", "RandomValue_Uint8", `{"RandomValue_Uint8":"123"}`, "", methodSet, false},
 		{"PartOfWriteCommandExecutionFail", "error", `{"RandomValue_Uint8":"123"}`, "", methodSet, true},
 	}
+	r := newRequestWithContentType(clients.ContentTypeJSON)
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, appErr := CommandAllHandler(tt.cmd, tt.body, tt.method, tt.queryParams)
+			_, appErr := CommandAllHandler(tt.cmd, tt.body, r)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return
@@ -421,6 +432,8 @@ func TestCommandHandler(t *testing.T) {
 		t.Errorf("Fail to update device, error: %v", err)
 	}
 
+	r := newRequestWithContentType(clients.ContentTypeJSON)
+
 	tests := []struct {
 		testName    string
 		vars        map[string]string
@@ -441,7 +454,7 @@ func TestCommandHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, appErr := CommandHandler(tt.vars, tt.body, tt.method, tt.queryParams)
+			_, appErr := CommandHandler(tt.vars, tt.body, r)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return
@@ -452,4 +465,22 @@ func TestCommandHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestParseWriteParamsCborHeader(t *testing.T) {
+	profileName := mock.ProfileBinary
+	ros, _ := cache.Profiles().ResourceOperations(profileName, "RandomValue_Binary", common.SetCmdMethod)
+	params := `°xEnableRandomization_Binarydtrue§nparameterNamesxEnableRandomization_BinarydPathx/api/v1/device/9f872d68/BinarycUrlxBhttp://localhost:48082/api/v1/device/9f872d68/command/7ff8d51ea50dbidx$9f872d68-2281-4af4-959d-29e4d51c2192dnametRandom-Binary-DevicejadminStatehUNLOCKEDnoperatingStategENABLED°xEnableRandomization_Binarydtrue`
+	r := newRequestWithHeaders(map[string]string{clients.ContentType: clients.ContentTypeCBOR}, http.MethodPut)
+	_, err := parseWriteParams(profileName, ros, params, r)
+
+	if err != nil {
+		t.Error("unexpected error")
+	}
+}
+
+func newRequestWithContentType(contentType string) *http.Request {
+	req := httptest.NewRequest(http.MethodGet, "/", strings.NewReader("Test body"))
+	req.Header.Set(clients.ContentType, contentType)
+	return req
 }
