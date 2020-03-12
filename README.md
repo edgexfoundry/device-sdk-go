@@ -5,6 +5,45 @@ This repository is a set of Go packages which can be used to build a Go-based Ed
 Developers could make their own Device Service by implementing the `ProtocolDriver  interface` for the specific IoT protocol and main function to start the Device Service.  To implement the main function, the startup package could be optional leveraged, or developers could write the customized bootstrap code by themselves.
 Please see the build-in [Simple Device Service](https://github.com/edgexfoundry/device-sdk-go/tree/master/example) as an example.
 
+## Float value encodeing
+
+In EdgeX, float value has two kinds of encoding, Base64, and eNotation.
+
+> When EdgeX is given (or returns) a float32 or float64 value as a string, the format of the string is by default a base64 encoded little-endian of the float32 or float64 value, but the “floatEncoding” attribute relating to the value may instead specify “eNotation” in which case the representation is a decimal with exponent (eg “1.234e-5”)
+
+https://docs.google.com/document/d/1aMIQ0kb46VE5eeCpDlaTg8PP29-DBSBTlgeWrv6LuYk/edit
+
+### base64
+The SDK should convert the float value to little-endian binary and then encode the binary as base64 string.
+Currently, C SDK converts float value to little-endian binary. GO SDK encodes convert float value to big-endian binary because SDK spec changed in fuji release, we will modify GO SDK to make the behavior consistent in the future.
+
+Usage:
+```
+-
+  name: "Temperature"
+  description: "Temperature value"
+  properties:
+    value:
+      { type: "FLOAT64", readWrite: "RW", floatEncoding: "Base64"}
+    units:
+      { type: "String", readWrite: "R", defaultValue: "degrees Celsius"}
+```
+
+### eNoation
+The SDK should convert the float value to string with eNotaion representation.
+
+Usage:
+```
+-
+  name: "Temperature"
+  description: "Temperature value"
+  properties:
+    value:
+      { type: "FLOAT64", readWrite: "RW", floatEncoding: "eNotation"}
+    units:
+      { type: "String", readWrite: "R", defaultValue: "degrees Celsius"}
+```
+
 ## Community
 - Chat: https://edgexfoundry.slack.com
 - Mailing lists: https://lists.edgexfoundry.org/mailman/listinfo
