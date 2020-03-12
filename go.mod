@@ -7,7 +7,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/eclipse/paho.mqtt.golang v1.2.0
 	github.com/edgexfoundry/go-mod-core-contracts v0.1.52
-	github.com/edgexfoundry/go-mod-messaging v0.1.11
+	github.com/edgexfoundry/go-mod-messaging v0.1.16
 	github.com/edgexfoundry/go-mod-registry v0.1.11
 	github.com/edgexfoundry/go-mod-secrets v0.0.17
 	github.com/golang/snappy v0.0.1 // indirect
