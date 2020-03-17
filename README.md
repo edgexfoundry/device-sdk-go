@@ -291,7 +291,13 @@ E.G. NewFilter([] {"Device1", "Device2"}).FilterByDeviceName
 There are two basic types of filtering included in the SDK to add to your pipeline. Theses provided Filter functions return a type of events.Model. If filtering results in no remaining data, the pipeline execution for that pass is terminated. If no values are provided for filtering, then data flows through unfiltered.
  - `NewFilter([]string filterValues)` - This function returns a `Filter` instance initialized with the passed in filter values. This `Filter` instance is used to access the following filter functions that will operate using the specified filter values.
     - `FilterByDeviceName` - This function will filter the event data down to the specified device names and return the filtered data to the pipeline.
-    - `FilterByValueDescriptor` - This function will filter the event data down to the specified device value descriptor and return the filtered data to the pipeline. 
+    - `FilterByValueDescriptor` - This function will filter the event data down to the specified device value descriptor and return the filtered data to the pipeline.
+
+#### JSON Logic
+  - `NewJSONLogic(rule string)` - This function returns a `JSONLogic` instance initialized with the passed in JSON rule. The rule passed in should be a JSON string conforming to the specification here: http://jsonlogic.com/operations.html. 
+  > NOTE: Only simple logic/filtering operators are supported. Manipulation of data via JSONLogic rules are not yet supported. For more advanced scenarios checkout [EMQ X Kuiper](https://github.com/emqx/kuiper).
+   - `Evaluate` - This is the function that will be used in the pipeline to apply the JSON rule to data coming in on the pipeline. If the condition of your rule is met, then the pipeline will continue and the data will continue to flow to the next function in the pipeline. If the condition of your rule is NOT met, then pipeline execution stops. 
+
 
 ### Encryption
 There is one encryption transform included in the SDK that can be added to your pipeline. 
