@@ -24,6 +24,8 @@ package transforms
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -58,7 +60,7 @@ func TestMQTTSend(t *testing.T) {
 	dataToSend := "SOME DATA TO SEND"
 	continuePipeline, result := sender.MQTTSend(context, dataToSend)
 	assert.True(t, continuePipeline, "Should Continue Pipeline")
-	assert.Equal(t, nil, result, "Should be nil")
+	assert.Nil(t, result, "Should be nil")
 
 }
 
@@ -83,11 +85,8 @@ func TestMQTTSendInvalidData(t *testing.T) {
 
 	dataToSend := RandomObject{something: "SOME DATA TO SEND"}
 	continuePipeline, result := sender.MQTTSend(context, dataToSend)
-	if !assert.False(t, continuePipeline, "Should Not Continue Pipeline") {
-		t.Fatal()
-	}
-	assert.Equal(t, expected, result.(error).Error())
-
+	require.False(t, continuePipeline, "Should Not Continue Pipeline")
+	assert.EqualError(t, result.(error), expected)
 }
 
 func TestMQTTSendPersistData(t *testing.T) {
@@ -97,9 +96,7 @@ func TestMQTTSendPersistData(t *testing.T) {
 
 	dataToSend := "Random data"
 	continuePipeline, result := sender.MQTTSend(context, dataToSend)
-	if !assert.False(t, continuePipeline, "Should Not Continue Pipeline") {
-		t.Fatal()
-	}
+	require.False(t, continuePipeline, "Should Not Continue Pipeline")
 	assert.Contains(t, result.(error).Error(), expected)
 	assert.NotNil(t, context.RetryData)
 }

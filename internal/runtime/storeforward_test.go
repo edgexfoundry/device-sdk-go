@@ -20,6 +20,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -52,13 +54,9 @@ func TestProcessRetryItems(t *testing.T) {
 		targetTransformWasCalled = true
 
 		actualPayload, ok := params[0].([]byte)
-		if !ok {
-			t.Fatal("Expected []byte payload")
-		}
 
-		if !assert.Equal(t, expectedPayload, string(actualPayload)) {
-			t.Fatal()
-		}
+		require.True(t, ok, "Expected []byte payload")
+		require.Equal(t, expectedPayload, string(actualPayload))
 
 		return false, nil
 	}

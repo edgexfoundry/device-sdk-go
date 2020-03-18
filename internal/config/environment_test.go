@@ -74,7 +74,7 @@ func TestKeyMatchOverwritesValue(t *testing.T) {
 
 			result := sut.OverrideFromEnvironment(tree)
 
-			assert.Equal(t, result.Get(test.key), test.envValue)
+			assert.Equal(t, test.envValue, result.Get(test.key))
 		})
 	}
 }
@@ -97,7 +97,7 @@ func TestNonMatchingKeyDoesNotOverwritesValue(t *testing.T) {
 
 			result := sut.OverrideFromEnvironment(tree)
 
-			assert.Equal(t, result.Get(test.key), test.envValue)
+			assert.Equal(t, test.envValue, result.Get(test.key))
 		})
 	}
 }
@@ -131,9 +131,9 @@ func TestEnvVariableUpdatesRegistryInfo(t *testing.T) {
 
 	registryInfo = sut.OverrideRegistryInfoFromEnvironment(registryInfo)
 
-	assert.Equal(t, registryInfo.Host, expectedRegistryHostValue)
-	assert.Equal(t, registryInfo.Port, expectedRegistryPortValue)
-	assert.Equal(t, registryInfo.Type, expectedRegistryTypeValue)
+	assert.Equal(t, expectedRegistryHostValue, registryInfo.Host)
+	assert.Equal(t, expectedRegistryPortValue, registryInfo.Port)
+	assert.Equal(t, expectedRegistryTypeValue, registryInfo.Type)
 }
 
 func TestEnvVariableUpdatesServiceInfo(t *testing.T) {
@@ -147,9 +147,9 @@ func TestEnvVariableUpdatesServiceInfo(t *testing.T) {
 
 	serviceInfo = sut.OverrideServiceInfoFromEnvironment(serviceInfo)
 
-	assert.Equal(t, serviceInfo.Host, expectedServiceHostValue)
-	assert.Equal(t, serviceInfo.Port, expectedServicePortValue)
-	assert.Equal(t, serviceInfo.Protocol, expectedServiceProtocolValue)
+	assert.Equal(t, expectedServiceHostValue, serviceInfo.Host)
+	assert.Equal(t, expectedServicePortValue, serviceInfo.Port)
+	assert.Equal(t, expectedServiceProtocolValue, serviceInfo.Protocol)
 }
 
 func TestNoEnvVariableDoesNotUpdateRegistryInfo(t *testing.T) {
@@ -158,7 +158,7 @@ func TestNoEnvVariableDoesNotUpdateRegistryInfo(t *testing.T) {
 
 	registryInfo = sut.OverrideRegistryInfoFromEnvironment(registryInfo)
 
-	assert.Equal(t, registryInfo.Host, defaultHostValue)
-	assert.Equal(t, registryInfo.Port, defaultPortValue)
-	assert.Equal(t, registryInfo.Type, defaultTypeValue)
+	assert.Equal(t, defaultHostValue, registryInfo.Host)
+	assert.Equal(t, defaultPortValue, registryInfo.Port)
+	assert.Equal(t, defaultTypeValue, registryInfo.Type)
 }

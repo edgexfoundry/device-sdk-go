@@ -19,6 +19,8 @@ package transforms
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -38,16 +40,11 @@ func TestFilterByDeviceNameFound(t *testing.T) {
 	filter := NewFilter([]string{"id1"})
 
 	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
+	require.NotNil(t, result)
+	require.True(t, continuePipeline)
+
 	if eventOut, ok := result.(*models.Event); ok {
-		if eventOut.Device != "id1" {
-			t.Fatal("device id does not match filter")
-		}
+		assert.Equal(t, "id1", eventOut.Device)
 	}
 }
 
@@ -60,24 +57,16 @@ func TestFilterByDeviceNameNotFound(t *testing.T) {
 	filter := NewFilter([]string{"id2"})
 
 	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
-	if result != nil {
-		t.Fatal("result should be nil")
-	}
-	if continuePipeline == true {
-		t.Fatal("Pipeline should stop processing")
-	}
+	assert.Nil(t, result)
+	assert.False(t, continuePipeline)
 }
 
 func TestFilterByDeviceNameNoParameters(t *testing.T) {
 	filter := NewFilter([]string{"id2"})
 
 	continuePipeline, result := filter.FilterByDeviceName(context)
-	if result.(error).Error() != "no Event Received" {
-		t.Fatal("Should have an error when no parameter was passed")
-	}
-	if continuePipeline == true {
-		t.Fatal("Pipeline should stop processing")
-	}
+	assert.EqualError(t, result.(error), "no Event Received")
+	assert.False(t, continuePipeline)
 }
 
 func TestFilterByDeviceNameNoFilterValues(t *testing.T) {
@@ -88,19 +77,13 @@ func TestFilterByDeviceNameNoFilterValues(t *testing.T) {
 	filter := NewFilter(nil)
 
 	continuePipeline, result := filter.FilterByDeviceName(context, expected)
-	if !assert.NotNil(t, result, "Expected event to be passed thru") {
-		t.Fatal()
-	}
+	require.NotNil(t, result, "Expected event to be passed thru")
 
 	actual, ok := result.(models.Event)
-	if !assert.True(t, ok, "Expected result to be an Event") {
-		t.Fatal()
-	}
+	require.True(t, ok, "Expected result to be an Event")
 
 	assert.Equal(t, expected.Device, actual.Device, "Expected Event to be same as passed in")
-	if !assert.True(t, continuePipeline, "Pipeline should'nt stop processing") {
-		t.Fatal()
-	}
+	assert.True(t, continuePipeline, "Pipeline should'nt stop processing")
 }
 
 func TestFilterByDeviceNameFoundExtraParameters(t *testing.T) {
@@ -111,21 +94,15 @@ func TestFilterByDeviceNameFoundExtraParameters(t *testing.T) {
 	filter := NewFilter([]string{"id1"})
 
 	continuePipeline, result := filter.FilterByDeviceName(context, eventIn, "application/event")
-	if result == nil {
-		t.Fatal("result should not be nil")
-	}
-	if continuePipeline == false {
-		t.Fatal("Pipeline should continue processing")
-	}
+	require.NotNil(t, result)
+	assert.True(t, continuePipeline, "Pipeline should continue processing")
+
 	if eventOut, ok := result.(*models.Event); ok {
-		if eventOut.Device != "id1" {
-			t.Fatal("device id does not match filter")
-		}
+		assert.Equal(t, "id1", eventOut.Device, "device id does not match filter")
 	}
 }
 
 func TestFilterByValueDescriptor(t *testing.T) {
-
 	f1 := NewFilter([]string{descriptor1})
 	f12 := NewFilter([]string{descriptor1, descriptor2})
 
@@ -145,57 +122,31 @@ func TestFilterByValueDescriptor(t *testing.T) {
 	event12.Readings = append(event12.Readings, models.Reading{Name: descriptor2})
 
 	continuePipeline, res := f1.FilterByValueDescriptor(context)
-	if continuePipeline {
-		t.Fatal("Pipeline should stop since no parameter was passed")
-	}
-	if res.(error).Error() != "no Event Received" {
-		t.Fatal("Should have an error when no parameter was passed")
-	}
+	assert.False(t, continuePipeline, "Pipeline should stop since no parameter was passed")
+	assert.EqualError(t, res.(error), "no Event Received")
 
 	continuePipeline, res = f1.FilterByValueDescriptor(context, event1)
-	if !continuePipeline {
-		t.Fatal("Pipeline should continue")
-	}
-	if len(res.(models.Event).Readings) != 1 {
-		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
-	}
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 
 	continuePipeline, res = f1.FilterByValueDescriptor(context, event12)
-	if !continuePipeline {
-		t.Fatal("Event should be continuePipeline")
-	}
-	if len(res.(models.Event).Readings) != 1 {
-		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
-	}
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 
 	continuePipeline, res = f1.FilterByValueDescriptor(context, event2)
-	if continuePipeline {
-		t.Fatal("Event should be filtered out")
-	}
+	assert.False(t, continuePipeline, "Event should be filtered out")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event1)
-	if !continuePipeline {
-		t.Fatal("Event should be continuePipeline")
-	}
-	if len(res.(models.Event).Readings) != 1 {
-		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
-	}
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event12)
-	if !continuePipeline {
-		t.Fatal("Event should be continuePipeline")
-	}
-	if len(res.(models.Event).Readings) != 2 {
-		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
-	}
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 2, "Event should have one reading")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event2)
-	if !continuePipeline {
-		t.Fatal("Event should be continuePipeline")
-	}
-	if len(res.(models.Event).Readings) != 1 {
-		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
-	}
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 }
 
 func TestFilterByValueDescriptorNoFilterValues(t *testing.T) {
@@ -208,29 +159,17 @@ func TestFilterByValueDescriptorNoFilterValues(t *testing.T) {
 	filter := NewFilter(nil)
 
 	continuePipeline, result := filter.FilterByValueDescriptor(context, expected)
-	if !assert.NotNil(t, result, "Expected event to be passed thru") {
-		t.Fatal()
-	}
+	require.NotNil(t, result, "Expected event to be passed thru")
 
 	actual, ok := result.(models.Event)
-	if !assert.True(t, ok, "Expected result to be an Event") {
-		t.Fatal()
-	}
-
-	if !assert.NotNil(t, actual.Readings, "Expected Reading passed thru") {
-		t.Fatal()
-	}
-
+	require.True(t, ok, "Expected result to be an Event")
+	require.NotNil(t, actual.Readings, "Expected Reading passed thru")
 	assert.Equal(t, expected.Device, actual.Device, "Expected Event to be same as passed in")
 	assert.Equal(t, expected.Readings[0].Name, actual.Readings[0].Name, "Expected Reading to be same as passed in")
-
-	if !assert.True(t, continuePipeline, "Pipeline should'nt stop processing") {
-		t.Fatal()
-	}
+	assert.True(t, continuePipeline, "Pipeline should'nt stop processing")
 }
 
 func TestFilterByValueDescriptorExtraParameters(t *testing.T) {
-
 	f1 := NewFilter([]string{descriptor1})
 
 	// event with a value descriptor 1
@@ -240,10 +179,6 @@ func TestFilterByValueDescriptorExtraParameters(t *testing.T) {
 	event1.Readings = append(event1.Readings, models.Reading{Name: descriptor1})
 
 	continuePipeline, res := f1.FilterByValueDescriptor(context, event1, "application/event")
-	if !continuePipeline {
-		t.Fatal("Pipeline should continue")
-	}
-	if len(res.(models.Event).Readings) != 1 {
-		t.Fatal("Event should be one reading, there are ", len(res.(models.Event).Readings))
-	}
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 }

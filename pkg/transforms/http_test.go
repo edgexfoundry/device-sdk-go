@@ -24,6 +24,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -65,9 +67,7 @@ func TestHTTPPost(t *testing.T) {
 	defer ts.Close()
 
 	url, err := url.Parse(ts.URL)
-	if err != nil {
-		t.Fatal("Could not parse url")
-	}
+	require.NoError(t, err)
 
 	tests := []struct {
 		Name          string
@@ -98,7 +98,7 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
-	assert.Equal(t, result.(error).Error(), "No Data Received")
+	assert.Equal(t, "No Data Received", result.(error).Error())
 }
 
 func TestHTTPPostInvalidParameter(t *testing.T) {
@@ -110,6 +110,6 @@ func TestHTTPPostInvalidParameter(t *testing.T) {
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
-	assert.Equal(t, result.(error).Error(), "marshaling input data to JSON failed, "+
-		"passed in data must be of type []byte, string, or support marshaling to JSON")
+	assert.Equal(t, "marshaling input data to JSON failed, "+
+		"passed in data must be of type []byte, string, or support marshaling to JSON", result.(error).Error())
 }

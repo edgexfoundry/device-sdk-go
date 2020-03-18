@@ -31,11 +31,11 @@ func TestSplitComma(t *testing.T) {
 	results := strings.FieldsFunc(commaDelimmited, SplitComma)
 	// Should have 4 elements (space counts as an element)
 	assert.Equal(t, 5, len(results))
-	assert.Equal(t, results[0], "Hel lo")
-	assert.Equal(t, results[1], " ")
-	assert.Equal(t, results[2], "Test")
-	assert.Equal(t, results[3], "Hi")
-	assert.Equal(t, results[4], " ")
+	assert.Equal(t, "Hel lo", results[0])
+	assert.Equal(t, " ", results[1])
+	assert.Equal(t, "Test", results[2])
+	assert.Equal(t, "Hi", results[3])
+	assert.Equal(t, " ", results[4])
 }
 func TestSplitCommaEmpty(t *testing.T) {
 	commaDelimmited := ""
@@ -49,8 +49,8 @@ func TestDeleteEmptyAndTrim(t *testing.T) {
 	results := DeleteEmptyAndTrim(strings)
 	// Should have 4 elements (space counts as an element)
 	assert.Equal(t, 2, len(results))
-	assert.Equal(t, results[0], "Hel lo")
-	assert.Equal(t, results[1], "test")
+	assert.Equal(t, "Hel lo", results[0])
+	assert.Equal(t, "test", results[1])
 }
 
 func TestCoerceTypeStringToByteArray(t *testing.T) {

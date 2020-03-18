@@ -27,6 +27,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
@@ -50,6 +51,7 @@ func TestMain(m *testing.M) {
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {
 	return reflect.TypeOf(objectPtr) == reflect.TypeOf(typePtr)
 }
+
 func TestAddRoute(t *testing.T) {
 	router := mux.NewRouter()
 	ws := webserver.NewWebServer(&common.ConfigurationStruct{}, nil, lc, router)
@@ -85,6 +87,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of HTTP Trigger")
 }
+
 func TestSetupMessageBusTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
@@ -101,6 +104,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }
+
 func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
@@ -111,9 +115,10 @@ func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 		},
 	}
 	err := sdk.SetFunctionsPipeline()
-	assert.NotNil(t, err, "There should be an error")
-	assert.Equal(t, err.Error(), "no transforms provided to pipeline")
+	require.Error(t, err, "There should be an error")
+	assert.Equal(t, "no transforms provided to pipeline", err.Error())
 }
+
 func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
@@ -130,9 +135,10 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 
 	sdk.runtime.Initialize(nil, nil)
 	err := sdk.SetFunctionsPipeline(function)
-	assert.Nil(t, err, "There should be no error")
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(sdk.transforms))
 }
+
 func TestApplicationSettings(t *testing.T) {
 	expectedSettingKey := "ApplicationName"
 	expectedSettingValue := "simple-filter-xml"
@@ -146,17 +152,11 @@ func TestApplicationSettings(t *testing.T) {
 	}
 
 	appSettings := sdk.ApplicationSettings()
-	if !assert.NotNil(t, appSettings, "returned application settings is nil") {
-		t.Fatal()
-	}
+	require.NotNil(t, appSettings, "returned application settings is nil")
 
 	actual, ok := appSettings[expectedSettingKey]
-	if !assert.True(t, ok, "expected application setting key not fond") {
-		t.Fatal()
-	}
-
+	require.True(t, ok, "expected application setting key not found")
 	assert.Equal(t, expectedSettingValue, actual, "actual application setting value not as expected")
-
 }
 
 func TestApplicationSettingsNil(t *testing.T) {
@@ -165,9 +165,7 @@ func TestApplicationSettingsNil(t *testing.T) {
 	}
 
 	appSettings := sdk.ApplicationSettings()
-	if !assert.Nil(t, appSettings, "returned application settings expected to be nil") {
-		t.Fatal()
-	}
+	require.Nil(t, appSettings, "returned application settings expected to be nil")
 }
 
 func TestGetAppSettingStrings(t *testing.T) {
@@ -183,10 +181,7 @@ func TestGetAppSettingStrings(t *testing.T) {
 	}
 
 	actual, err := sdk.GetAppSettingStrings(setting)
-	if !assert.NoError(t, err, "unexpected error") {
-		t.Fatal()
-	}
-
+	require.NoError(t, err, "unexpected error")
 	assert.EqualValues(t, expected, actual, "actual application setting values not as expected")
 }
 
@@ -201,10 +196,7 @@ func TestGetAppSettingStringsSettingMissing(t *testing.T) {
 	}
 
 	_, err := sdk.GetAppSettingStrings(setting)
-	if !assert.Error(t, err, "Expected an error") {
-		t.Fatal()
-	}
-
+	require.Error(t, err, "Expected an error")
 	assert.Contains(t, err.Error(), expected, "Error not as expected")
 }
 
@@ -217,10 +209,7 @@ func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
 	}
 
 	_, err := sdk.GetAppSettingStrings(setting)
-	if !assert.Error(t, err, "Expected an error") {
-		t.Fatal()
-	}
-
+	require.Error(t, err, "Expected an error")
 	assert.Contains(t, err.Error(), expected, "Error not as expected")
 }
 
@@ -238,8 +227,8 @@ func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
 	}
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
-	assert.Error(t, err, "expected error for function not found in config")
-	assert.Equal(t, err.Error(), "function Bogus configuration not found in Pipeline.Functions section")
+	require.Error(t, err, "expected error for function not found in config")
+	assert.Equal(t, "function Bogus configuration not found in Pipeline.Functions section", err.Error())
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
 }
 
@@ -260,8 +249,8 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 	}
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
-	assert.Error(t, err, "expected error")
-	assert.Equal(t, err.Error(), "function Bogus is not a built in SDK function")
+	require.Error(t, err, "expected error")
+	assert.Equal(t, "function Bogus is not a built in SDK function", err.Error())
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
 }
 
@@ -292,7 +281,7 @@ func TestLoadConfigurablePipelineAddressableConfig(t *testing.T) {
 	}
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
-	assert.NoError(t, err, "")
+	require.NoError(t, err)
 	assert.NotNil(t, appFunctions, "expected app functions list to be set")
 }
 
@@ -317,8 +306,8 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 	}
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
-	assert.NoError(t, err, "")
-	assert.NotNil(t, appFunctions, "expected app functions list to be set")
+	require.NoError(t, err)
+	require.NotNil(t, appFunctions, "expected app functions list to be set")
 	assert.Equal(t, 3, len(appFunctions))
 }
 
@@ -341,8 +330,8 @@ func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 	}
 
 	_, err := sdk.LoadConfigurablePipeline()
-	assert.NoError(t, err, "")
-	assert.NotNil(t, sdk.TargetType)
+	require.NoError(t, err)
+	require.NotNil(t, sdk.TargetType)
 	assert.Equal(t, reflect.Ptr, reflect.TypeOf(sdk.TargetType).Kind())
 	assert.Equal(t, reflect.TypeOf([]byte{}).Kind(), reflect.TypeOf(sdk.TargetType).Elem().Kind())
 }
@@ -366,7 +355,7 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	}
 
 	_, err := sdk.LoadConfigurablePipeline()
-	assert.NoError(t, err, "")
+	require.NoError(t, err)
 	assert.Nil(t, sdk.TargetType)
 }
 
@@ -381,7 +370,7 @@ func TestSetLoggingTargetLocal(t *testing.T) {
 		},
 	}
 	result, err := sdk.setLoggingTarget()
-	assert.Nil(t, err, "Should be no error")
+	require.NoError(t, err)
 	assert.Equal(t, "./myfile", result, "File path is incorrect")
 }
 
@@ -402,9 +391,10 @@ func TestSetLoggingTargetRemote(t *testing.T) {
 		},
 	}
 	result, err := sdk.setLoggingTarget()
-	assert.Nil(t, err, "Should be no error")
+	require.NoError(t, err)
 	assert.Equal(t, "http://logs:8080/api/v1/logs", result, "File path is incorrect")
 }
+
 func TestInitializeClientsAll(t *testing.T) {
 	coreClients := make(map[string]common.ClientInfo)
 	coreClients[common.CoreDataClientName] = common.ClientInfo{}

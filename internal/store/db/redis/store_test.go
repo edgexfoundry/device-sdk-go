@@ -21,11 +21,11 @@
 package redis
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
+	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
 )
@@ -118,14 +118,12 @@ func TestClient_NewClient(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, connectErr := NewClient(test.config)
+			_, err := NewClient(test.config)
 
-			if test.expectedError && connectErr == nil {
-				t.Fatal("Expected an error")
-			}
-
-			if !test.expectedError && connectErr != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", connectErr.Error())
+			if test.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -198,17 +196,15 @@ func TestClient_Store(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			returnVal, err := client.Store(test.toStore)
-			if test.expectedError && err == nil {
-				t.Fatal("Expected an error")
+
+			if test.expectedError {
+				require.Error(t, err)
+				return // test complete
+			} else {
+				require.NoError(t, err)
 			}
 
-			if !test.expectedError && returnVal == "" {
-				t.Fatal("Function did not error but did not return a valid ID")
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
+			require.NotEqual(t, "", returnVal, "Function did not error but did not return a valid ID")
 		})
 	}
 }
@@ -259,17 +255,14 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 
 			actual, err := client.RetrieveFromStore(test.key)
 
-			if test.expectedError && err == nil {
-				t.Fatal("Expected an error")
+			if test.expectedError {
+				require.Error(t, err)
+				return // test complete
+			} else {
+				require.NoError(t, err)
 			}
 
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			if len(actual) != len(test.toStore) {
-				t.Fatalf("Returned slice length doesn't match expected.\nExpected: %v\nActual: %v\n", len(test.toStore), len(actual))
-			}
+			require.NotEqual(t, len(actual), len(test.toStore), "Returned slice length doesn't match expected")
 		})
 	}
 }
@@ -319,25 +312,17 @@ func TestClient_Update(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := client.Update(test.expectedVal)
 
-			if test.expectedError && err == nil {
-				t.Fatal("Expected an error")
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			if test.expectedError {
+				require.Error(t, err)
+				return // test complete
+			} else {
+				require.NoError(t, err)
 			}
 
 			// only do a lookup on tests that we aren't expecting errors
-			if !test.expectedError {
-				actual, _ := client.RetrieveFromStore(test.expectedVal.AppServiceKey)
-				if actual == nil {
-					t.Fatal("No objects retrieved from store")
-				}
-
-				if !reflect.DeepEqual(actual[0], test.expectedVal) {
-					t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedVal, actual[0])
-				}
-			}
+			actual, _ := client.RetrieveFromStore(test.expectedVal.AppServiceKey)
+			require.NotNil(t, actual, "No objects retrieved from store")
+			require.Equal(t, test.expectedVal, actual[0], "Return value doesn't match expected")
 		})
 	}
 }
@@ -381,21 +366,16 @@ func TestClient_RemoveFromStore(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := client.RemoveFromStore(test.testObject)
 
-			if test.expectedError && err == nil {
-				t.Fatal("Expected an error")
-			}
-
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
+			if test.expectedError {
+				require.Error(t, err)
+				return // test complete
+			} else {
+				require.NoError(t, err)
 			}
 
 			// only do a lookup on tests that we aren't expecting errors
-			if !test.expectedError {
-				actual, _ := client.RetrieveFromStore(test.testObject.AppServiceKey)
-				if actual != nil {
-					t.Fatal("Object retrieved, should have been nil")
-				}
-			}
+			actual, _ := client.RetrieveFromStore(test.testObject.AppServiceKey)
+			require.Nil(t, actual, "Object retrieved, should have been nil")
 		})
 	}
 }

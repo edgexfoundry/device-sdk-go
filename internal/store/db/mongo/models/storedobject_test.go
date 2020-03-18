@@ -18,10 +18,13 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 
-	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/google/uuid"
 )
 
 var TestObjectIDNil = primitive.NilObjectID
@@ -125,17 +128,14 @@ func TestFromContract(t *testing.T) {
 		t.Run(test.testName, func(tt *testing.T) {
 			actual := StoredObject{}
 			err := actual.FromContract(test.fromContract)
-			if test.expectedError && err == nil {
-				t.Fatal("Expected an error")
+			if test.expectedError {
+				require.Error(t, err)
+				return // test complete
+			} else {
+				require.NoError(t, err)
 			}
 
-			if !test.expectedError && err != nil {
-				t.Fatalf("Unexpectedly encountered error: %s", err.Error())
-			}
-
-			if !reflect.DeepEqual(actual, test.expectedResult) {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedResult, actual)
-			}
+			require.Equal(t, test.expectedResult, actual)
 		})
 	}
 }

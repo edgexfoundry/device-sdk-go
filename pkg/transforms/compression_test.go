@@ -25,6 +25,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,32 +43,21 @@ func TestGzip(t *testing.T) {
 	assert.True(t, continuePipeline)
 
 	compressed, err := base64.StdEncoding.DecodeString(string(result.([]byte)))
-	if err != nil {
-		t.Fatal("Error base64 ", err)
-	}
+	require.NoError(t, err)
 
 	var buf bytes.Buffer
 	buf.Write(compressed)
 
 	zr, err := gzip.NewReader(&buf)
-	if err != nil {
-		t.Fatal("Error decoding buffer ", err)
-	}
-	decoded, err := ioutil.ReadAll(zr)
-	if err != nil {
-		t.Fatalf("ReadAll: %v", err)
-	}
+	require.NoError(t, err)
 
-	if string(decoded) != clearString {
-		t.Fatal("Decoded string ", result.([]byte), " is not ", clearString)
-	}
+	decoded, err := ioutil.ReadAll(zr)
+	require.NoError(t, err)
+	require.Equal(t, clearString, string(decoded))
 
 	continuePipeline2, result2 := comp.CompressWithGZIP(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
-
-	if !bytes.Equal(result.([]byte), result2.([]byte)) {
-		t.Fatal("Output should be the same", result.([]byte), " is not ", result2.([]byte))
-	}
+	assert.Equal(t, result.([]byte), result2.([]byte))
 }
 
 func TestZlib(t *testing.T) {
@@ -74,36 +65,24 @@ func TestZlib(t *testing.T) {
 	comp := NewCompression()
 	continuePipeline, result := comp.CompressWithZLIB(context, []byte(clearString))
 	assert.True(t, continuePipeline)
-
-	assert.NotNil(t, result)
+	require.NotNil(t, result)
 
 	compressed, err := base64.StdEncoding.DecodeString(string(result.([]byte)))
-	if err != nil {
-		t.Fatal("Error base64 ", err)
-	}
+	require.NoError(t, err)
 
 	var buf bytes.Buffer
 	buf.Write(compressed)
 
 	zr, err := zlib.NewReader(&buf)
-	if err != nil {
-		t.Fatal("Error decoding buffer ", err)
-	}
-	decoded, err := ioutil.ReadAll(zr)
-	if err != nil {
-		t.Fatalf("ReadAll: %v", err)
-	}
+	require.NoError(t, err)
 
-	if string(decoded) != clearString {
-		t.Fatal("Decoded string ", result.([]byte), " is not ", clearString)
-	}
+	decoded, err := ioutil.ReadAll(zr)
+	require.NoError(t, err)
+	require.Equal(t, clearString, string(decoded))
 
 	continuePipeline2, result2 := comp.CompressWithZLIB(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
-
-	if !bytes.Equal(result.([]byte), result2.([]byte)) {
-		t.Fatal("Output should be the same", result.([]byte), " is not ", result2.([]byte))
-	}
+	assert.Equal(t, result.([]byte), result2.([]byte))
 }
 
 var result []byte
