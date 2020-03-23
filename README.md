@@ -276,7 +276,7 @@ Each of the clients above is only initialized if the Clients section of the conf
 
 ### .GetSecrets()
 
-`.GetSecrets(path string, keys ...string)` is used to retrieve secrets from the secret store. `path` specifies the type or location of the secrets to retrieve. If specified it is appended to the base path from the secret store configuration. `keys` specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the specified path will be returned.
+`.GetSecrets(path string, keys ...string)` is used to retrieve secrets from the secret store. `path` specifies the type or location of the secrets to retrieve. If specified it is appended to the base path from the exclusive secret store configuration. `keys` specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the specified path will be returned.
 
 ## Built-In Transforms/Functions 
 
@@ -296,6 +296,7 @@ There are two basic types of filtering included in the SDK to add to your pipeli
 #### JSON Logic
   - `NewJSONLogic(rule string)` - This function returns a `JSONLogic` instance initialized with the passed in JSON rule. The rule passed in should be a JSON string conforming to the specification here: http://jsonlogic.com/operations.html. 
   > NOTE: Only simple logic/filtering operators are supported. Manipulation of data via JSONLogic rules are not yet supported. For more advanced scenarios checkout [EMQ X Kuiper](https://github.com/emqx/kuiper).
+
    - `Evaluate` - This is the function that will be used in the pipeline to apply the JSON rule to data coming in on the pipeline. If the condition of your rule is met, then the pipeline will continue and the data will continue to flow to the next function in the pipeline. If the condition of your rule is NOT met, then pipeline execution stops. 
 
 
@@ -650,17 +651,74 @@ One of three out comes can occur after the export retried has completed.
 
 ### Secrets
 
-#### Getting Secrets
+#### Configuration
 
-Application Services can retrieve their secrets from the underlying secret store using the [GetSecrets()](#.GetSecrets()) API in the SDK. 
+All instances of App Services share the same database and database credentials. However, there are secrets for each App Service that are exclusive to the instance running. As a result, two separate configuration for secret store clients are used to manage shared and exclusive application service secrets.
 
-##### Vault Secrets
+The GetSecrets() and StoreSecrets() calls  use the exclusive secret store client to manage application secrets.
 
-If in secure mode, the secrets are retrieved from Vault based on the SecretStore configuration values. The path parameter in the GetSecrets() API call is appended to the SecretStore.Path configuration and used as the secret's location in Vault. 
+An example of configuration settings for each secret store client is below:
 
-##### Insecure Secrets
+```toml
+# Shared Secret Store
+[SecretStore]
+    Host = 'localhost'
+    Port = 8200
+    Path = '/v1/secret/edgex/appservice/'
+    Protocol = 'https'
+    RootCaCertPath = '/tmp/edgex/secrets/ca/ca.pem'
+    ServerName = 'edgex-vault'
+    TokenFile = '/tmp/edgex/secrets/edgex-appservice/secrets-token.json'
+    # Number of attempts to retry retrieving secrets before failing to start the service.
+    AdditionalRetryAttempts = 10
+    # Amount of time to wait before attempting another retry
+    RetryWaitPeriod = "1s"
 
-When running in insecure mode, the secrets are retrieved from the *Writable.InsecureSecrets* section of the configuration file. Insecure secrets and their paths can be configured as below.
+	[SecretStore.Authentication]
+		AuthType = 'X-Vault-Token'	
+
+# Exclusive Secret Store
+[SecretStoreExclusive]
+    Host = 'localhost'
+    Port = 8200
+    Path = '/v1/secret/edgex/<app service key>/'
+    Protocol = 'https'
+    ServerName = 'edgex-vault'
+    TokenFile = '/tmp/edgex/secrets/<app service key>/secrets-token.json'
+    # Number of attempts to retry retrieving secrets before failing to start the service.
+    AdditionalRetryAttempts = 10
+    # Amount of time to wait before attempting another retry
+    RetryWaitPeriod = "1s"
+
+    [SecretStoreExclusive.Authentication]
+    	AuthType = 'X-Vault-Token'
+```
+
+#### Storing Secrets
+
+##### Secure Mode
+
+When running an application service in secure mode, secrets can be stored in the secret store (Vault) by making an HTTP `POST` call to the secrets API route in the application service, `http://[host]:[port]/api/v1/secrets`. The secrets are stored and retrieved from the secret store based on values in the *SecretStoreExclusive* section of the configuration file. Once a secret is stored, only the service that added the secret will be able to retrieve it.  For secret retrieval see [Getting Secrets](#getting-secrets).
+
+An example of the message body JSON is below.  
+
+```json
+{
+  "path" : "/MyPath",
+  "secrets" : [
+    {
+      "key" : "MySecretKey",
+      "value" : "MySecretValue"
+    }
+  ]
+}
+```
+
+`NOTE: path specifies the type or location of the secrets to store. It is appended to the base path from the SecretStoreExclusive configuration. An empty path is a valid configuration for a secret's location.`
+
+##### Insecure Mode
+
+When running in insecure mode, the secrets are stored and retrieved from the *Writable.InsecureSecrets* section of the service's configuration toml file. Insecure secrets and their paths can be configured as below.
 
 ```toml
    [Writable.InsecureSecrets]    
@@ -679,20 +737,11 @@ When running in insecure mode, the secrets are retrieved from the *Writable.Inse
 
 `NOTE: An empty path is a valid configuration for a secret's location  `
 
-#### Storing Secrets
+#### Getting Secrets
 
-When running an application service in secure mode, secrets for can be stored in the secret store (Vault) by making an HTTP `POST` call to `http://[host]:[port]/secrets`.  If running in insecure mode, secrets can be configured in consul or in the config yaml file, for more information on insecure secrets see [Insecure Secrets](#insecure-secrets).
+Application Services can retrieve their secrets from the underlying secret store using the [GetSecrets()](#.GetSecrets()) API in the SDK. 
 
-An example of the message body JSON is below.  Once a secret is stored, only the service that added the secret will be able to retrieve it.  For secret retrieval see [Getting Secrets](#getting-secrets) above.
+If in secure mode, the secrets are retrieved from the secret store based on the *SecretStoreExclusive* configuration values. 
 
-```json
-{
-  "path" : "/MyPath",
-  "secrets" : [
-    {
-      "key" : "MySecretKey",
-      "value" : "MySecretValue"
-    }
-  ]
-}
-```
+If running in insecure mode, the secrets are retrieved from the *Writable.InsecureSecrets* configuration.
+

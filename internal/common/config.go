@@ -76,6 +76,8 @@ type ConfigurationStruct struct {
 	Database db.DatabaseInfo
 	// SecretStore
 	SecretStore SecretStoreInfo
+	// SecretStoreExclusive
+	SecretStoreExclusive SecretStoreInfo
 }
 
 // RegistryInfo is used for defining settings for connection to the registry.
