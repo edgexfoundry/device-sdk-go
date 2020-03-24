@@ -19,7 +19,7 @@ deviceResources:
     description: "Visual representation of Switch state."
     properties:
       value:
-        { type: "Binary", readWrite: "R" }
+        { type: "Binary", readWrite: "R", mediaType: "JPG" }
       units:
         { type: "Binary", readWrite: "R", defaultValue: "On/Off" }
   -

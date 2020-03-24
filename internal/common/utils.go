@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -40,10 +40,14 @@ func BuildAddr(host string, port string) string {
 	return buffer.String()
 }
 
-func CommandValueToReading(cv *dsModels.CommandValue, devName string, encoding string) *contract.Reading {
-	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName}
+func CommandValueToReading(cv *dsModels.CommandValue, devName string, mediaType string, encoding string) *contract.Reading {
+	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName, ValueType: cv.ValueTypeToString()}
 	if cv.Type == dsModels.Binary {
 		reading.BinaryValue = cv.BinValue
+		reading.MediaType = mediaType
+	} else if cv.Type == dsModels.Float32 || cv.Type == dsModels.Float64 {
+		reading.Value = cv.ValueToString(encoding)
+		reading.FloatEncoding = encoding
 	} else {
 		reading.Value = cv.ValueToString(encoding)
 	}
