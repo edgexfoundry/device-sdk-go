@@ -34,6 +34,19 @@ func TestBatchInCountMode(t *testing.T) {
 	assert.True(t, continuePipeline3)
 	assert.Len(t, result3, 3, "Should have 3 records")
 	assert.Len(t, bs.batchData, 0, "Records should have been cleared")
+
+	continuePipeline4, _ := bs.Batch(context, []byte(dataToBatch[0]))
+	assert.False(t, continuePipeline4)
+	assert.Len(t, bs.batchData, 1, "Should have 1 record")
+
+	continuePipeline5, _ := bs.Batch(context, []byte(dataToBatch[0]))
+	assert.False(t, continuePipeline5)
+	assert.Len(t, bs.batchData, 2, "Should have 2 records")
+
+	continuePipeline6, result4 := bs.Batch(context, []byte(dataToBatch[0]))
+	assert.True(t, continuePipeline6)
+	assert.Len(t, result4, 3, "Should have 3 records")
+	assert.Len(t, bs.batchData, 0, "Records should have been cleared")
 }
 func TestBatchInTimeAndCountMode_TimeElapsed(t *testing.T) {
 

@@ -51,7 +51,6 @@ func NewBatchByCount(batchThreshold int) (*BatchConfig, error) {
 		batchThreshold: batchThreshold,
 		batchMode:      BatchByCountOnly, //Default to CountAndTime
 	}
-	config.done = make(chan bool, 1)
 
 	return &config, nil
 }
@@ -117,7 +116,10 @@ func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...inte
 			if len(batch.batchData) < batch.batchThreshold {
 				return false, nil
 			}
-			batch.done <- true
+			// if in BatchByCountOnly mode, there are no listeners so this would hang indefinitely
+			if batch.done != nil {
+				batch.done <- true
+			}
 		}
 	}
 
