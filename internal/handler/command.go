@@ -65,6 +65,8 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		return nil, common.NewServerError(msg, err)
 	}
 
+	var evt *dsModels.Event = nil
+	var appErr common.AppError
 	if !cmdExists {
 		dr, drExists := cache.Profiles().DeviceResource(d.Profile.Name, cmd)
 		if !drExists {
@@ -74,19 +76,20 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		}
 
 		if strings.ToLower(method) == common.GetCmdMethod {
-			return execReadDeviceResource(&d, &dr, queryParams)
+			evt, appErr = execReadDeviceResource(&d, &dr, queryParams)
 		} else {
-			appErr := execWriteDeviceResource(&d, &dr, body)
-			return nil, appErr
+			appErr = execWriteDeviceResource(&d, &dr, body)
+		}
+	} else {
+		if strings.ToLower(method) == common.GetCmdMethod {
+			evt, appErr = execReadCmd(&d, cmd, queryParams)
+		} else {
+			appErr = execWriteCmd(&d, cmd, body)
 		}
 	}
 
-	if strings.ToLower(method) == common.GetCmdMethod {
-		return execReadCmd(&d, cmd, queryParams)
-	} else {
-		appErr := execWriteCmd(&d, cmd, body)
-		return nil, appErr
-	}
+	go common.UpdateLastConnected(d.Name)
+	return evt, appErr
 }
 
 func execReadDeviceResource(device *contract.Device, dr *contract.DeviceResource, queryParams string) (*dsModels.Event, common.AppError) {
