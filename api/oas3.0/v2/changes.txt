@@ -1,0 +1,5 @@
+API changes from v1
+
+* Imported (from edgex-go) definitions for common endpoints/schemas eg PingRequest, Device
+* Split callback endpoint for the different classes of object that need to be updated, and include the new/updated object in the request body
+* Remove /device/all endpoint
