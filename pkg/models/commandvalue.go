@@ -256,7 +256,9 @@ func decodeValue(reader io.Reader, value interface{}) error {
 	return err
 }
 
-//ValueToString returns the string format of the value.
+// ValueToString returns the string format of the value.
+// In EdgeX, float value has two kinds of representation, Base64, and eNotation.
+// Users can specify the floatEncoding in the properties value of the device profile, like floatEncoding: "Base64" or floatEncoding: "eNotation".
 func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 	if cv.Type == String {
 		str = cv.stringValue
