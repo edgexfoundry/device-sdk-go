@@ -16,11 +16,11 @@ import (
 )
 
 func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
-	var clientConfig = map[string]common.ClientInfo{
-		common.ClientData: common.ClientInfo{
-			ClientInfo: bootstrapConfig.ClientInfo{Host: "www.google.com", Port: 81, Protocol: "http"},
-			Name:       "",
-			Timeout:    3000,
+	var clientConfig = map[string]bootstrapConfig.ClientInfo{
+		common.ClientData: bootstrapConfig.ClientInfo{
+			Host:     "www.google.com",
+			Port:     81,
+			Protocol: "http",
 		},
 	}
 	var config = &common.ConfigurationStruct{Clients: clientConfig}

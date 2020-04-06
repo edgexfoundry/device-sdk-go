@@ -16,17 +16,17 @@ type ConfigurationStruct struct {
 	// WritableInfo contains configuration settings that can be changed in the Registry .
 	Writable WritableInfo
 	// Clients is a map of services used by a DS.
-	Clients map[string]ClientInfo
+	Clients map[string]bootstrapConfig.ClientInfo
 	// Logging contains logging-specific configuration settings.
-	Logging LoggingInfo
+	Logging bootstrapConfig.LoggingInfo
 	// Registry contains registry-specific settings.
-	Registry RegistryInfo
+	Registry bootstrapConfig.RegistryInfo
 	// Service contains RegistryService-specific settings.
 	Service ServiceInfo
 	// Device contains device-specific configuration settings.
 	Device DeviceInfo
 	// DeviceList is the list of pre-define Devices
-	DeviceList []DeviceConfig
+	DeviceList []DeviceConfig `consul:"-"`
 	// Driver is a string map contains customized configuration for the protocol driver implemented based on Device SDK
 	Driver map[string]string
 }
@@ -66,16 +66,11 @@ func (c *ConfigurationStruct) UpdateWritableFromRaw(rawWritable interface{}) boo
 // structure -- until we can make backwards-breaking configuration.toml changes (which would consolidate these fields
 // into an interfaces.BootstrapConfiguration struct contained within ConfigurationStruct).
 func (c *ConfigurationStruct) GetBootstrap() interfaces.BootstrapConfiguration {
-	clients := make(map[string]bootstrapConfig.ClientInfo)
-	for k, v := range c.Clients {
-		clients[k] = v.ClientInfo
-	}
-
 	return interfaces.BootstrapConfiguration{
-		Clients:  clients,
-		Service:  c.Service.ServiceInfo,
-		Registry: c.Registry.RegistryInfo,
-		Logging:  c.Logging.LoggingInfo,
+		Clients:  c.Clients,
+		Service:  c.Service.GetBootstrapServiceInfo(),
+		Registry: c.Registry,
+		Logging:  c.Logging,
 	}
 }
 
@@ -86,9 +81,5 @@ func (c *ConfigurationStruct) GetLogLevel() string {
 
 // GetRegistryInfo gets the config.RegistryInfo field from the ConfigurationStruct.
 func (c *ConfigurationStruct) GetRegistryInfo() bootstrapConfig.RegistryInfo {
-	return bootstrapConfig.RegistryInfo{
-		Host: c.Registry.Host,
-		Port: c.Registry.Port,
-		Type: c.Registry.Type,
-	}
+	return c.Registry
 }

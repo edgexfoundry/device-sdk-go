@@ -98,7 +98,7 @@ func checkDependencyServices() error {
 func checkServiceAvailable(serviceId string) error {
 	for i := 0; i < common.CurrentConfig.Service.ConnectRetries; i++ {
 		if common.RegistryClient != nil {
-			if checkServiceAvailableViaRegistry(common.CurrentConfig.Clients[serviceId].Name) == true {
+			if checkServiceAvailableViaRegistry(serviceId) == true {
 				return nil
 			}
 		} else {
@@ -118,7 +118,7 @@ func checkServiceAvailable(serviceId string) error {
 func checkServiceAvailableByPing(serviceId string) error {
 	common.LoggingClient.Info(fmt.Sprintf("Check %v service's status ...", serviceId))
 	addr := common.CurrentConfig.Clients[serviceId].Url()
-	timeout := int64(common.CurrentConfig.Clients[serviceId].Timeout) * int64(time.Millisecond)
+	timeout := int64(common.CurrentConfig.Service.BootTimeout) * int64(time.Millisecond)
 
 	client := http.Client{
 		Timeout: time.Duration(timeout),
@@ -141,6 +141,11 @@ func checkServiceAvailableViaRegistry(serviceId string) bool {
 		return false
 	}
 
+	if serviceId == common.ClientData {
+		serviceId = clients.CoreDataServiceKey
+	} else {
+		serviceId = clients.CoreMetaDataServiceKey
+	}
 	_, err := common.RegistryClient.IsServiceAvailable(serviceId)
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
@@ -176,7 +181,7 @@ func initializeClients() {
 	}
 
 	// initialize Core Metadata clients
-	params.ServiceKey = common.CurrentConfig.Clients[common.ClientMetadata].Name
+	params.ServiceKey = clients.CoreMetaDataServiceKey
 
 	params.Path = clients.ApiAddressableRoute
 	params.Url = metaAddr + params.Path
@@ -203,7 +208,7 @@ func initializeClients() {
 	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, endpoint)
 
 	// initialize Core Data clients
-	params.ServiceKey = common.CurrentConfig.Clients[common.ClientData].Name
+	params.ServiceKey = clients.CoreDataServiceKey
 
 	params.Path = clients.ApiEventRoute
 	params.Url = dataAddr + params.Path

@@ -27,10 +27,17 @@ import (
 func Main(serviceName string, serviceVersion string, driver dsModels.ProtocolDriver, ctx context.Context, cancel context.CancelFunc, router *mux.Router, readyStream chan<- bool) {
 	startupTimer := startup.NewStartUpTimer(common.BootRetrySecondsDefault, common.BootTimeoutSecondsDefault)
 
-	if len(serviceName) == 0 || len(serviceVersion) == 0 || driver == nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Please specify correct device service informations")
+	if serviceName == "" {
+		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service name")
+		os.Exit(1)
+	} else if serviceVersion == "" {
+		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service version")
+		os.Exit(1)
+	} else if driver == nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Please implement and specify the protocoldriver")
 		os.Exit(1)
 	}
+
 	common.Driver = driver
 	common.ServiceName = serviceName
 	common.ServiceVersion = serviceVersion
@@ -57,9 +64,7 @@ func Main(serviceName string, serviceVersion string, driver dsModels.ProtocolDri
 		startupTimer,
 		dic,
 		[]interfaces.BootstrapHandler{
-			// secret.NewSecret().BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
-			// telemetry.BootstrapHandler,
 			httpServer.BootstrapHandler,
 			message.NewBootstrap(serviceName, serviceVersion).BootstrapHandler,
 		})

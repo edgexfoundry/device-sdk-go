@@ -9,8 +9,6 @@
 package common
 
 import (
-	"fmt"
-
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 	dsModels "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
@@ -24,7 +22,29 @@ type WritableInfo struct {
 // ServiceInfo is a struct which contains service related configuration
 // settings.
 type ServiceInfo struct {
-	bootstrapConfig.ServiceInfo
+	// BootTimeout indicates, in milliseconds, how long the service will retry connecting to upstream dependencies
+	// before giving up. Default is 30,000.
+	BootTimeout int
+	// Health check interval
+	CheckInterval string
+	// Indicates the interval in milliseconds at which service clients should check for any configuration updates
+	ClientMonitor int
+	// Host is the hostname or IP address of the service.
+	Host string
+	// Port is the HTTP port of the service.
+	Port int
+	// The protocol that should be used to call this service
+	Protocol string
+	// StartupMsg specifies a string to log once service
+	// initialization and startup is completed.
+	StartupMsg string
+	// MaxResultCount specifies the maximum size list supported
+	// in response to REST calls to other services.
+	MaxResultCount int
+	// Timeout (in milliseconds) specifies both
+	// - timeout for processing REST calls and
+	// - interval time the DS will wait between each retry call.
+	Timeout int
 	// ConnectRetries is the number of times the DS will try to connect to all dependent services.
 	// If exceeded for even one dependent service, the DS will exit.
 	ConnectRetries int
@@ -34,19 +54,6 @@ type ServiceInfo struct {
 	EnableAsyncReadings bool
 	// AsyncBufferSize defines the size of asynchronous channel
 	AsyncBufferSize int
-}
-
-type RegistryInfo struct {
-	bootstrapConfig.RegistryInfo
-	// Timeout specifies a timeout (in milliseconds) for
-	// processing REST calls from other services.
-	Timeout int
-	// Health check interval
-	CheckInterval string
-	// Maximum number of retries
-	FailLimit int
-	// Time to wait until next retry
-	FailWaitTime int64
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.
@@ -79,31 +86,6 @@ type DeviceInfo struct {
 	UpdateLastConnected bool
 }
 
-// LoggingInfo is a struct which contains logging specific configuration settings.
-type LoggingInfo struct {
-	bootstrapConfig.LoggingInfo
-}
-
-// Config is a struct which contains all of a DS's configuration settings.
-type Config struct {
-	// WritableInfo contains configuration settings that can be changed in the Registry .
-	Writable WritableInfo
-	// Service contains RegistryService-specific settings.
-	Service ServiceInfo
-	// Registry contains registry-specific settings.
-	Registry RegistryInfo
-	// Clients is a map of services used by a DS.
-	Clients map[string]ClientInfo
-	// Device contains device-specific configuration settings.
-	Device DeviceInfo
-	// Logging contains logging-specific configuration settings.
-	Logging LoggingInfo
-	// DeviceList is the list of pre-define Devices
-	DeviceList []DeviceConfig `consul:"-"`
-	// Driver is a string map contains customized configuration for the protocol driver implemented based on Device SDK
-	Driver map[string]string
-}
-
 // DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up
 type DeviceConfig struct {
 	// Name is the Device name
@@ -120,19 +102,18 @@ type DeviceConfig struct {
 	AutoEvents []dsModels.AutoEvent
 }
 
-// ClientInfo provides the host and port of another service in the eco-system.
-type ClientInfo struct {
-	bootstrapConfig.ClientInfo
-	// Name is the client service name
-	Name string
-	// Timeout specifies a timeout (in milliseconds) for
-	// processing REST calls from other services.
-	Timeout int
-}
-
-func (c ClientInfo) Url() string {
-	url := fmt.Sprintf("%s://%s:%v", c.Protocol, c.Host, c.Port)
-	return url
+func (s ServiceInfo) GetBootstrapServiceInfo() bootstrapConfig.ServiceInfo {
+	return bootstrapConfig.ServiceInfo{
+		BootTimeout:    s.BootTimeout,
+		CheckInterval:  s.CheckInterval,
+		ClientMonitor:  s.ClientMonitor,
+		Host:           s.Host,
+		Port:           s.Port,
+		Protocol:       s.Protocol,
+		StartupMsg:     s.StartupMsg,
+		MaxResultCount: s.MaxResultCount,
+		Timeout:        s.Timeout,
+	}
 }
 
 // Telemetry provides metrics (on a given device service) to system management.
