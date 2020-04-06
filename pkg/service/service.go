@@ -9,24 +9,21 @@
 // This package provides a basic EdgeX Foundry device service implementation
 // meant to be embedded in an application, similar in approach to the builtin
 // net/http package.
-package device
+package service
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	configLoader "github.com/edgexfoundry/device-sdk-go/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
-	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
@@ -38,14 +35,10 @@ var (
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
-	svcInfo      *common.ServiceInfo
-	discovery    dsModels.ProtocolDiscovery
-	initAttempts int
-	initialized  bool
-	stopped      bool
-	asyncCh      chan *dsModels.AsyncValues
-	startTime    time.Time
-	controller   controller.RestController
+	svcInfo    *common.ServiceInfo
+	asyncCh    chan *dsModels.AsyncValues
+	startTime  time.Time
+	controller controller.RestController
 }
 
 // Name returns the name of this Device Service
@@ -58,80 +51,23 @@ func (s *Service) Version() string {
 	return common.ServiceVersion
 }
 
-func (s *Service) Discovery() dsModels.ProtocolDiscovery {
-	return s.discovery
-}
-
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *Service) AsyncReadings() bool {
 	return common.CurrentConfig.Service.EnableAsyncReadings
 }
 
-// Start the Device Service.
-func (s *Service) Start(errChan chan error) (err error) {
-	err = clients.InitDependencyClients()
-	if err != nil {
-		return err
-	}
-
-	// If useRegistry selected then configLoader.RegistryClient will not be nil
-	if configLoader.RegistryClient != nil {
-		// Logging has now been initialized so can start listening for configuration changes.
-		go configLoader.ListenForConfigChanges()
-	}
-
-	err = selfRegister()
-	if err != nil {
-		return fmt.Errorf("Couldn't register to metadata service")
-	}
-
-	// initialize devices, deviceResources & profiles
-	cache.InitCache()
-
-	// Setup REST API.
-	// Must occur before initialize driver in case driver needs to add route(s)
-	s.controller = controller.NewRestController()
-	s.controller.InitRestRoutes()
-	common.LoggingClient.Info(fmt.Sprintf("*Service Start() called, name=%s, version=%s", common.ServiceName, common.ServiceVersion))
-	go func() {
-		errChan <- http.ListenAndServe(common.Colon+strconv.Itoa(s.svcInfo.Port), s.controller.Router())
-	}()
-	common.LoggingClient.Info("Listening on port: " + strconv.Itoa(common.CurrentConfig.Service.Port))
-
-	// initialize driver
-	if common.CurrentConfig.Service.EnableAsyncReadings {
-		s.asyncCh = make(chan *dsModels.AsyncValues, common.CurrentConfig.Service.AsyncBufferSize)
-		go processAsyncResults()
-	}
-	err = common.Driver.Initialize(common.LoggingClient, s.asyncCh)
-	if err != nil {
-		return fmt.Errorf("Driver.Initialize failure: %v", err)
-	}
-
-	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
-	if err != nil {
-		return fmt.Errorf("Failed to create the pre-defined Device Profiles")
-	}
-
-	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
-	if err != nil {
-		return fmt.Errorf("Failed to create the pre-defined Devices")
-	}
-
-	autoevent.GetManager().StartAutoEvents()
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(s.svcInfo.Timeout), "Request timed out")
-
-	common.LoggingClient.Info("Service started in: " + time.Since(s.startTime).String())
-	common.LoggingClient.Debug("*Service Start() exit")
-
-	return err
-}
-
-// AddRoute allows leveraging the existing internal webserver to add routes specific to Device Service.
+// AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
 func (s *Service) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
 	return s.controller.AddRoute(route, handler, methods...)
 }
 
+// Stop shuts down the Service
+func (s *Service) Stop(force bool) {
+	_ = common.Driver.Stop(force)
+	autoevent.GetManager().StopAutoEvents()
+}
+
+// selfRegister register device service itself onto metadata.
 func selfRegister() error {
 	common.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
 
@@ -140,7 +76,7 @@ func selfRegister() error {
 
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
-			common.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", ds.Name))
+			common.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", common.ServiceName))
 			ds, err = createNewDeviceService()
 		} else {
 			common.LoggingClient.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
@@ -150,9 +86,9 @@ func selfRegister() error {
 		common.LoggingClient.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %s", ds.Name))
+	common.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %s", common.ServiceName))
 	common.CurrentDeviceService = ds
-	svc.initialized = true
+
 	return nil
 }
 
@@ -162,6 +98,7 @@ func createNewDeviceService() (contract.DeviceService, error) {
 		common.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
 		return contract.DeviceService{}, err
 	}
+
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	ds := contract.DeviceService{
 		Name:           common.ServiceName,
@@ -185,7 +122,7 @@ func createNewDeviceService() (contract.DeviceService, error) {
 	// NOTE - this differs from Addressable and Device Resources,
 	// neither of which require the '.Service'prefix
 	ds.Id = id
-	common.LoggingClient.Debug("New deviceservice Id: " + ds.Id)
+	common.LoggingClient.Debug("New device service Id: " + ds.Id)
 
 	return ds, nil
 }
@@ -229,62 +166,13 @@ func makeNewAddressable() (*contract.Addressable, error) {
 	return &addr, nil
 }
 
-// Stop shuts down the Service
-func (s *Service) Stop(force bool) error {
-	s.stopped = true
-	common.Driver.Stop(force)
-	autoevent.GetManager().StopAutoEvents()
-	return nil
-}
-
-// SetOverwriteConfig sets whether or not configuration will be unconditionally loaded
-// from file to the registry.
-// NOTE this will be removed in the next release and made a parameter to NewService
-func SetOverwriteConfig(oc bool) {
-	common.OverwriteConfig = oc
-}
-
-// NewService creates a new Device Service instance with the given
-// version number, config profile, config directory, whether to use registry, and Driver, which cannot be nil.
-// Note - this function is a singleton, if called more than once,
-// it will always return an error.
-func NewService(serviceName string, serviceVersion string, confProfile string, confDir string, useRegistry string, proto dsModels.ProtocolDriver) (*Service, error) {
-	startTime := time.Now()
-	if svc != nil {
-		err := fmt.Errorf("NewService: service already exists!\n")
-		return nil, err
-	}
-
-	if len(serviceName) == 0 {
-		err := fmt.Errorf("NewService: empty name specified\n")
-		return nil, err
-	}
-	common.ServiceName = serviceName
-
-	config, err := configLoader.LoadConfig(useRegistry, confProfile, confDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error loading config file: %v\n", err)
-		os.Exit(1)
-	}
-	common.CurrentConfig = config
-
-	if len(serviceVersion) == 0 {
-		err := fmt.Errorf("NewService: empty version number specified\n")
-		return nil, err
-	}
-	common.ServiceVersion = serviceVersion
-
-	if proto == nil {
-		err := fmt.Errorf("NewService: no Driver specified\n")
-		return nil, err
-	}
-
+func newService(dic *di.Container) *Service {
 	svc = &Service{}
-	svc.startTime = startTime
-	svc.svcInfo = &config.Service
-	common.Driver = proto
+	svc.startTime = time.Now()
+	svc.svcInfo = &container.ConfigurationFrom(dic.Get).Service
+	svc.controller = container.RestControllerFrom(dic.Get)
 
-	return svc, nil
+	return svc
 }
 
 // RunningService returns the Service instance which is running

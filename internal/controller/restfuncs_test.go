@@ -46,7 +46,8 @@ func TestCallback(t *testing.T) {
 	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
 	common.LoggingClient = lc
 	common.DeviceClient = &mock.DeviceClientMock{}
-	controller := NewRestController()
+	r := mux.NewRouter()
+	controller := NewRestController(r)
 	controller.InitRestRoutes()
 
 	for _, tt := range tests {
@@ -72,7 +73,8 @@ func TestCommandServiceLocked(t *testing.T) {
 	common.LoggingClient = lc
 	common.ServiceLocked = true
 	common.ServiceName = deviceCommandTest
-	controller := NewRestController()
+	r := mux.NewRouter()
+	controller := NewRestController(r)
 	controller.InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, "nil", "nil"), nil)
@@ -102,7 +104,8 @@ func TestCommandNoDevice(t *testing.T) {
 	common.DeviceClient = &mock.DeviceClientMock{}
 	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
 	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
-	controller := NewRestController()
+	r := mux.NewRouter()
+	controller := NewRestController(r)
 	controller.InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)

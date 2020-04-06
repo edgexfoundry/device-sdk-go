@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -15,18 +15,16 @@ import (
 const (
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
-	ClientLogging  = "Logging"
 
 	Colon      = ":"
 	HttpScheme = "http://"
 	HttpProto  = "HTTP"
 
-	RegistryDefault    = "LOAD_FROM_FILE"
-	ConfigDirectory    = "./res"
-	ConfigFileName     = "configuration.toml"
-	ConfigRegistryStem = "edgex/devices/1.0/"
-	WritableKey        = "/Writable"
-	RegistryFailLimit  = 3
+	BootTimeoutSecondsDefault = 30
+	BootRetrySecondsDefault   = 1
+
+	ConfigStemCore     = "edgex/core/"
+	ConfigMajorVersion = "1.0/"
 
 	APICallbackRoute        = clients.ApiCallbackRoute
 	APIValueDescriptorRoute = clients.ApiValueDescriptorRoute

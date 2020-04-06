@@ -101,3 +101,15 @@ https://github.com/ugorji/go/blob/master/LICENSE
 
 kr/logfmt (MIT) https://github.com/kr/logfmt
 https://github.com/kr/logfmt/blob/master/Readme
+
+hashicorp/consul/api (Mozilla Public License 2.0) https://github.com/hashicorp/consul/api
+https://github.com/hashicorp/consul/blob/master/LICENSE
+
+edgexfoundry/go-mod-bootstrap (Apache 2.0) https://github.com/edgexfoundry/go-mod-bootstrap
+https://github.com/edgexfoundry/go-mod-bootstrap/blob/master/LICENSE
+
+edgexfoundry/go-mod-secrets (Apache 2.0) https://github.com/edgexfoundry/go-mod-secrets
+https://github.com/edgexfoundry/go-mod-secrets/blob/master/LICENSE
+
+edgexfoundry/go-mod-configuration (Apache 2.0) https://github.com/edgexfoundry/go-mod-configuration
+https://github.com/edgexfoundry/go-mod-configuration/blob/master/LICENSE

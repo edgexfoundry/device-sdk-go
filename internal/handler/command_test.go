@@ -74,7 +74,7 @@ func init() {
 	deviceIntegerGenerator = ds[1]
 
 	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
-	common.CurrentConfig = &common.Config{Device: deviceInfo}
+	common.CurrentConfig = &common.ConfigurationStruct{Device: deviceInfo}
 	common.LoggingClient = logger.NewClient("command_test", false, "./device-simple.log", "INFO")
 }
 
