@@ -30,8 +30,14 @@ import (
 )
 
 // NewData returns a URLClient that connects to a service attached to data.
-func NewData(registryClient registry.Client, wg *sync.WaitGroup, path string) interfaces.URLClient {
+func NewData(
+	ctx context.Context,
+	registryClient registry.Client,
+	wg *sync.WaitGroup,
+	path string) interfaces.URLClient {
+
 	return newClient(
+		ctx,
 		registryClient,
 		wg,
 		common.ClientData,
@@ -41,8 +47,14 @@ func NewData(registryClient registry.Client, wg *sync.WaitGroup, path string) in
 }
 
 // NewMetadata returns a URLClient that connects to a service attached to metadata.
-func NewMetadata(registryClient registry.Client, wg *sync.WaitGroup, path string) interfaces.URLClient {
+func NewMetadata(
+	ctx context.Context,
+	registryClient registry.Client,
+	wg *sync.WaitGroup,
+	path string) interfaces.URLClient {
+
 	return newClient(
+		ctx,
 		registryClient,
 		wg,
 		common.ClientMetadata,
@@ -53,6 +65,7 @@ func NewMetadata(registryClient registry.Client, wg *sync.WaitGroup, path string
 
 // newClient is a factory function that uses pre-defined constants to reduce code duplication.
 func newClient(
+	ctx context.Context,
 	registryClient registry.Client,
 	wg *sync.WaitGroup,
 	serviceKey string,
@@ -64,7 +77,7 @@ func newClient(
 	if registryClient != nil {
 		return retry.New(
 			endpoint.New(
-				context.Background(),
+				ctx,
 				wg,
 				registryClient,
 				serviceKey,

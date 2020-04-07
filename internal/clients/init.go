@@ -8,6 +8,7 @@
 package clients
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"sync"
@@ -22,14 +23,12 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/urlclient"
 )
 
-const clientCount int = 8
-
 // InitDependencyClients triggers Service Client Initializer to establish connection to Metadata and Core Data Services
 // through Metadata Client and Core Data Client.
 // Service Client Initializer also needs to check the service status of Metadata and Core Data Services,
 // because they are important dependencies of Device Service.
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
-func InitDependencyClients(waitGroup *sync.WaitGroup) error {
+func InitDependencyClients(ctx context.Context, waitGroup *sync.WaitGroup) error {
 	if err := validateClientConfig(); err != nil {
 		return err
 	}
@@ -38,7 +37,7 @@ func InitDependencyClients(waitGroup *sync.WaitGroup) error {
 		return err
 	}
 
-	initializeClients(waitGroup)
+	initializeClients(ctx, waitGroup)
 
 	common.LoggingClient.Info("Service clients initialize successful.")
 	return nil
@@ -154,10 +153,11 @@ func checkServiceAvailableViaRegistry(serviceId string) bool {
 	return true
 }
 
-func initializeClients(waitGroup *sync.WaitGroup) {
+func initializeClients(ctx context.Context, waitGroup *sync.WaitGroup) {
 	// initialize Core Metadata clients
 	common.AddressableClient = metadata.NewAddressableClient(
 		urlclient.NewMetadata(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiAddressableRoute,
@@ -166,6 +166,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 
 	common.DeviceClient = metadata.NewDeviceClient(
 		urlclient.NewMetadata(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiDeviceRoute,
@@ -174,6 +175,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 
 	common.DeviceServiceClient = metadata.NewDeviceServiceClient(
 		urlclient.NewMetadata(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiDeviceServiceRoute,
@@ -182,6 +184,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 
 	common.DeviceProfileClient = metadata.NewDeviceProfileClient(
 		urlclient.NewMetadata(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiDeviceProfileRoute,
@@ -190,6 +193,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 
 	common.MetadataGeneralClient = general.NewGeneralClient(
 		urlclient.NewMetadata(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiConfigRoute,
@@ -198,6 +202,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 
 	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(
 		urlclient.NewMetadata(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiProvisionWatcherRoute,
@@ -207,6 +212,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 	// initialize Core Data clients
 	common.EventClient = coredata.NewEventClient(
 		urlclient.NewData(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			clients.ApiEventRoute,
@@ -215,6 +221,7 @@ func initializeClients(waitGroup *sync.WaitGroup) {
 
 	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(
 		urlclient.NewData(
+			ctx,
 			common.RegistryClient,
 			waitGroup,
 			common.APIValueDescriptorRoute,
