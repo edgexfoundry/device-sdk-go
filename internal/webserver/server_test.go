@@ -76,7 +76,7 @@ func TestConfigureAndPingRoute(t *testing.T) {
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
-	req, _ := http.NewRequest("GET", clients.ApiPingRoute, nil)
+	req, _ := http.NewRequest(http.MethodGet, clients.ApiPingRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
@@ -91,7 +91,7 @@ func TestConfigureAndVersionRoute(t *testing.T) {
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
-	req, _ := http.NewRequest("GET", clients.ApiVersionRoute, nil)
+	req, _ := http.NewRequest(http.MethodGet, clients.ApiVersionRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
@@ -105,7 +105,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
-	req, _ := http.NewRequest("GET", clients.ApiConfigRoute, nil)
+	req, _ := http.NewRequest(http.MethodGet, clients.ApiConfigRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
@@ -120,7 +120,7 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
-	req, _ := http.NewRequest("GET", clients.ApiMetricsRoute, nil)
+	req, _ := http.NewRequest(http.MethodGet, clients.ApiMetricsRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
@@ -150,7 +150,7 @@ func TestSetupTriggerRoute(t *testing.T) {
 
 	webserver.SetupTriggerRoute(handler)
 
-	req, _ := http.NewRequest("GET", internal.ApiTriggerRoute, nil)
+	req, _ := http.NewRequest(http.MethodGet, internal.ApiTriggerRoute, nil)
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
@@ -196,7 +196,7 @@ func TestPostSecretRoute(t *testing.T) {
 	for _, test := range tests {
 		currentTest := test
 		t.Run(test.name, func(t *testing.T) {
-			req, _ := http.NewRequest("POST", internal.SecretsAPIRoute, bytes.NewReader(currentTest.payload))
+			req, _ := http.NewRequest(http.MethodPost, internal.SecretsAPIRoute, bytes.NewReader(currentTest.payload))
 			rr := httptest.NewRecorder()
 			webserver.router.ServeHTTP(rr, req)
 			assert.Equal(t, currentTest.expectedStatus, rr.Result().StatusCode, "Expected secret doesn't match postSecret")

@@ -31,9 +31,11 @@ import (
 
 // HTTPSender ...
 type HTTPSender struct {
-	URL            string
-	MimeType       string
-	PersistOnError bool
+	URL              string
+	MimeType         string
+	PersistOnError   bool
+	SecretHeaderName string
+	SecretPath       string
 }
 
 // NewHTTPSender creates, initializes and returns a new instance of HTTPSender
@@ -42,6 +44,15 @@ func NewHTTPSender(url string, mimeType string, persistOnError bool) HTTPSender 
 		URL:            url,
 		MimeType:       mimeType,
 		PersistOnError: persistOnError,
+	}
+}
+func NewHTTPSenderWithSecretHeader(url string, mimeType string, persistOnError bool, httpHeaderSecretName string, secretPath string) HTTPSender {
+	return HTTPSender{
+		URL:              url,
+		MimeType:         mimeType,
+		PersistOnError:   persistOnError,
+		SecretHeaderName: httpHeaderSecretName,
+		SecretPath:       secretPath,
 	}
 }
 
@@ -53,16 +64,39 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
+
 	if sender.MimeType == "" {
 		sender.MimeType = "application/json"
 	}
+
 	exportData, err := util.CoerceType(params[0])
 	if err != nil {
 		return false, err
 	}
 
+	usingSecrets, err := sender.determineIfUsingSecrets()
+	if err != nil {
+		return false, err
+	}
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodPost, sender.URL, bytes.NewReader(exportData))
+	if err != nil {
+		return false, err
+	}
+	var theSecrets map[string]string
+	if usingSecrets {
+		theSecrets, err = edgexcontext.GetSecrets(sender.SecretPath, sender.SecretHeaderName)
+		if err != nil {
+			return false, err
+		}
+		req.Header.Set(sender.SecretHeaderName, theSecrets[sender.SecretHeaderName])
+	}
+
+	req.Header.Set("Content-Type", sender.MimeType)
+
 	edgexcontext.LoggingClient.Debug("POSTing data")
-	response, err := http.Post(sender.URL, sender.MimeType, bytes.NewReader(exportData))
+	response, err := client.Do(req)
 	if err != nil {
 		sender.setRetryData(edgexcontext, exportData)
 		return false, err
@@ -85,6 +119,23 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 	}
 
 	return true, bodyBytes
+
+}
+func (sender HTTPSender) determineIfUsingSecrets() (bool, error) {
+	//check if one field but not others are provided for secrets
+	if sender.SecretPath != "" && sender.SecretHeaderName == "" {
+		return false, errors.New("SecretPath was specified but no header name was provided")
+	}
+	if sender.SecretHeaderName != "" && sender.SecretPath == "" {
+		return false, errors.New("HTTP Header Secret Name was provided but no SecretPath was provided")
+	}
+
+	// not using secrets if both are blank
+	if sender.SecretHeaderName == "" && sender.SecretPath == "" {
+		return false, nil
+	}
+	// using secrets, all required fields are provided
+	return true, nil
 
 }
 

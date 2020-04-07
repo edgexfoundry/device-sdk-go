@@ -33,7 +33,7 @@ import (
 
 // SecretProvider cache storage for the secrets
 type SecretProvider struct {
-	secretClient  pkg.SecretClient
+	SecretClient  pkg.SecretClient
 	secretsCache  map[string]map[string]string // secret's path, key, value
 	configuration *common.ConfigurationStruct
 	cacheMuxtex   *sync.Mutex
@@ -62,7 +62,7 @@ func (s *SecretProvider) Initialize(ctx context.Context) bool {
 
 	// attempt to create a new SecretProvider client only if security is enabled.
 	if s.isSecurityEnabled() {
-		s.secretClient, err = client.NewVault(ctx, secretConfig, s.loggingClient).Get(s.configuration.SecretStore)
+		s.SecretClient, err = client.NewVault(ctx, secretConfig, s.loggingClient).Get(s.configuration.SecretStore)
 		if err != nil {
 			s.loggingClient.Error(fmt.Sprintf("unable to create SecretClient: %s", err.Error()))
 			return false
