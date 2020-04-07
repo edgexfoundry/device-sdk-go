@@ -227,9 +227,4 @@ func initializeClients(ctx context.Context, waitGroup *sync.WaitGroup) {
 			common.APIValueDescriptorRoute,
 		),
 	)
-
-	if common.RegistryClient != nil {
-		// wait for the first endpoint discovery to make sure all clients work
-		waitGroup.Wait()
-	}
 }
