@@ -38,7 +38,7 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 	if !s.isSecurityEnabled() {
 		credentials, err = s.getInsecureSecrets(database.Type, "username", "password")
 	} else {
-		credentials, err = s.secretClient.GetSecrets(database.Type, "username", "password")
+		credentials, err = s.SecretClient.GetSecrets(database.Type, "username", "password")
 	}
 
 	if err != nil {
@@ -64,11 +64,11 @@ func (s *SecretProvider) GetSecrets(path string, keys ...string) (map[string]str
 		return cachedSecrets, nil
 	}
 
-	if s.secretClient == nil {
+	if s.SecretClient == nil {
 		return nil, errors.New("can't get secret(s) 'SecretProvider' is not properly initialized")
 	}
 
-	secrets, err := s.secretClient.GetSecrets(path, keys...)
+	secrets, err := s.SecretClient.GetSecrets(path, keys...)
 	if err != nil {
 		return nil, err
 	}
@@ -174,11 +174,11 @@ func (s *SecretProvider) StoreSecrets(path string, secrets map[string]string) er
 		return errors.New("Storing secrets is not supported when running in insecure mode")
 	}
 
-	if s.secretClient == nil {
+	if s.SecretClient == nil {
 		return errors.New("can't store secret(s) 'SecretProvider' is not properly initialized")
 	}
 
-	err := s.secretClient.StoreSecrets(path, secrets)
+	err := s.SecretClient.StoreSecrets(path, secrets)
 	if err != nil {
 		return err
 	}

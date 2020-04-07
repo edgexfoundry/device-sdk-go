@@ -45,10 +45,12 @@ func init() {
 	eventClient := coredata.NewEventClient(
 		urlclient.New(nil, nil, nil, "", "", 0, "http://test"+clients.ApiEventRoute),
 	)
+	mockSP := newMockSecretProvider(lc, nil)
 
 	context = &appcontext.Context{
-		LoggingClient: lc,
-		EventClient:   eventClient,
+		LoggingClient:  lc,
+		EventClient:    eventClient,
+		SecretProvider: mockSP,
 	}
 }
 func TestTransformToXML(t *testing.T) {

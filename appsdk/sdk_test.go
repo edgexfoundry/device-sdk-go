@@ -59,7 +59,7 @@ func TestAddRoute(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		webserver: ws,
 	}
-	_ = sdk.AddRoute("/test", func(http.ResponseWriter, *http.Request) {}, "GET")
+	_ = sdk.AddRoute("/test", func(http.ResponseWriter, *http.Request) {}, http.MethodGet)
 	_ = router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, err := route.GetPathTemplate()
 		if err != nil {
