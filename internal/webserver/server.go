@@ -242,8 +242,12 @@ func (webserver *WebServer) secretHandler(writer http.ResponseWriter, req *http.
 	}
 
 	secretData.Path = strings.TrimSpace(secretData.Path)
-	if secretData.Path != "" && !strings.HasPrefix(secretData.Path, "/") {
+	// add '/' in the full URL path if it's not already at the end of the basepath or subpath
+	if !strings.HasSuffix(webserver.Config.SecretStoreExclusive.Path, "/") && !strings.HasPrefix(secretData.Path, "/") {
 		secretData.Path = "/" + secretData.Path
+	} else if strings.HasSuffix(webserver.Config.SecretStoreExclusive.Path, "/") && strings.HasPrefix(secretData.Path, "/") {
+		// remove extra '/' in the full URL path because secret store's (Vault) APIs don't handle extra '/'.
+		secretData.Path = secretData.Path[1:]
 	}
 
 	if err := webserver.secretProvider.StoreSecrets(secretData.Path, secretsKV); err != nil {

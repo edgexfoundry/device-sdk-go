@@ -160,7 +160,7 @@ func TestGetSecrets(t *testing.T) {
 		i := i
 		test := test
 		t.Run(test.testName, func(t *testing.T) {
-			secretProvider.SecretClient.(*mockSecretClient).testIndex = i
+			secretProvider.ExclusiveSecretClient.(*mockSecretClient).testIndex = i
 			secrets, err := secretProvider.GetSecrets(test.path, test.keys...)
 
 			require.Equal(t, test.expectedErr, err)
@@ -235,7 +235,8 @@ func tearDownGetInsecureSecrets(t *testing.T, origEnv string) {
 func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretProvider {
 	logClient := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 	mockSP := NewSecretProvider(logClient, configuration)
-	mockSP.SecretClient = &mockSecretClient{}
+	mockSP.SharedSecretClient = &mockSecretClient{}
+	mockSP.ExclusiveSecretClient = &mockSecretClient{}
 	return mockSP
 }
 
