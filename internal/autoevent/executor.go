@@ -61,7 +61,11 @@ func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup) {
 						continue
 					}
 				}
-				common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
+				if evt.HasBinaryValue() {
+					common.LoggingClient.Debug("AutoEvent - pushing CBOR event")
+				} else {
+					common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
+				}
 				event := &dsModels.Event{Event: evt.Event}
 				// Attach origin timestamp for events if none yet specified
 				if event.Origin == 0 {

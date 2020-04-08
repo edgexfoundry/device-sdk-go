@@ -169,7 +169,11 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.FloatEncoding)
 		readings = append(readings, *reading)
 
-		common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: %v", device.Name, cv.DeviceResourceName, reading))
+		if cv.Type == dsModels.Binary {
+			common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: binary value", device.Name, cv.DeviceResourceName))
+		} else {
+			common.LoggingClient.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: %v", device.Name, cv.DeviceResourceName, reading))
+		}
 	}
 
 	if !transformsOK {
