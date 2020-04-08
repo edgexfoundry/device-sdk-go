@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -18,7 +18,7 @@ import (
 	"time"
 
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/ugorji/go/codec"
+	"github.com/fxamacker/cbor/v2"
 )
 
 // Test NewCommandValue function
@@ -722,10 +722,7 @@ func TestNewFloat64Value(t *testing.T) {
 
 // encodeMockEvent accepts a contract.Event and returns a CBOR encoded byte array
 func encodeMockEvent(e contract.Event) ([]byte, error) {
-	var handle codec.CborHandle
-	var byteBuffer = make([]byte, 0, 64)
-	enc := codec.NewEncoderBytes(&byteBuffer, &handle)
-	err := enc.Encode(e)
+	byteBuffer, err := cbor.Marshal(e)
 	if err != nil {
 		return []byte{}, err
 	}
