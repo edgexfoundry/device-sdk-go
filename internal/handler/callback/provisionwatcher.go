@@ -35,7 +35,7 @@ func handleProvisionWatcher(method string, id string) common.AppError {
 }
 
 func handlePostCallback(ctx context.Context, id string) common.AppError {
-	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(id, ctx)
+	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(ctx, id)
 	if err != nil {
 		appErr := common.NewBadRequestError(err.Error(), err)
 		common.LoggingClient.Error(fmt.Sprintf("Cannot find provisionwatcher %s in Core Metadata: %v", id, err))
@@ -55,7 +55,7 @@ func handlePostCallback(ctx context.Context, id string) common.AppError {
 }
 
 func handlePutCallback(ctx context.Context, id string) common.AppError {
-	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(id, ctx)
+	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(ctx, id)
 	if err != nil {
 		appErr := common.NewBadRequestError(err.Error(), err)
 		common.LoggingClient.Error(fmt.Sprintf("Cannot find provisionwatcher %s in Core Metadata: %v", id, err))

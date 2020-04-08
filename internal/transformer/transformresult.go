@@ -601,7 +601,7 @@ func CheckAssertion(cv *dsModels.CommandValue, assertion string, device *contrac
 		device.OperatingState = contract.Disabled
 		cache.Devices().Update(*device)
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		go common.DeviceClient.UpdateOpStateByName(device.Name, contract.Disabled, ctx)
+		go common.DeviceClient.UpdateOpStateByName(ctx, device.Name, contract.Disabled)
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		common.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)

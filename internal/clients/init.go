@@ -8,29 +8,27 @@
 package clients
 
 import (
+	"context"
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/endpoint"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-)
 
-const clientCount int = 8
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/urlclient"
+)
 
 // InitDependencyClients triggers Service Client Initializer to establish connection to Metadata and Core Data Services
 // through Metadata Client and Core Data Client.
 // Service Client Initializer also needs to check the service status of Metadata and Core Data Services,
 // because they are important dependencies of Device Service.
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
-func InitDependencyClients() error {
+func InitDependencyClients(ctx context.Context, waitGroup *sync.WaitGroup) error {
 	if err := validateClientConfig(); err != nil {
 		return err
 	}
@@ -39,7 +37,7 @@ func InitDependencyClients() error {
 		return err
 	}
 
-	initializeClients()
+	initializeClients(ctx, waitGroup)
 
 	common.LoggingClient.Info("Service clients initialize successful.")
 	return nil
@@ -155,71 +153,78 @@ func checkServiceAvailableViaRegistry(serviceId string) bool {
 	return true
 }
 
-func checkConsulAvailable() bool {
-	addr := fmt.Sprintf("%v:%v", common.CurrentConfig.Registry.Host, common.CurrentConfig.Registry.Port)
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Consul cannot be reached, address: %v and error is \"%v\" ", addr, err.Error()))
-		return false
-	}
-	conn.Close()
-	return true
-}
-
-func initializeClients() {
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(clientCount)
-
-	endpoint := &endpoint.Endpoint{RegistryClient: common.RegistryClient, WG: &waitGroup}
-	metaAddr := common.CurrentConfig.Clients[common.ClientMetadata].Url()
-	dataAddr := common.CurrentConfig.Clients[common.ClientData].Url()
-	isRegistry := common.RegistryClient != nil
-
-	params := types.EndpointParams{
-		UseRegistry: isRegistry,
-		Interval:    15,
-	}
-
+func initializeClients(ctx context.Context, waitGroup *sync.WaitGroup) {
 	// initialize Core Metadata clients
-	params.ServiceKey = clients.CoreMetaDataServiceKey
+	common.AddressableClient = metadata.NewAddressableClient(
+		urlclient.NewMetadata(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiAddressableRoute,
+		),
+	)
 
-	params.Path = clients.ApiAddressableRoute
-	params.Url = metaAddr + params.Path
-	common.AddressableClient = metadata.NewAddressableClient(params, endpoint)
+	common.DeviceClient = metadata.NewDeviceClient(
+		urlclient.NewMetadata(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiDeviceRoute,
+		),
+	)
 
-	params.Path = clients.ApiDeviceRoute
-	params.Url = metaAddr + params.Path
-	common.DeviceClient = metadata.NewDeviceClient(params, endpoint)
+	common.DeviceServiceClient = metadata.NewDeviceServiceClient(
+		urlclient.NewMetadata(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiDeviceServiceRoute,
+		),
+	)
 
-	params.Path = clients.ApiDeviceServiceRoute
-	params.Url = metaAddr + params.Path
-	common.DeviceServiceClient = metadata.NewDeviceServiceClient(params, endpoint)
+	common.DeviceProfileClient = metadata.NewDeviceProfileClient(
+		urlclient.NewMetadata(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiDeviceProfileRoute,
+		),
+	)
 
-	params.Path = clients.ApiDeviceProfileRoute
-	params.Url = metaAddr + params.Path
-	common.DeviceProfileClient = metadata.NewDeviceProfileClient(params, endpoint)
+	common.MetadataGeneralClient = general.NewGeneralClient(
+		urlclient.NewMetadata(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiConfigRoute,
+		),
+	)
 
-	params.Path = clients.ApiConfigRoute
-	params.Url = metaAddr
-	common.MetadataGeneralClient = general.NewGeneralClient(params, endpoint)
-
-	params.Path = clients.ApiProvisionWatcherRoute
-	params.Url = metaAddr + params.Path
-	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(params, endpoint)
+	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(
+		urlclient.NewMetadata(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiProvisionWatcherRoute,
+		),
+	)
 
 	// initialize Core Data clients
-	params.ServiceKey = clients.CoreDataServiceKey
+	common.EventClient = coredata.NewEventClient(
+		urlclient.NewData(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			clients.ApiEventRoute,
+		),
+	)
 
-	params.Path = clients.ApiEventRoute
-	params.Url = dataAddr + params.Path
-	common.EventClient = coredata.NewEventClient(params, endpoint)
-
-	params.Path = common.APIValueDescriptorRoute
-	params.Url = dataAddr + params.Path
-	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(params, endpoint)
-
-	if isRegistry {
-		// wait for the first endpoint discovery to make sure all clients work
-		waitGroup.Wait()
-	}
+	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(
+		urlclient.NewData(
+			ctx,
+			common.RegistryClient,
+			waitGroup,
+			common.APIValueDescriptorRoute,
+		),
+	)
 }

@@ -12,14 +12,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/mock"
-	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/mock"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 )
 
 const (
@@ -70,7 +71,7 @@ func init() {
 	operationSetFloat64, _ = pc.ResourceOperation(mock.ProfileFloat, mock.ResourceObjectFloat64, methodSet)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, _ = common.DeviceClient.DevicesForServiceByName(common.ServiceName, ctx)
+	ds, _ = common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
 	deviceIntegerGenerator = ds[1]
 
 	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
@@ -248,7 +249,7 @@ func TestParseWriteParams(t *testing.T) {
 		{"InvalidWriteParam", profileName, ros, `{"NotFound":"true"}`, true},
 		{"InvalidWriteParamType", profileName, ros, `{"RandomValue_Int8":"abc"}`, true},
 		{"ValueMappingPass", profileName, rosTestMappingPass, `{"ResourceTestMapping_Pass":"Pass"}`, false},
-		//The expectErr on the test below is false because parseWriteParams does NOT throw an error when there is no mapping value matched
+		// The expectErr on the test below is false because parseWriteParams does NOT throw an error when there is no mapping value matched
 		{"ValueMappingFail", profileName, rosTestMappingFail, `{"ResourceTestMapping_Fail":"123"}`, false},
 		{"ParseParamsFail", profileName, ros, ``, true},
 		{"NoRequestParameter", profileName, ros, `{}`, true},
@@ -282,10 +283,10 @@ func TestExecReadCmd(t *testing.T) {
 		{"CmdNotFound", &deviceIntegerGenerator, "InexistentCmd", "", true},
 		{"ValueTransformFail", &deviceIntegerGenerator, "ResourceTestTransform_Fail", "", true},
 		{"ValueAssertionPass", &deviceIntegerGenerator, "ResourceTestAssertion_Pass", "", false},
-		//The expectErr on the test below is false because execReadCmd does NOT throw an error when assertion failed
+		// The expectErr on the test below is false because execReadCmd does NOT throw an error when assertion failed
 		{"ValueAssertionFail", &deviceIntegerGenerator, "ResourceTestAssertion_Fail", "", false},
 		{"ValueMappingPass", &deviceIntegerGenerator, "ResourceTestMapping_Pass", "", false},
-		//The expectErr on the test below is false because execReadCmd does NOT throw an error when there is no mapping value matched
+		// The expectErr on the test below is false because execReadCmd does NOT throw an error when there is no mapping value matched
 		{"ValueMappingFail", &deviceIntegerGenerator, "ResourceTestMapping_Fail", "", false},
 		{"NoDeviceResourceForOperation", &deviceIntegerGenerator, "NoDeviceResourceForOperation", "", true},
 		{"NoDeviceResourceForResult", &deviceIntegerGenerator, "NoDeviceResourceForResult", "", true},
@@ -309,7 +310,7 @@ func TestExecReadCmd(t *testing.T) {
 				t.Errorf("%s expectErr:%v no error thrown", tt.testName, tt.expectErr)
 				return
 			}
-			//The way to determine whether the assertion passed or failed is to see the return value contains "Assertion failed" or not
+			// The way to determine whether the assertion passed or failed is to see the return value contains "Assertion failed" or not
 			if tt.testName == "ValueAssertionPass" && strings.Contains(v.Readings[0].Value, "Assertion failed") {
 				t.Errorf("%s expect data assertion pass", tt.testName)
 			}

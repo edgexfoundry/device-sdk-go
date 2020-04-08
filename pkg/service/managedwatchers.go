@@ -39,7 +39,7 @@ func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id str
 	watcher.Profile = prf
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err = common.ProvisionWatcherClient.Add(&watcher, ctx)
+	id, err = common.ProvisionWatcherClient.Add(ctx, &watcher)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Watcher failed %s, error: %v", watcher.Name, err))
 		return "", err
@@ -48,6 +48,7 @@ func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id str
 		return "", err
 	}
 	watcher.Id = id
+	_ = cache.ProvisionWatchers().Add(watcher)
 
 	return id, nil
 }
@@ -80,7 +81,7 @@ func (s *Service) RemoveProvisionWatcher(id string) error {
 
 	common.LoggingClient.Debug(fmt.Sprintf("Removing managed ProvisionWatcher: %s", pw.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.ProvisionWatcherClient.Delete(id, ctx)
+	err := common.ProvisionWatcherClient.Delete(ctx, id)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Delete ProvisionWatcher %s from Core Metadata failed", id))
 		return err
@@ -101,7 +102,7 @@ func (s *Service) UpdateProvisionWatcher(watcher contract.ProvisionWatcher) erro
 
 	common.LoggingClient.Debug(fmt.Sprintf("Updating managed ProvisionWatcher: %s", watcher.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.ProvisionWatcherClient.Update(watcher, ctx)
+	err := common.ProvisionWatcherClient.Update(ctx, watcher)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Update ProvisionWatcher %s from Core Metadata failed: %v", watcher.Name, err))
 		return err

@@ -10,11 +10,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 )
 
 var ds []contract.Device
@@ -23,7 +24,7 @@ func init() {
 	common.ServiceName = "device-cache-test"
 	common.DeviceClient = &mock.DeviceClientMock{}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, _ = common.DeviceClient.DevicesForServiceByName(common.ServiceName, ctx)
+	ds, _ = common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
 }
 
 func TestNewDeviceCache(t *testing.T) {

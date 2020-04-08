@@ -26,23 +26,23 @@ var (
 
 type DeviceProfileClientMock struct{}
 
-func (DeviceProfileClientMock) Add(dp *contract.DeviceProfile, ctx context.Context) (string, error) {
+func (DeviceProfileClientMock) Add(_ context.Context, _ *contract.DeviceProfile) (string, error) {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) Delete(id string, ctx context.Context) error {
+func (DeviceProfileClientMock) Delete(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) DeleteByName(name string, ctx context.Context) error {
+func (DeviceProfileClientMock) DeleteByName(_ context.Context, _ string) error {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) DeviceProfile(id string, ctx context.Context) (contract.DeviceProfile, error) {
+func (DeviceProfileClientMock) DeviceProfile(_ context.Context, _ string) (contract.DeviceProfile, error) {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) DeviceProfiles(ctx context.Context) ([]contract.DeviceProfile, error) {
+func (DeviceProfileClientMock) DeviceProfiles(_ context.Context) ([]contract.DeviceProfile, error) {
 	err := populateDeviceProfileMock()
 	if err != nil {
 		return nil, err
@@ -55,19 +55,19 @@ func (DeviceProfileClientMock) DeviceProfiles(ctx context.Context) ([]contract.D
 	}, nil
 }
 
-func (DeviceProfileClientMock) DeviceProfileForName(name string, ctx context.Context) (contract.DeviceProfile, error) {
+func (DeviceProfileClientMock) DeviceProfileForName(_ context.Context, _ string) (contract.DeviceProfile, error) {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) Update(dp contract.DeviceProfile, ctx context.Context) error {
+func (DeviceProfileClientMock) Update(_ context.Context, _ contract.DeviceProfile) error {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) Upload(yamlString string, ctx context.Context) (string, error) {
+func (DeviceProfileClientMock) Upload(_ context.Context, _ string) (string, error) {
 	panic("implement me")
 }
 
-func (DeviceProfileClientMock) UploadFile(yamlFilePath string, ctx context.Context) (string, error) {
+func (DeviceProfileClientMock) UploadFile(_ context.Context, _ string) (string, error) {
 	panic("implement me")
 }
 
@@ -78,12 +78,12 @@ func populateDeviceProfileMock() error {
 	if err != nil {
 		return err
 	}
-	json.Unmarshal(profiles[ProfileBool], &DeviceProfileRandomBoolGenerator)
-	json.Unmarshal(profiles[ProfileInt], &DeviceProfileRandomIntegerGenerator)
-	json.Unmarshal(profiles[ProfileUint], &DeviceProfileRandomUnsignedGenerator)
-	json.Unmarshal(profiles[ProfileFloat], &DeviceProfileRandomFloatGenerator)
-	json.Unmarshal(profiles[ProfileFloat], &DuplicateDeviceProfileRandomFloatGenerator)
-	json.Unmarshal(profiles[ProfileNew], &NewDeviceProfile)
+	_ = json.Unmarshal(profiles[ProfileBool], &DeviceProfileRandomBoolGenerator)
+	_ = json.Unmarshal(profiles[ProfileInt], &DeviceProfileRandomIntegerGenerator)
+	_ = json.Unmarshal(profiles[ProfileUint], &DeviceProfileRandomUnsignedGenerator)
+	_ = json.Unmarshal(profiles[ProfileFloat], &DeviceProfileRandomFloatGenerator)
+	_ = json.Unmarshal(profiles[ProfileFloat], &DuplicateDeviceProfileRandomFloatGenerator)
+	_ = json.Unmarshal(profiles[ProfileNew], &NewDeviceProfile)
 
 	return nil
 }

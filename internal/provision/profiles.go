@@ -77,13 +77,13 @@ func LoadProfiles(path string) error {
 
 			// if profile already exists in metadata, skip it
 			if p, ok := pMap[profile.Name]; ok {
-				cache.Profiles().Add(p)
+				_ = cache.Profiles().Add(p)
 				continue
 			}
 
 			// add profile to metadata
 			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-			id, err := common.DeviceProfileClient.Add(&profile, ctx)
+			id, err := common.DeviceProfileClient.Add(ctx, &profile)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
@@ -197,7 +197,7 @@ func createDescriptorFromResourceOperation(profileName string, op contract.Resou
 		if err != nil {
 			common.LoggingClient.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
 		} else {
-			cache.ValueDescriptors().Add(*desc)
+			_ = cache.ValueDescriptors().Add(*desc)
 		}
 	}
 }
@@ -222,7 +222,7 @@ func createDescriptor(name string, dr contract.DeviceResource) (*contract.ValueD
 	}
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := common.ValueDescriptorClient.Add(desc, ctx)
+	id, err := common.ValueDescriptorClient.Add(ctx, desc)
 	if err != nil {
 		return nil, err
 	}

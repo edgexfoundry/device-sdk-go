@@ -72,7 +72,7 @@ func selfRegister() error {
 	common.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, err := common.DeviceServiceClient.DeviceServiceForName(common.ServiceName, ctx)
+	ds, err := common.DeviceServiceClient.DeviceServiceForName(ctx, common.ServiceName)
 
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
@@ -110,7 +110,7 @@ func createNewDeviceService() (contract.DeviceService, error) {
 	ds.Origin = millis
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := common.DeviceServiceClient.Add(&ds, ctx)
+	id, err := common.DeviceServiceClient.Add(ctx, &ds)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", common.ServiceName, err))
 		return contract.DeviceService{}, err
@@ -130,7 +130,7 @@ func createNewDeviceService() (contract.DeviceService, error) {
 func makeNewAddressable() (*contract.Addressable, error) {
 	// check whether there has been an existing addressable
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	addr, err := common.AddressableClient.AddressableForName(common.ServiceName, ctx)
+	addr, err := common.AddressableClient.AddressableForName(ctx, common.ServiceName)
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			common.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", common.ServiceName))
@@ -146,7 +146,7 @@ func makeNewAddressable() (*contract.Addressable, error) {
 				Port:       svc.svcInfo.Port,
 				Path:       common.APICallbackRoute,
 			}
-			id, err := common.AddressableClient.Add(&addr, ctx)
+			id, err := common.AddressableClient.Add(ctx, &addr)
 			if err != nil {
 				common.LoggingClient.Error(fmt.Sprintf("Add addressable failed %s, error: %v", addr.Name, err))
 				return nil, err

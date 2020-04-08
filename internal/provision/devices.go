@@ -59,7 +59,7 @@ func createDevice(dc common.DeviceConfig) error {
 	device.Description = dc.Description
 	common.LoggingClient.Debug(fmt.Sprintf("Adding Device: %v", device))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := common.DeviceClient.Add(device, ctx)
+	id, err := common.DeviceClient.Add(ctx, device)
 	if err != nil {
 		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %s, error: %v", device.Name, err))
 		return err
