@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/retry"
@@ -40,7 +41,7 @@ func NewData(
 		ctx,
 		registryClient,
 		wg,
-		common.ClientData,
+		clients.CoreDataServiceKey,
 		path,
 		common.CurrentConfig.Clients[common.ClientData],
 	)
@@ -57,7 +58,7 @@ func NewMetadata(
 		ctx,
 		registryClient,
 		wg,
-		common.ClientMetadata,
+		clients.CoreMetaDataServiceKey,
 		path,
 		common.CurrentConfig.Clients[common.ClientMetadata],
 	)
