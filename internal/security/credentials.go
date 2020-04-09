@@ -38,6 +38,10 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 	if !s.isSecurityEnabled() {
 		credentials, err = s.getInsecureSecrets(database.Type, "username", "password")
 	} else {
+		if s.SharedSecretClient == nil {
+			return common.Credentials{}, errors.New("SharedSecretClient is required but not configured")
+		}
+
 		credentials, err = s.SharedSecretClient.GetSecrets(database.Type, "username", "password")
 	}
 
