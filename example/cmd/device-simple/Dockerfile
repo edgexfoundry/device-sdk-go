@@ -45,6 +45,7 @@ EXPOSE $APP_PORT
 
 WORKDIR /
 COPY --from=builder /device-sdk-go/example/cmd/device-simple/device-simple /usr/local/bin/device-simple
-COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/docker/configuration.toml /res/docker/configuration.toml
+COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/configuration.toml /res/configuration.toml
+COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/Simple-Driver.yaml /res/Simple-Driver.yaml
 
-CMD [ "/usr/local/bin/device-simple","--profile=docker","--confdir=/res"]
+CMD [ "/usr/local/bin/device-simple","-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
