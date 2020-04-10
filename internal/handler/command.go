@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -166,7 +166,7 @@ func cvsToEvent(device *contract.Device, cvs []*dsModels.CommandValue, cmd strin
 		// been implemened in gxds. TBD at the devices f2f whether this
 		// be killed completely.
 
-		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.FloatEncoding)
+		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
 		readings = append(readings, *reading)
 
 		if cv.Type == dsModels.Binary {

@@ -76,7 +76,7 @@ func processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 					}
 				}
 
-				reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.FloatEncoding)
+				reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
 				readings = append(readings, *reading)
 			}
 

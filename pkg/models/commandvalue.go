@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -357,6 +357,40 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 	}
 
 	return
+}
+
+// ValueTypeToString returns corresponding string representation of the ValueType.
+func (cv *CommandValue) ValueTypeToString() string {
+	switch cv.Type {
+	case Bool:
+		return contract.ValueTypeBool
+	case String:
+		return contract.ValueTypeString
+	case Uint8:
+		return contract.ValueTypeUint8
+	case Uint16:
+		return contract.ValueTypeUint16
+	case Uint32:
+		return contract.ValueTypeUint32
+	case Uint64:
+		return contract.ValueTypeUint64
+	case Int8:
+		return contract.ValueTypeInt8
+	case Int16:
+		return contract.ValueTypeInt16
+	case Int32:
+		return contract.ValueTypeInt32
+	case Int64:
+		return contract.ValueTypeInt64
+	case Float32:
+		return contract.ValueTypeFloat32
+	case Float64:
+		return contract.ValueTypeFloat64
+	case Binary:
+		return contract.ValueTypeBinary
+	default:
+		return ""
+	}
 }
 
 func getFloatEncoding(encoding []string) string {
