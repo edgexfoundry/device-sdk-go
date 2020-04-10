@@ -27,11 +27,15 @@ func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 
 	common.LoggingClient.Debug(fmt.Sprintf("Adding managed device: : %s\n", device.Name))
 
-	prf, ok := cache.Profiles().ForName(device.Profile.Name)
-	if !ok {
-		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %s", device.Profile.Name, device.Name)
-		common.LoggingClient.Error(errMsg)
-		return "", fmt.Errorf(errMsg)
+	var prf contract.DeviceProfile
+	prf, cacheExist := cache.Profiles().ForName(device.Profile.Name)
+	if !cacheExist {
+		prf, err = common.DeviceProfileClient.DeviceProfileForName(context.Background(), device.Profile.Name)
+		if err != nil {
+			errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %s", device.Profile.Name, device.Name)
+			common.LoggingClient.Error(errMsg)
+			return "", fmt.Errorf(errMsg)
+		}
 	}
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
