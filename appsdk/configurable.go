@@ -42,6 +42,9 @@ const (
 	AutoReconnect    = "autoreconnect"
 	DeviceName       = "devicename"
 	ReadingName      = "readingname"
+	Rule             = "rule"
+	BatchThreshold   = "batchThreshold"
+	TimeInterval     = "timeInterval"
 )
 
 // AppFunctionsSDKConfigurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -358,4 +361,61 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 func (dynamic AppFunctionsSDKConfigurable) SetOutputData() appcontext.AppFunction {
 	transform := transforms.OutputData{}
 	return transform.SetOutputData
+}
+
+// BatchByCount ...
+func (dynamic AppFunctionsSDKConfigurable) BatchByCount(parameters map[string]string) appcontext.AppFunction {
+	batchThreshold, ok := parameters[BatchThreshold]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + BatchThreshold)
+		return nil
+	}
+
+	thresholdValue, err := strconv.Atoi(batchThreshold)
+	if err != nil {
+		dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to an int for '%s' parameter", batchThreshold, BatchThreshold), "error", err)
+		return nil
+	}
+	transform, err := transforms.NewBatchByCount(thresholdValue)
+	if err != nil {
+		dynamic.Sdk.LoggingClient.Error(err.Error())
+	}
+	return transform.Batch
+}
+
+// BatchByTime ...
+func (dynamic AppFunctionsSDKConfigurable) BatchByTime(parameters map[string]string) appcontext.AppFunction {
+	timeInterval, ok := parameters[TimeInterval]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + TimeInterval)
+		return nil
+	}
+	transform, err := transforms.NewBatchByTime(timeInterval)
+	if err != nil {
+		dynamic.Sdk.LoggingClient.Error(err.Error())
+	}
+	return transform.Batch
+}
+
+// BatchByTimeAndCount ...
+func (dynamic AppFunctionsSDKConfigurable) BatchByTimeAndCount(parameters map[string]string) appcontext.AppFunction {
+	timeInterval, ok := parameters[TimeInterval]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + TimeInterval)
+		return nil
+	}
+	batchThreshold, ok := parameters[BatchThreshold]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + BatchThreshold)
+		return nil
+	}
+	thresholdValue, err := strconv.Atoi(batchThreshold)
+	if err != nil {
+		dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to an int for '%s' parameter", batchThreshold, BatchThreshold), "error", err)
+	}
+	transform, err := transforms.NewBatchByTimeAndCount(timeInterval, thresholdValue)
+	if err != nil {
+		dynamic.Sdk.LoggingClient.Error(err.Error())
+	}
+	return transform.Batch
 }
