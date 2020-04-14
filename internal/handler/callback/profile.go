@@ -32,6 +32,17 @@ func handleProfile(method string, id string) common.AppError {
 		if err == nil {
 			provision.CreateDescriptorsFromProfile(&profile)
 			common.LoggingClient.Info(fmt.Sprintf("Updated device profile %s", id))
+			devices := cache.Devices().All()
+			for _, d := range devices {
+				if d.Profile.Name == profile.Name {
+					d.Profile = profile
+					_ = cache.Devices().Update(d)
+					err := common.Driver.UpdateDevice(d.Name, d.Protocols, d.AdminState)
+					if err != nil {
+						common.LoggingClient.Error(fmt.Sprintf("Failed to update device in protocoldriver: %s", err))
+					}
+				}
+			}
 		} else {
 			appErr := common.NewServerError(err.Error(), err)
 			common.LoggingClient.Error(fmt.Sprintf("Couldn't update device profile %s: %v", id, err.Error()))
