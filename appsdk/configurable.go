@@ -419,3 +419,14 @@ func (dynamic AppFunctionsSDKConfigurable) BatchByTimeAndCount(parameters map[st
 	}
 	return transform.Batch
 }
+
+// JSONLogic ...
+func (dynamic AppFunctionsSDKConfigurable) JSONLogic(parameters map[string]string) appcontext.AppFunction {
+	rule, ok := parameters[Rule]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + Rule)
+		return nil
+	}
+	transform := transforms.NewJSONLogic(rule)
+	return transform.Evaluate
+}
