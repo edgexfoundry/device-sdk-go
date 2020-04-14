@@ -104,6 +104,9 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			}
 			cvb, _ := dsModels.NewBinaryValue(reqs[0].DeviceResourceName, now, buf.Bytes())
 			res[0] = cvb
+		} else if reqs[0].DeviceResourceName == "Uint8Array" {
+			cv, _ := dsModels.NewUint8ArrayValue(reqs[0].DeviceResourceName, now, []uint8{0, 1, 2})
+			res[0] = cv
 		}
 	} else if len(reqs) == 3 {
 		res = make([]*dsModels.CommandValue, 3)
@@ -154,6 +157,13 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 		case "Zrotation":
 			if s.zRotation, err = params[i].Int32Value(); err != nil {
 				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
+				return err
+			}
+		case "Uint8Array":
+			v, err := params[i].Uint8ArrayValue()
+			if err == nil {
+				s.lc.Debug(fmt.Sprint("Uint8 array value from write command: ", v))
+			} else {
 				return err
 			}
 		}

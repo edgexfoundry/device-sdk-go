@@ -438,69 +438,171 @@ func createCommandValueFromRO(profileName string, ro *contract.ResourceOperation
 func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.CommandValue, error) {
 	var result *dsModels.CommandValue
 	var err error
-	var value interface{}
-	var t dsModels.ValueType
 	origin := time.Now().UnixNano()
 
 	switch strings.ToLower(dr.Properties.Value.Type) {
 	case "bool":
-		value, err = strconv.ParseBool(v)
-		t = dsModels.Bool
+		value, err := strconv.ParseBool(v)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewBoolValue(dr.Name, origin, value)
+	case "boolarray":
+		var arr []bool
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewBoolArrayValue(dr.Name, origin, arr)
 	case "string":
-		value = v
-		t = dsModels.String
+		result = dsModels.NewStringValue(dr.Name, origin, v)
 	case "uint8":
-		n, e := strconv.ParseUint(v, 10, 8)
-		value = uint8(n)
-		err = e
-		t = dsModels.Uint8
+		n, err := strconv.ParseUint(v, 10, 8)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewUint8Value(dr.Name, origin, uint8(n))
+	case "uint8array":
+		var arr []uint8
+		strArr := strings.Split(strings.Trim(v, "[]"), ",")
+		for _, u := range strArr {
+			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 8)
+			if err != nil {
+				return result, err
+			}
+			arr = append(arr, uint8(n))
+		}
+		result, err = dsModels.NewUint8ArrayValue(dr.Name, origin, arr)
 	case "uint16":
-		n, e := strconv.ParseUint(v, 10, 16)
-		value = uint16(n)
-		err = e
-		t = dsModels.Uint16
+		n, err := strconv.ParseUint(v, 10, 16)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewUint16Value(dr.Name, origin, uint16(n))
+	case "uint16array":
+		var arr []uint16
+		strArr := strings.Split(strings.Trim(v, "[]"), ",")
+		for _, u := range strArr {
+			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 16)
+			if err != nil {
+				return result, err
+			}
+			arr = append(arr, uint16(n))
+		}
+		result, err = dsModels.NewUint16ArrayValue(dr.Name, origin, arr)
 	case "uint32":
-		n, e := strconv.ParseUint(v, 10, 32)
-		value = uint32(n)
-		err = e
-		t = dsModels.Uint32
+		n, err := strconv.ParseUint(v, 10, 32)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewUint32Value(dr.Name, origin, uint32(n))
+	case "uint32array":
+		var arr []uint32
+		strArr := strings.Split(strings.Trim(v, "[]"), ",")
+		for _, u := range strArr {
+			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 32)
+			if err != nil {
+				return result, err
+			}
+			arr = append(arr, uint32(n))
+		}
+		result, err = dsModels.NewUint32ArrayValue(dr.Name, origin, arr)
 	case "uint64":
-		value, err = strconv.ParseUint(v, 10, 64)
-		t = dsModels.Uint64
+		n, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewUint64Value(dr.Name, origin, n)
+	case "uint64array":
+		var arr []uint64
+		strArr := strings.Split(strings.Trim(v, "[]"), ",")
+		for _, u := range strArr {
+			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 64)
+			if err != nil {
+				return result, err
+			}
+			arr = append(arr, n)
+		}
+		result, err = dsModels.NewUint64ArrayValue(dr.Name, origin, arr)
 	case "int8":
-		n, e := strconv.ParseInt(v, 10, 8)
-		value = int8(n)
-		err = e
-		t = dsModels.Int8
+		n, err := strconv.ParseInt(v, 10, 8)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt8Value(dr.Name, origin, int8(n))
+	case "int8array":
+		var arr []int8
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt8ArrayValue(dr.Name, origin, arr)
 	case "int16":
-		n, e := strconv.ParseInt(v, 10, 16)
-		value = int16(n)
-		err = e
-		t = dsModels.Int16
+		n, err := strconv.ParseInt(v, 10, 16)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt16Value(dr.Name, origin, int16(n))
+	case "int16array":
+		var arr []int16
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt16ArrayValue(dr.Name, origin, arr)
 	case "int32":
-		n, e := strconv.ParseInt(v, 10, 32)
-		value = int32(n)
-		err = e
-		t = dsModels.Int32
+		n, err := strconv.ParseInt(v, 10, 32)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt32Value(dr.Name, origin, int32(n))
+	case "int32array":
+		var arr []int32
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt32ArrayValue(dr.Name, origin, arr)
 	case "int64":
-		value, err = strconv.ParseInt(v, 10, 64)
-		t = dsModels.Int64
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt64Value(dr.Name, origin, n)
+	case "int64array":
+		var arr []int64
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewInt64ArrayValue(dr.Name, origin, arr)
 	case "float32":
-		n, e := strconv.ParseFloat(v, 32)
-		value = float32(n)
-		err = e
-		t = dsModels.Float32
+		n, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewFloat32Value(dr.Name, origin, float32(n))
+	case "float32array":
+		var arr []float32
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewFloat32ArrayValue(dr.Name, origin, arr)
 	case "float64":
-		value, err = strconv.ParseFloat(v, 64)
-		t = dsModels.Float64
+		n, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewFloat64Value(dr.Name, origin, n)
+	case "float64array":
+		var arr []float64
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			return result, err
+		}
+		result, err = dsModels.NewFloat64ArrayValue(dr.Name, origin, arr)
 	}
-
-	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, dr.Properties.Value.Type, err))
-		return result, err
-	}
-
-	result, err = dsModels.NewCommandValue(dr.Name, origin, value, t)
 
 	return result, err
 }
