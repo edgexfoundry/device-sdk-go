@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
@@ -192,6 +193,7 @@ func (s *SecretProvider) StoreSecrets(path string, secrets map[string]string) er
 	// Clearing cache because adding a new secret(s) possibly invalidates the previous cache
 	s.secretsCache = make(map[string]map[string]string)
 	s.cacheMuxtex.Unlock()
-
+	//indicate to the SDK that the cache has been invalidated
+	s.LastUpdated = time.Now()
 	return nil
 }
