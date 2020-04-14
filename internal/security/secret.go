@@ -90,20 +90,29 @@ func (s *SecretProvider) initializeSecretClient(
 	}
 
 	if s.isSecurityEnabled() {
-		for i := 0; i < secretConfig.AdditionalRetryAttempts; i++ {
-			secretClient, err = client.NewVault(ctx, secretConfig, s.loggingClient).Get(s.configuration.SecretStoreExclusive)
+		secretClient, err = client.NewVault(ctx, secretConfig, s.loggingClient).Get(secretStoreInfo)
+
+		if err == nil || secretConfig.AdditionalRetryAttempts <= 0 {
+			return secretClient, err
+		}
+
+		// retries some more times if secretConfig.AdditionalRetryAttempts is > 0
+		waitTIme, parseErr := time.ParseDuration(secretConfig.RetryWaitPeriod)
+		if parseErr != nil {
+			return nil, fmt.Errorf("invalid retry wait period for secret config: %s", parseErr.Error())
+		}
+
+		for retry := 0; retry < secretConfig.AdditionalRetryAttempts; retry++ {
+			time.Sleep(waitTIme)
+
+			secretClient, err = client.NewVault(ctx, secretConfig, s.loggingClient).Get(secretStoreInfo)
+
 			if err == nil {
 				break
-			} else {
-				waitTIme, err := time.ParseDuration(secretConfig.RetryWaitPeriod)
-				if err != nil {
-					return nil, fmt.Errorf("invalid retry wait period for secret config: %s", err.Error())
-				}
-				time.Sleep(waitTIme)
-				continue
 			}
 		}
 
+		// check whehter the last retry is failed?
 		if err != nil {
 			return nil, err
 		}
