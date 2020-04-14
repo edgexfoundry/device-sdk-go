@@ -39,10 +39,10 @@ type getSecretsTestObj struct {
 	resetSecretsCache bool
 }
 
-var getSecretsTestData []getSecretsTestObj
+type secretTestData []getSecretsTestObj
 
-func TestMain(m *testing.M) {
-	getSecretsTestData = []getSecretsTestObj{
+func getSecretsTestData() secretTestData {
+	return []getSecretsTestObj{
 		{
 			testName:          "Empty path",
 			path:              "",
@@ -148,15 +148,13 @@ func TestMain(m *testing.M) {
 			resetSecretsCache: false,
 		},
 	}
-
-	m.Run()
 }
 
 func TestGetSecrets(t *testing.T) {
 
 	secretProvider := newMockSecretProvider(nil)
 
-	for i, test := range getSecretsTestData {
+	for i, test := range getSecretsTestData() {
 		i := i
 		test := test
 		t.Run(test.testName, func(t *testing.T) {
@@ -178,7 +176,7 @@ func TestGetInsecureSecrets(t *testing.T) {
 
 	secretProvider, origEnv := setupGetInsecureSecrets(t)
 
-	for _, test := range getSecretsTestData {
+	for _, test := range getSecretsTestData() {
 		test := test
 		t.Run(test.testName, func(t *testing.T) {
 			secrets, err := secretProvider.getInsecureSecrets(test.path, test.keys...)
@@ -241,7 +239,8 @@ func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretPro
 }
 
 func (s *mockSecretClient) GetSecrets(path string, keys ...string) (map[string]string, error) {
-	return getSecretsTestData[s.testIndex].expectedSecrets, getSecretsTestData[s.testIndex].expectedErr
+	secretTestData := getSecretsTestData()
+	return secretTestData[s.testIndex].expectedSecrets, secretTestData[s.testIndex].expectedErr
 }
 
 func (s *mockSecretClient) StoreSecrets(path string, secrets map[string]string) error {
