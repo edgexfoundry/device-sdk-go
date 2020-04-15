@@ -1,9 +1,10 @@
 ## PR Checklist
 Please check if your PR fulfills the following requirements:
 
-- [ ] The commit message follows our guidelines: https://github.com/edgexfoundry/app-functions-sdk-go/blob/master/.github/CONTRIBUTING.md
 - [ ] Tests for the changes have been added (for bug fixes / features)
 - [ ] Docs have been added / updated (for bug fixes / features)
+
+<!-- If your build fails due to your commit message not passing the build checks, please review the guidelines here: https://github.com/edgexfoundry/app-functions-sdk-go/blob/master/.github/CONTRIBUTING.md -->
 
 ## PR Type
 What kind of change does this PR introduce?
