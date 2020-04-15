@@ -342,8 +342,38 @@ There are few export functions included in the SDK that can be added to your pip
 This `HTTPSender` instance is used to access the following functions that will use the required url and optional mime type and persistOnError:
   
   - `HTTPPost` - This function receives either a `string`,`[]byte`, or `json.Marshaler` type from the previous function in the pipeline and posts it to the configured endpoint. If no previous function exists, then the event that triggered the pipeline, marshaled to json, will be used. Currently, only unauthenticated endpoints are supported. Authenticated endpoints will be supported in the future. If the post fails and `persistOnError`is `true` and `Store and Forward` is enabled, the data will be stored for later retry. See [Store and Forward](#store-and-forward) for more details
+- `NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool)` - This function returns a `MQTTSecretSender` instance intialized with the options specfied in the `MQTTSecretConfig`.
+```golang
+type MQTTSecretConfig struct {
+    // BrokerAddress should be set to the complete broker address i.e. mqtts://mosquitto:8883/mybroker
+    BrokerAddress string
+    // ClientId to connect with the broker with.
+    ClientId string
+    // The name of the path in secret provider to retrieve your secrets
+    SecretPath string
+    // AutoReconnect indicated whether or not to retry connection if disconnected
+    AutoReconnect bool
+    // Topic that you wish to publish to
+    Topic string
+    // QoS for MQTT Connection
+    QoS byte
+    // Retain setting for MQTT Connection
+    Retain bool
+    // SkipCertVerify
+    SkipCertVerify bool
+    // AuthMode indicates what to use when connecting to the broker. Options are "none", "cacert" , "usernamepassword", "clientcert".
+    // If a CA Cert exists in the SecretPath then it will be used for all modes except "none". 
+    AuthMode string
+}
+```
+Secrets in the secret provider may be located at any path however they must have the follow keys at the specified `SecretPath`. What `AuthMode` you choose depends on what values are used. For example, if "none" is specified as auth mode all keys will be ignored. Similarily, if `AuthMode` is set to "clientcert" username and password will be ignored.
+  `username` - username to connect to the broker
+  `password` - password used to connect to the broker
+  `clientkey`- client private key in PEM format
+  `clientcert` - client cert in PEM format
+  `cacert` - ca cert in PEM format
 
-- `NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
+- **DEPRECATED**`NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCertPair *KeyCertPair, mqttConfig MqttConfig, persistOnError bool)` - This function returns a `MQTTSender` instance initialized with the passed in MQTT configuration . This `MQTTSender` instance is used to access the following  function that will use the specified MQTT configuration
   
   - `KeyCertPair` - This structure holds the Key and Certificate information for when using secure **TLS** connection to the broker. Can be `nil` if not using secure **TLS** connection. 
   

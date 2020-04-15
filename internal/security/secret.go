@@ -40,6 +40,8 @@ type SecretProvider struct {
 	configuration         *common.ConfigurationStruct
 	cacheMuxtex           *sync.Mutex
 	loggingClient         logger.LoggingClient
+	//used to track when secrets have last been retrieved
+	LastUpdated time.Time
 }
 
 // NewSecretProvider returns a new secret provider
@@ -49,6 +51,7 @@ func NewSecretProvider(loggingClient logger.LoggingClient, configuration *common
 		cacheMuxtex:   &sync.Mutex{},
 		configuration: configuration,
 		loggingClient: loggingClient,
+		LastUpdated:   time.Now(),
 	}
 
 	return sp
