@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -192,4 +192,79 @@ func TestConfigurableMarkAsPushed(t *testing.T) {
 
 	trx := configurable.MarkAsPushed()
 	assert.NotNil(t, trx, "return result from MarkAsPushed should not be nil")
+}
+
+func TestBatchByCount(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	params := make(map[string]string)
+	params[BatchThreshold] = "30"
+	trx := configurable.BatchByCount(params)
+	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+}
+func TestBatchByTime(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	params := make(map[string]string)
+	params[TimeInterval] = "10"
+	trx := configurable.BatchByTime(params)
+	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+}
+func TestBatchByTimeAndCount(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	params := make(map[string]string)
+	params[BatchThreshold] = "30"
+	params[TimeInterval] = "10"
+
+	trx := configurable.BatchByTimeAndCount(params)
+	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+}
+
+func TestJSONLogic(t *testing.T) {
+	params := make(map[string]string)
+	params[Rule] = "{}"
+
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+	trx := configurable.JSONLogic(params)
+	assert.NotNil(t, trx, "return result from JSONLogic should not be nil")
+
+}
+func TestConfigurableMQTTSecretSend(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	params := make(map[string]string)
+	params[BrokerAddress] = "mqtt://broker:8883"
+	params[Topic] = "topic"
+	params[SecretPath] = "/path"
+	params[ClientID] = "clientid"
+	params[Qos] = "0"
+	params[Retain] = "true"
+	params[AutoReconnect] = "true"
+	params[SkipVerify] = "true"
+	params[PersistOnError] = "false"
+	params[AuthMode] = "none"
+
+	trx := configurable.MQTTSecretSend(params)
+	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
 }
