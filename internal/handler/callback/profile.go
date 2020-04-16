@@ -48,7 +48,9 @@ func handleProfile(method string, id string) common.AppError {
 			common.LoggingClient.Error(fmt.Sprintf("Couldn't update device profile %s: %v", id, err.Error()))
 			return appErr
 		}
-	} else {
+	} else if method == http.MethodDelete{
+		cache.Profiles().Remove(id)
+	}else {
 		common.LoggingClient.Error(fmt.Sprintf("Invalid device profile method: %s", method))
 		appErr := common.NewBadRequestError("Invalid device profile method", nil)
 		return appErr
