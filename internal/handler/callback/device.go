@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -39,6 +39,11 @@ func handleDevice(method string, id string) common.AppError {
 				appErr := common.NewServerError(err.Error(), err)
 				common.LoggingClient.Error(fmt.Sprintf("Couldn't add device profile %s: %v", device.Profile.Name, err.Error()))
 				return appErr
+			}
+		} else {
+			err = cache.Profiles().Update(device.Profile)
+			if err != nil {
+				common.LoggingClient.Warn(fmt.Sprintf("Unable to update profile %s in cache, using the original one", device.Profile.Name))
 			}
 		}
 
