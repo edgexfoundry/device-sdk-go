@@ -19,7 +19,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
@@ -41,8 +40,6 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 }
 
 func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) (success bool) {
-	controller.LoadRestRoutes(b.router, dic)
-
 	common.CurrentConfig = container.ConfigurationFrom(dic.Get)
 	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
@@ -64,6 +61,17 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	// initialize devices, deviceResources, provisionwatcheres & profiles
 	cache.InitCache()
 
+	if svc.svcInfo.EnableAsyncReadings {
+		svc.asyncCh = make(chan *dsModels.AsyncValues, svc.svcInfo.AsyncBufferSize)
+		go processAsyncResults(ctx, wg)
+	}
+
+	err = common.Driver.Initialize(common.LoggingClient, svc.asyncCh)
+	if err != nil {
+		_, _ = fmt.Fprintf(os.Stderr, "Driver.Initialize failed: %v\n", err)
+		return false
+	}
+
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create the pre-defined Device Profiles: %v\n", err)
@@ -73,17 +81,6 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create the pre-defined Devices: %v\n", err)
-		return false
-	}
-
-	if svc.svcInfo.EnableAsyncReadings {
-		svc.asyncCh = make(chan *dsModels.AsyncValues, svc.svcInfo.AsyncBufferSize)
-		go processAsyncResults(ctx, wg)
-	}
-
-	err = common.Driver.Initialize(common.LoggingClient, svc.asyncCh)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Driver.Initialize failed: %v\n", err)
 		return false
 	}
 
