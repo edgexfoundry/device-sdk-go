@@ -34,7 +34,7 @@ const (
 	InitVector       = "initvector"
 	Url              = "url"
 	MimeType         = "mimetype"
-	PersistOnError   = "persistOnError"
+	PersistOnError   = "persistonerror"
 	Cert             = "cert"
 	SkipVerify       = "skipverify"
 	Qos              = "qos"
@@ -43,10 +43,14 @@ const (
 	DeviceName       = "devicename"
 	ReadingName      = "readingname"
 	Rule             = "rule"
-	BatchThreshold   = "batchThreshold"
-	TimeInterval     = "timeInterval"
-	SecretHeaderName = "SecretHeaderName"
-	SecretPath       = "SecretPath"
+	BatchThreshold   = "batchthreshold"
+	TimeInterval     = "timeinterval"
+	SecretHeaderName = "secretheadername"
+	SecretPath       = "secretpath"
+	BrokerAddress    = "brokeraddress"
+	ClientID         = "clientid"
+	Topic            = "topic"
+	AuthMode         = "none"
 )
 
 // AppFunctionsSDKConfigurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -399,4 +403,95 @@ func (dynamic AppFunctionsSDKConfigurable) JSONLogic(parameters map[string]strin
 	}
 	transform := transforms.NewJSONLogic(rule)
 	return transform.Evaluate
+}
+
+// MQTTSecretSend
+func (dynamic AppFunctionsSDKConfigurable) MQTTSecretSend(parameters map[string]string) appcontext.AppFunction {
+	var err error
+	qos := 0
+	retain := false
+	autoReconnect := false
+	skipCertVerify := false
+
+	brokerAddress, ok := parameters[BrokerAddress]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + BrokerAddress)
+		return nil
+	}
+	topic, ok := parameters[Topic]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + Topic)
+		return nil
+	}
+
+	secretPath, ok := parameters[SecretPath]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + SecretPath)
+		return nil
+	}
+	authMode, ok := parameters[AuthMode]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + AuthMode)
+		return nil
+	}
+	clientID, ok := parameters[ClientID]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("Could not find " + ClientID)
+		return nil
+	}
+	qosVal, ok := parameters[Qos]
+	if ok {
+		qos, err = strconv.Atoi(qosVal)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error("Unable to parse " + Qos + " value")
+			return nil
+		}
+	}
+	retainVal, ok := parameters[Retain]
+	if ok {
+		retain, err = strconv.ParseBool(retainVal)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error("Unable to parse " + Retain + " value")
+			return nil
+		}
+	}
+	autoreconnectVal, ok := parameters[AutoReconnect]
+	if ok {
+		autoReconnect, err = strconv.ParseBool(autoreconnectVal)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error("Unable to parse " + AutoReconnect + " value")
+			return nil
+		}
+	}
+	skipVerifyVal, ok := parameters[SkipVerify]
+	if ok {
+		skipCertVerify, err = strconv.ParseBool(skipVerifyVal)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", skipVerifyVal, SkipVerify), "error", err)
+			return nil
+		}
+	}
+	mqttConfig := transforms.MQTTSecretConfig{
+		Retain:         retain,
+		SkipCertVerify: skipCertVerify,
+		AutoReconnect:  autoReconnect,
+		QoS:            byte(qos),
+		BrokerAddress:  brokerAddress,
+		ClientId:       clientID,
+		SecretPath:     secretPath,
+		Topic:          topic,
+		AuthMode:       authMode,
+	}
+	// PersistOnError is optional and is false by default.
+	persistOnError := false
+	value, ok := parameters[PersistOnError]
+	if ok {
+		persistOnError, err = strconv.ParseBool(value)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			return nil
+		}
+	}
+	transform := transforms.NewMQTTSecretSender(mqttConfig, persistOnError)
+	return transform.MQTTSend
 }
