@@ -132,3 +132,23 @@ func (s *Service) UpdateDevice(device contract.Device) error {
 
 	return err
 }
+
+// UpdateDeviceOperatingState updates the Device's OperatingState with given name
+// in Core Metadata and device service cache.
+func (s *Service) UpdateDeviceOperatingState(deviceName string, state string) error {
+	d, ok := cache.Devices().ForName(deviceName)
+	if !ok {
+		msg := fmt.Sprintf("Device %s cannot be found in cache", deviceName)
+		common.LoggingClient.Error(msg)
+		return fmt.Errorf(msg)
+	}
+
+	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device OperatingState: : %s\n", d.Name))
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	err := common.DeviceClient.UpdateOpState(ctx, d.Id, state)
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("Update Device %s OperatingState from Core Metadata failed: %v", d.Name, err))
+	}
+
+	return err
+}
