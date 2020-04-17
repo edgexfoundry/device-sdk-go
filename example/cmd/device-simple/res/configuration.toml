@@ -47,9 +47,10 @@ Type = 'consul'
   ProfilesDir = './res'
   UpdateLastConnected = false
 
+# Remote and file logging disabled so only stdout logging is used
 [Logging]
 EnableRemote = false
-File = './device-simple.log'
+File = ''
 
 # Pre-define Devices
 [[DeviceList]]
