@@ -13,6 +13,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
@@ -53,6 +54,7 @@ func Main(serviceName string, serviceVersion string, driver dsModels.ProtocolDri
 	})
 
 	httpServer := httpserver.NewBootstrap(router, true)
+	controller.LoadRestRoutes(router, dic)
 
 	bootstrap.Run(
 		ctx,
@@ -64,8 +66,8 @@ func Main(serviceName string, serviceVersion string, driver dsModels.ProtocolDri
 		startupTimer,
 		dic,
 		[]interfaces.BootstrapHandler{
-			NewBootstrap(router).BootstrapHandler,
 			httpServer.BootstrapHandler,
+			NewBootstrap(router).BootstrapHandler,
 			message.NewBootstrap(serviceName, serviceVersion).BootstrapHandler,
 		})
 
