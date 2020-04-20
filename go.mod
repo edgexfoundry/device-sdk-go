@@ -11,6 +11,7 @@ require (
 	github.com/edgexfoundry/go-mod-messaging v0.1.18
 	github.com/edgexfoundry/go-mod-registry v0.1.20
 	github.com/edgexfoundry/go-mod-secrets v0.0.17
+	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/go-cmp v0.3.1 // indirect
@@ -20,7 +21,6 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/tidwall/pretty v1.0.0 // indirect
-	github.com/ugorji/go v1.1.4
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.1.1
