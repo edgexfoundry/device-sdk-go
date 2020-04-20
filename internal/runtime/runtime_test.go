@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/ugorji/go/codec"
@@ -203,7 +204,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 	expectedErrorCode := http.StatusUnprocessableEntity
 
 	// Send a RegistryInfo to the pipeline, instead of an Event
-	registryInfo := common.RegistryInfo{
+	registryInfo := config.RegistryInfo{
 		Host: devID1,
 	}
 	payload, _ := json.Marshal(registryInfo)
@@ -216,7 +217,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 		LoggingClient: lc,
 	}
 	// Let the Runtime know we are sending a RegistryInfo so it passes it to the first function
-	runtime := GolangRuntime{TargetType: &common.RegistryInfo{}}
+	runtime := GolangRuntime{TargetType: &config.RegistryInfo{}}
 	runtime.Initialize(nil, nil)
 	// FilterByDeviceName with return an error if it doesn't receive and Event
 	runtime.SetTransforms([]appcontext.AppFunction{transforms.NewFilter([]string{"SomeDevice"}).FilterByDeviceName})
@@ -416,7 +417,7 @@ func TestExecutePipelinePersist(t *testing.T) {
 	}
 
 	ctx := appcontext.Context{
-		Configuration: config,
+		Configuration: &config,
 		LoggingClient: lc,
 		CorrelationID: "CorrelationID",
 		EventChecksum: "EventChecksum",

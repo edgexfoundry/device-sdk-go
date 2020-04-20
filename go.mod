@@ -4,13 +4,12 @@ go 1.13
 
 require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
-	github.com/BurntSushi/toml v0.3.1
 	github.com/diegoholiveira/jsonlogic v1.0.1-0.20200220175622-ab7989be08b9
-
 	github.com/eclipse/paho.mqtt.golang v1.2.0
-	github.com/edgexfoundry/go-mod-core-contracts v0.1.52
-	github.com/edgexfoundry/go-mod-messaging v0.1.16
-	github.com/edgexfoundry/go-mod-registry v0.1.11
+	github.com/edgexfoundry/go-mod-bootstrap v0.0.29
+	github.com/edgexfoundry/go-mod-core-contracts v0.1.57
+	github.com/edgexfoundry/go-mod-messaging v0.1.18
+	github.com/edgexfoundry/go-mod-registry v0.1.20
 	github.com/edgexfoundry/go-mod-secrets v0.0.17
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
@@ -18,9 +17,8 @@ require (
 	github.com/google/uuid v1.1.0
 	github.com/gorilla/mux v1.7.2
 	github.com/kr/pretty v0.2.0 // indirect
-	github.com/pelletier/go-toml v1.2.0
 	github.com/stretchr/objx v0.2.0 // indirect
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.5.1
 	github.com/tidwall/pretty v1.0.0 // indirect
 	github.com/ugorji/go v1.1.4
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
