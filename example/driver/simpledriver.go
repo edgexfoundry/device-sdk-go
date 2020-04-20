@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -27,6 +27,7 @@ import (
 type SimpleDriver struct {
 	lc           logger.LoggingClient
 	asyncCh      chan<- *dsModels.AsyncValues
+	deviceCh     chan<- []dsModels.DiscoveredDevice
 	switchButton bool
 	xRotation    int32
 	yRotation    int32
@@ -67,9 +68,10 @@ func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 
 // Initialize performs protocol-specific initialization for the device
 // service.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues) error {
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues, deviceCh chan<- []dsModels.DiscoveredDevice) error {
 	s.lc = lc
 	s.asyncCh = asyncCh
+	s.deviceCh = deviceCh
 	return nil
 }
 
@@ -191,4 +193,33 @@ func (s *SimpleDriver) UpdateDevice(deviceName string, protocols map[string]cont
 func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
 	s.lc.Debug(fmt.Sprintf("Device %s is removed", deviceName))
 	return nil
+}
+
+// Discover triggers protocol specific device discovery, which is an asynchronous operation.
+// Devices found as part of this discovery operation are written to the channel devices.
+func (s *SimpleDriver) Discover() {
+	proto := make(map[string]contract.ProtocolProperties)
+	proto["other"] = map[string]string{"Address": "simple02", "Port": "301"}
+
+	device2 := dsModels.DiscoveredDevice{
+		Name:        "Simple-Device02",
+		Protocols:   proto,
+		Description: "found by discovery",
+		Labels:      []string{"auto-discovery"},
+	}
+
+	proto = make(map[string]contract.ProtocolProperties)
+	proto["other"] = map[string]string{"Address": "simple03", "Port": "399"}
+
+	device3 := dsModels.DiscoveredDevice{
+		Name:        "Simple-Device03",
+		Protocols:   proto,
+		Description: "found by discovery",
+		Labels:      []string{"auto-discovery"},
+	}
+
+	res := []dsModels.DiscoveredDevice{device2, device3}
+
+	time.Sleep(10 * time.Second)
+	s.deviceCh <- res
 }

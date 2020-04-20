@@ -23,7 +23,7 @@ func (DriverMock) DisconnectDevice(deviceName string, protocols map[string]contr
 	panic("implement me")
 }
 
-func (DriverMock) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues) error {
+func (DriverMock) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues, deviceCh chan<- []dsModels.DiscoveredDevice) error {
 	panic("implement me")
 }
 

@@ -37,6 +37,7 @@ var (
 type Service struct {
 	svcInfo    *common.ServiceInfo
 	asyncCh    chan *dsModels.AsyncValues
+	deviceCh   chan []dsModels.DiscoveredDevice
 	startTime  time.Time
 	controller controller.RestController
 }

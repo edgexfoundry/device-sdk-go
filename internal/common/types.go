@@ -84,6 +84,17 @@ type DeviceInfo struct {
 	// UpdateLastConnected specifies whether to update device's LastConnected
 	// timestamp in metadata.
 	UpdateLastConnected bool
+
+	Discovery DiscoveryInfo
+}
+
+// DiscoveryInfo is a struct which contains configuration of device auto discovery.
+type DiscoveryInfo struct {
+	// Enabled controls whether or not device discovery is enabled.
+	Enabled bool
+	// Interval indicates how often the discovery process will be triggered.
+	// It represents as a duration string.
+	Interval string
 }
 
 // DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up
@@ -92,7 +103,7 @@ type DeviceConfig struct {
 	Name string
 	// Profile is the profile name of the Device
 	Profile string
-
+	// Description describes the device
 	Description string
 	// Other labels applied to the device to help with searching
 	Labels []string

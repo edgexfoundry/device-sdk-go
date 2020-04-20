@@ -46,6 +46,9 @@ Type = 'consul'
   RemoveCmdArgs = ''
   ProfilesDir = './res'
   UpdateLastConnected = false
+  [Device.Discovery]
+    Enabled = false
+    Interval = '30s'
 
 # Remote and file logging disabled so only stdout logging is used
 [Logging]

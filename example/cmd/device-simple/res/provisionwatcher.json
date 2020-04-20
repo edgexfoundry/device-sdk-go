@@ -1,0 +1,19 @@
+{
+  "name":"simple-watcher",
+  "identifiers":{
+    "Address":"simple[0-9]+",
+    "Port":"3[0-9]{2}"
+
+  },
+  "blockingidentifiers": {
+    "Port": ["399", "398", "397"]
+  },
+  "profile":{
+    "name":"Simple-Device"
+
+  },
+  "service":{
+    "name":"device-simple"
+  },
+  "adminState": "UNLOCKED"
+}

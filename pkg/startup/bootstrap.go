@@ -10,12 +10,11 @@ package startup
 import (
 	"context"
 
-	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/pkg/service"
 	"github.com/gorilla/mux"
 )
 
-func Bootstrap(serviceName string, serviceVersion string, driver dsModels.ProtocolDriver) {
+func Bootstrap(serviceName string, serviceVersion string, driver interface{}) {
 	ctx, cancel := context.WithCancel(context.Background())
 	service.Main(serviceName, serviceVersion, driver, ctx, cancel, mux.NewRouter(), nil)
 }

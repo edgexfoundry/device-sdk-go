@@ -25,23 +25,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Main(serviceName string, serviceVersion string, driver dsModels.ProtocolDriver, ctx context.Context, cancel context.CancelFunc, router *mux.Router, readyStream chan<- bool) {
+func Main(serviceName string, serviceVersion string, proto interface{}, ctx context.Context, cancel context.CancelFunc, router *mux.Router, readyStream chan<- bool) {
 	startupTimer := startup.NewStartUpTimer(common.BootRetrySecondsDefault, common.BootTimeoutSecondsDefault)
 
 	if serviceName == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service name")
 		os.Exit(1)
-	} else if serviceVersion == "" {
+	}
+	common.ServiceName = serviceName
+	if serviceVersion == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service version")
 		os.Exit(1)
-	} else if driver == nil {
+	}
+	common.ServiceVersion = serviceVersion
+	if driver, ok := proto.(dsModels.ProtocolDriver); ok {
+		common.Driver = driver
+	} else {
 		_, _ = fmt.Fprintf(os.Stderr, "Please implement and specify the protocoldriver")
 		os.Exit(1)
 	}
-
-	common.Driver = driver
-	common.ServiceName = serviceName
-	common.ServiceVersion = serviceVersion
+	if discovery, ok := proto.(dsModels.ProtocolDiscovery); ok {
+		common.Discovery = discovery
+	} else {
+		common.Discovery = nil
+	}
 
 	f := flags.New()
 	f.Parse(os.Args[1:])
