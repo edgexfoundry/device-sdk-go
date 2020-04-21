@@ -16,16 +16,15 @@
 package runtime
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ugorji/go/codec"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -288,14 +287,12 @@ func TestProcessMessageCBOR(t *testing.T) {
 
 	transform1WasCalled := false
 
-	buffer := &bytes.Buffer{}
-	handle := &codec.CborHandle{}
-	encoder := codec.NewEncoder(buffer, handle)
-	encoder.Encode(eventIn)
+	eventCborBytes, err := cbor.Marshal(eventIn)
+	assert.NoError(t, err, "expected no error when marshalling data")
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       buffer.Bytes(),
+		Payload:       eventCborBytes,
 		ContentType:   clients.ContentTypeCBOR,
 		Checksum:      expectedChecksum,
 	}
@@ -350,10 +347,8 @@ func TestProcessMessageTargetType(t *testing.T) {
 	}
 	eventJson, _ := json.Marshal(eventIn)
 
-	eventCbor := &bytes.Buffer{}
-	handle := &codec.CborHandle{}
-	encoder := codec.NewEncoder(eventCbor, handle)
-	encoder.Encode(eventIn)
+	eventCborBytes, err := cbor.Marshal(eventIn)
+	assert.NoError(t, err, "expected no error when marshalling data")
 
 	expected := CustomType{
 		ID: "Id1",
@@ -371,7 +366,7 @@ func TestProcessMessageTargetType(t *testing.T) {
 	}{
 		{"Default Nil Target Type", nil, eventJson, clients.ContentTypeJSON, eventJson, false},
 		{"Event as Json", &models.Event{}, eventJson, clients.ContentTypeJSON, eventJson, false},
-		{"Event as Cbor", &models.Event{}, eventCbor.Bytes(), clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
+		{"Event as Cbor", &models.Event{}, eventCborBytes, clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
 		{"Custom Type Json", &CustomType{}, customJson, clients.ContentTypeJSON, customJson, false},
 		{"Byte Slice", &[]byte{}, byteData, "application/binary", byteData, false},
 		{"Target Type Not a pointer", models.Event{}, nil, "", nil, true},
