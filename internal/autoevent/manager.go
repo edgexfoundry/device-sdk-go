@@ -50,11 +50,15 @@ func (m *manager) StartAutoEvents() {
 
 func (m *manager) StopAutoEvents() {
 	mutex.Lock()
-	for k, v := range m.execsMap {
-		for _, e := range v {
-			e.Stop()
+	// because service.Stop might be called before autoevent manager is created
+	// in bootstrap, we need this check to prevent nil pointer dereference.
+	if m != nil {
+		for k, v := range m.execsMap {
+			for _, e := range v {
+				e.Stop()
+			}
+			delete(m.execsMap, k)
 		}
-		delete(m.execsMap, k)
 	}
 	mutex.Unlock()
 }
