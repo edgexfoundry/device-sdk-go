@@ -46,6 +46,14 @@ deviceResources:
         { type: "Int32", readWrite: "RW" }
       units:
         { type: "string", readWrite: "R", defaultValue: "degrees/sec" }
+  -
+    name: "Uint8Array"
+    description: "Unsigned 8bit array"
+    properties:
+      value:
+        { type: "Uint8Array", readWrite: "RW" }
+      units:
+        { type: "string", readWrite: "R", defaultValue: "[]uint8" }
 
 deviceCommands:
   -

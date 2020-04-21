@@ -75,6 +75,19 @@ func TestNewCommandValue(t *testing.T) {
 		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt32Value")
 	}
 
+	// Test int64
+	cv, err = NewCommandValue("resource", 0, int64(5), Int64)
+	test, err2 = NewInt64Value("resource", 0, int64(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt64Value")
+	}
+
 	// Test uint8
 	cv, err = NewCommandValue("resource", 0, uint8(5), Uint8)
 	test, err2 = NewUint8Value("resource", 0, uint8(5))
@@ -112,6 +125,19 @@ func TestNewCommandValue(t *testing.T) {
 		fmt.Println(cv)
 		fmt.Println(test)
 		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewInt8Value")
+	}
+
+	// Test uint64
+	cv, err = NewCommandValue("resource", 0, uint64(5), Uint64)
+	test, err2 = NewUint64Value("resource", 0, uint64(5))
+	if err != nil || err2 != nil {
+		t.Errorf("Error creating command value")
+	}
+
+	if !reflect.DeepEqual(cv, test) {
+		fmt.Println(cv)
+		fmt.Println(test)
+		t.Errorf("CommandValue returned from NewCommandValue doesn't match NewUint64Value")
 	}
 
 	// Test float32
@@ -209,6 +235,25 @@ func TestNewBoolValue(t *testing.T) {
 	}
 }
 
+// Test NewBoolArrayValue function.
+func TestNewBoolArrayValue(t *testing.T) {
+	var value = make([]bool, 1)
+	cv, _ := NewBoolArrayValue("resource", 0, value)
+	if cv.Type != BoolArray {
+		t.Errorf("NewBoolArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[false]" {
+		t.Errorf("NewBoolArrayValue: invalid reading Value: %s", cv.ValueToString())
+	}
+	v, err := cv.BoolArrayValue()
+	if err != nil {
+		t.Errorf("NewBoolArrayValue: failed to get bool array")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewBoolArrayValue: bool value is incorrect")
+	}
+}
+
 // Test NewStringValue function.
 func TestNewStringValue(t *testing.T) {
 	var value string
@@ -288,6 +333,25 @@ func TestNewUint8Value(t *testing.T) {
 	}
 }
 
+// Test NewUint8ArrayValue function.
+func TestNewUint8ArrayValue(t *testing.T) {
+	var value = make([]uint8, 1)
+	cv, _ := NewUint8ArrayValue("resource", 0, value)
+	if cv.Type != Uint8Array {
+		t.Errorf("NewUint8ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewUint8ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Uint8ArrayValue()
+	if err != nil {
+		t.Errorf("NewUint8ArrayValue: failed to get uint8 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewUint8ArrayValue: uint8 value is incorrect")
+	}
+}
+
 // Test NewUint16Value function.
 func TestNewUint16Value(t *testing.T) {
 	var value uint16
@@ -329,6 +393,25 @@ func TestNewUint16Value(t *testing.T) {
 	}
 	if cv.ValueToString() != "65535" {
 		t.Errorf("NewUint16Value: invalid reading Value: %s", cv.ValueToString())
+	}
+}
+
+// Test NewUint16ArrayValue function.
+func TestNewUint16ArrayValue(t *testing.T) {
+	var value = make([]uint16, 1)
+	cv, _ := NewUint16ArrayValue("resource", 0, value)
+	if cv.Type != Uint16Array {
+		t.Errorf("NewUint16ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewUint16ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Uint16ArrayValue()
+	if err != nil {
+		t.Errorf("NewUint16ArrayValue: failed to get uint16 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewUint16ArrayValue: uint16 value is incorrect")
 	}
 }
 
@@ -374,6 +457,25 @@ func TestNewUint32Value(t *testing.T) {
 	}
 	if cv.ValueToString() != "4294967295" {
 		t.Errorf("NewUint32Value: invalid reading Value: %s", cv.ValueToString())
+	}
+}
+
+// Test NewUint32ArrayValue function.
+func TestNewUint32ArrayValue(t *testing.T) {
+	var value = make([]uint32, 1)
+	cv, _ := NewUint32ArrayValue("resource", 0, value)
+	if cv.Type != Uint32Array {
+		t.Errorf("NewUint32ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewUint32ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Uint32ArrayValue()
+	if err != nil {
+		t.Errorf("NewUint32ArrayValue: failed to get uint32 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewUint32ArrayValue: uint32 value is incorrect")
 	}
 }
 
@@ -425,6 +527,25 @@ func TestNewUint64Value(t *testing.T) {
 	}
 }
 
+// Test NewUint64ArrayValue function.
+func TestNewUint64ArrayValue(t *testing.T) {
+	var value = make([]uint64, 1)
+	cv, _ := NewUint64ArrayValue("resource", 0, value)
+	if cv.Type != Uint64Array {
+		t.Errorf("NewUint64ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewUint64ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Uint64ArrayValue()
+	if err != nil {
+		t.Errorf("NewUint64ArrayValue: failed to get uint64 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewUint64ArrayValue: uint64 value is incorrect")
+	}
+}
+
 // Test NewInt8Value function.
 func TestNewInt8Value(t *testing.T) {
 	var value int8 = -128
@@ -470,6 +591,25 @@ func TestNewInt8Value(t *testing.T) {
 	}
 	if cv.ValueToString() != "127" {
 		t.Errorf("NewInt8Value #2: invalid reading Value: %s", cv.ValueToString())
+	}
+}
+
+// Test NeInt8ArrayValue function.
+func TestNewInt8ArrayValue(t *testing.T) {
+	var value = make([]int8, 1)
+	cv, _ := NewInt8ArrayValue("resource", 0, value)
+	if cv.Type != Int8Array {
+		t.Errorf("NewInt8ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewInt8ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Int8ArrayValue()
+	if err != nil {
+		t.Errorf("NewInt8ArrayValue: failed to get int8 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewInt16ArrayValue: int8 value is incorrect")
 	}
 }
 
@@ -520,6 +660,25 @@ func TestNewInt16Value(t *testing.T) {
 	}
 }
 
+// Test NeInt16ArrayValue function.
+func TestNewInt16ArrayValue(t *testing.T) {
+	var value = make([]int16, 1)
+	cv, _ := NewInt16ArrayValue("resource", 0, value)
+	if cv.Type != Int16Array {
+		t.Errorf("NewInt16ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewInt16ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Int16ArrayValue()
+	if err != nil {
+		t.Errorf("NewInt16ArrayValue: failed to get int16 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewInt16ArrayValue: int16 value is incorrect")
+	}
+}
+
 // Test NewInt32Value function.
 func TestNewInt32Value(t *testing.T) {
 	var value int32 = -2147483648
@@ -564,6 +723,25 @@ func TestNewInt32Value(t *testing.T) {
 	}
 	if cv.ValueToString() != "2147483647" {
 		t.Errorf("NewInt32Value #2: invalid reading Value: %s", cv.ValueToString())
+	}
+}
+
+// Test NeInt32ArrayValue function.
+func TestNewInt32ArrayValue(t *testing.T) {
+	var value = make([]int32, 1)
+	cv, _ := NewInt32ArrayValue("resource", 0, value)
+	if cv.Type != Int32Array {
+		t.Errorf("NewInt32ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewInt32ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Int32ArrayValue()
+	if err != nil {
+		t.Errorf("NewInt32ArrayValue: failed to get int32 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewInt32ArrayValue: int32 value is incorrect")
 	}
 }
 
@@ -618,6 +796,25 @@ func TestNewInt64Value(t *testing.T) {
 	}
 }
 
+// Test NeInt64ArrayValue function.
+func TestNewInt64ArrayValue(t *testing.T) {
+	var value = make([]int64, 1)
+	cv, _ := NewInt64ArrayValue("resource", 0, value)
+	if cv.Type != Int64Array {
+		t.Errorf("NewInt64ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewInt64ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Int64ArrayValue()
+	if err != nil {
+		t.Errorf("NewInt64ArrayValue: failed to get int64 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewInt64ArrayValue: int64 value is incorrect")
+	}
+}
+
 // Test NewFloat32Value function.
 func TestNewFloat32Value(t *testing.T) {
 	var value float32 = math.SmallestNonzeroFloat32
@@ -669,6 +866,25 @@ func TestNewFloat32Value(t *testing.T) {
 	}
 }
 
+// Test NewFloat32ArrayValue function.
+func TestNewFloat32ArrayValue(t *testing.T) {
+	var value = make([]float32, 1)
+	cv, _ := NewFloat32ArrayValue("resource", 0, value)
+	if cv.Type != Float32Array {
+		t.Errorf("NewFloat32ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewFloat32ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Float32ArrayValue()
+	if err != nil {
+		t.Errorf("NewFloat32ArrayValue: failed to get float32 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewFloat32ArrayValue: float32 value is incorrect")
+	}
+}
+
 // Test NewFloat64Value function.
 func TestNewFloat64Value(t *testing.T) {
 	var value float64 = math.SmallestNonzeroFloat64
@@ -717,6 +933,25 @@ func TestNewFloat64Value(t *testing.T) {
 	}
 	if cv.ValueToString(contract.Base64Encoding) != "f+////////8=" {
 		t.Errorf("NewFloat64Value #2: invalid reading Value: %s", cv.ValueToString())
+	}
+}
+
+// Test NewFloat64ArrayValue function.
+func TestNewFloat64ArrayValue(t *testing.T) {
+	var value = make([]float64, 1)
+	cv, _ := NewFloat64ArrayValue("resource", 0, value)
+	if cv.Type != Float64Array {
+		t.Errorf("NewFloat64ArrayValue: invalid Type: %v", cv.Type)
+	}
+	if cv.ValueToString() != "[0]" {
+		t.Errorf("NewFloat64ArrayValue: invalid Value: %v", cv.stringValue)
+	}
+	v, err := cv.Float64ArrayValue()
+	if err != nil {
+		t.Errorf("NewFloat64ArrayValue: failed to get float64 array value")
+	}
+	if v[0] != value[0] {
+		t.Errorf("NewFloat64ArrayValue: float64 value is incorrect")
 	}
 }
 
