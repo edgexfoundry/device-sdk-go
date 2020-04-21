@@ -41,6 +41,10 @@ func BuildAddr(host string, port string) string {
 }
 
 func CommandValueToReading(cv *dsModels.CommandValue, devName string, mediaType string, encoding string) *contract.Reading {
+	if encoding == "" {
+		encoding = dsModels.DefaultFloatEncoding
+	}
+
 	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName, ValueType: cv.ValueTypeToString()}
 	if cv.Type == dsModels.Binary {
 		reading.BinaryValue = cv.BinValue
