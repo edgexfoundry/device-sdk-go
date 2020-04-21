@@ -8,8 +8,12 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -577,11 +581,30 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 		}
 		result, err = dsModels.NewInt64ArrayValue(dr.Name, origin, arr)
 	case "float32":
-		n, err := strconv.ParseFloat(v, 32)
-		if err != nil {
-			return result, err
+		n, e := strconv.ParseFloat(v, 32)
+		if e == nil {
+			result, err = dsModels.NewFloat32Value(dr.Name, origin, float32(n))
+			break
 		}
-		result, err = dsModels.NewFloat32Value(dr.Name, origin, float32(n))
+		if numError, ok := e.(*strconv.NumError); ok {
+			if numError.Err == strconv.ErrRange {
+				err = e
+				break
+			}
+		}
+		var decodedToBytes []byte
+		decodedToBytes, err = base64.StdEncoding.DecodeString(v)
+		if err == nil {
+			var val float32
+			val, err = float32FromBytes(decodedToBytes)
+			if err != nil {
+				break
+			} else if math.IsNaN(float64(val)) {
+				err = fmt.Errorf("fail to parse %v to float32, unexpected result %v", v, val)
+			} else {
+				result, err = dsModels.NewFloat32Value(dr.Name, origin, val)
+			}
+		}
 	case "float32array":
 		var arr []float32
 		err = json.Unmarshal([]byte(v), &arr)
@@ -590,11 +613,29 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 		}
 		result, err = dsModels.NewFloat32ArrayValue(dr.Name, origin, arr)
 	case "float64":
-		n, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			return result, err
+		var val float64
+		val, err = strconv.ParseFloat(v, 64)
+		if err == nil {
+			result, err = dsModels.NewFloat64Value(dr.Name, origin, val)
+			break
 		}
-		result, err = dsModels.NewFloat64Value(dr.Name, origin, n)
+		if numError, ok := err.(*strconv.NumError); ok {
+			if numError.Err == strconv.ErrRange {
+				break
+			}
+		}
+		var decodedToBytes []byte
+		decodedToBytes, err = base64.StdEncoding.DecodeString(v)
+		if err == nil {
+			val, err = float64FromBytes(decodedToBytes)
+			if err != nil {
+				break
+			} else if math.IsNaN(val) {
+				err = fmt.Errorf("fail to parse %v to float64, unexpected result %v", v, val)
+			} else {
+				result, err = dsModels.NewFloat64Value(dr.Name, origin, val)
+			}
+		}
 	case "float64array":
 		var arr []float64
 		err = json.Unmarshal([]byte(v), &arr)
@@ -604,7 +645,24 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 		result, err = dsModels.NewFloat64ArrayValue(dr.Name, origin, arr)
 	}
 
+	if err != nil {
+		common.LoggingClient.Error(fmt.Sprintf("Handler - Command: Parsing parameter value (%s) to %s failed: %v", v, dr.Properties.Value.Type, err))
+		return result, err
+	}
+
 	return result, err
+}
+
+func float64FromBytes(numericValue []byte) (res float64, err error) {
+	reader := bytes.NewReader(numericValue)
+	err = binary.Read(reader, binary.BigEndian, &res)
+	return
+}
+
+func float32FromBytes(numericValue []byte) (res float32, err error) {
+	reader := bytes.NewReader(numericValue)
+	err = binary.Read(reader, binary.BigEndian, &res)
+	return
 }
 
 func CommandAllHandler(cmd string, body string, method string, queryParams string) ([]*dsModels.Event, common.AppError) {
