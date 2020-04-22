@@ -35,11 +35,12 @@ var (
 
 // A Service listens for requests and routes them to the right command
 type Service struct {
-	svcInfo    *common.ServiceInfo
-	asyncCh    chan *dsModels.AsyncValues
-	deviceCh   chan []dsModels.DiscoveredDevice
-	startTime  time.Time
-	controller controller.RestController
+	svcInfo     *common.ServiceInfo
+	asyncCh     chan *dsModels.AsyncValues
+	deviceCh    chan []dsModels.DiscoveredDevice
+	startTime   time.Time
+	controller  controller.RestController
+	initiazlied bool
 }
 
 // Name returns the name of this Device Service
@@ -64,7 +65,9 @@ func (s *Service) AddRoute(route string, handler func(http.ResponseWriter, *http
 
 // Stop shuts down the Service
 func (s *Service) Stop(force bool) {
-	_ = common.Driver.Stop(force)
+	if s.initiazlied {
+		_ = common.Driver.Stop(force)
+	}
 	autoevent.GetManager().StopAutoEvents()
 }
 
@@ -172,6 +175,7 @@ func newService(dic *di.Container) *Service {
 	svc.startTime = time.Now()
 	svc.svcInfo = &container.ConfigurationFrom(dic.Get).Service
 	svc.controller = container.RestControllerFrom(dic.Get)
+	svc.initiazlied = false
 
 	return svc
 }

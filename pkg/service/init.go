@@ -45,7 +45,19 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 
+	// init svc and autoevent manager in the beginning so that if there's
+	// error in following bootstrap process the device service can correctly
+	// call svc.Stop and gracefully shut down.
 	svc = newService(dic)
+	autoevent.NewManager(ctx, wg)
+
+	if svc.svcInfo.EnableAsyncReadings {
+		svc.asyncCh = make(chan *dsModels.AsyncValues, svc.svcInfo.AsyncBufferSize)
+		go processAsyncResults(ctx, wg)
+	}
+
+	svc.deviceCh = make(chan []dsModels.DiscoveredDevice)
+	go processAsyncFilterAndAdd(ctx, wg)
 
 	err := clients.InitDependencyClients(ctx, wg)
 	if err != nil {
@@ -62,20 +74,12 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	// initialize devices, deviceResources, provisionwatcheres & profiles
 	cache.InitCache()
 
-	if svc.svcInfo.EnableAsyncReadings {
-		svc.asyncCh = make(chan *dsModels.AsyncValues, svc.svcInfo.AsyncBufferSize)
-		go processAsyncResults(ctx, wg)
-	}
-
 	err = common.Driver.Initialize(common.LoggingClient, svc.asyncCh, svc.deviceCh)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Driver.Initialize failed: %v\n", err)
 		return false
 	}
-
-	svc.deviceCh = make(chan []dsModels.DiscoveredDevice)
-	go processAsyncFilterAndAdd(ctx, wg)
-	go autodiscovery.Run()
+	svc.initiazlied = true
 
 	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
 	if err != nil {
@@ -89,7 +93,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 		return false
 	}
 
-	autoevent.NewManager(ctx, wg)
+	go autodiscovery.Run()
 	autoevent.GetManager().StartAutoEvents()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(common.CurrentConfig.Service.Timeout), "Request timed out")
 
