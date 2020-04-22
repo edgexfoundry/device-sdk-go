@@ -196,7 +196,7 @@ func initializeClients(ctx context.Context, waitGroup *sync.WaitGroup) {
 			ctx,
 			common.RegistryClient,
 			waitGroup,
-			clients.ApiConfigRoute,
+			"",
 		),
 	)
 
