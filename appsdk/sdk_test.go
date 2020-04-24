@@ -18,6 +18,7 @@ package appsdk
 
 import (
 	"net/http"
+	"os"
 	"reflect"
 	"testing"
 
@@ -39,7 +40,8 @@ import (
 var lc logger.LoggingClient
 
 func TestMain(m *testing.M) {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	// No remote and no file results in STDOUT logging only
+	lc = logger.NewClient("app_functions_sdk_go", false, "", "DEBUG")
 	m.Run()
 }
 
@@ -352,4 +354,102 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	_, err := sdk.LoadConfigurablePipeline()
 	require.NoError(t, err)
 	assert.Nil(t, sdk.TargetType)
+}
+
+func TestSetServiceKey(t *testing.T) {
+	sdk := AppFunctionsSDK{
+		LoggingClient: lc,
+		ServiceKey:    "MyAppService",
+	}
+
+	tests := []struct {
+		name               string
+		profile            string
+		envVar             string
+		envValue           string
+		originalServiceKey string
+		expectedServiceKey string
+	}{
+		{
+			name:               "No profile",
+			profile:            "",
+			envVar:             "",
+			envValue:           "",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService",
+		},
+		{
+			name:               "Profile specified, no override",
+			profile:            "mqtt-export",
+			envVar:             "",
+			envValue:           "",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-mqtt-export",
+		},
+		{
+			name:               "Profile specified with V1 override",
+			profile:            "rules-engine",
+			envVar:             envV1Profile,
+			envValue:           "rules-engine-mqtt",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-rules-engine-mqtt",
+		},
+		{
+			name:               "Profile specified with V2 override",
+			profile:            "rules-engine",
+			envVar:             envProfile,
+			envValue:           "rules-engine-redis",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-rules-engine-redis",
+		},
+		{
+			name:               "No profile specified with V1 override",
+			profile:            "",
+			envVar:             envV1Profile,
+			envValue:           "sample",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-sample",
+		},
+		{
+			name:               "No profile specified with V2 override",
+			profile:            "",
+			envVar:             envProfile,
+			envValue:           "http-export",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-http-export",
+		},
+		{
+			name:               "No ProfileSuffixPlaceholder with override",
+			profile:            "",
+			envVar:             envProfile,
+			envValue:           "my-profile",
+			originalServiceKey: "MyCustomAppService",
+			expectedServiceKey: "MyCustomAppService",
+		},
+		{
+			name:               "No ProfileSuffixPlaceholder with profile specified, no override",
+			profile:            "my-profile",
+			envVar:             "",
+			envValue:           "",
+			originalServiceKey: "MyCustomAppService",
+			expectedServiceKey: "MyCustomAppService",
+		},
+	}
+
+	// Just in case...
+	os.Clearenv()
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if len(test.envVar) > 0 && len(test.envValue) > 0 {
+				os.Setenv(test.envVar, test.envValue)
+				defer os.Clearenv()
+			}
+
+			sdk.ServiceKey = test.originalServiceKey
+			sdk.setServiceKey(test.profile)
+
+			assert.Equal(t, test.expectedServiceKey, sdk.ServiceKey)
+		})
+	}
 }

@@ -60,6 +60,8 @@ import (
 const (
 	// ProfileSuffixPlaceholder is used to create unique names for profiles
 	ProfileSuffixPlaceholder = "<profile>"
+	envV1Profile             = "edgex_profile" // TODO: Remove for release v2.0.0
+	envProfile               = "EDGEX_PROFILE"
 )
 
 // The key type is unexported to prevent collisions with context keys defined in
@@ -305,20 +307,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "s", false, "")
 	sdkFlags.Parse(os.Args[1:])
 
-	// Service keys must be unique. If an executable is run multiple times, it must have a different
-	// profile for each instance, thus adding the profile to the base key will make it unique.
-	// This requires services that are expected to have multiple instances running, such as the Configurable App Service,
-	// add the ProfileSuffixPlaceholder placeholder in the service key.
-	//
-	// The Dockerfile must also take this into account and set the profile appropriately, i.e. not just "docker"
-	//
-	if strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
-		if sdkFlags.Profile() == "" {
-			sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "", 1)
-		} else {
-			sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "-"+sdkFlags.Profile(), 1)
-		}
-	}
+	sdk.setServiceKey(sdkFlags.Profile())
 
 	sdk.config = &common.ConfigurationStruct{}
 	dic := di.NewContainer(di.ServiceConstructorMap{
@@ -426,4 +415,32 @@ func (sdk *AppFunctionsSDK) addDeferred(deferred bootstrap.Deferred) {
 	if deferred != nil {
 		sdk.deferredFunctions = append(sdk.deferredFunctions, deferred)
 	}
+}
+
+// setServiceKey creates the service's service key with profile name if the original service key has the
+// appropriate profile placeholder, otherwise it leaves the original service key unchanged
+func (sdk *AppFunctionsSDK) setServiceKey(profile string) {
+	if !strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
+		// No placeholder, so nothing to do here
+		return
+	}
+
+	// Have to handle environment override here before common bootstrap is used so it is passed the proper service key
+	override := os.Getenv(envProfile)
+	if len(override) == 0 {
+		// V2 not set so try V1
+		override = os.Getenv(envV1Profile) // TODO: Remove for release v2.0.0:
+	}
+
+	if len(override) > 0 {
+		profile = override
+	}
+
+	if len(profile) > 0 {
+		sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "-"+profile, 1)
+		return
+	}
+
+	// No profile specified so remove the placeholder text
+	sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "", 1)
 }
