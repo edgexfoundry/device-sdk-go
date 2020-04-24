@@ -1,0 +1,43 @@
+                         EdgeX Foundry Go Device SDK
+                                 Version 1.2.0
+                                 Release Notes
+
+INTRODUCTION
+============
+This document contains the release notes for the 1.2.0 version of EdgeX Foundry Go Device SDK.
+
+Changes for 1.2.0 "Geneva":
+============
+o PR#436:  Add gofmt test in Makefile
+o PR#438:  Changes for Geneva pipelines
+o PR#437:  Make deviceResource can be accessed directly
+o PR#423:  Add provision watcher implementation
+o PR#442:  Update relevant files in device-sdk-go for Go 1.13
+o PR#452:  Fixed issue where errors were not handled during configuration load
+o PR#439:  Github PR Template
+o PR#450:  Add provisionwatcher callback handler
+o PR#458:  Encode the float as base64 string by little-endian binary
+o PR#459:  Revert "Encode the float as base64 string by little-endian binary"
+o PR#461:  Update commit message guideline URL
+o PR#462:  Update readme and godoc for float encoding usage
+o PR#467:  Add v2 REST API specification
+o PR#432:  Refactor to use go-mod-bootstrap package
+o PR#447:  Refactored usage of service clients to be compatible with latest contracts changes
+o PR#473:  Switch CBOR library for security
+o PR#475:  Avoid logging CBOR event/reading
+o PR#478:  Update to correctly support -r argument
+o PR#481:  Check device profile from metadata in AddDevice
+o PR#474:  Add new fields on Reading
+o PR#483:  call updateDevice after updating device profile
+o PR#486:  Update porfile in add device callback handler
+o PR#490:  Allow device service to set empty logfile path
+o PR#492:  Refactor bootstrap process
+o PR#493:  Add UpdateDeviceOperatingState function
+o PR#448:  Implement dynamic device discovery
+o PR#500:  Assign FloatEncoding into Reading
+o PR#501:  Add check in StopAutoEvents
+o PR#484:  Support array data type in Readings
+o PR#499:  Parse base64 string as float value
+o PR#504:  feat(environment): Allow uppercase environment overrides
+o PR#506:  Refactor BootstrapHandler
+o PR#507:  Fix fetch configuration 404 error
