@@ -44,7 +44,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	var err error
 	logger := trigger.EdgeXClients.LoggingClient
 
-	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger. Subscribing to topic: %s on port %d , Publish Topic: %s on port %d", trigger.Configuration.Binding.SubscribeTopic, trigger.Configuration.MessageBus.SubscribeHost.Port, trigger.Configuration.Binding.PublishTopic, trigger.Configuration.MessageBus.PublishHost.Port))
+	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger for '%s'", trigger.Configuration.MessageBus.Type))
 
 	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
 	if err != nil {
@@ -58,8 +58,22 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 		return nil, err
 	}
 
+	logger.Info(fmt.Sprintf("Subscribing to topic: '%s' @ %s://%s:%d",
+		trigger.Configuration.Binding.SubscribeTopic,
+		trigger.Configuration.MessageBus.SubscribeHost.Protocol,
+		trigger.Configuration.MessageBus.SubscribeHost.Host,
+		trigger.Configuration.MessageBus.SubscribeHost.Port))
+
 	trigger.client.Subscribe(trigger.topics, messageErrors)
 	receiveMessage := true
+
+	if len(trigger.Configuration.MessageBus.PublishHost.Host) > 0 {
+		logger.Info(fmt.Sprintf("Publishing to topic: '%s' @ %s://%s:%d",
+			trigger.Configuration.Binding.PublishTopic,
+			trigger.Configuration.MessageBus.PublishHost.Protocol,
+			trigger.Configuration.MessageBus.PublishHost.Host,
+			trigger.Configuration.MessageBus.PublishHost.Port))
+	}
 
 	appWg.Add(1)
 
@@ -72,7 +86,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 				return
 
 			case msgErr := <-messageErrors:
-				logger.Error(fmt.Sprintf("Failed to receive ZMQ Message, %v", msgErr))
+				logger.Error(fmt.Sprintf("Failed to receive message from bus, %v", msgErr))
 
 			case msgs := <-trigger.topics[0].Messages:
 				go func() {
