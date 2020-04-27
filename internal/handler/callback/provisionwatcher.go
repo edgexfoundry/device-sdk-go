@@ -20,11 +20,11 @@ func handleProvisionWatcher(method string, id string) common.AppError {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	switch method {
 	case http.MethodPost:
-		handlePostCallback(ctx, id)
+		handleAddProvisionWatcher(ctx, id)
 	case http.MethodPut:
-		handlePutCallback(ctx, id)
+		handleUpdateProvisionWatcher(ctx, id)
 	case http.MethodDelete:
-		handleDeleteCallback(id)
+		handleDeleteProvisionWatcher(id)
 	default:
 		common.LoggingClient.Error(fmt.Sprintf("Invalid provisionwatcher method type: %s", method))
 		appErr := common.NewBadRequestError("Invalid provisionwatcher method", nil)
@@ -34,7 +34,7 @@ func handleProvisionWatcher(method string, id string) common.AppError {
 	return nil
 }
 
-func handlePostCallback(ctx context.Context, id string) common.AppError {
+func handleAddProvisionWatcher(ctx context.Context, id string) common.AppError {
 	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(ctx, id)
 	if err != nil {
 		appErr := common.NewBadRequestError(err.Error(), err)
@@ -54,7 +54,7 @@ func handlePostCallback(ctx context.Context, id string) common.AppError {
 	return nil
 }
 
-func handlePutCallback(ctx context.Context, id string) common.AppError {
+func handleUpdateProvisionWatcher(ctx context.Context, id string) common.AppError {
 	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(ctx, id)
 	if err != nil {
 		appErr := common.NewBadRequestError(err.Error(), err)
@@ -74,7 +74,7 @@ func handlePutCallback(ctx context.Context, id string) common.AppError {
 	return nil
 }
 
-func handleDeleteCallback(id string) common.AppError {
+func handleDeleteProvisionWatcher(id string) common.AppError {
 	err := cache.ProvisionWatchers().Remove(id)
 	if err == nil {
 		common.LoggingClient.Info(fmt.Sprintf("Removed provisionwatcher %s", id))
