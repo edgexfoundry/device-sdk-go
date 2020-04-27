@@ -39,8 +39,8 @@ func TestCallback(t *testing.T) {
 		{"Empty body", http.MethodPut, "", http.StatusBadRequest},
 		{"Empty json", http.MethodPut, "{}", http.StatusBadRequest},
 		{"Invalid type", http.MethodPut, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"INVALID"}`, http.StatusBadRequest},
-		{"Invalid method", http.MethodPost, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"DEVICE"}`, http.StatusBadRequest},
-		{"Invalid id", http.MethodPut, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"DEVICE"}`, http.StatusBadRequest},
+		{"Invalid method", http.MethodGet, `{"id":"1ef435eb-5060-49b0-8d55-8d4e43239800","type":"DEVICE"}`, http.StatusBadRequest},
+		{"Invalid id", http.MethodPut, `{"id":"","type":"DEVICE"}`, http.StatusBadRequest},
 	}
 
 	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
@@ -61,7 +61,7 @@ func TestCallback(t *testing.T) {
 			fmt.Printf("rr.code = %v\n", rr.Code)
 			if status := rr.Code; status != tt.code {
 				t.Errorf("CallbackHandler: handler returned wrong status code: got %v want %v",
-					status, http.StatusLocked)
+					status, tt.code)
 			}
 		})
 	}
