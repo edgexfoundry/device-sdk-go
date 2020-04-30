@@ -33,6 +33,14 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 	// If security is disabled then we are to use the insecure credentials supplied by the configuration.
 	if !s.isSecurityEnabled() {
 		credentials, err = s.getInsecureSecrets(database.Type, "username", "password")
+		// TODO: Remove for release version v2.0 when DB Credentials are only in new Insecure Secrets
+		if err != nil {
+			// Not found in new InsecureSecrets,so just use old V1 Database settings.
+			return common.Credentials{
+				Username: database.Username,
+				Password: database.Password,
+			}, nil
+		}
 	} else {
 		if s.SharedSecretClient == nil {
 			return common.Credentials{}, errors.New("SharedSecretClient is required but not configured")
