@@ -30,11 +30,6 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 	var credentials map[string]string
 	var err error
 
-	// TODO: remove once Redis has credentials
-	if database.Type == db.RedisDB {
-		return common.Credentials{}, err
-	}
-
 	// If security is disabled then we are to use the insecure credentials supplied by the configuration.
 	if !s.isSecurityEnabled() {
 		credentials, err = s.getInsecureSecrets(database.Type, "username", "password")
