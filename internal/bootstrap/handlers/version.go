@@ -85,9 +85,19 @@ func (vv *VersionValidator) BootstrapHandler(
 	}
 
 	url := config.Clients[common.CoreDataClientName].Url() + clients.ApiVersionRoute
-	data, err := clients.GetRequestWithURL(context.Background(), url)
+	var data []byte
+	var err error
+	for startupTimer.HasNotElapsed() {
+		if data, err = clients.GetRequestWithURL(context.Background(), url); err != nil {
+			logger.Warn("Unable to get version of Core Services", "error", err)
+			startupTimer.SleepForInterval()
+			continue
+		}
+		break
+	}
+
 	if err != nil {
-		logger.Error("Unable to get version of Core Services", "error", err)
+		logger.Warn("Unable to get version of Core Services after retries", "error", err)
 		return false
 	}
 

@@ -23,6 +23,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -62,7 +63,7 @@ func (_ *Database) BootstrapHandler(
 	logger := bootstrapContainer.LoggingClientFrom(dic.Get)
 	secretProvider := container.SecretProviderFrom(dic.Get)
 
-	storeClient, err := InitializeStoreClient(secretProvider, config)
+	storeClient, err := InitializeStoreClient(secretProvider, config, startupTimer, logger)
 	if err != nil {
 		logger.Error(err.Error())
 		return false
@@ -81,7 +82,9 @@ func (_ *Database) BootstrapHandler(
 // it can be called directly when configuration has changed and store and forward has been enabled for the first time
 func InitializeStoreClient(
 	secretProvider *security.SecretProvider,
-	config *common.ConfigurationStruct) (interfaces.StoreClient, error) {
+	config *common.ConfigurationStruct,
+	startupTimer startup.Timer,
+	logger logger.LoggingClient) (interfaces.StoreClient, error) {
 	var err error
 
 	credentials, err := secretProvider.GetDatabaseCredentials(config.Database)
@@ -92,9 +95,18 @@ func InitializeStoreClient(
 	config.Database.Username = credentials.Username
 	config.Database.Password = credentials.Password
 
-	storeClient, err := store.NewStoreClient(config.Database)
+	var storeClient interfaces.StoreClient
+	for startupTimer.HasNotElapsed() {
+		if storeClient, err = store.NewStoreClient(config.Database); err != nil {
+			logger.Warn("unable to initialize Database for Store and Forward: %s", err.Error())
+			startupTimer.SleepForInterval()
+			continue
+		}
+		break
+	}
+
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize Database for Store and Forward: %s", err.Error())
+		return nil, fmt.Errorf("initialize Database for Store and Forward failed: %s", err.Error())
 	}
 
 	return storeClient, err
