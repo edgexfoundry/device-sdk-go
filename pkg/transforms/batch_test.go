@@ -58,7 +58,7 @@ func TestBatchInTimeAndCountMode_TimeElapsed(t *testing.T) {
 
 	go func() {
 		go func() {
-			time.Sleep(100)
+			time.Sleep(time.Second * 2)
 			wgFirst.Done()
 		}()
 		continuePipeline1, result := bs.Batch(context, []byte(dataToBatch[0]))
