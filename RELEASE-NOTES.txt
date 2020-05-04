@@ -42,6 +42,8 @@ o PR#504:  feat(environment): Allow uppercase environment overrides
 o PR#506:  Refactor BootstrapHandler
 o PR#507:  Fix fetch configuration 404 error
 o PR#514:  update profile in update device callback handler
+o PR#519:  fix: Update to use go-mod-bootstrap to fix issue with override un-done
+o PR#521:  fix: fix device service config stem in consul
 
 Changes for 1.1.0 "Fuji":
 ============
