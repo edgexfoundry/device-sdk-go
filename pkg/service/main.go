@@ -68,7 +68,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		cancel,
 		f,
 		serviceName,
-		common.ConfigStemCore+common.ConfigMajorVersion,
+		common.ConfigStemDevice+common.ConfigMajorVersion,
 		configuration,
 		startupTimer,
 		dic,

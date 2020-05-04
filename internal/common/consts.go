@@ -23,7 +23,7 @@ const (
 	BootTimeoutSecondsDefault = 30
 	BootRetrySecondsDefault   = 1
 
-	ConfigStemCore     = "edgex/core/"
+	ConfigStemDevice   = "edgex/devices/"
 	ConfigMajorVersion = "1.0/"
 
 	APICallbackRoute        = clients.ApiCallbackRoute
