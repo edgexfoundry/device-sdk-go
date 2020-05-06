@@ -1,9 +1,9 @@
 openapi: 3.0.0
 info:
   title: device-sdk
-  version: "1.1.x-oas3"
+  version: "1.2.1-oas3"
 servers:
-  - url: 'https://virtserver.swaggerhub.com/edgex-test/device-sdk/1.1.x-oas3'
+  - url: 'https://virtserver.swaggerhub.com/edgex-test/device-sdk/1.2.1-oas3'
 paths:
   '/v1/callback':
     post:

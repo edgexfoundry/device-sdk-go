@@ -25,9 +25,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var serviceNameOverride string
+
 func Main(serviceName string, serviceVersion string, proto interface{}, ctx context.Context, cancel context.CancelFunc, router *mux.Router, readyStream chan<- bool) {
 	startupTimer := startup.NewStartUpTimer(common.BootRetrySecondsDefault, common.BootTimeoutSecondsDefault)
 
+	additionalUsage :=
+		"    -n, --serviceName               Overrides the service name to be stored in metadata, used with Registry and/or Configuration Providers\n" +
+			"                                    If the profile is also provided, name will be replaced with \"<name>;<profile>\"\n"
+	sdkFlags := flags.NewWithUsage(additionalUsage)
+	sdkFlags.FlagSet.StringVar(&serviceNameOverride, "serviceName", "", "")
+	sdkFlags.FlagSet.StringVar(&serviceNameOverride, "n", "", "")
+	sdkFlags.Parse(os.Args[1:])
+
+	serviceName = setServiceName(serviceName, sdkFlags.Profile())
 	if serviceName == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service name")
 		os.Exit(1)
@@ -50,9 +61,6 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		common.Discovery = nil
 	}
 
-	f := flags.New()
-	f.Parse(os.Args[1:])
-
 	configuration := &common.ConfigurationStruct{}
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
@@ -66,7 +74,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	bootstrap.Run(
 		ctx,
 		cancel,
-		f,
+		sdkFlags,
 		serviceName,
 		common.ConfigStemDevice+common.ConfigMajorVersion,
 		configuration,
@@ -79,4 +87,21 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		})
 
 	svc.Stop(false)
+}
+
+func setServiceName(name string, profile string) string {
+	envValue := os.Getenv(common.EnvServiceName)
+	if len(envValue) > 0 {
+		serviceNameOverride = envValue
+	}
+
+	if len(serviceNameOverride) > 0 {
+		name = serviceNameOverride
+	}
+
+	if len(profile) > 0 {
+		name = name + ";" + profile
+	}
+
+	return name
 }

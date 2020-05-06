@@ -16,6 +16,8 @@ const (
 	ClientData     = "Data"
 	ClientMetadata = "Metadata"
 
+	EnvServiceName = "EDGEX_SERVICE_NAME"
+
 	Colon      = ":"
 	HttpScheme = "http://"
 	HttpProto  = "HTTP"
