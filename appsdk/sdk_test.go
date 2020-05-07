@@ -363,76 +363,94 @@ func TestSetServiceKey(t *testing.T) {
 	}
 
 	tests := []struct {
-		name               string
-		profile            string
-		envVar             string
-		envValue           string
-		originalServiceKey string
-		expectedServiceKey string
+		name                          string
+		profile                       string
+		profileEnvVar                 string
+		profileEnvValue               string
+		serviceKeyEnvValue            string
+		serviceKeyCommandLineOverride string
+		originalServiceKey            string
+		expectedServiceKey            string
 	}{
 		{
 			name:               "No profile",
-			profile:            "",
-			envVar:             "",
-			envValue:           "",
 			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService",
 		},
 		{
 			name:               "Profile specified, no override",
 			profile:            "mqtt-export",
-			envVar:             "",
-			envValue:           "",
-			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-mqtt-export",
 		},
 		{
 			name:               "Profile specified with V1 override",
 			profile:            "rules-engine",
-			envVar:             envV1Profile,
-			envValue:           "rules-engine-mqtt",
-			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			profileEnvVar:      envV1Profile,
+			profileEnvValue:    "rules-engine-mqtt",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-rules-engine-mqtt",
 		},
 		{
 			name:               "Profile specified with V2 override",
 			profile:            "rules-engine",
-			envVar:             envProfile,
-			envValue:           "rules-engine-redis",
-			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			profileEnvVar:      envProfile,
+			profileEnvValue:    "rules-engine-redis",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-rules-engine-redis",
 		},
 		{
 			name:               "No profile specified with V1 override",
-			profile:            "",
-			envVar:             envV1Profile,
-			envValue:           "sample",
-			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			profileEnvVar:      envV1Profile,
+			profileEnvValue:    "sample",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-sample",
 		},
 		{
 			name:               "No profile specified with V2 override",
-			profile:            "",
-			envVar:             envProfile,
-			envValue:           "http-export",
-			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			profileEnvVar:      envProfile,
+			profileEnvValue:    "http-export",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-http-export",
 		},
 		{
 			name:               "No ProfileSuffixPlaceholder with override",
-			profile:            "",
-			envVar:             envProfile,
-			envValue:           "my-profile",
+			profileEnvVar:      envProfile,
+			profileEnvValue:    "my-profile",
 			originalServiceKey: "MyCustomAppService",
 			expectedServiceKey: "MyCustomAppService",
 		},
 		{
 			name:               "No ProfileSuffixPlaceholder with profile specified, no override",
 			profile:            "my-profile",
-			envVar:             "",
-			envValue:           "",
 			originalServiceKey: "MyCustomAppService",
 			expectedServiceKey: "MyCustomAppService",
+		},
+		{
+			name:                          "Service Key command-line override, no profile",
+			serviceKeyCommandLineOverride: "MyCustomAppService",
+			originalServiceKey:            "AppService",
+			expectedServiceKey:            "MyCustomAppService",
+		},
+		{
+			name:                          "Service Key command-line override, with profile",
+			serviceKeyCommandLineOverride: "AppService-<profile>-MyCloud",
+			profile:                       "http-export",
+			originalServiceKey:            "AppService",
+			expectedServiceKey:            "AppService-http-export-MyCloud",
+		},
+		{
+			name:               "Service Key ENV override, no profile",
+			serviceKeyEnvValue: "MyCustomAppService",
+			originalServiceKey: "AppService",
+			expectedServiceKey: "MyCustomAppService",
+		},
+		{
+			name:               "Service Key ENV override, with profile",
+			serviceKeyEnvValue: "AppService-<profile>-MyCloud",
+			profile:            "http-export",
+			originalServiceKey: "AppService",
+			expectedServiceKey: "AppService-http-export-MyCloud",
 		},
 	}
 
@@ -441,9 +459,16 @@ func TestSetServiceKey(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if len(test.envVar) > 0 && len(test.envValue) > 0 {
-				os.Setenv(test.envVar, test.envValue)
-				defer os.Clearenv()
+			if len(test.profileEnvVar) > 0 && len(test.profileEnvValue) > 0 {
+				os.Setenv(test.profileEnvVar, test.profileEnvValue)
+			}
+			if len(test.serviceKeyEnvValue) > 0 {
+				os.Setenv(envServiceName, test.serviceKeyEnvValue)
+			}
+			defer os.Clearenv()
+
+			if len(test.serviceKeyCommandLineOverride) > 0 {
+				sdk.serviceNameOverride = test.serviceKeyCommandLineOverride
 			}
 
 			sdk.ServiceKey = test.originalServiceKey

@@ -64,6 +64,7 @@ const (
 	ProfileSuffixPlaceholder = "<profile>"
 	envV1Profile             = "edgex_profile" // TODO: Remove for release v2.0.0
 	envProfile               = "EDGEX_PROFILE"
+	envServiceName           = "EDGEX_SERVICE_NAME"
 	envV1Service             = "edgex_service"    // deprecated TODO: Remove for release v2.0.0
 	envServiceProtocol       = "Service_Protocol" // Used for envV1Service processing TODO: Remove for release v2.0.0
 	envServiceHost           = "Service_Host"     // Used for envV1Service processing TODO: Remove for release v2.0.0
@@ -109,6 +110,7 @@ type AppFunctionsSDK struct {
 	appCtx                    context.Context
 	appCancelCtx              context.CancelFunc
 	deferredFunctions         []bootstrap.Deferred
+	serviceNameOverride       string
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -306,17 +308,23 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	startupTimer := startup.NewStartUpTimer(internal.BootRetrySecondsDefault, internal.BootTimeoutSecondsDefault)
 
 	additionalUsage :=
-		"    -s/--skipVersionCheck           Indicates the service should skip the Core Service's version compatibility check."
+		"    -s/--skipVersionCheck           Indicates the service should skip the Core Service's version compatibility check.\n" +
+			"    -n/--serviceName                Overrides the service name, aka service key, to be used with Registry and/or Configuration Providers.\n" +
+			"                                    If the name provided contains the text `<profile>`, this text will be replaced with\n" +
+			"                                    the name of the profile used."
 
 	sdkFlags := flags.NewWithUsage(additionalUsage)
 	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "skipVersionCheck", false, "")
 	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "s", false, "")
-	sdkFlags.Parse(os.Args[1:])
+	sdkFlags.FlagSet.StringVar(&sdk.serviceNameOverride, "serviceName", "", "")
+	sdkFlags.FlagSet.StringVar(&sdk.serviceNameOverride, "n", "", "")
 
-	sdk.setServiceKey(sdkFlags.Profile())
+	sdkFlags.Parse(os.Args[1:])
 
 	// Temporarily setup logging to STDOUT so the client can be used before bootstrapping is completed
 	sdk.LoggingClient = logger.NewClientStdOut(sdk.ServiceKey, false, "INFO")
+
+	sdk.setServiceKey(sdkFlags.Profile())
 
 	// The use of the edgex_service environment variable (only used for App Services) has been deprecated
 	// and not included in the common bootstrap. Have to be handle here before calling into the common bootstrap
@@ -437,24 +445,38 @@ func (sdk *AppFunctionsSDK) addDeferred(deferred bootstrap.Deferred) {
 // setServiceKey creates the service's service key with profile name if the original service key has the
 // appropriate profile placeholder, otherwise it leaves the original service key unchanged
 func (sdk *AppFunctionsSDK) setServiceKey(profile string) {
+	envValue := os.Getenv(envServiceName)
+	if len(envValue) > 0 {
+		sdk.serviceNameOverride = envValue
+		sdk.LoggingClient.Info(
+			fmt.Sprintf("Environment profileOverride of '-n/--serviceName' by environment variable: %s=%s",
+				envServiceName,
+				envValue))
+	}
+
+	// serviceNameOverride may have been set by the -n/--serviceName command-line option and not the environment variable
+	if len(sdk.serviceNameOverride) > 0 {
+		sdk.ServiceKey = sdk.serviceNameOverride
+	}
+
 	if !strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
 		// No placeholder, so nothing to do here
 		return
 	}
 
 	// Have to handle environment override here before common bootstrap is used so it is passed the proper service key
-	override := os.Getenv(envProfile)
-	if len(override) == 0 {
+	profileOverride := os.Getenv(envProfile)
+	if len(profileOverride) == 0 {
 		// V2 not set so try V1
-		override = os.Getenv(envV1Profile) // TODO: Remove for release v2.0.0:
+		profileOverride = os.Getenv(envV1Profile) // TODO: Remove for release v2.0.0:
 	}
 
-	if len(override) > 0 {
-		profile = override
+	if len(profileOverride) > 0 {
+		profile = profileOverride
 	}
 
 	if len(profile) > 0 {
-		sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "-"+profile, 1)
+		sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, profile, 1)
 		return
 	}
 
