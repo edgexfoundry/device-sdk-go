@@ -5,6 +5,35 @@ This repository is a set of Go packages which can be used to build a Go-based Ed
 Developers could make their own Device Service by implementing the `ProtocolDriver  interface` for the specific IoT protocol and main function to start the Device Service.  To implement the main function, the startup package could be optional leveraged, or developers could write the customized bootstrap code by themselves.
 Please see the build-in [Simple Device Service](https://github.com/edgexfoundry/device-sdk-go/tree/master/example) as an example.
 
+## Command Line Options
+The following command line options are available
+```
+  -c=<path>
+  --confdir=<path>
+        Specify an alternate configuration directory.
+  -p=<profile>
+  --profile=<profile>
+        Specify a profile other than default.
+  -f=<file>
+  --file=<file>
+        Indicates name of the local configuration file.
+  -n=<name>
+  --serviceName=<name>             
+        Overrides the service name to be stored in metadata, used with Registry and/or Configuration Providers. 
+        If the profile is also provided, name will be replaced with "<name>;<profile>"
+  -o    
+  --overwrite
+        Overwrite configuration in the Registry with local values.
+  -r    
+  --registry
+        Indicates the service should use the registry.
+  -cp    
+  --configProvider
+        Indicates to use Configuration Provider service at specified URL.
+        URL Format: {type}.{protocol}://{host}:{port} ex: consul.http://localhost:8500
+
+```
+
 ## Float value encodeing
 
 In EdgeX, float value has two kinds of encoding, Base64, and eNotation.
