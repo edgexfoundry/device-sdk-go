@@ -463,12 +463,12 @@ func TestSetServiceKey(t *testing.T) {
 				os.Setenv(test.profileEnvVar, test.profileEnvValue)
 			}
 			if len(test.serviceKeyEnvValue) > 0 {
-				os.Setenv(envServiceName, test.serviceKeyEnvValue)
+				os.Setenv(envServiceKey, test.serviceKeyEnvValue)
 			}
 			defer os.Clearenv()
 
 			if len(test.serviceKeyCommandLineOverride) > 0 {
-				sdk.serviceNameOverride = test.serviceKeyCommandLineOverride
+				sdk.serviceKeyOverride = test.serviceKeyCommandLineOverride
 			}
 
 			sdk.ServiceKey = test.originalServiceKey

@@ -520,11 +520,11 @@ The following command line options are available
   -s    
   -skipVersionCheck
         Indicates the service should skip the Core Service's version compatibility check.
-  -n
-  --serviceName                
-        Overrides the service name, aka service key, to be used with Registry and/or 
-        Configuration Providers. If the name provided contains the text `<profile>`, 
-        this text will be replaced with the name of the profile used..
+  -sk
+  --serviceKey                
+        Overrides the service key used with Registry and/or Configuration Providers. 
+        If the name provided contains the text `<profile>`, this text will be replaced with 
+        the name of the profile used..
 ```
 
 Examples:
@@ -569,16 +569,16 @@ TOML   : [Clients]
 ENVVAR : CLIENTS_COREDATA_HOST=edgex-core-data
 ```
 
-#### EDGEX_SERVICE_NAME
+#### EDGEX_SERVICE_KEY
 
-This environment variable overrides the service name, aka service key, to be used with Registry and/or Configuration Provider.
+This environment variable overrides the service key, used with Registry and/or Configuration Provider.
 
 If the name provided contains the text `<profile>` , this text will be replaced with the name of the profile used.
 
 Example:
 
 ```
-EDGEX_SERVICE_NAME=AppService-<profile>-mycloud
+EDGEX_SERVICE_KEY=AppService-<profile>-mycloud
 and profile used is http-export 
 then the service name will be:
 

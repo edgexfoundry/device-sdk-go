@@ -64,7 +64,7 @@ const (
 	ProfileSuffixPlaceholder = "<profile>"
 	envV1Profile             = "edgex_profile" // TODO: Remove for release v2.0.0
 	envProfile               = "EDGEX_PROFILE"
-	envServiceName           = "EDGEX_SERVICE_NAME"
+	envServiceKey            = "EDGEX_SERVICE_KEY"
 	envV1Service             = "edgex_service"    // deprecated TODO: Remove for release v2.0.0
 	envServiceProtocol       = "Service_Protocol" // Used for envV1Service processing TODO: Remove for release v2.0.0
 	envServiceHost           = "Service_Host"     // Used for envV1Service processing TODO: Remove for release v2.0.0
@@ -110,7 +110,7 @@ type AppFunctionsSDK struct {
 	appCtx                    context.Context
 	appCancelCtx              context.CancelFunc
 	deferredFunctions         []bootstrap.Deferred
-	serviceNameOverride       string
+	serviceKeyOverride        string
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -309,15 +309,15 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	additionalUsage :=
 		"    -s/--skipVersionCheck           Indicates the service should skip the Core Service's version compatibility check.\n" +
-			"    -n/--serviceName                Overrides the service name, aka service key, to be used with Registry and/or Configuration Providers.\n" +
+			"    -sk/--serviceKey                Overrides the service service key used with Registry and/or Configuration Providers.\n" +
 			"                                    If the name provided contains the text `<profile>`, this text will be replaced with\n" +
 			"                                    the name of the profile used."
 
 	sdkFlags := flags.NewWithUsage(additionalUsage)
 	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "skipVersionCheck", false, "")
 	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "s", false, "")
-	sdkFlags.FlagSet.StringVar(&sdk.serviceNameOverride, "serviceName", "", "")
-	sdkFlags.FlagSet.StringVar(&sdk.serviceNameOverride, "n", "", "")
+	sdkFlags.FlagSet.StringVar(&sdk.serviceKeyOverride, "serviceKey", "", "")
+	sdkFlags.FlagSet.StringVar(&sdk.serviceKeyOverride, "sk", "", "")
 
 	sdkFlags.Parse(os.Args[1:])
 
@@ -445,18 +445,18 @@ func (sdk *AppFunctionsSDK) addDeferred(deferred bootstrap.Deferred) {
 // setServiceKey creates the service's service key with profile name if the original service key has the
 // appropriate profile placeholder, otherwise it leaves the original service key unchanged
 func (sdk *AppFunctionsSDK) setServiceKey(profile string) {
-	envValue := os.Getenv(envServiceName)
+	envValue := os.Getenv(envServiceKey)
 	if len(envValue) > 0 {
-		sdk.serviceNameOverride = envValue
+		sdk.serviceKeyOverride = envValue
 		sdk.LoggingClient.Info(
 			fmt.Sprintf("Environment profileOverride of '-n/--serviceName' by environment variable: %s=%s",
-				envServiceName,
+				envServiceKey,
 				envValue))
 	}
 
-	// serviceNameOverride may have been set by the -n/--serviceName command-line option and not the environment variable
-	if len(sdk.serviceNameOverride) > 0 {
-		sdk.ServiceKey = sdk.serviceNameOverride
+	// serviceKeyOverride may have been set by the -n/--serviceName command-line option and not the environment variable
+	if len(sdk.serviceKeyOverride) > 0 {
+		sdk.ServiceKey = sdk.serviceKeyOverride
 	}
 
 	if !strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
