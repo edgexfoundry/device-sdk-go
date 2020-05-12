@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 package runtime
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ugorji/go/codec"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -203,7 +203,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 	expectedErrorCode := http.StatusUnprocessableEntity
 
 	// Send a RegistryInfo to the pipeline, instead of an Event
-	registryInfo := common.RegistryInfo{
+	registryInfo := config.RegistryInfo{
 		Host: devID1,
 	}
 	payload, _ := json.Marshal(registryInfo)
@@ -216,7 +216,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 		LoggingClient: lc,
 	}
 	// Let the Runtime know we are sending a RegistryInfo so it passes it to the first function
-	runtime := GolangRuntime{TargetType: &common.RegistryInfo{}}
+	runtime := GolangRuntime{TargetType: &config.RegistryInfo{}}
 	runtime.Initialize(nil, nil)
 	// FilterByDeviceName with return an error if it doesn't receive and Event
 	runtime.SetTransforms([]appcontext.AppFunction{transforms.NewFilter([]string{"SomeDevice"}).FilterByDeviceName})
@@ -287,14 +287,12 @@ func TestProcessMessageCBOR(t *testing.T) {
 
 	transform1WasCalled := false
 
-	buffer := &bytes.Buffer{}
-	handle := &codec.CborHandle{}
-	encoder := codec.NewEncoder(buffer, handle)
-	encoder.Encode(eventIn)
+	eventCborBytes, err := cbor.Marshal(eventIn)
+	assert.NoError(t, err, "expected no error when marshalling data")
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       buffer.Bytes(),
+		Payload:       eventCborBytes,
 		ContentType:   clients.ContentTypeCBOR,
 		Checksum:      expectedChecksum,
 	}
@@ -349,10 +347,8 @@ func TestProcessMessageTargetType(t *testing.T) {
 	}
 	eventJson, _ := json.Marshal(eventIn)
 
-	eventCbor := &bytes.Buffer{}
-	handle := &codec.CborHandle{}
-	encoder := codec.NewEncoder(eventCbor, handle)
-	encoder.Encode(eventIn)
+	eventCborBytes, err := cbor.Marshal(eventIn)
+	assert.NoError(t, err, "expected no error when marshalling data")
 
 	expected := CustomType{
 		ID: "Id1",
@@ -370,7 +366,7 @@ func TestProcessMessageTargetType(t *testing.T) {
 	}{
 		{"Default Nil Target Type", nil, eventJson, clients.ContentTypeJSON, eventJson, false},
 		{"Event as Json", &models.Event{}, eventJson, clients.ContentTypeJSON, eventJson, false},
-		{"Event as Cbor", &models.Event{}, eventCbor.Bytes(), clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
+		{"Event as Cbor", &models.Event{}, eventCborBytes, clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
 		{"Custom Type Json", &CustomType{}, customJson, clients.ContentTypeJSON, customJson, false},
 		{"Byte Slice", &[]byte{}, byteData, "application/binary", byteData, false},
 		{"Target Type Not a pointer", models.Event{}, nil, "", nil, true},
@@ -416,7 +412,7 @@ func TestExecutePipelinePersist(t *testing.T) {
 	}
 
 	ctx := appcontext.Context{
-		Configuration: config,
+		Configuration: &config,
 		LoggingClient: lc,
 		CorrelationID: "CorrelationID",
 		EventChecksum: "EventChecksum",

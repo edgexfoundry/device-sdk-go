@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import (
 )
 
 const (
-	BootTimeoutDefault   = time.Duration(30 * time.Second)
-	ClientMonitorDefault = time.Duration(15 * time.Second)
-	ConfigFileName       = "configuration.toml"
-	ConfigRegistryStem   = "edgex/appservices/1.0/"
-	WritableKey          = "/Writable"
-	ApiTriggerRoute      = "/api/v1/trigger"
-	DatabaseName         = "application-service"
+	ClientMonitorDefault      = 15 * time.Second
+	BootTimeoutSecondsDefault = 30
+	BootRetrySecondsDefault   = 1
+	ConfigFileName            = "configuration.toml"
+	ConfigRegistryStem        = "edgex/appservices/1.0/"
+	ApiTriggerRoute           = "/api/v1/trigger"
+	DatabaseName              = "application-service"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build

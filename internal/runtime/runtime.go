@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/ugorji/go/codec"
+	"github.com/fxamacker/cbor/v2"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -99,8 +99,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 			}
 
 		case clients.ContentTypeCBOR:
-			x := codec.CborHandle{}
-			err := codec.NewDecoderBytes([]byte(envelope.Payload), &x).Decode(&target)
+			err := cbor.Unmarshal([]byte(envelope.Payload), target)
 			if err != nil {
 				message := fmt.Sprintf(unmarshalErrorMessage, "CBOR")
 				edgexcontext.LoggingClient.Error(

@@ -8,4 +8,3 @@ For a list of examples please visit https://docs.edgexfoundry.org/1.2/examples/A
 ### Build Prerequisites
 
 Please see the [edgex-go README](https://github.com/edgexfoundry/edgex-go/blob/master/README.md).
-

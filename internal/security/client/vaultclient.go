@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -20,10 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
 	"github.com/edgexfoundry/go-mod-secrets/pkg"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 	"github.com/edgexfoundry/go-mod-secrets/pkg/token/authtokenloader"
@@ -47,7 +45,7 @@ func NewVault(ctx context.Context, config vault.SecretConfig, lc logger.LoggingC
 }
 
 // Get is the getter for Vault secret client from go-mod-secrets
-func (c Vault) Get(secretStoreInfo common.SecretStoreInfo) (pkg.SecretClient, error) {
+func (c Vault) Get(secretStoreInfo bootstrapConfig.SecretStoreInfo) (pkg.SecretClient, error) {
 	return vault.NewSecretClientFactory().NewSecretClient(
 		c.ctx,
 		c.config,
@@ -58,7 +56,7 @@ func (c Vault) Get(secretStoreInfo common.SecretStoreInfo) (pkg.SecretClient, er
 // getDefaultTokenExpiredCallback is the default implementation of tokenExpiredCallback function
 // It utilizes the tokenFile to re-read the token and enable retry if any update from the expired token
 func (c Vault) getDefaultTokenExpiredCallback(
-	secretStoreInfo common.SecretStoreInfo) func(expiredToken string) (replacementToken string, retry bool) {
+	secretStoreInfo bootstrapConfig.SecretStoreInfo) func(expiredToken string) (replacementToken string, retry bool) {
 	// if there is no tokenFile, then no replacement token can be used and hence no callback
 	if secretStoreInfo.TokenFile == "" {
 		return nil

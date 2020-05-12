@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -226,7 +226,7 @@ func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject, con
 		CorrelationID:         item.CorrelationID,
 		EventChecksum:         item.EventChecksum,
 		EventID:               item.EventID,
-		Configuration:         *config,
+		Configuration:         config,
 		LoggingClient:         edgeXClients.LoggingClient,
 		EventClient:           edgeXClients.EventClient,
 		ValueDescriptorClient: edgeXClients.ValueDescriptorClient,

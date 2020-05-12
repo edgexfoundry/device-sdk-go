@@ -14,13 +14,13 @@ import (
 
 // JSONLogic ...
 type JSONLogic struct {
-	Rule *strings.Reader
+	Rule string
 }
 
 // NewJSONLogic creates, initializes and returns a new instance of HTTPSender
 func NewJSONLogic(rule string) JSONLogic {
 	return JSONLogic{
-		Rule: strings.NewReader(rule),
+		Rule: rule,
 	}
 }
 
@@ -37,16 +37,17 @@ func (logic JSONLogic) Evaluate(edgexcontext *appcontext.Context, params ...inte
 	}
 
 	data := strings.NewReader(string(coercedData))
+	rule := strings.NewReader(logic.Rule)
 	var logicresult bytes.Buffer
 	edgexcontext.LoggingClient.Debug("Applying JSONLogic Rule")
-	err = jsonlogic.Apply(logic.Rule, data, &logicresult)
+	err = jsonlogic.Apply(rule, data, &logicresult)
 	if err != nil {
 		return false, err
 	}
 	var result bool
 	decoder := json.NewDecoder(&logicresult)
 	decoder.Decode(&result)
-	edgexcontext.LoggingClient.Debug("Condition met: %" + strconv.FormatBool(result))
+	edgexcontext.LoggingClient.Debug("Condition met: " + strconv.FormatBool(result))
 
 	return result, params[0]
 }

@@ -12,19 +12,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package trigger
+package container
 
 import (
-	"context"
-	"sync"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 )
 
-// Trigger interface is used to hold event data and allow function to
-type Trigger interface {
-	// Initialize performs post creation initializations
-	Initialize(wg *sync.WaitGroup, ctx context.Context) (bootstrap.Deferred, error)
+// ConfigurationName contains the name of data's common.ConfigurationStruct implementation in the DIC.
+var ConfigurationName = di.TypeInstanceToName(common.ConfigurationStruct{})
+
+// ConfigurationFrom helper function queries the DIC and returns datas's common.ConfigurationStruct implementation.
+func ConfigurationFrom(get di.Get) *common.ConfigurationStruct {
+	return get(ConfigurationName).(*common.ConfigurationStruct)
 }
