@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,54 +18,57 @@ package appsdk
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	nethttp "net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
-	"time"
-
-	"github.com/gorilla/mux"
-	toml "github.com/pelletier/go-toml"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/edgexfoundry/go-mod-registry/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
+	"github.com/gorilla/mux"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/handlers"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/config"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/urlclient"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
 
 const (
 	// ProfileSuffixPlaceholder is used to create unique names for profiles
-	ProfileSuffixPlaceholder   = "<profile>"
-	ProfileEnvironmentVariable = "edgex_profile"
-	CoreServiceVersionKey      = "version"
-	MajorIndex                 = 0
+	ProfileSuffixPlaceholder = "<profile>"
+	envV1Profile             = "edgex_profile" // TODO: Remove for release v2.0.0
+	envProfile               = "EDGEX_PROFILE"
+	envServiceKey            = "EDGEX_SERVICE_KEY"
+	envV1Service             = "edgex_service"    // deprecated TODO: Remove for release v2.0.0
+	envServiceProtocol       = "Service_Protocol" // Used for envV1Service processing TODO: Remove for release v2.0.0
+	envServiceHost           = "Service_Host"     // Used for envV1Service processing TODO: Remove for release v2.0.0
+	envServicePort           = "Service_Port"     // Used for envV1Service processing TODO: Remove for release v2.0.0
 )
 
 // The key type is unexported to prevent collisions with context keys defined in
@@ -91,18 +94,14 @@ type AppFunctionsSDK struct {
 	// except when &[]byte{} is specified. In this case the []byte data is pass to the first function in the Pipeline.
 	TargetType                interface{}
 	transforms                []appcontext.AppFunction
-	configProfile             string
-	configDir                 string
-	useRegistry               bool
 	skipVersionCheck          bool
-	overwriteConfig           bool
 	usingConfigurablePipeline bool
 	httpErrors                chan error
 	runtime                   *runtime.GolangRuntime
 	webserver                 *webserver.WebServer
 	edgexClients              common.EdgeXClients
 	registryClient            registry.Client
-	config                    common.ConfigurationStruct
+	config                    *common.ConfigurationStruct
 	storeClient               interfaces.StoreClient
 	secretProvider            *security.SecretProvider
 	storeForwardWg            *sync.WaitGroup
@@ -110,6 +109,8 @@ type AppFunctionsSDK struct {
 	appWg                     *sync.WaitGroup
 	appCtx                    context.Context
 	appCancelCtx              context.CancelFunc
+	deferredFunctions         []bootstrap.Deferred
+	serviceKeyOverride        string
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -142,10 +143,13 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	t := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-	err := t.Initialize(sdk.appWg, sdk.appCtx)
+	deferred, err := t.Initialize(sdk.appWg, sdk.appCtx)
 	if err != nil {
 		sdk.LoggingClient.Error(err.Error())
 	}
+
+	// deferred is a a function that needs to be called when services exits.
+	sdk.addDeferred(deferred)
 
 	if sdk.config.Writable.StoreAndForward.Enabled {
 		sdk.startStoreForward()
@@ -176,6 +180,13 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.appCancelCtx() // Cancel all long running go funcs
 	sdk.appWg.Wait()
+
+	// Call all the deferred funcs that need to happen when exiting.
+	// These are things like un-register from the Registry, disconnect from the Message Bus, etc
+	for _, deferredFunc := range sdk.deferredFunctions {
+		deferredFunc()
+	}
+
 	return err
 }
 
@@ -294,249 +305,115 @@ func (sdk *AppFunctionsSDK) GetAppSettingStrings(setting string) ([]string, erro
 // Initialize will parse command line flags, register for interrupts,
 // initialize the logging system, and ingest configuration.
 func (sdk *AppFunctionsSDK) Initialize() error {
-	applyCommandlineEnvironmentOverrides()
+	startupTimer := startup.NewStartUpTimer(internal.BootRetrySecondsDefault, internal.BootTimeoutSecondsDefault)
 
-	flag.BoolVar(&sdk.useRegistry, "registry", false, "Indicates the service should use the registry.")
-	flag.BoolVar(&sdk.useRegistry, "r", false, "Indicates the service should use registry.")
+	additionalUsage :=
+		"    -s/--skipVersionCheck           Indicates the service should skip the Core Service's version compatibility check.\n" +
+			"    -sk/--serviceKey                Overrides the service service key used with Registry and/or Configuration Providers.\n" +
+			"                                    If the name provided contains the text `<profile>`, this text will be replaced with\n" +
+			"                                    the name of the profile used."
 
-	flag.StringVar(&sdk.configProfile, "profile", "", "Specify a profile other than default.")
-	flag.StringVar(&sdk.configProfile, "p", "", "Specify a profile other than default.")
+	sdkFlags := flags.NewWithUsage(additionalUsage)
+	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "skipVersionCheck", false, "")
+	sdkFlags.FlagSet.BoolVar(&sdk.skipVersionCheck, "s", false, "")
+	sdkFlags.FlagSet.StringVar(&sdk.serviceKeyOverride, "serviceKey", "", "")
+	sdkFlags.FlagSet.StringVar(&sdk.serviceKeyOverride, "sk", "", "")
 
-	flag.StringVar(&sdk.configDir, "confdir", "", "Specify an alternate configuration directory.")
-	flag.StringVar(&sdk.configDir, "c", "", "Specify an alternate configuration directory.")
+	sdkFlags.Parse(os.Args[1:])
 
-	flag.BoolVar(&sdk.skipVersionCheck, "skipVersionCheck", false, "Indicates the service should skip the Core Service's version compatibility check.")
-	flag.BoolVar(&sdk.skipVersionCheck, "s", false, "Indicates the service should skip the Core Service's version compatibility check.")
+	// Temporarily setup logging to STDOUT so the client can be used before bootstrapping is completed
+	sdk.LoggingClient = logger.NewClientStdOut(sdk.ServiceKey, false, "INFO")
 
-	flag.BoolVar(&sdk.overwriteConfig, "overwrite", false, "Overwrite configuration in the Registry with local values")
-	flag.BoolVar(&sdk.overwriteConfig, "o", false, "Overwrite configuration in the Registry with local values")
+	sdk.setServiceKey(sdkFlags.Profile())
 
-	flag.Parse()
-
-	// Service keys must be unique. If an executable is run multiple times, it must have a different
-	// profile for each instance, thus adding the profile to the base key will make it unique.
-	// This requires services that are expected to have multiple instances running, such as the Configurable App Service,
-	// add the ProfileSuffixPlaceholder placeholder in the service key.
-	//
-	// The Dockerfile must also take this into account and set the profile appropriately, i.e. not just "docker"
-	//
-
-	if strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
-		if sdk.configProfile == "" {
-			sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "", 1)
-		} else {
-			sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "-"+sdk.configProfile, 1)
-		}
-	}
-
-	// to first initialize the app context and cancel function as the context
-	// is being used inside sdk.initializeSecretProvider() call below
-	sdk.appCtx, sdk.appCancelCtx = context.WithCancel(context.Background())
-
-	loggerInitialized := false
-	databaseInitialized := false
-	configurationInitialized := false
-	bootstrapComplete := false
-	secretProviderInitialized := false
-
-	timeStart := time.Now()
-	// Currently have to load configuration from filesystem first in order to obtain
-	// Registry Host/Port and BootTimeout
-	configuration, err := readConfigurationFromFile(sdk.configProfile, sdk.configDir)
-	if err != nil {
+	// The use of the edgex_service environment variable (only used for App Services) has been deprecated
+	// and not included in the common bootstrap. Have to be handle here before calling into the common bootstrap
+	// so proper overrides are set.
+	// TODO: Remove for release v2.0.0
+	if err := sdk.handleEdgexService(); err != nil {
 		return err
 	}
 
-	bootTimeout, err := time.ParseDuration(configuration.Service.BootTimeout)
-	if err != nil {
-		fmt.Printf("warning- failed to parse Service.BootTimeout, use the default %s: %v\n",
-			internal.BootTimeoutDefault.String(), err)
-		bootTimeout = internal.BootTimeoutDefault
-	}
+	sdk.config = &common.ConfigurationStruct{}
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return sdk.config
+		},
+	})
 
-	timeElapsed := time.Since(timeStart)
-
-	// Bootstrap retry loop to ensure all dependencies are ready before continuing.
-	until := time.Now().Add(bootTimeout - timeElapsed)
-	for time.Now().Before(until) {
-		if !configurationInitialized {
-			err := sdk.initializeConfiguration(configuration)
-			if err != nil {
-				fmt.Printf("failed to initialize Registry: %v\n", err)
-				goto ContinueWithSleep
-			}
-			configurationInitialized = true
-			fmt.Printf("Configuration & Registry initialized")
-		}
-
-		if !loggerInitialized {
-			loggingTarget, err := sdk.setLoggingTarget()
-			if err != nil {
-				fmt.Printf("logger initialization failed: %v", err)
-				goto ContinueWithSleep
-			}
-
-			sdk.LoggingClient = logger.NewClient(
-				sdk.ServiceKey,
-				sdk.config.Logging.EnableRemote,
-				loggingTarget,
-				sdk.config.Writable.LogLevel,
-			)
-			sdk.LoggingClient.Info("Logger successfully initialized")
-			sdk.edgexClients.LoggingClient = sdk.LoggingClient
-			loggerInitialized = true
-		}
-
-		// Verify that Core Services major version matches this SDK's major version
-		if !sdk.validateVersionMatch() {
-			return fmt.Errorf("core service's version is not compatible with SDK's version")
-		}
-
-		if !secretProviderInitialized {
-			if err := sdk.initializeSecretProvider(); err != nil {
-				return err
-			}
-			secretProviderInitialized = true
-		}
-
-		// Currently only need the database if store and forward is enabled
-		if sdk.config.Writable.StoreAndForward.Enabled {
-			if !databaseInitialized {
-				if sdk.initializeStoreClient() != nil {
-
-					// Error already logged
-					goto ContinueWithSleep
-				}
-
-				databaseInitialized = true
-			}
-		}
-
-		sdk.initializeClients()
-		sdk.LoggingClient.Info("Clients initialized")
-
-		// This is the last dependency so can break out of the retry loop.
-		bootstrapComplete = true
-		break
-
-	ContinueWithSleep:
-		time.Sleep(time.Second * time.Duration(1))
-	}
-
-	if !bootstrapComplete {
-		return fmt.Errorf("bootstrap retry timed out")
-	}
-
+	sdk.appCtx, sdk.appCancelCtx = context.WithCancel(context.Background())
 	sdk.appWg = &sync.WaitGroup{}
 
-	if sdk.useRegistry {
-		sdk.appWg.Add(1)
-		go sdk.listenForConfigChanges()
+	var deferred bootstrap.Deferred
+	var successful bool
+	var configUpdated config.UpdatedStream = make(chan struct{})
+
+	sdk.appWg, deferred, successful = bootstrap.RunAndReturnWaitGroup(
+		sdk.appCtx,
+		sdk.appCancelCtx,
+		sdkFlags,
+		sdk.ServiceKey,
+		internal.ConfigRegistryStem,
+		sdk.config,
+		configUpdated,
+		startupTimer,
+		dic,
+		[]bootstrapInterfaces.BootstrapHandler{
+			handlers.NewSecrets().BootstrapHandler,
+			handlers.NewDatabase().BootstrapHandler,
+			handlers.NewClients().BootstrapHandler,
+			handlers.NewTelemetry().BootstrapHandler,
+			handlers.NewVersionValidator(sdk.skipVersionCheck, internal.SDKVersion).BootstrapHandler,
+		},
+	)
+
+	// deferred is a a function that needs to be called when services exits.
+	sdk.addDeferred(deferred)
+
+	if !successful {
+		return fmt.Errorf("boostrapping failed")
 	}
 
-	sdk.appWg.Add(1)
-	go telemetry.StartCpuUsageAverage(sdk.appWg, sdk.appCtx, sdk.LoggingClient)
+	// Bootstrapping is complete, so now need to retrieve the needed objects from the containers.
+	sdk.secretProvider = container.SecretProviderFrom(dic.Get)
+	sdk.storeClient = container.StoreClientFrom(dic.Get)
+	sdk.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
+	sdk.edgexClients.LoggingClient = sdk.LoggingClient
+	sdk.edgexClients.EventClient = container.EventClientFrom(dic.Get)
+	sdk.edgexClients.ValueDescriptorClient = container.ValueDescriptorClientFrom(dic.Get)
+	sdk.edgexClients.NotificationsClient = container.NotificationsClientFrom(dic.Get)
+	sdk.edgexClients.CommandClient = container.CommandClientFrom(dic.Get)
 
-	sdk.webserver = webserver.NewWebServer(&sdk.config, sdk.secretProvider, sdk.LoggingClient, mux.NewRouter())
+	// We do special processing when the writeable section of the configuration changes, so have
+	// to wait to be signaled when the configuration has been updated and then process the changes
+	NewConfigUpdateProcessor(sdk).WaitForConfigUpdates(configUpdated)
+
+	sdk.webserver = webserver.NewWebServer(sdk.config, sdk.secretProvider, sdk.LoggingClient, mux.NewRouter())
 	sdk.webserver.ConfigureStandardRoutes()
 
 	return nil
 }
 
-func (sdk *AppFunctionsSDK) initializeSecretProvider() error {
-
-	sdk.secretProvider = security.NewSecretProvider(sdk.LoggingClient, &sdk.config)
-	ok := sdk.secretProvider.Initialize(sdk.appCtx)
-	if !ok {
-		err := errors.New("unable to initialize secret provider")
-		sdk.LoggingClient.Error(err.Error())
-		return err
-	}
-
-	return nil
+// GetSecrets retrieves secrets from a secret store.
+// path specifies the type or location of the secrets to retrieve. If specified it is appended
+// to the base path from the SecretConfig
+// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
+// specified path will be returned.
+func (sdk *AppFunctionsSDK) GetSecrets(path string, keys ...string) (map[string]string, error) {
+	return sdk.secretProvider.GetSecrets(path, keys...)
 }
 
-func (sdk *AppFunctionsSDK) initializeStoreClient() error {
-	var err error
-
-	credentials, err := sdk.secretProvider.GetDatabaseCredentials(sdk.config.Database)
-	if err != nil {
-		sdk.LoggingClient.Error("Unable to get Database Credentials", "error", err)
-	}
-
-	sdk.config.Database.Username = credentials.Username
-	sdk.config.Database.Password = credentials.Password
-
-	sdk.storeClient, err = store.NewStoreClient(sdk.config.Database)
-	if err != nil {
-		sdk.LoggingClient.Error(fmt.Sprintf("unable to initialize Database for Store and Forward: %s", err.Error()))
-	}
-
-	return err
-}
-
-func (sdk *AppFunctionsSDK) validateVersionMatch() bool {
-	if sdk.skipVersionCheck {
-		sdk.LoggingClient.Info("Skipping core service version compatibility check")
-		return true
-	}
-
-	// SDK version is set via the SemVer TAG at build time
-	// and has the format "v{major}.{minor}.{patch}[-dev.{build}]"
-	sdkVersionParts := strings.Split(internal.SDKVersion, ".")
-	if len(sdkVersionParts) < 3 {
-		sdk.LoggingClient.Error("SDK version is malformed", "version", internal.SDKVersion)
-		return false
-	}
-
-	sdkVersionParts[MajorIndex] = strings.Replace(sdkVersionParts[MajorIndex], "v", "", 1)
-	if sdkVersionParts[MajorIndex] == "0" {
-		sdk.LoggingClient.Info("Skipping core service version compatibility check for SDK Beta version or running in debugger", "version", internal.SDKVersion)
-		return true
-	}
-
-	url := sdk.config.Clients[common.CoreDataClientName].Url() + clients.ApiVersionRoute
-	data, err := clients.GetRequestWithURL(context.Background(), url)
-	if err != nil {
-		sdk.LoggingClient.Error("Unable to get version of Core Services", "error", err)
-		return false
-	}
-
-	versionJson := map[string]string{}
-	err = json.Unmarshal(data, &versionJson)
-	if err != nil {
-		sdk.LoggingClient.Error("Unable to un-marshal Core Services version data", "error", err)
-		return false
-	}
-
-	version, ok := versionJson[CoreServiceVersionKey]
-	if !ok {
-		sdk.LoggingClient.Error(fmt.Sprintf("Core Services version data missing '%s' information", CoreServiceVersionKey))
-		return false
-	}
-
-	// Core Service version is reported as "{major}.{minor}.{patch}"
-	coreVersionParts := strings.Split(version, ".")
-	if len(coreVersionParts) != 3 {
-		sdk.LoggingClient.Error("Core Services version is malformed", "version", version)
-		return false
-	}
-
-	// Do Major versions match?
-	if coreVersionParts[0] == sdkVersionParts[0] {
-		sdk.LoggingClient.Debug(
-			fmt.Sprintf("Confirmed Core Services version (%s) is compatible with SDK's version (%s)",
-				version, internal.SDKVersion))
-		return true
-	}
-
-	sdk.LoggingClient.Error(fmt.Sprintf("Core services version (%s) is not compatible with SDK's version(%s)",
-		version, internal.SDKVersion))
-	return false
+// StoreSecrets stores the secrets to a secret store.
+// it sets the values requested at provided keys
+// path specifies the type or location of the secrets to store. If specified it is appended
+// to the base path from the SecretConfig
+// secrets map specifies the "key": "value" pairs of secrets to store
+func (sdk *AppFunctionsSDK) StoreSecrets(path string, secrets map[string]string) error {
+	return sdk.secretProvider.StoreSecrets(path, secrets)
 }
 
 // setupTrigger configures the appropriate trigger as specified by configuration.
-func (sdk *AppFunctionsSDK) setupTrigger(configuration common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
+func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
 	var t trigger.Trigger
 	// Need to make dynamic, search for the binding that is input
 
@@ -559,354 +436,79 @@ func (sdk *AppFunctionsSDK) addContext(next func(nethttp.ResponseWriter, *nethtt
 	}
 }
 
-func (sdk *AppFunctionsSDK) initializeClients() {
-	// Need when passing all Clients to other components
-	sdk.edgexClients.LoggingClient = sdk.LoggingClient
-	wg := &sync.WaitGroup{}
-	clientMonitor, err := time.ParseDuration(sdk.config.Service.ClientMonitor)
-	if err != nil {
-		sdk.LoggingClient.Warn(
-			fmt.Sprintf(
-				"Service.ClientMonitor failed to parse: %s, use the default value: %v",
-				err,
-				internal.ClientMonitorDefault,
-			),
-		)
-		// fall back to default value
-		clientMonitor = internal.ClientMonitorDefault
-	}
-
-	interval := int(clientMonitor / time.Millisecond)
-
-	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
-	// sending commands, then don't need to have the Command client in the configuration.
-	if _, ok := sdk.config.Clients[common.CoreDataClientName]; ok {
-		sdk.edgexClients.EventClient = coredata.NewEventClient(
-			urlclient.New(
-				context.Background(),
-				wg,
-				sdk.registryClient,
-				clients.CoreDataServiceKey,
-				clients.ApiEventRoute,
-				interval,
-				sdk.config.Clients[common.CoreDataClientName].Url()+clients.ApiEventRoute,
-			),
-		)
-
-		sdk.edgexClients.ValueDescriptorClient = coredata.NewValueDescriptorClient(
-			urlclient.New(
-				context.Background(),
-				wg,
-				sdk.registryClient,
-				clients.CoreDataServiceKey,
-				clients.ApiValueDescriptorRoute,
-				interval,
-				sdk.config.Clients[common.CoreDataClientName].Url()+clients.ApiValueDescriptorRoute,
-			),
-		)
-	}
-
-	if _, ok := sdk.config.Clients[common.CoreCommandClientName]; ok {
-		sdk.edgexClients.CommandClient = command.NewCommandClient(
-			urlclient.New(
-				context.Background(),
-				wg,
-				sdk.registryClient,
-				clients.CoreCommandServiceKey,
-				clients.ApiDeviceRoute,
-				interval,
-				sdk.config.Clients[common.CoreCommandClientName].Url()+clients.ApiDeviceRoute,
-			),
-		)
-	}
-
-	if _, ok := sdk.config.Clients[common.NotificationsClientName]; ok {
-		sdk.edgexClients.NotificationsClient = notifications.NewNotificationsClient(
-			urlclient.New(
-				context.Background(),
-				wg,
-				sdk.registryClient,
-				clients.SupportNotificationsServiceKey,
-				clients.ApiNotificationRoute,
-				interval,
-				sdk.config.Clients[common.NotificationsClientName].Url()+clients.ApiNotificationRoute,
-			),
-		)
+func (sdk *AppFunctionsSDK) addDeferred(deferred bootstrap.Deferred) {
+	if deferred != nil {
+		sdk.deferredFunctions = append(sdk.deferredFunctions, deferred)
 	}
 }
 
-func (sdk *AppFunctionsSDK) initializeConfiguration(configuration *common.ConfigurationStruct) error {
-	if sdk.useRegistry {
-		e := config.NewEnvironment()
-		configuration.Registry = e.OverrideRegistryInfoFromEnvironment(configuration.Registry)
-		configuration.Service = e.OverrideServiceInfoFromEnvironment(configuration.Service)
-
-		if _, err := time.ParseDuration(configuration.Service.CheckInterval); err != nil {
-			return fmt.Errorf("failed to parse Service.CheckInterval: %v", err)
-		}
-
-		registryConfig := types.Config{
-			Host:            configuration.Registry.Host,
-			Port:            configuration.Registry.Port,
-			Type:            configuration.Registry.Type,
-			Stem:            internal.ConfigRegistryStem,
-			CheckInterval:   configuration.Service.CheckInterval,
-			CheckRoute:      clients.ApiPingRoute,
-			ServiceKey:      sdk.ServiceKey,
-			ServiceHost:     configuration.Service.Host,
-			ServicePort:     configuration.Service.Port,
-			ServiceProtocol: configuration.Service.Protocol,
-		}
-
-		client, err := registry.NewRegistryClient(registryConfig)
-		if err != nil {
-			return fmt.Errorf("connection to Registry could not be made: %v", err)
-		}
-
-		// set registryClient
-		sdk.registryClient = client
-
-		if !sdk.registryClient.IsAlive() {
-			return fmt.Errorf("registry (%s) is not running", registryConfig.Type)
-		}
-
-		hasConfig, err := sdk.registryClient.HasConfiguration()
-		if err != nil {
-			return fmt.Errorf("could not determine if registry has configuration: %v", err)
-		}
-
-		if !sdk.overwriteConfig && hasConfig {
-			rawConfig, err := sdk.registryClient.GetConfiguration(configuration)
-			if err != nil {
-				return fmt.Errorf("could not get configuration from Registry: %v", err)
-			}
-
-			actual, ok := rawConfig.(*common.ConfigurationStruct)
-			if !ok {
-				return fmt.Errorf("configuration from Registry failed type check")
-			}
-			configuration = actual
-
-			// Check that information was successfully read from Consul
-			if configuration.Service.Port == 0 {
-				sdk.LoggingClient.Error("Error reading from registry")
-			}
-
-			fmt.Println("Configuration loaded from registry with service key: " + sdk.ServiceKey)
-		} else {
-			// Marshal into a toml Tree for overriding with environment variables.
-			contents, err := toml.Marshal(*configuration)
-			if err != nil {
-				return err
-			}
-			configTree, err := toml.LoadBytes(contents)
-			if err != nil {
-				return err
-			}
-
-			err = sdk.registryClient.PutConfigurationToml(e.OverrideFromEnvironment(configTree), true)
-			if err != nil {
-				return fmt.Errorf("could not push configuration into registry: %v", err)
-			}
-			err = configTree.Unmarshal(configuration)
-			if err != nil {
-				return fmt.Errorf("could not marshal configTree to configuration: %v", err.Error())
-			}
-			fmt.Println("Configuration pushed to registry with service key: " + sdk.ServiceKey)
-		}
-
-		// Register the service with Registry
-		err = sdk.registryClient.Register()
-		if err != nil {
-			return fmt.Errorf("could not register service with Registry: %v", err)
-		}
+// setServiceKey creates the service's service key with profile name if the original service key has the
+// appropriate profile placeholder, otherwise it leaves the original service key unchanged
+func (sdk *AppFunctionsSDK) setServiceKey(profile string) {
+	envValue := os.Getenv(envServiceKey)
+	if len(envValue) > 0 {
+		sdk.serviceKeyOverride = envValue
+		sdk.LoggingClient.Info(
+			fmt.Sprintf("Environment profileOverride of '-n/--serviceName' by environment variable: %s=%s",
+				envServiceKey,
+				envValue))
 	}
 
-	sdk.config = *configuration
-	return nil
-}
-
-func (sdk *AppFunctionsSDK) listenForConfigChanges() {
-
-	updates := make(chan interface{})
-	registryErrors := make(chan error)
-
-	defer sdk.appWg.Done()
-	defer close(updates)
-
-	sdk.LoggingClient.Info("Listening for changes from registry")
-	sdk.registryClient.WatchForChanges(updates, registryErrors, &common.WritableInfo{}, internal.WritableKey)
-
-	for {
-		select {
-		case <-sdk.appCtx.Done():
-			sdk.LoggingClient.Info("Exiting Listen for changes from registry")
-			return
-
-		case err := <-registryErrors:
-			sdk.LoggingClient.Error(err.Error())
-
-		case raw, ok := <-updates:
-			if !ok {
-				sdk.LoggingClient.Error("Failed to receive changes from update channel")
-				return
-			}
-
-			actual, ok := raw.(*common.WritableInfo)
-			if !ok {
-				sdk.LoggingClient.Error("listenForConfigChanges() type check failed")
-				return
-			}
-
-			previousLogLevel := sdk.config.Writable.LogLevel
-			previousStoreForward := sdk.config.Writable.StoreAndForward
-
-			sdk.config.Writable = *actual
-			sdk.LoggingClient.Info("Writable configuration has been updated from Registry")
-
-			// Note: Changes occur one setting at a time so if setting not part of the pipeline,
-			//       then skip updating the pipeline
-			switch {
-			case previousLogLevel != sdk.config.Writable.LogLevel:
-				_ = sdk.LoggingClient.SetLogLevel(sdk.config.Writable.LogLevel)
-				sdk.LoggingClient.Info(fmt.Sprintf("Logging level changed to %s", sdk.config.Writable.LogLevel))
-
-			case previousStoreForward.MaxRetryCount != sdk.config.Writable.StoreAndForward.MaxRetryCount:
-				if sdk.config.Writable.StoreAndForward.MaxRetryCount < 0 {
-					sdk.LoggingClient.Warn(fmt.Sprintf("StoreAndForward MaxRetryCount can not be less than 0, defaulting to 1"))
-					sdk.config.Writable.StoreAndForward.MaxRetryCount = 1
-				}
-				sdk.LoggingClient.Info(fmt.Sprintf("StoreAndForward MaxRetryCount changed to %d", sdk.config.Writable.StoreAndForward.MaxRetryCount))
-
-			case previousStoreForward.RetryInterval != sdk.config.Writable.StoreAndForward.RetryInterval:
-				sdk.processConfigChangedStoreForwardRetryInterval()
-
-			case previousStoreForward.Enabled != sdk.config.Writable.StoreAndForward.Enabled:
-				sdk.processConfigChangedStoreForwardEnabled()
-
-			default:
-				// Must have been a change to the pipeline configuration, so now attempt to update it.
-				sdk.processConfigChangedPipeline()
-			}
-		}
-	}
-}
-
-func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardRetryInterval() {
-	if sdk.config.Writable.StoreAndForward.Enabled {
-		sdk.stopStoreForward()
-		sdk.startStoreForward()
-	}
-}
-
-func (sdk *AppFunctionsSDK) processConfigChangedStoreForwardEnabled() {
-	if sdk.config.Writable.StoreAndForward.Enabled {
-		// StoreClient must be set up for StoreAndForward
-		if sdk.storeClient == nil {
-			if sdk.initializeStoreClient() != nil {
-				// Error already logged
-				sdk.config.Writable.StoreAndForward.Enabled = false
-				return
-			}
-
-			sdk.runtime.Initialize(sdk.storeClient, sdk.secretProvider)
-		}
-
-		sdk.startStoreForward()
-	} else {
-		sdk.stopStoreForward()
-	}
-}
-
-func (sdk *AppFunctionsSDK) processConfigChangedPipeline() {
-	if sdk.usingConfigurablePipeline {
-		transforms, err := sdk.LoadConfigurablePipeline()
-		if err != nil {
-			sdk.LoggingClient.Error("unable to reload Configurable Pipeline from Registry: " + err.Error())
-			return
-		}
-		err = sdk.SetFunctionsPipeline(transforms...)
-		if err != nil {
-			sdk.LoggingClient.Error("unable to set Configurable Pipeline from Registry: " + err.Error())
-			return
-		}
-
-		sdk.LoggingClient.Info("Reloaded Configurable Pipeline from Registry")
-	}
-}
-
-func (sdk *AppFunctionsSDK) startStoreForward() {
-	var storeForwardEnabledCtx context.Context
-	sdk.storeForwardWg = &sync.WaitGroup{}
-	storeForwardEnabledCtx, sdk.storeForwardCancelCtx = context.WithCancel(context.Background())
-	sdk.runtime.StartStoreAndForward(sdk.appWg, sdk.appCtx,
-		sdk.storeForwardWg, storeForwardEnabledCtx,
-		sdk.ServiceKey, &sdk.config, sdk.edgexClients)
-}
-
-func (sdk *AppFunctionsSDK) stopStoreForward() {
-	sdk.LoggingClient.Info("Canceling Store and Forward retry loop")
-	sdk.storeForwardCancelCtx()
-	sdk.storeForwardWg.Wait()
-}
-
-// GetSecrets retrieves secrets from a secret store.
-// path specifies the type or location of the secrets to retrieve. If specified it is appended
-// to the base path from the SecretConfig
-// keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
-// specified path will be returned.
-func (sdk *AppFunctionsSDK) GetSecrets(path string, keys ...string) (map[string]string, error) {
-	return sdk.secretProvider.GetSecrets(path, keys...)
-}
-
-// StoreSecrets stores the secrets to a secret store.
-// it sets the values requested at provided keys
-// path specifies the type or location of the secrets to store. If specified it is appended
-// to the base path from the SecretConfig
-// secrets map specifies the "key": "value" pairs of secrets to store
-func (sdk *AppFunctionsSDK) StoreSecrets(path string, secrets map[string]string) error {
-	return sdk.secretProvider.StoreSecrets(path, secrets)
-}
-
-func (sdk *AppFunctionsSDK) setLoggingTarget() (string, error) {
-	if sdk.config.Logging.EnableRemote {
-		logging, ok := sdk.config.Clients[common.LoggingClientName]
-		if !ok {
-			return "", errors.New("logging client configuration is missing")
-		}
-
-		return logging.Url() + clients.ApiLoggingRoute, nil
+	// serviceKeyOverride may have been set by the -n/--serviceName command-line option and not the environment variable
+	if len(sdk.serviceKeyOverride) > 0 {
+		sdk.ServiceKey = sdk.serviceKeyOverride
 	}
 
-	return sdk.config.Logging.File, nil
-}
-
-func applyCommandlineEnvironmentOverrides() {
-	// Currently there is just one commandline option that can be overwritten with an environment variable.
-	// If more are added, a more dynamic data driven approach should be used to avoid code duplication.
-
-	profileName := os.Getenv(ProfileEnvironmentVariable)
-	if profileName == "" {
+	if !strings.Contains(sdk.ServiceKey, ProfileSuffixPlaceholder) {
+		// No placeholder, so nothing to do here
 		return
 	}
 
-	found := false
-	for index, option := range os.Args {
-		if strings.Contains(option, "-p=") || strings.Contains(option, "--profile=") {
-			os.Args[index] = "--profile=" + profileName
-			found = true
-		}
+	// Have to handle environment override here before common bootstrap is used so it is passed the proper service key
+	profileOverride := os.Getenv(envProfile)
+	if len(profileOverride) == 0 {
+		// V2 not set so try V1
+		profileOverride = os.Getenv(envV1Profile) // TODO: Remove for release v2.0.0:
 	}
 
-	if !found {
-		os.Args = append(os.Args, "--profile="+profileName)
+	if len(profileOverride) > 0 {
+		profile = profileOverride
 	}
+
+	if len(profile) > 0 {
+		sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, profile, 1)
+		return
+	}
+
+	// No profile specified so remove the placeholder text
+	sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "", 1)
 }
 
-func readConfigurationFromFile(profileName string, configDir string) (*common.ConfigurationStruct, error) {
-	configuration, err := common.LoadFromFile(profileName, configDir)
-	if err != nil {
-		return nil, err
+// handleEdgexService checks to see if the "edgex_service" environment variable is set and if so creates appropriate config
+// overrides from the URL parts.
+// TODO: Remove for release v2.0.0
+func (sdk *AppFunctionsSDK) handleEdgexService() error {
+	if envValue := os.Getenv(envV1Service); envValue != "" {
+		u, err := url.Parse(envValue)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to parse 'edgex_service' environment value '%s' as a URL: %s",
+				envValue,
+				err.Error())
+		}
+
+		_, err = strconv.ParseInt(u.Port(), 10, 0)
+		if err != nil {
+			return fmt.Errorf(
+				"failed to parse port from 'edgex_service' environment value '%s' as an integer: %s",
+				envValue,
+				err.Error())
+		}
+
+		os.Setenv(envServiceProtocol, u.Scheme)
+		os.Setenv(envServiceHost, u.Hostname())
+		os.Setenv(envServicePort, u.Port())
 	}
-	return configuration, nil
+
+	return nil
 }

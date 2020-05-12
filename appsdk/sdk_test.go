@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,34 +17,31 @@
 package appsdk
 
 import (
-	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"net/url"
+	"os"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 var lc logger.LoggingClient
 
 func TestMain(m *testing.M) {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	// No remote and no file results in STDOUT logging only
+	lc = logger.NewClient("app_functions_sdk_go", false, "", "DEBUG")
 	m.Run()
 }
 
@@ -74,7 +71,7 @@ func TestAddRoute(t *testing.T) {
 func TestSetupHTTPTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Binding: common.BindingInfo{
 				Type: "htTp",
 			},
@@ -91,7 +88,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 func TestSetupMessageBusTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Binding: common.BindingInfo{
 				Type: "meSsaGebus",
 			},
@@ -108,7 +105,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Binding: common.BindingInfo{
 				Type: "meSsaGebus",
 			},
@@ -123,7 +120,7 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		runtime:       &runtime.GolangRuntime{},
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Binding: common.BindingInfo{
 				Type: "meSsaGebus",
 			},
@@ -144,7 +141,7 @@ func TestApplicationSettings(t *testing.T) {
 	expectedSettingValue := "simple-filter-xml"
 
 	sdk := AppFunctionsSDK{
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			ApplicationSettings: map[string]string{
 				"ApplicationName": "simple-filter-xml",
 			},
@@ -161,7 +158,7 @@ func TestApplicationSettings(t *testing.T) {
 
 func TestApplicationSettingsNil(t *testing.T) {
 	sdk := AppFunctionsSDK{
-		config: common.ConfigurationStruct{},
+		config: &common.ConfigurationStruct{},
 	}
 
 	appSettings := sdk.ApplicationSettings()
@@ -173,7 +170,7 @@ func TestGetAppSettingStrings(t *testing.T) {
 	expected := []string{"dev1", "dev2"}
 
 	sdk := AppFunctionsSDK{
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			ApplicationSettings: map[string]string{
 				"DeviceNames": "dev1,   dev2",
 			},
@@ -190,7 +187,7 @@ func TestGetAppSettingStringsSettingMissing(t *testing.T) {
 	expected := "setting not found in ApplicationSettings"
 
 	sdk := AppFunctionsSDK{
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			ApplicationSettings: map[string]string{},
 		},
 	}
@@ -205,7 +202,7 @@ func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
 	expected := "ApplicationSettings section is missing"
 
 	sdk := AppFunctionsSDK{
-		config: common.ConfigurationStruct{},
+		config: &common.ConfigurationStruct{},
 	}
 
 	_, err := sdk.GetAppSettingStrings(setting)
@@ -216,7 +213,7 @@ func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
 func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "Bogus",
@@ -238,7 +235,7 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "Bogus",
@@ -270,7 +267,7 @@ func TestLoadConfigurablePipelineAddressableConfig(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder: functionName,
@@ -295,7 +292,7 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "FilterByDeviceName, TransformToXML, SetOutputData",
@@ -318,7 +315,7 @@ func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder:           "CompressWithGZIP, SetOutputData",
@@ -343,7 +340,7 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
+		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder:           "CompressWithGZIP, SetOutputData",
@@ -359,149 +356,125 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	assert.Nil(t, sdk.TargetType)
 }
 
-func TestSetLoggingTargetLocal(t *testing.T) {
+func TestSetServiceKey(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
-		config: common.ConfigurationStruct{
-			Logging: common.LoggingInfo{
-				EnableRemote: false,
-				File:         "./myfile",
-			},
-		},
-	}
-	result, err := sdk.setLoggingTarget()
-	require.NoError(t, err)
-	assert.Equal(t, "./myfile", result, "File path is incorrect")
-}
-
-func TestSetLoggingTargetRemote(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		config: common.ConfigurationStruct{
-			Clients: map[string]common.ClientInfo{
-				"Logging": {
-					Protocol: "http",
-					Host:     "logs",
-					Port:     8080,
-				},
-			},
-			Logging: common.LoggingInfo{
-				EnableRemote: true,
-			},
-		},
-	}
-	result, err := sdk.setLoggingTarget()
-	require.NoError(t, err)
-	assert.Equal(t, "http://logs:8080/api/v1/logs", result, "File path is incorrect")
-}
-
-func TestInitializeClientsAll(t *testing.T) {
-	coreClients := make(map[string]common.ClientInfo)
-	coreClients[common.CoreDataClientName] = common.ClientInfo{}
-	coreClients[common.NotificationsClientName] = common.ClientInfo{}
-	coreClients[common.CoreCommandClientName] = common.ClientInfo{}
-
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		config: common.ConfigurationStruct{
-			Clients: coreClients,
-		},
-	}
-
-	sdk.initializeClients()
-
-	assert.NotNil(t, sdk.edgexClients.EventClient)
-	assert.NotNil(t, sdk.edgexClients.CommandClient)
-	assert.NotNil(t, sdk.edgexClients.ValueDescriptorClient)
-	assert.NotNil(t, sdk.edgexClients.NotificationsClient)
-}
-
-func TestInitializeClientsJustData(t *testing.T) {
-	coreClients := make(map[string]common.ClientInfo)
-	coreClients[common.CoreDataClientName] = common.ClientInfo{}
-
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		config: common.ConfigurationStruct{
-			Clients: coreClients,
-		},
-	}
-
-	sdk.initializeClients()
-
-	assert.NotNil(t, sdk.edgexClients.EventClient)
-	assert.NotNil(t, sdk.edgexClients.ValueDescriptorClient)
-
-	assert.Nil(t, sdk.edgexClients.CommandClient)
-	assert.Nil(t, sdk.edgexClients.NotificationsClient)
-}
-
-func TestValidateVersionMatch(t *testing.T) {
-	coreClients := make(map[string]common.ClientInfo)
-	coreClients[common.CoreDataClientName] = common.ClientInfo{
-		Protocol: "http",
-		Host:     "localhost",
-		Port:     0, // Will be replaced by local test webserver's port
-	}
-
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		config: common.ConfigurationStruct{
-			Clients: coreClients,
-		},
+		ServiceKey:    "MyAppService",
 	}
 
 	tests := []struct {
-		Name             string
-		CoreVersion      string
-		SdkVersion       string
-		skipVersionCheck bool
-		ExpectFailure    bool
+		name                          string
+		profile                       string
+		profileEnvVar                 string
+		profileEnvValue               string
+		serviceKeyEnvValue            string
+		serviceKeyCommandLineOverride string
+		originalServiceKey            string
+		expectedServiceKey            string
 	}{
-		{"Compatible Versions", "1.1.0", "v1.0.0", false, false},
-		{"Dev Compatible Versions", "2.0.0", "v2.0.0-dev.11", false, false},
-		{"Un-compatible Versions", "2.0.0", "v1.0.0", false, true},
-		{"Skip Version Check", "2.0.0", "v1.0.0", true, false},
-		{"Running in Debugger", "1.0.0", "v0.0.0", false, false},
-		{"SDK Beta Version", "1.0.0", "v0.2.0", false, false},
-		{"SDK Version malformed", "1.0.0", "", false, true},
-		{"Core version malformed", "12", "v1.0.0", false, true},
-		{"Core version JSON bad", "", "v1.0.0", false, true},
-		{"Core version JSON empty", "{}", "v1.0.0", false, true},
+		{
+			name:               "No profile",
+			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService",
+		},
+		{
+			name:               "Profile specified, no override",
+			profile:            "mqtt-export",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-mqtt-export",
+		},
+		{
+			name:               "Profile specified with V1 override",
+			profile:            "rules-engine",
+			profileEnvVar:      envV1Profile,
+			profileEnvValue:    "rules-engine-mqtt",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-rules-engine-mqtt",
+		},
+		{
+			name:               "Profile specified with V2 override",
+			profile:            "rules-engine",
+			profileEnvVar:      envProfile,
+			profileEnvValue:    "rules-engine-redis",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-rules-engine-redis",
+		},
+		{
+			name:               "No profile specified with V1 override",
+			profileEnvVar:      envV1Profile,
+			profileEnvValue:    "sample",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-sample",
+		},
+		{
+			name:               "No profile specified with V2 override",
+			profileEnvVar:      envProfile,
+			profileEnvValue:    "http-export",
+			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			expectedServiceKey: "MyAppService-http-export",
+		},
+		{
+			name:               "No ProfileSuffixPlaceholder with override",
+			profileEnvVar:      envProfile,
+			profileEnvValue:    "my-profile",
+			originalServiceKey: "MyCustomAppService",
+			expectedServiceKey: "MyCustomAppService",
+		},
+		{
+			name:               "No ProfileSuffixPlaceholder with profile specified, no override",
+			profile:            "my-profile",
+			originalServiceKey: "MyCustomAppService",
+			expectedServiceKey: "MyCustomAppService",
+		},
+		{
+			name:                          "Service Key command-line override, no profile",
+			serviceKeyCommandLineOverride: "MyCustomAppService",
+			originalServiceKey:            "AppService",
+			expectedServiceKey:            "MyCustomAppService",
+		},
+		{
+			name:                          "Service Key command-line override, with profile",
+			serviceKeyCommandLineOverride: "AppService-<profile>-MyCloud",
+			profile:                       "http-export",
+			originalServiceKey:            "AppService",
+			expectedServiceKey:            "AppService-http-export-MyCloud",
+		},
+		{
+			name:               "Service Key ENV override, no profile",
+			serviceKeyEnvValue: "MyCustomAppService",
+			originalServiceKey: "AppService",
+			expectedServiceKey: "MyCustomAppService",
+		},
+		{
+			name:               "Service Key ENV override, with profile",
+			serviceKeyEnvValue: "AppService-<profile>-MyCloud",
+			profile:            "http-export",
+			originalServiceKey: "AppService",
+			expectedServiceKey: "AppService-http-export-MyCloud",
+		},
 	}
 
+	// Just in case...
+	os.Clearenv()
+
 	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
+			if len(test.profileEnvVar) > 0 && len(test.profileEnvValue) > 0 {
+				os.Setenv(test.profileEnvVar, test.profileEnvValue)
+			}
+			if len(test.serviceKeyEnvValue) > 0 {
+				os.Setenv(envServiceKey, test.serviceKeyEnvValue)
+			}
+			defer os.Clearenv()
 
-			internal.SDKVersion = test.SdkVersion
-			sdk.skipVersionCheck = test.skipVersionCheck
-
-			handler := func(w http.ResponseWriter, r *http.Request) {
-				var versionJson string
-				if test.CoreVersion == "{}" {
-					versionJson = "{}"
-				} else if test.CoreVersion == "" {
-					versionJson = ""
-				} else {
-					versionJson = fmt.Sprintf(`{"version" : "%s"}`, test.CoreVersion)
-				}
-
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte(versionJson))
+			if len(test.serviceKeyCommandLineOverride) > 0 {
+				sdk.serviceKeyOverride = test.serviceKeyCommandLineOverride
 			}
 
-			// create test server with handler
-			testServer := httptest.NewServer(http.HandlerFunc(handler))
-			defer testServer.Close()
+			sdk.ServiceKey = test.originalServiceKey
+			sdk.setServiceKey(test.profile)
 
-			testServerUrl, _ := url.Parse(testServer.URL)
-			port, _ := strconv.Atoi(testServerUrl.Port())
-			coreService := sdk.config.Clients[common.CoreDataClientName]
-			coreService.Port = port
-			sdk.config.Clients[common.CoreDataClientName] = coreService
-
-			result := sdk.validateVersionMatch()
-			assert.Equal(t, test.ExpectFailure, !result)
+			assert.Equal(t, test.expectedServiceKey, sdk.ServiceKey)
 		})
 	}
 }

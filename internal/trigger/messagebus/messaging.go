@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
@@ -31,7 +32,7 @@ import (
 
 // Trigger implements Trigger to support MessageBusData
 type Trigger struct {
-	Configuration common.ConfigurationStruct
+	Configuration *common.ConfigurationStruct
 	Runtime       *runtime.GolangRuntime
 	client        messaging.MessageClient
 	topics        []types.TopicChannel
@@ -39,26 +40,40 @@ type Trigger struct {
 }
 
 // Initialize ...
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) error {
+func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) (bootstrap.Deferred, error) {
 	var err error
 	logger := trigger.EdgeXClients.LoggingClient
 
-	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger. Subscribing to topic: %s on port %d , Publish Topic: %s on port %d", trigger.Configuration.Binding.SubscribeTopic, trigger.Configuration.MessageBus.SubscribeHost.Port, trigger.Configuration.Binding.PublishTopic, trigger.Configuration.MessageBus.PublishHost.Port))
+	logger.Info(fmt.Sprintf("Initializing Message Bus Trigger for '%s'", trigger.Configuration.MessageBus.Type))
 
 	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	trigger.topics = []types.TopicChannel{{Topic: trigger.Configuration.Binding.SubscribeTopic, Messages: make(chan types.MessageEnvelope)}}
 	messageErrors := make(chan error)
 
 	err = trigger.client.Connect()
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	logger.Info(fmt.Sprintf("Subscribing to topic: '%s' @ %s://%s:%d",
+		trigger.Configuration.Binding.SubscribeTopic,
+		trigger.Configuration.MessageBus.SubscribeHost.Protocol,
+		trigger.Configuration.MessageBus.SubscribeHost.Host,
+		trigger.Configuration.MessageBus.SubscribeHost.Port))
 
 	trigger.client.Subscribe(trigger.topics, messageErrors)
 	receiveMessage := true
+
+	if len(trigger.Configuration.MessageBus.PublishHost.Host) > 0 {
+		logger.Info(fmt.Sprintf("Publishing to topic: '%s' @ %s://%s:%d",
+			trigger.Configuration.Binding.PublishTopic,
+			trigger.Configuration.MessageBus.PublishHost.Protocol,
+			trigger.Configuration.MessageBus.PublishHost.Host,
+			trigger.Configuration.MessageBus.PublishHost.Port))
+	}
 
 	appWg.Add(1)
 
@@ -71,7 +86,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 				return
 
 			case msgErr := <-messageErrors:
-				logger.Error(fmt.Sprintf("Failed to receive ZMQ Message, %v", msgErr))
+				logger.Error(fmt.Sprintf("Failed to receive message from bus, %v", msgErr))
 
 			case msgs := <-trigger.topics[0].Messages:
 				go func() {
@@ -111,5 +126,12 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 		}
 	}()
 
-	return nil
+	deferred := func() {
+		logger.Info("Disconnecting from the message bus")
+		err := trigger.client.Disconnect()
+		if err != nil {
+			logger.Error("Unable to disconnect from the message bus", "error", err.Error())
+		}
+	}
+	return deferred, nil
 }

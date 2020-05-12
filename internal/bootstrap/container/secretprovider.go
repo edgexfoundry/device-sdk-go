@@ -12,19 +12,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package trigger
+package container
 
 import (
-	"context"
-	"sync"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 )
 
-// Trigger interface is used to hold event data and allow function to
-type Trigger interface {
-	// Initialize performs post creation initializations
-	Initialize(wg *sync.WaitGroup, ctx context.Context) (bootstrap.Deferred, error)
+// SecretProviderName contains the name of the security.SecretProvider implementation in the DIC.
+var SecretProviderName = di.TypeInstanceToName(&security.SecretProvider{})
+
+// SecretProviderFrom helper function queries the DIC and returns the security.SecretProvider implementation.
+func SecretProviderFrom(get di.Get) *security.SecretProvider {
+	return get(SecretProviderName).(*security.SecretProvider)
 }

@@ -12,19 +12,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-package trigger
+package container
 
 import (
-	"context"
-	"sync"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 )
 
-// Trigger interface is used to hold event data and allow function to
-type Trigger interface {
-	// Initialize performs post creation initializations
-	Initialize(wg *sync.WaitGroup, ctx context.Context) (bootstrap.Deferred, error)
+// StoreClientName contains the name of interfaces.StoreClient implementation in the DIC.
+var StoreClientName = di.TypeInstanceToName((*interfaces.StoreClient)(nil))
+
+// StoreClientFrom helper function queries the DIC and returns interfaces.StoreClient implementation.
+func StoreClientFrom(get di.Get) interfaces.StoreClient {
+	item := get(StoreClientName)
+
+	if item == nil {
+		return nil
+	}
+
+	return item.(interfaces.StoreClient)
 }

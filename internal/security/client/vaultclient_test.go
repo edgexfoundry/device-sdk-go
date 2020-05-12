@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -25,7 +25,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-bootstrap/config"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/mock"
 
 	"github.com/stretchr/testify/assert"
@@ -53,14 +54,12 @@ func TestGetVaultClient(t *testing.T) {
 	bkgCtx := context.Background()
 	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 
-	testSecretStoreInfo := common.SecretStoreInfo{
-		SecretConfig: vault.SecretConfig{
-			Host:       host,
-			Port:       portNum,
-			Path:       "/test",
-			Protocol:   "http",
-			ServerName: "mockVaultServer",
-		},
+	testSecretStoreInfo := config.SecretStoreInfo{
+		Host:       host,
+		Port:       portNum,
+		Path:       "/test",
+		Protocol:   "http",
+		ServerName: "mockVaultServer",
 	}
 
 	tests := []struct {

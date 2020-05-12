@@ -50,7 +50,7 @@ const (
 	BrokerAddress    = "brokeraddress"
 	ClientID         = "clientid"
 	Topic            = "topic"
-	AuthMode         = "none"
+	AuthMode         = "authmode"
 )
 
 // AppFunctionsSDKConfigurable contains the helper functions that return the function pointers for building the configurable function pipeline.

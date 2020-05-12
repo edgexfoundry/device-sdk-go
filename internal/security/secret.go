@@ -1,5 +1,6 @@
 /********************************************************************************
  *  Copyright 2019 Dell Inc.
+ *  Copyright 2020 Dell Intel Corporation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,6 +21,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/authtokenloader"
@@ -78,7 +81,7 @@ func (s *SecretProvider) Initialize(ctx context.Context) bool {
 
 func (s *SecretProvider) initializeSecretClient(
 	ctx context.Context,
-	secretStoreInfo common.SecretStoreInfo) (pkg.SecretClient, error) {
+	secretStoreInfo bootstrapConfig.SecretStoreInfo) (pkg.SecretClient, error) {
 	var secretClient pkg.SecretClient
 
 	// secretStoreInfo is optional so that secret config can be empty
@@ -127,8 +130,8 @@ func (s *SecretProvider) initializeSecretClient(
 // getSecretConfig creates a SecretConfig based on the SecretStoreInfo configuration properties.
 // If a tokenfile is present it will override the Authentication.AuthToken value.
 // the return boolean is used to indicate whether the secret store configuration is empty or not
-func (s *SecretProvider) getSecretConfig(secretStoreInfo common.SecretStoreInfo) (vault.SecretConfig, bool, error) {
-	emptySecretStore := common.SecretStoreInfo{}
+func (s *SecretProvider) getSecretConfig(secretStoreInfo bootstrapConfig.SecretStoreInfo) (vault.SecretConfig, bool, error) {
+	emptySecretStore := bootstrapConfig.SecretStoreInfo{}
 	if secretStoreInfo == emptySecretStore {
 		return vault.SecretConfig{}, true, nil
 	}

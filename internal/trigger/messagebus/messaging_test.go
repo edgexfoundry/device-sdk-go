@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ func TestInitialize(t *testing.T) {
 
 	runtime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 	trigger.Initialize(&sync.WaitGroup{}, context.Background())
 	assert.NotNil(t, trigger.client, "Expected client to be set")
 	assert.Equal(t, 1, len(trigger.topics))
@@ -100,8 +100,8 @@ func TestInitializeBadConfiguration(t *testing.T) {
 
 	runtime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
-	err := trigger.Initialize(&sync.WaitGroup{}, context.Background())
+	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background())
 	assert.Error(t, err)
 }
 
@@ -145,7 +145,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	runtime := &runtime.GolangRuntime{}
 	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 	trigger.Initialize(&sync.WaitGroup{}, context.Background())
 
 	message := types.MessageEnvelope{
@@ -216,7 +216,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	runtime := &runtime.GolangRuntime{}
 	runtime.Initialize(nil, nil)
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
