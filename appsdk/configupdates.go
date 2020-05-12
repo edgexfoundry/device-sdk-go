@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
@@ -60,13 +61,6 @@ func (processor *ConfigUpdateProcessor) WaitForConfigUpdates(configUpdated confi
 
 			case <-configUpdated:
 				currentWritable := sdk.config.Writable
-				// Verify something actually changed, if not no need to process anything.
-				// This can happen on initial startup
-				if reflect.DeepEqual(currentWritable, previousWriteable) {
-					sdk.LoggingClient.Info("No actual configuration changes detected. Skipping processing updates.")
-					continue
-				}
-
 				sdk.LoggingClient.Info("Processing App Service configuration updates")
 
 				// Note: Updates occur one setting at a time so only have to look for single changes
@@ -75,7 +69,10 @@ func (processor *ConfigUpdateProcessor) WaitForConfigUpdates(configUpdated confi
 					_ = sdk.LoggingClient.SetLogLevel(currentWritable.LogLevel)
 					sdk.LoggingClient.Info(fmt.Sprintf("Logging level changed to %s", currentWritable.LogLevel))
 
-				case !reflect.DeepEqual(previousWriteable.InsecureSecrets, currentWritable.InsecureSecrets):
+				// InsecureSecrets (map) will be nil if not in the original TOML used to seed the Config Provider,
+				// so ignore it if this is the case.
+				case currentWritable.InsecureSecrets != nil &&
+					!reflect.DeepEqual(previousWriteable.InsecureSecrets, currentWritable.InsecureSecrets):
 					sdk.LoggingClient.Info("Insecure Secrets have been updated")
 
 				case previousWriteable.StoreAndForward.MaxRetryCount != currentWritable.StoreAndForward.MaxRetryCount:
@@ -90,17 +87,28 @@ func (processor *ConfigUpdateProcessor) WaitForConfigUpdates(configUpdated confi
 							currentWritable.StoreAndForward.MaxRetryCount))
 
 				case previousWriteable.StoreAndForward.RetryInterval != currentWritable.StoreAndForward.RetryInterval:
+					if _, err := time.ParseDuration(currentWritable.StoreAndForward.RetryInterval); err != nil {
+						sdk.LoggingClient.Error(fmt.Sprintf("StoreAndForward RetryInterval not change: %s", err.Error()))
+						currentWritable.StoreAndForward.RetryInterval = previousWriteable.StoreAndForward.RetryInterval
+						continue
+					}
+
 					processor.processConfigChangedStoreForwardRetryInterval()
+					sdk.LoggingClient.Info(
+						fmt.Sprintf(
+							"StoreAndForward RetryInterval changed to %s",
+							currentWritable.StoreAndForward.RetryInterval))
 
 				case previousWriteable.StoreAndForward.Enabled != currentWritable.StoreAndForward.Enabled:
 					processor.processConfigChangedStoreForwardEnabled()
-
-				case !reflect.DeepEqual(previousWriteable.Pipeline, currentWritable.Pipeline):
-					processor.processConfigChangedPipeline()
+					sdk.LoggingClient.Info(
+						fmt.Sprintf(
+							"StoreAndForward Enabled changed to %v",
+							currentWritable.StoreAndForward.Enabled))
 
 				default:
-					// Nothing of interest changed
-					sdk.LoggingClient.Info("No configuration changes detected that require special processing.")
+					// Assume change is in the pipeline since all others have been checked appropriately
+					processor.processConfigChangedPipeline()
 				}
 
 				// grab new copy of the writeable configuration for comparing against when next update occurs
@@ -152,16 +160,16 @@ func (processor *ConfigUpdateProcessor) processConfigChangedPipeline() {
 	if sdk.usingConfigurablePipeline {
 		transforms, err := sdk.LoadConfigurablePipeline()
 		if err != nil {
-			sdk.LoggingClient.Error("unable to reload Configurable Pipeline from Registry: " + err.Error())
+			sdk.LoggingClient.Error("unable to reload Configurable Pipeline from new configuration: " + err.Error())
 			return
 		}
 		err = sdk.SetFunctionsPipeline(transforms...)
 		if err != nil {
-			sdk.LoggingClient.Error("unable to set Configurable Pipeline from Registry: " + err.Error())
+			sdk.LoggingClient.Error("unable to set Configurable Pipeline functions from new configuration: " + err.Error())
 			return
 		}
 
-		sdk.LoggingClient.Info("Reloaded Configurable Pipeline from Registry")
+		sdk.LoggingClient.Info("Configurable Pipeline successfully reloaded from new configuration")
 	}
 }
 
