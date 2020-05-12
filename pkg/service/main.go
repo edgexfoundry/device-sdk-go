@@ -25,17 +25,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var serviceNameOverride string
+var instanceName string
 
 func Main(serviceName string, serviceVersion string, proto interface{}, ctx context.Context, cancel context.CancelFunc, router *mux.Router, readyStream chan<- bool) {
 	startupTimer := startup.NewStartUpTimer(common.BootRetrySecondsDefault, common.BootTimeoutSecondsDefault)
 
 	additionalUsage :=
-		"    -n, --serviceName               Overrides the service name to be stored in metadata, used with Registry and/or Configuration Providers\n" +
-			"                                    If the profile is also provided, name will be replaced with \"<name>;<profile>\"\n"
+		"    -i, --instance                  Provides a service name suffix which allows unique instance to be created\n" +
+			"                                    If the option is provided, service name will be replaced with \"<name>_<instance>\"\n"
 	sdkFlags := flags.NewWithUsage(additionalUsage)
-	sdkFlags.FlagSet.StringVar(&serviceNameOverride, "serviceName", "", "")
-	sdkFlags.FlagSet.StringVar(&serviceNameOverride, "n", "", "")
+	sdkFlags.FlagSet.StringVar(&instanceName, "instance", "", "")
+	sdkFlags.FlagSet.StringVar(&instanceName, "i", "", "")
 	sdkFlags.Parse(os.Args[1:])
 
 	serviceName = setServiceName(serviceName, sdkFlags.Profile())
@@ -90,17 +90,13 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 }
 
 func setServiceName(name string, profile string) string {
-	envValue := os.Getenv(common.EnvServiceName)
+	envValue := os.Getenv(common.EnvInstanceName)
 	if len(envValue) > 0 {
-		serviceNameOverride = envValue
+		instanceName = envValue
 	}
 
-	if len(serviceNameOverride) > 0 {
-		name = serviceNameOverride
-	}
-
-	if len(profile) > 0 {
-		name = name + ";" + profile
+	if len(instanceName) > 0 {
+		name = name + "_" + instanceName
 	}
 
 	return name
