@@ -1,8 +1,8 @@
 
 # Application Functions SDK
 
-For documentation please visit https://docs.edgexfoundry.org/microservices/application/ApplServices/.
-For a list of examples please visit https://docs.edgexfoundry.org/examples/AppServiceExamples/
+For documentation please visit https://docs.edgexfoundry.org/1.2/microservices/application/ApplServices/.
+For a list of examples please visit https://docs.edgexfoundry.org/1.2/examples/AppServiceExamples/
 
 
 ### Build Prerequisites
