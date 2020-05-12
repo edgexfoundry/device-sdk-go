@@ -2,7 +2,7 @@ style: github
 template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
-  repository_url: https://github.com/rsdmike/app-functions-sdk-go
+  repository_url: https://github.com/edgex-foundry/app-functions-sdk-go
 options:
   commits:
     # filters:
