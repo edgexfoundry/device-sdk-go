@@ -17,10 +17,10 @@ The following command line options are available
   -f=<file>
   --file=<file>
         Indicates name of the local configuration file.
-  -n=<name>
-  --serviceName=<name>             
-        Overrides the service name to be stored in metadata, used with Registry and/or Configuration Providers. 
-        If the profile is also provided, name will be replaced with "<name>;<profile>"
+  -i=<instace>
+  --instance=<instance>             
+        Provides a service name suffix which allows unique instance to be created.
+        If the option is provided, service name will be replaced with "<name>_<instance>"
   -o    
   --overwrite
         Overwrite configuration in the Registry with local values.
