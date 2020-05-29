@@ -48,7 +48,7 @@ func New(
 
 func (e Endpoint) Monitor() chan interfaces.URLStream {
 	ch := make(chan interfaces.URLStream)
-	ticker := time.NewTicker(time.Millisecond * time.Duration(e.interval))
+	ticker := time.NewTicker(time.Second * time.Duration(e.interval))
 	e.wg.Add(1)
 	go func() {
 		defer e.wg.Done()
