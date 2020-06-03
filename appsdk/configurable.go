@@ -30,6 +30,7 @@ import (
 const (
 	ValueDescriptors = "valuedescriptors"
 	DeviceNames      = "devicenames"
+	FilterOut        = "filterout"
 	Key              = "key"
 	InitVector       = "initvector"
 	Url              = "url"
@@ -73,9 +74,22 @@ func (dynamic AppFunctionsSDKConfigurable) FilterByDeviceName(parameters map[str
 		dynamic.Sdk.LoggingClient.Error("Could not find " + DeviceNames)
 		return nil
 	}
+
+	filterOutBool := false
+	filterOut, ok := parameters[FilterOut]
+	if ok {
+		var err error
+		filterOutBool, err = strconv.ParseBool(filterOut)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error("Could not convert filterOut value to bool " + filterOut)
+			return nil
+		}
+	}
+
 	deviceNamesCleaned := util.DeleteEmptyAndTrim(strings.FieldsFunc(deviceNames, util.SplitComma))
 	transform := transforms.Filter{
 		FilterValues: deviceNamesCleaned,
+		FilterOut:    filterOutBool,
 	}
 	dynamic.Sdk.LoggingClient.Debug("Device Name Filters", DeviceNames, strings.Join(deviceNamesCleaned, ","))
 
@@ -96,11 +110,25 @@ func (dynamic AppFunctionsSDKConfigurable) FilterByValueDescriptor(parameters ma
 		dynamic.Sdk.LoggingClient.Error("Could not find " + ValueDescriptors)
 		return nil
 	}
+
+	filterOutBool := false
+	filterOut, ok := parameters[FilterOut]
+	if ok {
+		var err error
+		filterOutBool, err = strconv.ParseBool(filterOut)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error("Could not convert filterOut value to bool " + filterOut)
+			return nil
+		}
+	}
+
 	valueDescriptorsCleaned := util.DeleteEmptyAndTrim(strings.FieldsFunc(valueDescriptors, util.SplitComma))
 	transform := transforms.Filter{
 		FilterValues: valueDescriptorsCleaned,
+		FilterOut:    filterOutBool,
 	}
 	dynamic.Sdk.LoggingClient.Debug("Value Descriptors Filter", ValueDescriptors, strings.Join(valueDescriptorsCleaned, ","))
+
 	return transform.FilterByValueDescriptor
 }
 

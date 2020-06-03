@@ -26,6 +26,7 @@ import (
 // Filter houses various the parameters for which filter transforms filter on
 type Filter struct {
 	FilterValues []string
+	FilterOut    bool
 }
 
 // NewFilter creates, initializes and returns a new instance of Filter
@@ -58,12 +59,20 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 
 	for _, devID := range deviceIDs {
 		if event.Device == devID {
-			// LoggingClient.Debug(fmt.Sprintf("Event accepted: %s", event.Device))
-			return true, event
+			if f.FilterOut {
+				edgexcontext.LoggingClient.Trace("Event not accepted: %s", event.Device)
+				return false, nil
+			} else {
+				edgexcontext.LoggingClient.Trace("Event accepted: %s", event.Device)
+				return true, event
+			}
 		}
 	}
+	if f.FilterOut {
+		edgexcontext.LoggingClient.Trace("Event accepted: %s", event.Device)
+		return true, event
+	}
 	return false, nil
-	// fmt.Println(event.Data)
 
 }
 
@@ -98,11 +107,26 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 		Readings: []models.Reading{},
 	}
 
-	for _, filterID := range f.FilterValues {
+	if f.FilterOut {
 		for _, reading := range existingEvent.Readings {
-			if reading.Name == filterID {
-				// LoggingClient.Debug(fmt.Sprintf("Reading filtered: %s", reading.Name))
+			readingFilteredOut := false
+			for _, filterID := range f.FilterValues {
+				if reading.Name == filterID {
+					edgexcontext.LoggingClient.Trace("Reading filtered out: %s", reading.Name)
+					readingFilteredOut = true
+				}
+			}
+			if !readingFilteredOut {
 				auxEvent.Readings = append(auxEvent.Readings, reading)
+			}
+		}
+	} else {
+		for _, filterID := range f.FilterValues {
+			for _, reading := range existingEvent.Readings {
+				if reading.Name == filterID {
+					edgexcontext.LoggingClient.Trace("Reading accepted: %s", reading.Name)
+					auxEvent.Readings = append(auxEvent.Readings, reading)
+				}
 			}
 		}
 	}

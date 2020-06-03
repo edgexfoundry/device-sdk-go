@@ -29,6 +29,7 @@ import (
 const (
 	descriptor1 = "Descriptor1"
 	descriptor2 = "Descriptor2"
+	descriptor3 = "Descriptor3"
 )
 
 func TestFilterByDeviceNameFound(t *testing.T) {
@@ -48,6 +49,20 @@ func TestFilterByDeviceNameFound(t *testing.T) {
 	}
 }
 
+func TestFilterOutByDeviceNameFound(t *testing.T) {
+	// Event from device 1
+	eventIn := models.Event{
+		Device: devID1,
+	}
+
+	filter := NewFilter([]string{devID1})
+	filter.FilterOut = true
+
+	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
+	assert.Nil(t, result)
+	assert.False(t, continuePipeline)
+}
+
 func TestFilterByDeviceNameNotFound(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{
@@ -59,6 +74,24 @@ func TestFilterByDeviceNameNotFound(t *testing.T) {
 	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
 	assert.Nil(t, result)
 	assert.False(t, continuePipeline)
+}
+
+func TestFilterOutByDeviceNameNotFound(t *testing.T) {
+	// Event from device 1
+	eventIn := models.Event{
+		Device: devID1,
+	}
+
+	filter := NewFilter([]string{devID2})
+	filter.FilterOut = true
+
+	continuePipeline, result := filter.FilterByDeviceName(context, eventIn)
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+
+	if eventOut, ok := result.(*models.Event); ok {
+		assert.Equal(t, devID1, eventOut.Device)
+	}
 }
 
 func TestFilterByDeviceNameNoParameters(t *testing.T) {
@@ -146,6 +179,64 @@ func TestFilterByValueDescriptor(t *testing.T) {
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event2)
 	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
+}
+
+func TestFilterOutByValueDescriptor(t *testing.T) {
+	f1 := NewFilter([]string{descriptor1})
+	f1.FilterOut = true
+	f12 := NewFilter([]string{descriptor1, descriptor2})
+	f12.FilterOut = true
+
+	// event with a value descriptor 1
+	event1 := models.Event{
+		Device: devID1,
+	}
+	event1.Readings = append(event1.Readings, models.Reading{Name: descriptor1})
+
+	// event with a value descriptor 2
+	event2 := models.Event{}
+	event2.Readings = append(event2.Readings, models.Reading{Name: descriptor2})
+
+	// event with a value descriptor 1 and another 2
+	event12 := models.Event{}
+	event12.Readings = append(event12.Readings, models.Reading{Name: descriptor1})
+	event12.Readings = append(event12.Readings, models.Reading{Name: descriptor2})
+
+	// event with a value descriptor 3
+	event3 := models.Event{}
+	event3.Readings = append(event3.Readings, models.Reading{Name: descriptor3})
+
+	continuePipeline, res := f1.FilterByValueDescriptor(context)
+	assert.False(t, continuePipeline, "Pipeline should stop since no parameter was passed")
+	assert.EqualError(t, res.(error), "no Event Received")
+
+	continuePipeline, res = f1.FilterByValueDescriptor(context, event1)
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 0, "Event should have no readings")
+
+	continuePipeline, res = f1.FilterByValueDescriptor(context, event2)
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
+
+	continuePipeline, res = f1.FilterByValueDescriptor(context, event12)
+	assert.True(t, continuePipeline, "Event should be filtered out")
+	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
+
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event1)
+	assert.False(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 0, "Event should have one reading")
+
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event2)
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 0, "Event should have one reading")
+
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event12)
+	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.Len(t, res.(models.Event).Readings, 0, "Event should have one reading")
+
+	continuePipeline, res = f12.FilterByValueDescriptor(context, event3)
+	assert.True(t, continuePipeline, "Event should be filtered out")
 	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 }
 

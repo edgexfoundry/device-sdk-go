@@ -28,22 +28,21 @@ func TestConfigurableFilterByDeviceName(t *testing.T) {
 			LoggingClient: lc,
 		},
 	}
-	params := make(map[string]string)
 
 	tests := []struct {
 		name      string
-		key       string
-		value     string
+		params    map[string]string
 		expectNil bool
 	}{
-		{"Non Existent Parameters", "", "", true},
-		{"Empty Parameters", DeviceNames, "", false},
-		{"Valid Parameters", DeviceNames, "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", false},
+		{"Non Existent Parameters", map[string]string{"": ""}, true},
+		{"Empty Parameters", map[string]string{DeviceNames: ""}, false},
+		{"Valid Parameters", map[string]string{DeviceNames: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03"}, false},
+		{"Empty FilterOut Parameters", map[string]string{DeviceNames: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: ""}, true},
+		{"Valid FilterOut Parameters", map[string]string{DeviceNames: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: "true"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params[tt.key] = tt.value
-			trx := configurable.FilterByDeviceName(params)
+			trx := configurable.FilterByDeviceName(tt.params)
 			if tt.expectNil {
 				assert.Nil(t, trx, "return result from FilterByDeviceName should be nil")
 			} else {
@@ -59,22 +58,21 @@ func TestConfigurableFilterByValueDescriptor(t *testing.T) {
 			LoggingClient: lc,
 		},
 	}
-	params := make(map[string]string)
 
 	tests := []struct {
 		name      string
-		key       string
-		value     string
+		params    map[string]string
 		expectNil bool
 	}{
-		{"Non Existent Parameters", "", "", true},
-		{"Empty Parameters", ValueDescriptors, "", false},
-		{"Valid Parameters", ValueDescriptors, "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", false},
+		{"Non Existent Parameters", map[string]string{"": ""}, true},
+		{"Empty Parameters", map[string]string{ValueDescriptors: ""}, false},
+		{"Valid Parameters", map[string]string{ValueDescriptors: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03"}, false},
+		{"Empty FilterOut Parameters", map[string]string{ValueDescriptors: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: ""}, true},
+		{"Valid FilterOut Parameters", map[string]string{ValueDescriptors: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: "true"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			params[tt.key] = tt.value
-			trx := configurable.FilterByValueDescriptor(params)
+			trx := configurable.FilterByValueDescriptor(tt.params)
 			if tt.expectNil {
 				assert.Nil(t, trx, "return result from FilterByValueDescriptor should be nil")
 			} else {
