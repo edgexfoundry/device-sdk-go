@@ -18,6 +18,7 @@ package transforms
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -60,16 +61,16 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 	for _, devID := range deviceIDs {
 		if event.Device == devID {
 			if f.FilterOut {
-				edgexcontext.LoggingClient.Trace("Event not accepted: %s", event.Device)
+				edgexcontext.LoggingClient.Trace(fmt.Sprintf("Event not accepted: %s", event.Device))
 				return false, nil
 			} else {
-				edgexcontext.LoggingClient.Trace("Event accepted: %s", event.Device)
+				edgexcontext.LoggingClient.Trace(fmt.Sprintf("Event accepted: %s", event.Device))
 				return true, event
 			}
 		}
 	}
 	if f.FilterOut {
-		edgexcontext.LoggingClient.Trace("Event accepted: %s", event.Device)
+		edgexcontext.LoggingClient.Trace(fmt.Sprintf("Event accepted: %s", event.Device))
 		return true, event
 	}
 	return false, nil
@@ -112,7 +113,7 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 			readingFilteredOut := false
 			for _, filterID := range f.FilterValues {
 				if reading.Name == filterID {
-					edgexcontext.LoggingClient.Trace("Reading filtered out: %s", reading.Name)
+					edgexcontext.LoggingClient.Trace(fmt.Sprintf("Reading filtered out: %s", reading.Name))
 					readingFilteredOut = true
 				}
 			}
@@ -124,7 +125,7 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 		for _, filterID := range f.FilterValues {
 			for _, reading := range existingEvent.Readings {
 				if reading.Name == filterID {
-					edgexcontext.LoggingClient.Trace("Reading accepted: %s", reading.Name)
+					edgexcontext.LoggingClient.Trace(fmt.Sprintf("Reading accepted: %s", reading.Name))
 					auxEvent.Readings = append(auxEvent.Readings, reading)
 				}
 			}
