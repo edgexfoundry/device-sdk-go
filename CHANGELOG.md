@@ -1,3 +1,19 @@
+<a name="v1.2.0"></a>
+## [v1.2.0] - (Compatible w/ Geneva Release)
+
+### Fix
+- fixed log message formatting ([#378](https://github.com/rsdmike/app-functions-sdk-go/issues/378))
+
+### Feat
+- Add ability to Filter functions to reverse the logic to filter out specified names ([#375](https://github.com/rsdmike/app-functions-sdk-go/issues/375))
+
+### Fix
+- Allow overrides that have empty/blank value ([#374](https://github.com/rsdmike/app-functions-sdk-go/issues/374))
+
+### Docs
+- update changelog
+
+
 <a name="v1.1.0"></a>
 
 ## [v1.1.0] - (Compatible w/ Geneva Release)
