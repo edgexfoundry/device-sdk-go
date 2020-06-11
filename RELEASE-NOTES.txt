@@ -1,10 +1,16 @@
                          EdgeX Foundry Go Device SDK
-                                 Version 1.2.1
+                                 Version 1.2.2
                                  Release Notes
 
 INTRODUCTION
 ============
-This document contains the release notes for the 1.2.1 version of EdgeX Foundry Go Device SDK.
+This document contains the release notes for the 1.2.2 version of EdgeX Foundry Go Device SDK.
+
+Changes for 1.2.2 "Geneva":
+============
+o PR#531:  Update Dockerfile
+o PR#533:  fix: device driver with consul takes so much cpu
+o PR#536:  Update go-mod-bootstrap version and increase device-simple timeout
 
 Changes for 1.2.1 "Geneva":
 ============
