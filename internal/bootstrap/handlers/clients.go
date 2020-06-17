@@ -81,7 +81,7 @@ func (_ *Clients) BootstrapHandler(
 	if _, ok := config.Clients[common.CoreDataClientName]; ok {
 		eventClient = coredata.NewEventClient(
 			urlclient.New(
-				context.Background(),
+				ctx,
 				wg,
 				registryClient,
 				clients.CoreDataServiceKey,
@@ -93,7 +93,7 @@ func (_ *Clients) BootstrapHandler(
 
 		valueDescriptorClient = coredata.NewValueDescriptorClient(
 			urlclient.New(
-				context.Background(),
+				ctx,
 				wg,
 				registryClient,
 				clients.CoreDataServiceKey,
@@ -107,7 +107,7 @@ func (_ *Clients) BootstrapHandler(
 	if _, ok := config.Clients[common.CoreCommandClientName]; ok {
 		commandClient = command.NewCommandClient(
 			urlclient.New(
-				context.Background(),
+				ctx,
 				wg,
 				registryClient,
 				clients.CoreCommandServiceKey,
@@ -121,7 +121,7 @@ func (_ *Clients) BootstrapHandler(
 	if _, ok := config.Clients[common.NotificationsClientName]; ok {
 		notificationsClient = notifications.NewNotificationsClient(
 			urlclient.New(
-				context.Background(),
+				ctx,
 				wg,
 				registryClient,
 				clients.SupportNotificationsServiceKey,
