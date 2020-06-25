@@ -37,9 +37,7 @@ import (
 
 func TestClientsBootstrapHandler(t *testing.T) {
 	configuration := &common.ConfigurationStruct{
-		Service: common.ServiceInfo{
-			ClientMonitor: "5s",
-		},
+		Service: common.ServiceInfo{},
 	}
 
 	logger := logging.FactoryToStdout("clients-test")
@@ -79,46 +77,29 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		CoreDataClientInfo      *config.ClientInfo
 		CommandClientInfo       *config.ClientInfo
 		NotificationsClientInfo *config.ClientInfo
-		MonitorDuration         string
-		ExpectSuccess           bool
 	}{
 		{
 			Name:                    "All Clients",
 			CoreDataClientInfo:      &coreDataClientInfo,
 			CommandClientInfo:       &commandClientInfo,
 			NotificationsClientInfo: &notificationsClientInfo,
-			MonitorDuration:         "5s",
-			ExpectSuccess:           true,
 		},
 		{
 			Name:                    "No Clients",
 			CoreDataClientInfo:      nil,
 			CommandClientInfo:       nil,
 			NotificationsClientInfo: nil,
-			MonitorDuration:         "5s",
-			ExpectSuccess:           true,
 		},
 		{
 			Name:                    "Only Core Data Clients",
 			CoreDataClientInfo:      &coreDataClientInfo,
 			CommandClientInfo:       nil,
 			NotificationsClientInfo: nil,
-			MonitorDuration:         "5s",
-			ExpectSuccess:           true,
-		},
-		{
-			Name:                    "Invalid MonitorDuration",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       nil,
-			NotificationsClientInfo: nil,
-			MonitorDuration:         "bogus",
-			ExpectSuccess:           true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			configuration.Service.ClientMonitor = test.MonitorDuration
 			configuration.Clients = make(map[string]config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
@@ -139,11 +120,8 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				},
 			})
 
-			actualSuccess := NewClients().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
-			require.Equal(t, test.ExpectSuccess, actualSuccess)
-			if actualSuccess == false {
-				return // Test is complete
-			}
+			success := NewClients().BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
+			require.True(t, success)
 
 			eventClient := container.EventClientFrom(dic.Get)
 			valueDescriptorClient := container.ValueDescriptorClientFrom(dic.Get)

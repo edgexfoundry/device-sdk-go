@@ -74,7 +74,6 @@ type ConfigurationStruct struct {
 type ServiceInfo struct {
 	BootTimeout   string
 	CheckInterval string
-	ClientMonitor string
 	Host          string
 	HTTPSCert     string
 	HTTPSKey      string
@@ -186,7 +185,6 @@ func (c *ConfigurationStruct) transformToBootstrapServiceInfo() bootstrapConfig.
 	return bootstrapConfig.ServiceInfo{
 		BootTimeout:    durationToMill(c.Service.BootTimeout),
 		CheckInterval:  c.Service.CheckInterval,
-		ClientMonitor:  durationToMill(c.Service.ClientMonitor),
 		Host:           c.Service.Host,
 		Port:           c.Service.Port,
 		Protocol:       c.Service.Protocol,
