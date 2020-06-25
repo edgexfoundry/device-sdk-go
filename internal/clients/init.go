@@ -18,9 +18,9 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/urlclient"
 )
 
 // InitDependencyClients triggers Service Client Initializer to establish connection to Metadata and Core Data Services
@@ -155,76 +155,14 @@ func checkServiceAvailableViaRegistry(serviceId string) bool {
 
 func initializeClients(ctx context.Context, waitGroup *sync.WaitGroup) {
 	// initialize Core Metadata clients
-	common.AddressableClient = metadata.NewAddressableClient(
-		urlclient.NewMetadata(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			clients.ApiAddressableRoute,
-		),
-	)
-
-	common.DeviceClient = metadata.NewDeviceClient(
-		urlclient.NewMetadata(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			clients.ApiDeviceRoute,
-		),
-	)
-
-	common.DeviceServiceClient = metadata.NewDeviceServiceClient(
-		urlclient.NewMetadata(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			clients.ApiDeviceServiceRoute,
-		),
-	)
-
-	common.DeviceProfileClient = metadata.NewDeviceProfileClient(
-		urlclient.NewMetadata(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			clients.ApiDeviceProfileRoute,
-		),
-	)
-
-	common.MetadataGeneralClient = general.NewGeneralClient(
-		urlclient.NewMetadata(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			"",
-		),
-	)
-
-	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(
-		urlclient.NewMetadata(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			clients.ApiProvisionWatcherRoute,
-		),
-	)
+	common.AddressableClient = metadata.NewAddressableClient(local.New(common.CurrentConfig.Clients[common.ClientMetadata].Url() + clients.ApiAddressableRoute))
+	common.DeviceClient = metadata.NewDeviceClient(local.New(common.CurrentConfig.Clients[common.ClientMetadata].Url() + clients.ApiDeviceRoute))
+	common.DeviceServiceClient = metadata.NewDeviceServiceClient(local.New(common.CurrentConfig.Clients[common.ClientMetadata].Url() + clients.ApiDeviceServiceRoute))
+	common.DeviceProfileClient = metadata.NewDeviceProfileClient(local.New(common.CurrentConfig.Clients[common.ClientMetadata].Url() + clients.ApiDeviceProfileRoute))
+	common.MetadataGeneralClient = general.NewGeneralClient(local.New(common.CurrentConfig.Clients[common.ClientMetadata].Url()))
+	common.ProvisionWatcherClient = metadata.NewProvisionWatcherClient(local.New(common.CurrentConfig.Clients[common.ClientMetadata].Url() + clients.ApiProvisionWatcherRoute))
 
 	// initialize Core Data clients
-	common.EventClient = coredata.NewEventClient(
-		urlclient.NewData(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			clients.ApiEventRoute,
-		),
-	)
-
-	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(
-		urlclient.NewData(
-			ctx,
-			common.RegistryClient,
-			waitGroup,
-			common.APIValueDescriptorRoute,
-		),
-	)
+	common.EventClient = coredata.NewEventClient(local.New(common.CurrentConfig.Clients[common.ClientData].Url() + clients.ApiEventRoute))
+	common.ValueDescriptorClient = coredata.NewValueDescriptorClient(local.New(common.CurrentConfig.Clients[common.ClientData].Url() + common.APIValueDescriptorRoute))
 }
