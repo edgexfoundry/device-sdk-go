@@ -19,6 +19,7 @@ package transforms
 import (
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
@@ -26,10 +27,9 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/urlclient"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 )
 
 var context *appcontext.Context
@@ -42,9 +42,7 @@ const (
 
 func init() {
 	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
-	eventClient := coredata.NewEventClient(
-		urlclient.New(nil, nil, nil, "", "", 0, "http://test"+clients.ApiEventRoute),
-	)
+	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
 	mockSP := newMockSecretProvider(lc, nil)
 
 	context = &appcontext.Context{
