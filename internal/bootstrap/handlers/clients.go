@@ -17,22 +17,18 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"sync"
-	"time"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/urlclient"
 )
 
 // Clients contains references to dependencies required by the Clients bootstrap implementation.
@@ -51,85 +47,31 @@ func (_ *Clients) BootstrapHandler(
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
 
-	logger := bootstrapContainer.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
-	registryClient := bootstrapContainer.RegistryFrom(dic.Get)
 
 	var eventClient coredata.EventClient
 	var valueDescriptorClient coredata.ValueDescriptorClient
 	var commandClient command.CommandClient
 	var notificationsClient notifications.NotificationsClient
 
-	// Need when passing all Clients to other components
-	clientMonitor, err := time.ParseDuration(config.Service.ClientMonitor)
-	if err != nil {
-		logger.Warn(
-			fmt.Sprintf(
-				"Service.ClientMonitor failed to parse: %s, use the default value: %v",
-				err,
-				internal.ClientMonitorDefault,
-			),
-		)
-		// fall back to default value
-		clientMonitor = internal.ClientMonitorDefault
-	}
-
-	interval := int(clientMonitor / time.Millisecond)
-
 	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
 	// sending commands, then don't need to have the Command client in the configuration.
 	if _, ok := config.Clients[common.CoreDataClientName]; ok {
 		eventClient = coredata.NewEventClient(
-			urlclient.New(
-				ctx,
-				wg,
-				registryClient,
-				clients.CoreDataServiceKey,
-				clients.ApiEventRoute,
-				interval,
-				config.Clients[common.CoreDataClientName].Url()+clients.ApiEventRoute,
-			),
-		)
+			local.New(config.Clients[common.CoreDataClientName].Url() + clients.ApiEventRoute))
 
 		valueDescriptorClient = coredata.NewValueDescriptorClient(
-			urlclient.New(
-				ctx,
-				wg,
-				registryClient,
-				clients.CoreDataServiceKey,
-				clients.ApiValueDescriptorRoute,
-				interval,
-				config.Clients[common.CoreDataClientName].Url()+clients.ApiValueDescriptorRoute,
-			),
-		)
+			local.New(config.Clients[common.CoreDataClientName].Url() + clients.ApiValueDescriptorRoute))
 	}
 
 	if _, ok := config.Clients[common.CoreCommandClientName]; ok {
 		commandClient = command.NewCommandClient(
-			urlclient.New(
-				ctx,
-				wg,
-				registryClient,
-				clients.CoreCommandServiceKey,
-				clients.ApiDeviceRoute,
-				interval,
-				config.Clients[common.CoreCommandClientName].Url()+clients.ApiDeviceRoute,
-			),
-		)
+			local.New(config.Clients[common.CoreCommandClientName].Url() + clients.ApiDeviceRoute))
 	}
 
 	if _, ok := config.Clients[common.NotificationsClientName]; ok {
 		notificationsClient = notifications.NewNotificationsClient(
-			urlclient.New(
-				ctx,
-				wg,
-				registryClient,
-				clients.SupportNotificationsServiceKey,
-				clients.ApiNotificationRoute,
-				interval,
-				config.Clients[common.NotificationsClientName].Url()+clients.ApiNotificationRoute,
-			),
-		)
+			local.New(config.Clients[common.NotificationsClientName].Url() + clients.ApiNotificationRoute))
 	}
 
 	// Note that all the clients are optional so some or all these clients may be nil
