@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/google/uuid"
 )
+
+var LoggingClient logger.LoggingClient
 
 func ManageHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +35,8 @@ func OnResponseComplete(next http.Handler) http.Handler {
 		begin := time.Now()
 		next.ServeHTTP(w, r)
 		correlationId := FromContext(r.Context())
-		if common.LoggingClient != nil {
-			common.LoggingClient.Trace("Response complete", clients.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
+		if LoggingClient != nil {
+			LoggingClient.Trace("Response complete", clients.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
 		}
 	})
 }
@@ -42,8 +44,8 @@ func OnResponseComplete(next http.Handler) http.Handler {
 func OnRequestBegin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		correlationId := FromContext(r.Context())
-		if common.LoggingClient != nil {
-			common.LoggingClient.Trace("Begin request", clients.CorrelationHeader, correlationId, "path", r.URL.Path)
+		if LoggingClient != nil {
+			LoggingClient.Trace("Begin request", clients.CorrelationHeader, correlationId, "path", r.URL.Path)
 		}
 		next.ServeHTTP(w, r)
 	})

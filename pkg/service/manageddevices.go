@@ -20,36 +20,38 @@ import (
 
 // AddDevice adds a new Device to the Device Service and Core Metadata
 // Returns new Device id or non-nil error.
-func (s *Service) AddDevice(device contract.Device) (id string, err error) {
+func (s *DeviceServiceSDK) AddDevice(device contract.Device) (id string, err error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
 		return d.Id, fmt.Errorf("name conflicted, Device %s exists", device.Name)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Adding managed device: : %s\n", device.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Adding managed device: : %s\n", device.Name))
 
 	var prf contract.DeviceProfile
 	prf, cacheExist := cache.Profiles().ForName(device.Profile.Name)
 	if !cacheExist {
-		prf, err = common.DeviceProfileClient.DeviceProfileForName(context.Background(), device.Profile.Name)
+		dpc := s.edgexClients.DeviceProfileClient
+		prf, err = dpc.DeviceProfileForName(context.Background(), device.Profile.Name)
 		if err != nil {
 			errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %s", device.Profile.Name, device.Name)
-			common.LoggingClient.Error(errMsg)
+			s.LoggingClient.Error(errMsg)
 			return "", fmt.Errorf(errMsg)
 		}
 	}
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	device.Origin = millis
-	device.Service = common.CurrentDeviceService
+	device.Service = s.deviceService
 	device.Profile = prf
 
+	dc := s.edgexClients.DeviceClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err = common.DeviceClient.Add(ctx, &device)
+	id, err = dc.Add(ctx, &device)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Add Device failed %s, error: %v", device.Name, err))
+		s.LoggingClient.Error(fmt.Sprintf("Add Device failed %s, error: %v", device.Name, err))
 		return "", err
 	}
-	if err = common.VerifyIdFormat(id, "Device"); err != nil {
+	if err = common.VerifyIdFormat(id, "Device", s.LoggingClient); err != nil {
 		return "", err
 	}
 	device.Id = id
@@ -58,16 +60,16 @@ func (s *Service) AddDevice(device contract.Device) (id string, err error) {
 }
 
 // Devices return all managed Devices from cache
-func (s *Service) Devices() []contract.Device {
+func (s *DeviceServiceSDK) Devices() []contract.Device {
 	return cache.Devices().All()
 }
 
 // GetDeviceByName returns the Device by its name if it exists in the cache, or returns an error.
-func (s *Service) GetDeviceByName(name string) (contract.Device, error) {
+func (s *DeviceServiceSDK) GetDeviceByName(name string) (contract.Device, error) {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", name)
-		common.LoggingClient.Info(msg)
+		s.LoggingClient.Info(msg)
 		return contract.Device{}, fmt.Errorf(msg)
 	}
 	return device, nil
@@ -75,19 +77,20 @@ func (s *Service) GetDeviceByName(name string) (contract.Device, error) {
 
 // RemoveDevice removes the specified Device by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *Service) RemoveDevice(id string) error {
+func (s *DeviceServiceSDK) RemoveDevice(id string) error {
 	device, ok := cache.Devices().ForId(id)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", id)
-		common.LoggingClient.Error(msg)
+		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %s\n", device.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %s\n", device.Name))
+	dc := s.edgexClients.DeviceClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceClient.Delete(ctx, id)
+	err := dc.Delete(ctx, id)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", id))
+		s.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", id))
 	}
 
 	return err
@@ -95,19 +98,20 @@ func (s *Service) RemoveDevice(id string) error {
 
 // RemoveDevice removes the specified Device by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *Service) RemoveDeviceByName(name string) error {
+func (s *DeviceServiceSDK) RemoveDeviceByName(name string) error {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", name)
-		common.LoggingClient.Error(msg)
+		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %s\n", device.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Removing managed Device: : %s\n", device.Name))
+	dc := s.edgexClients.DeviceClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceClient.DeleteByName(ctx, name)
+	err := dc.DeleteByName(ctx, name)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", name))
+		s.LoggingClient.Error(fmt.Sprintf("Delete Device %s from Core Metadata failed", name))
 	}
 
 	return err
@@ -115,19 +119,20 @@ func (s *Service) RemoveDeviceByName(name string) error {
 
 // UpdateDevice updates the Device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *Service) UpdateDevice(device contract.Device) error {
+func (s *DeviceServiceSDK) UpdateDevice(device contract.Device) error {
 	_, ok := cache.Devices().ForId(device.Id)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", device.Id)
-		common.LoggingClient.Error(msg)
+		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device: : %s\n", device.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Updating managed Device: : %s\n", device.Name))
+	dc := s.edgexClients.DeviceClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceClient.Update(ctx, device)
+	err := dc.Update(ctx, device)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Update Device %s from Core Metadata failed: %v", device.Name, err))
+		s.LoggingClient.Error(fmt.Sprintf("Update Device %s from Core Metadata failed: %v", device.Name, err))
 	}
 
 	return err
@@ -135,19 +140,20 @@ func (s *Service) UpdateDevice(device contract.Device) error {
 
 // UpdateDeviceOperatingState updates the Device's OperatingState with given name
 // in Core Metadata and device service cache.
-func (s *Service) UpdateDeviceOperatingState(deviceName string, state string) error {
+func (s *DeviceServiceSDK) UpdateDeviceOperatingState(deviceName string, state string) error {
 	d, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", deviceName)
-		common.LoggingClient.Error(msg)
+		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Updating managed Device OperatingState: : %s\n", d.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Updating managed Device OperatingState: : %s\n", d.Name))
+	dc := s.edgexClients.DeviceClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.DeviceClient.UpdateOpState(ctx, d.Id, state)
+	err := dc.UpdateOpState(ctx, d.Id, state)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Update Device %s OperatingState from Core Metadata failed: %v", d.Name, err))
+		s.LoggingClient.Error(fmt.Sprintf("Update Device %s OperatingState from Core Metadata failed: %v", d.Name, err))
 	}
 
 	return err

@@ -8,13 +8,11 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"os"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/controller"
-	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers/httpserver"
@@ -39,54 +37,35 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	sdkFlags.Parse(os.Args[1:])
 
 	serviceName = setServiceName(serviceName, sdkFlags.Profile())
-	if serviceName == "" {
-		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service name")
-		os.Exit(1)
-	}
-	common.ServiceName = serviceName
-	if serviceVersion == "" {
-		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service version")
-		os.Exit(1)
-	}
-	common.ServiceVersion = serviceVersion
-	if driver, ok := proto.(dsModels.ProtocolDriver); ok {
-		common.Driver = driver
-	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "Please implement and specify the protocoldriver")
-		os.Exit(1)
-	}
-	if discovery, ok := proto.(dsModels.ProtocolDiscovery); ok {
-		common.Discovery = discovery
-	} else {
-		common.Discovery = nil
-	}
 
-	configuration := &common.ConfigurationStruct{}
+	sdk = &DeviceServiceSDK{}
+	sdk.Initialize(serviceName, serviceVersion, proto)
+
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
-			return configuration
+			return sdk.config
 		},
 	})
 
 	httpServer := httpserver.NewBootstrap(router, true)
-	controller.LoadRestRoutes(router, dic)
 
 	bootstrap.Run(
 		ctx,
 		cancel,
 		sdkFlags,
-		serviceName,
+		sdk.ServiceName,
 		common.ConfigStemDevice+common.ConfigMajorVersion,
-		configuration,
+		sdk.config,
 		startupTimer,
 		dic,
 		[]interfaces.BootstrapHandler{
 			httpServer.BootstrapHandler,
+			clients.NewClients().BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
 			message.NewBootstrap(serviceName, serviceVersion).BootstrapHandler,
 		})
 
-	svc.Stop(false)
+	sdk.Stop(false)
 }
 
 func setServiceName(name string, profile string) string {

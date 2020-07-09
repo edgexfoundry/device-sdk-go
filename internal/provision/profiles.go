@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -17,6 +17,12 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/container"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
@@ -27,29 +33,31 @@ const (
 	ymlExt  = ".yml"
 )
 
-func LoadProfiles(path string) error {
+func LoadProfiles(path string, dic *di.Container) error {
 	if path == "" {
 		return nil
 	}
 
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v", path, err))
+		lc.Error(fmt.Sprintf("profiles: couldn't create absolute path for: %s; %v", path, err))
 		return err
 	}
-	common.LoggingClient.Debug(fmt.Sprintf("created absolute path for loading pre-defined Device Profiles: %s", absPath))
+	lc.Debug(fmt.Sprintf("created absolute path for loading pre-defined Device Profiles: %s", absPath))
 
+	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	profiles, err := common.DeviceProfileClient.DeviceProfiles(ctx)
+	profiles, err := dpc.DeviceProfiles(ctx)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("couldn't read Device Profile from Core Metadata: %v", err))
+		lc.Error(fmt.Sprintf("couldn't read Device Profile from Core Metadata: %v", err))
 		return err
 	}
 	pMap := profileSliceToMap(profiles)
 
 	fileInfo, err := ioutil.ReadDir(absPath)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v", absPath, err))
+		lc.Error(fmt.Sprintf("profiles: couldn't read directory: %s; %v", absPath, err))
 		return err
 	}
 
@@ -62,13 +70,13 @@ func LoadProfiles(path string) error {
 			fullPath := absPath + "/" + fName
 			yamlFile, err := ioutil.ReadFile(fullPath)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v", fullPath, err))
+				lc.Error(fmt.Sprintf("profiles: couldn't read file: %s; %v", fullPath, err))
 				continue
 			}
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("invalid Device Profile: %s; %v", fullPath, err))
+				lc.Error(fmt.Sprintf("invalid Device Profile: %s; %v", fullPath, err))
 				continue
 			}
 
@@ -83,18 +91,22 @@ func LoadProfiles(path string) error {
 
 			// add profile to metadata
 			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-			id, err := common.DeviceProfileClient.Add(ctx, &profile)
+			id, err := dpc.Add(ctx, &profile)
 			if err != nil {
-				common.LoggingClient.Error(fmt.Sprintf("Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
+				lc.Error(fmt.Sprintf("Add Device Profile: %s to Core Metadata failed: %v", fullPath, err))
 				continue
 			}
-			if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
+			if err = common.VerifyIdFormat(id, "Device Profile", lc); err != nil {
 				return err
 			}
 
 			profile.Id = id
 			cache.Profiles().Add(profile)
-			CreateDescriptorsFromProfile(&profile)
+			CreateDescriptorsFromProfile(
+				&profile,
+				lc,
+				container.MetadataGeneralClientFrom(dic.Get),
+				container.CoredataValueDescriptorClientFrom(dic.Get))
 		}
 	}
 	return nil
@@ -133,80 +145,80 @@ func profileSliceToMap(profiles []contract.DeviceProfile) map[string]contract.De
 	return result
 }
 
-func CreateDescriptorsFromProfile(profile *contract.DeviceProfile) {
-	if isValueDescriptorManagedByMetadata() {
-		common.LoggingClient.Debug("Value Descriptor is now managed by Core Metadata")
+func CreateDescriptorsFromProfile(profile *contract.DeviceProfile, lc logger.LoggingClient, gc general.GeneralClient, vdc coredata.ValueDescriptorClient) {
+	if isValueDescriptorManagedByMetadata(lc, gc) {
+		lc.Debug("Value Descriptor is now managed by Core Metadata")
 		return
 	}
 
 	dcs := profile.DeviceCommands
 	for _, dc := range dcs {
 		for _, op := range dc.Get {
-			createDescriptorFromResourceOperation(profile.Name, op)
+			createDescriptorFromResourceOperation(profile.Name, op, lc, vdc)
 		}
 		for _, op := range dc.Set {
-			createDescriptorFromResourceOperation(profile.Name, op)
+			createDescriptorFromResourceOperation(profile.Name, op, lc, vdc)
 		}
 	}
 }
 
 // This is a temporary solution and will move the whole
 // Value Descriptor management logic to Core Metadata in Geneva
-func isValueDescriptorManagedByMetadata() bool {
-	common.LoggingClient.Debug("Getting EnableValueDescriptorManagement configuration value from Core Metadata")
+func isValueDescriptorManagedByMetadata(lc logger.LoggingClient, gc general.GeneralClient) bool {
+	lc.Debug("Getting EnableValueDescriptorManagement configuration value from Core Metadata")
 	correlation := uuid.New().String()
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlation)
 
-	configString, err := common.MetadataGeneralClient.FetchConfiguration(ctx)
+	configString, err := gc.FetchConfiguration(ctx)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Error when getting configuration from Core Metadata: %v ", err))
+		lc.Error(fmt.Sprintf("Error when getting configuration from Core Metadata: %v ", err))
 		return false
 	}
 
 	var metadataConfig map[string]interface{}
 	err = json.Unmarshal([]byte(configString), &metadataConfig)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Error when parsing configuration from Core Metadata: %v ", err))
+		lc.Error(fmt.Sprintf("Error when parsing configuration from Core Metadata: %v ", err))
 		return false
 	}
 
 	writable, ok := metadataConfig["Writable"].(map[string]interface{})
 	if !ok {
-		common.LoggingClient.Error(fmt.Sprintf("Error when retrieving Writable configuration from Core Metadata: %v", metadataConfig))
+		lc.Error(fmt.Sprintf("Error when retrieving Writable configuration from Core Metadata: %v", metadataConfig))
 		return false
 	}
 	enableValueDescriptorManagement, ok := writable["EnableValueDescriptorManagement"].(bool)
 	if !ok {
-		common.LoggingClient.Error(fmt.Sprintf("Error when retrieving EnableValueDescriptorManagement configuration from Core Metadata: %v", writable))
+		lc.Error(fmt.Sprintf("Error when retrieving EnableValueDescriptorManagement configuration from Core Metadata: %v", writable))
 		return false
 	}
 
 	return enableValueDescriptorManagement
 }
 
-func createDescriptorFromResourceOperation(profileName string, op contract.ResourceOperation) {
+func createDescriptorFromResourceOperation(profileName string, op contract.ResourceOperation, lc logger.LoggingClient, vdc coredata.ValueDescriptorClient) {
 	if _, ok := cache.ValueDescriptors().ForName(op.DeviceResource); ok {
 		// Value Descriptor has been created
 		return
 	} else {
 		dr, ok := cache.Profiles().DeviceResource(profileName, op.DeviceResource)
 		if !ok {
-			common.LoggingClient.Error(fmt.Sprintf("can't find Device Resource %s to match Device Command (Resource Operation) %v in Device Profile %s", op.DeviceResource, op, profileName))
+			lc.Error(fmt.Sprintf("can't find Device Resource %s to match Device Command (Resource Operation) %v in Device Profile %s", op.DeviceResource, op, profileName))
 		}
-		desc, err := createDescriptor(op.DeviceResource, dr)
+		desc, err := createDescriptor(op.DeviceResource, dr, lc, vdc)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
+			lc.Error(fmt.Sprintf("createing Value Descriptor %v failed: %v", desc, err))
 		} else {
 			_ = cache.ValueDescriptors().Add(*desc)
 		}
 	}
 }
 
-func createDescriptor(name string, dr contract.DeviceResource) (*contract.ValueDescriptor, error) {
+func createDescriptor(name string, dr contract.DeviceResource, lc logger.LoggingClient, vdc coredata.ValueDescriptorClient) (*contract.ValueDescriptor, error) {
 	value := dr.Properties.Value
 	units := dr.Properties.Units
 
-	common.LoggingClient.Debug(fmt.Sprintf("ps: createDescriptor: %s, value: %v, units: %v", name, value, units))
+	lc.Debug(fmt.Sprintf("ps: createDescriptor: %s, value: %v, units: %v", name, value, units))
 
 	desc := &contract.ValueDescriptor{
 		Name:          name,
@@ -222,17 +234,17 @@ func createDescriptor(name string, dr contract.DeviceResource) (*contract.ValueD
 	}
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := common.ValueDescriptorClient.Add(ctx, desc)
+	id, err := vdc.Add(ctx, desc)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = common.VerifyIdFormat(id, "Value Descriptor"); err != nil {
+	if err = common.VerifyIdFormat(id, "Value Descriptor", lc); err != nil {
 		return nil, err
 	}
 
 	desc.Id = id
-	common.LoggingClient.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s", id))
+	lc.Debug(fmt.Sprintf("profiles: created Value Descriptor id: %s", id))
 
 	return desc, nil
 }

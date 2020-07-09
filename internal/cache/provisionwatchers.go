@@ -166,8 +166,5 @@ func newProvisionWatcherCache(watchers []contract.ProvisionWatcher) ProvisionWat
 }
 
 func ProvisionWatchers() ProvisionWatcherCache {
-	if pwc == nil {
-		InitCache()
-	}
 	return pwc
 }

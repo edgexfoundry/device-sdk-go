@@ -127,8 +127,5 @@ func newValueDescriptorCache(descriptors []contract.ValueDescriptor) ValueDescri
 }
 
 func ValueDescriptors() ValueDescriptorCache {
-	if vdc == nil {
-		InitCache()
-	}
 	return vdc
 }

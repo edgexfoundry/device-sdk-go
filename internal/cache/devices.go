@@ -172,8 +172,5 @@ func newDeviceCache(devices []contract.Device) DeviceCache {
 }
 
 func Devices() DeviceCache {
-	if dc == nil {
-		InitCache()
-	}
 	return dc
 }

@@ -16,57 +16,57 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller/correlation"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
 )
 
 type RestController struct {
+	LoggingClient  logger.LoggingClient
 	router         *mux.Router
 	reservedRoutes map[string]bool
 }
 
-func NewRestController(r *mux.Router) RestController {
-	return RestController{
+func NewRestController(r *mux.Router, lc logger.LoggingClient) *RestController {
+	return &RestController{
+		LoggingClient:  lc,
 		router:         r,
 		reservedRoutes: make(map[string]bool),
 	}
 }
 
-func LoadRestRoutes(r *mux.Router, dic *di.Container) {
-	c := NewRestController(r)
-	c.InitRestRoutes()
-	dic.Update(di.ServiceConstructorMap{
-		"RestController": func(dic di.Get) interface{} {
-			return c
-		},
-	})
-}
-
-func (c RestController) InitRestRoutes() {
-	// Status
-	c.addReservedRoute(common.APIPingRoute, statusFunc).Methods(http.MethodGet)
-	// Version
-	c.addReservedRoute(common.APIVersionRoute, versionFunc).Methods(http.MethodGet)
-	// Command
-	c.addReservedRoute(common.APIAllCommandRoute, commandAllFunc).Methods(http.MethodGet, http.MethodPut)
-	c.addReservedRoute(common.APIIdCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
-	c.addReservedRoute(common.APINameCommandRoute, commandFunc).Methods(http.MethodGet, http.MethodPut)
+func (c RestController) InitRestRoutes(dic *di.Container) {
 	// Callback
-	c.addReservedRoute(common.APICallbackRoute, callbackFunc)
+	c.addReservedRoute(common.APICallbackRoute, c.callbackFunc, dic)
+	// Command
+	c.addReservedRoute(common.APIAllCommandRoute, c.commandAllFunc, dic).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(common.APIIdCommandRoute, c.commandFunc, dic).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(common.APINameCommandRoute, c.commandFunc, dic).Methods(http.MethodGet, http.MethodPut)
 	// Discovery and Transform
-	c.addReservedRoute(common.APIDiscoveryRoute, discoveryFunc).Methods(http.MethodPost)
-	c.addReservedRoute(common.APITransformRoute, transformFunc).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIDiscoveryRoute, c.discoveryFunc, dic).Methods(http.MethodPost)
+	c.addReservedRoute(common.APITransformRoute, c.transformFunc, dic).Methods(http.MethodGet)
+	// Status
+	c.addReservedRoute(common.APIPingRoute, c.statusFunc, dic).Methods(http.MethodGet)
+	// Version
+	c.addReservedRoute(common.APIVersionRoute, c.versionFunc, dic).Methods(http.MethodGet)
 	// Metric and Config
-	c.addReservedRoute(common.APIMetricsRoute, metricsHandler).Methods(http.MethodGet)
-	c.addReservedRoute(common.APIConfigRoute, configHandler).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIMetricsRoute, c.metricsFunc, dic).Methods(http.MethodGet)
+	c.addReservedRoute(common.APIConfigRoute, c.configFunc, dic).Methods(http.MethodGet)
 
 	c.router.Use(correlation.ManageHeader)
 	c.router.Use(correlation.OnResponseComplete)
 	c.router.Use(correlation.OnRequestBegin)
 }
 
-func (c RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
+func (c RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request, *di.Container), dic *di.Container) *mux.Route {
 	c.reservedRoutes[route] = true
-	return c.router.HandleFunc(route, handler)
+	return c.router.HandleFunc(
+		route,
+		func(w http.ResponseWriter, r *http.Request) {
+			handler(
+				w,
+				r,
+				dic)
+		})
 }
 
 func (c RestController) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
@@ -75,7 +75,7 @@ func (c RestController) AddRoute(route string, handler func(http.ResponseWriter,
 	}
 
 	c.router.HandleFunc(route, handler).Methods(methods...)
-	common.LoggingClient.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
+	c.LoggingClient.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
 
 	return nil
 }

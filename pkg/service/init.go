@@ -17,8 +17,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/internal/clients"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -40,62 +38,74 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 	}
 }
 
-func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
-	common.CurrentConfig = container.ConfigurationFrom(dic.Get)
-	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
-	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
+func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) (success bool) {
+	sdk.Update(b.router, dic)
+	sdk.controller.InitRestRoutes(dic)
 
-	// init svc and autoevent manager in the beginning so that if there's
-	// error in following bootstrap process the device service can correctly
+	configuration := container.ConfigurationFrom(dic.Get)
+
+	// init autoevent manager in the beginning so that if there's error
+	// in following bootstrap process the device service can correctly
 	// call svc.Stop and gracefully shut down.
-	svc = newService(dic)
-	autoevent.NewManager(ctx, wg)
+	autoevent.NewManager(ctx, wg, dic)
 
-	if svc.svcInfo.EnableAsyncReadings {
-		svc.asyncCh = make(chan *dsModels.AsyncValues, svc.svcInfo.AsyncBufferSize)
-		go processAsyncResults(ctx, wg)
+	// invoke async goroutine
+	if sdk.AsyncReadings() {
+		sdk.asyncCh = make(chan *dsModels.AsyncValues, sdk.svcInfo.AsyncBufferSize)
+		go sdk.processAsyncResults(ctx, wg)
 	}
 
-	svc.deviceCh = make(chan []dsModels.DiscoveredDevice)
-	go processAsyncFilterAndAdd(ctx, wg)
+	sdk.deviceCh = make(chan []dsModels.DiscoveredDevice)
+	go sdk.processAsyncFilterAndAdd(ctx, wg)
 
-	err := clients.InitDependencyClients(ctx, wg, startupTimer)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return false
-	}
-
-	err = selfRegister()
+	err := sdk.selfRegister()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Couldn't register to metadata service: %v\n", err)
 		return false
 	}
 
 	// initialize devices, deviceResources, provisionwatcheres & profiles
-	cache.InitCache()
+	cache.InitCache(
+		sdk.ServiceName,
+		bootstrapContainer.LoggingClientFrom(dic.Get),
+		container.CoredataValueDescriptorClientFrom(dic.Get),
+		container.MetadataDeviceClientFrom(dic.Get),
+		container.MetadataProvisionWatcherClientFrom(dic.Get))
 
-	err = common.Driver.Initialize(common.LoggingClient, svc.asyncCh, svc.deviceCh)
+	err = sdk.driver.Initialize(sdk.LoggingClient, sdk.asyncCh, sdk.deviceCh)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Driver.Initialize failed: %v\n", err)
 		return false
 	}
-	svc.initiazlied = true
+	sdk.initialized = true
 
-	err = provision.LoadProfiles(common.CurrentConfig.Device.ProfilesDir)
+	dic.Update(di.ServiceConstructorMap{
+		container.DeviceServiceName: func(get di.Get) interface{} {
+			return sdk.deviceService
+		},
+		container.ProtocolDiscoveryName: func(get di.Get) interface{} {
+			return sdk.discovery
+		},
+		container.ProtocolDriverName: func(get di.Get) interface{} {
+			return sdk.driver
+		},
+	})
+
+	err = provision.LoadProfiles(configuration.Device.ProfilesDir, dic)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create the pre-defined Device Profiles: %v\n", err)
 		return false
 	}
 
-	err = provision.LoadDevices(common.CurrentConfig.DeviceList)
+	err = provision.LoadDevices(configuration.DeviceList, dic)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Failed to create the pre-defined Devices: %v\n", err)
 		return false
 	}
 
-	go autodiscovery.Run()
+	go autodiscovery.Run(sdk.discovery, sdk.LoggingClient, sdk.config)
 	autoevent.GetManager().StartAutoEvents()
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(common.CurrentConfig.Service.Timeout), "Request timed out")
+	http.TimeoutHandler(nil, time.Millisecond*time.Duration(configuration.Service.Timeout), "Request timed out")
 
 	return true
 }

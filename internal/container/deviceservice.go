@@ -7,14 +7,25 @@
 package container
 
 import (
+	"github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 // DeviceServiceName contains the name of device service implementation in the DIC.
 var DeviceServiceName = di.TypeInstanceToName(contract.DeviceService{})
+var ProtocolDiscoveryName = "ProtocolDiscovery"
+var ProtocolDriverName = "ProtocolDriver"
 
 // DeviceServiceFrom helper function queries the DIC and returns device service implementation.
-func DeviceServiceFrom(get di.Get) *contract.DeviceService {
-	return get(DeviceServiceName).(*contract.DeviceService)
+func DeviceServiceFrom(get di.Get) contract.DeviceService {
+	return get(DeviceServiceName).(contract.DeviceService)
+}
+
+func ProtocolDiscoveryFrom(get di.Get) models.ProtocolDiscovery {
+	return get(ProtocolDiscoveryName).(models.ProtocolDiscovery)
+}
+
+func ProtocolDriverFrom(get di.Get) models.ProtocolDriver {
+	return get(ProtocolDriverName).(models.ProtocolDriver)
 }
