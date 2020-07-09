@@ -19,7 +19,6 @@ import "errors"
 
 const (
 	// Database providers
-	MongoDB = "mongodb"
 	RedisDB = "redisdb"
 )
 
