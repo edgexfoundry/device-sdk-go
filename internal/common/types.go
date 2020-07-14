@@ -27,12 +27,13 @@ type ServiceInfo struct {
 	BootTimeout int
 	// Health check interval
 	CheckInterval string
-	// Indicates the interval in milliseconds at which service clients should check for any configuration updates
-	ClientMonitor int
 	// Host is the hostname or IP address of the service.
 	Host string
 	// Port is the HTTP port of the service.
 	Port int
+	// ServerBindAddr specifies an IP address or hostname
+	// for ListenAndServe to bind to, such as 0.0.0.0
+	ServerBindAddr string
 	// The protocol that should be used to call this service
 	Protocol string
 	// StartupMsg specifies a string to log once service
@@ -117,9 +118,9 @@ func (s ServiceInfo) GetBootstrapServiceInfo() bootstrapConfig.ServiceInfo {
 	return bootstrapConfig.ServiceInfo{
 		BootTimeout:    s.BootTimeout,
 		CheckInterval:  s.CheckInterval,
-		ClientMonitor:  s.ClientMonitor,
 		Host:           s.Host,
 		Port:           s.Port,
+		ServerBindAddr: s.ServerBindAddr,
 		Protocol:       s.Protocol,
 		StartupMsg:     s.StartupMsg,
 		MaxResultCount: s.MaxResultCount,
