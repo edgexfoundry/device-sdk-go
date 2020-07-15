@@ -344,11 +344,6 @@ func listenAndServe(webserver *WebServer, serviceTimeout time.Duration, errChann
 	// this allows env overrides to explicitly set the value used
 	// for ListenAndServe, as needed for different deployments
 	addr := fmt.Sprintf("%v:%d", webserver.Config.Service.ServerBindAddr, webserver.Config.Service.Port)
-	// for backwards compatibility, the Host value is the default value if
-	// the ServerBindAddr value is not specified
-	if webserver.Config.Service.ServerBindAddr == "" {
-		addr = fmt.Sprintf("%v:%d", webserver.Config.Service.Host, webserver.Config.Service.Port)
-	}
 
 	if webserver.Config.Service.Protocol == "https" {
 		webserver.LoggingClient.Info(fmt.Sprintf("Starting HTTPS Web Server on address %v", addr))
