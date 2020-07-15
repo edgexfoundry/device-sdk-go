@@ -5,6 +5,7 @@ LogLevel = 'INFO'
 BootTimeout = 30000
 CheckInterval = '10s'
 Host = 'localhost'
+ServerBindAddr = ''  # blank value defaults to Service.Host value
 Port = 49990
 Protocol = 'http'
 StartupMsg = 'device simple started'
