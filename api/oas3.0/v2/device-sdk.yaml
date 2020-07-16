@@ -958,6 +958,24 @@ paths:
           schema:
             type: string
           example: allValues
+        - in: query
+          name: ds-postevent
+          schema:
+            type: string
+            enum:
+              - yes
+              - no
+            default: no
+          example: yes
+        - in: query
+          name: ds-returnevent
+          schema:
+            type: string
+            enum:
+              - yes
+              - no
+            default: yes
+          example: no
       responses:
         '200':
           description: String as returned by the device/sensor through the device service.
@@ -1086,6 +1104,24 @@ paths:
           schema:
             type: string
           example: allValues
+        - in: query
+          name: ds-postevent
+          schema:
+            type: string
+            enum:
+              - yes
+              - no
+            default: no
+          example: yes
+        - in: query
+          name: ds-returnevent
+          schema:
+            type: string
+            enum:
+              - yes
+              - no
+            default: yes
+          example: no
       responses:
         '200':
           description: String as returned by the device/sensor through the device service.
