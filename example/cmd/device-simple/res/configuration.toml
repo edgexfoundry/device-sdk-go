@@ -12,7 +12,7 @@ StartupMsg = 'device simple started'
 Timeout = 20000
 Labels = []
 EnableAsyncReadings = true
-AsyncBufferSize = 16
+AsyncBufferSize = 1
 
 [Registry]
 Host = 'localhost'
