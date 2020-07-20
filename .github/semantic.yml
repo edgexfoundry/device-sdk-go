@@ -14,3 +14,11 @@ types:
     - ci
     - chore
     - revert
+scopes:
+    - transforms
+    - secrets
+    - store-forward
+    - configuration
+    - sdk
+    - triggers
+    - context
