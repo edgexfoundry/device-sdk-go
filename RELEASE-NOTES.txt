@@ -1,10 +1,18 @@
                          EdgeX Foundry Go Device SDK
-                                 Version 1.2.2
+                                 Version 1.2.3
                                  Release Notes
 
 INTRODUCTION
 ============
-This document contains the release notes for the 1.2.2 version of EdgeX Foundry Go Device SDK.
+This document contains the release notes for the 1.2.3 version of EdgeX Foundry Go Device SDK.
+
+Changes for 1.2.3 "Geneva":
+============
+o PR#539:  docs(README.md): clarity for readers
+o PR#541:  update pr template to add dependency section
+o PR#545:  refactor: Remove client monitoring
+o PR#550:  Add ServerBindAddr setting in configuration
+o PR#551:  Update API doc for query parameters
 
 Changes for 1.2.2 "Geneva":
 ============
