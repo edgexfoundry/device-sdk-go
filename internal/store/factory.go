@@ -17,11 +17,14 @@ package store
 import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/mongo"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/redis"
 )
 
 func NewStoreClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 	switch config.Type {
+	case db.MongoDB:
+		return mongo.NewClient(config)
 	case db.RedisDB:
 		return redis.NewClient(config)
 	default:
