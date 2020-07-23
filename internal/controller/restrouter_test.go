@@ -21,17 +21,14 @@ import (
 	"net/http"
 	"testing"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
-
-func init() {
-	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
-	common.LoggingClient = lc
-}
 
 func TestAddRoute(t *testing.T) {
 
@@ -44,10 +41,17 @@ func TestAddRoute(t *testing.T) {
 		{"Reserved Route", common.APIVersionRoute, true},
 	}
 
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+	})
+
 	for _, test := range tests {
 		r := mux.NewRouter()
-		controller := NewRestController(r)
-		controller.InitRestRoutes()
+		controller := NewRestController(r, lc)
+		controller.InitRestRoutes(dic)
 
 		err := controller.AddRoute(test.Route, func(http.ResponseWriter, *http.Request) {}, http.MethodPost)
 		if test.ErrorExpected {
@@ -84,9 +88,16 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestInitRestRoutes(t *testing.T) {
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+	})
+
 	r := mux.NewRouter()
-	controller := NewRestController(r)
-	controller.InitRestRoutes()
+	controller := NewRestController(r, lc)
+	controller.InitRestRoutes(dic)
 
 	err := controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 		path, err := route.GetPathTemplate()
