@@ -54,8 +54,8 @@ func NewVersionValidator(skip bool, sdkVersion string) *VersionValidator {
 
 // BootstrapHandler verifies that Core Services major version matches this SDK's major version
 func (vv *VersionValidator) BootstrapHandler(
-	ctx context.Context,
-	wg *sync.WaitGroup,
+	_ context.Context,
+	_ *sync.WaitGroup,
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
 
@@ -124,7 +124,7 @@ func (vv *VersionValidator) BootstrapHandler(
 
 	// Core Service version is reported as "{major}.{minor}.{patch}"
 	coreVersionParts := strings.Split(coreVersion, ".")
-	if len(coreVersionParts) != 3 {
+	if len(coreVersionParts) < 3 {
 		logger.Error("Core Services version is malformed", "version", coreVersion)
 		return false
 	}
