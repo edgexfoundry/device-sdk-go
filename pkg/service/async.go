@@ -29,7 +29,7 @@ import (
 func (s *DeviceServiceSDK) processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
-		close(sdk.asyncCh)
+		close(s.asyncCh)
 		wg.Done()
 	}()
 
@@ -37,7 +37,7 @@ func (s *DeviceServiceSDK) processAsyncResults(ctx context.Context, wg *sync.Wai
 		select {
 		case <-ctx.Done():
 			return
-		case acv := <-sdk.asyncCh:
+		case acv := <-s.asyncCh:
 			readings := make([]contract.Reading, 0, len(acv.CommandValues))
 
 			device, ok := cache.Devices().ForName(acv.DeviceName)
@@ -54,7 +54,7 @@ func (s *DeviceServiceSDK) processAsyncResults(ctx context.Context, wg *sync.Wai
 					continue
 				}
 
-				if sdk.config.Device.DataTransform {
+				if s.config.Device.DataTransform {
 					err := transformer.TransformReadResult(cv, dr.Properties.Value, s.LoggingClient)
 					if err != nil {
 						s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
@@ -100,14 +100,14 @@ func (s *DeviceServiceSDK) processAsyncResults(ctx context.Context, wg *sync.Wai
 func (s *DeviceServiceSDK) processAsyncFilterAndAdd(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
-		close(sdk.deviceCh)
+		close(s.deviceCh)
 		wg.Done()
 	}()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case devices := <-sdk.deviceCh:
+		case devices := <-s.deviceCh:
 			id := handler.ReleaseLock()
 			pws := cache.ProvisionWatchers().All()
 			ctx := context.WithValue(context.Background(), common.CorrelationHeader, id)
@@ -140,7 +140,7 @@ func (s *DeviceServiceSDK) processAsyncFilterAndAdd(ctx context.Context, wg *syn
 					device.Origin = millis
 					device.Description = d.Description
 
-					dc := sdk.edgexClients.DeviceClient
+					dc := s.edgexClients.DeviceClient
 					_, err := dc.Add(ctx, device)
 					if err != nil {
 						s.LoggingClient.Error(fmt.Sprintf("Created discovered device %s failed: %v", device.Name, err))

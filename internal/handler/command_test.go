@@ -82,7 +82,7 @@ func init() {
 	operationSetFloat64, _ = pc.ResourceOperation(mock.ProfileFloat, mock.ResourceObjectFloat64, methodSet)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, _ = deviceClient.DevicesForServiceByName(ctx, common.ServiceName)
+	ds, _ = deviceClient.DevicesForServiceByName(ctx, "device-sdk-test")
 	deviceIntegerGenerator = ds[1]
 
 	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
@@ -92,7 +92,7 @@ func init() {
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return configuration
 		},
-		container.CoredataValueDescriptorName: func(get di.Get) interface{} {
+		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
 			return valueDescriptorClient
 		},
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {

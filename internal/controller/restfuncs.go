@@ -49,7 +49,6 @@ func (c *RestController) versionFunc(w http.ResponseWriter, _ *http.Request, _ *
 	w.Header().Add(clients.ContentType, clients.ContentTypeJSON)
 	w.WriteHeader(http.StatusOK)
 	c.encode(res, w)
-	//json.NewEncoder(w).Encode(&res)
 }
 
 func (c *RestController) discoveryFunc(w http.ResponseWriter, req *http.Request, dic *di.Container) {

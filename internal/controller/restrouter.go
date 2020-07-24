@@ -9,12 +9,14 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller/correlation"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
@@ -62,9 +64,10 @@ func (c RestController) addReservedRoute(route string, handler func(http.Respons
 	return c.router.HandleFunc(
 		route,
 		func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), bootstrapContainer.LoggingClientInterfaceName, c.LoggingClient)
 			handler(
 				w,
-				r,
+				r.WithContext(ctx),
 				dic)
 		})
 }
@@ -74,7 +77,14 @@ func (c RestController) AddRoute(route string, handler func(http.ResponseWriter,
 		return errors.New("route is reserved")
 	}
 
-	c.router.HandleFunc(route, handler).Methods(methods...)
+	c.router.HandleFunc(
+		route,
+		func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), bootstrapContainer.LoggingClientInterfaceName, c.LoggingClient)
+			handler(
+				w,
+				r.WithContext(ctx))
+		}).Methods(methods...)
 	c.LoggingClient.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
 
 	return nil

@@ -35,7 +35,7 @@ func (s *DeviceServiceSDK) AddProvisionWatcher(watcher contract.ProvisionWatcher
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	watcher.Origin = millis
-	watcher.Service = sdk.deviceService
+	watcher.Service = s.deviceService
 	watcher.Profile = prf
 
 	pwc := s.edgexClients.ProvisionWatcherClient

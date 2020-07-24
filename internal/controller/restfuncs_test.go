@@ -136,7 +136,7 @@ func TestCommandNoDevice(t *testing.T) {
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {
 			return deviceClient
 		},
-		container.CoredataValueDescriptorName: func(get di.Get) interface{} {
+		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
 			return valueDescriptorClient
 		},
 		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {

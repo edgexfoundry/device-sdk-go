@@ -84,7 +84,7 @@ func (s *DeviceServiceSDK) Initialize(serviceName, serviceVersion string, proto 
 	s.config = &common.ConfigurationStruct{}
 }
 
-func (s *DeviceServiceSDK) Update(r *mux.Router, dic *di.Container) {
+func (s *DeviceServiceSDK) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.registryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.edgexClients.GeneralClient = container.MetadataGeneralClientFrom(dic.Get)
@@ -139,7 +139,7 @@ func (s *DeviceServiceSDK) selfRegister() error {
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			s.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", s.ServiceName))
-			ds, err = createNewDeviceService()
+			ds, err = s.createNewDeviceService()
 		} else {
 			s.LoggingClient.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
 			return err
@@ -154,77 +154,77 @@ func (s *DeviceServiceSDK) selfRegister() error {
 	return nil
 }
 
-func createNewDeviceService() (contract.DeviceService, error) {
-	addr, err := makeNewAddressable()
+func (s *DeviceServiceSDK) createNewDeviceService() (contract.DeviceService, error) {
+	addr, err := s.makeNewAddressable()
 	if err != nil {
-		sdk.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
+		s.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
 		return contract.DeviceService{}, err
 	}
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	ds := contract.DeviceService{
-		Name:           sdk.ServiceName,
-		Labels:         sdk.svcInfo.Labels,
+		Name:           s.ServiceName,
+		Labels:         s.svcInfo.Labels,
 		OperatingState: contract.Enabled,
 		Addressable:    *addr,
 		AdminState:     contract.Unlocked,
 	}
 	ds.Origin = millis
 
-	dsc := sdk.edgexClients.DeviceServiceClient
+	dsc := s.edgexClients.DeviceServiceClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	id, err := dsc.Add(ctx, &ds)
 	if err != nil {
-		sdk.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", sdk.ServiceName, err))
+		s.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.ServiceName, err))
 		return contract.DeviceService{}, err
 	}
-	if err = common.VerifyIdFormat(id, "Device Service", sdk.LoggingClient); err != nil {
+	if err = common.VerifyIdFormat(id, "Device Service", s.LoggingClient); err != nil {
 		return contract.DeviceService{}, err
 	}
 
 	// NOTE - this differs from Addressable and Device Resources,
 	// neither of which require the '.Service'prefix
 	ds.Id = id
-	sdk.LoggingClient.Debug("New device service Id: " + ds.Id)
+	s.LoggingClient.Debug("New device service Id: " + ds.Id)
 
 	return ds, nil
 }
 
-func makeNewAddressable() (*contract.Addressable, error) {
+func (s *DeviceServiceSDK) makeNewAddressable() (*contract.Addressable, error) {
 	// check whether there has been an existing addressable
-	ac := sdk.edgexClients.AddressableClient
+	ac := s.edgexClients.AddressableClient
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	addr, err := ac.AddressableForName(ctx, sdk.ServiceName)
+	addr, err := ac.AddressableForName(ctx, s.ServiceName)
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
-			sdk.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", sdk.ServiceName))
+			s.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", s.ServiceName))
 			millis := time.Now().UnixNano() / int64(time.Millisecond)
 			addr = contract.Addressable{
 				Timestamps: contract.Timestamps{
 					Origin: millis,
 				},
-				Name:       sdk.ServiceName,
+				Name:       s.ServiceName,
 				HTTPMethod: http.MethodPost,
 				Protocol:   common.HttpProto,
-				Address:    sdk.svcInfo.Host,
-				Port:       sdk.svcInfo.Port,
+				Address:    s.svcInfo.Host,
+				Port:       s.svcInfo.Port,
 				Path:       common.APICallbackRoute,
 			}
 			id, err := ac.Add(ctx, &addr)
 			if err != nil {
-				sdk.LoggingClient.Error(fmt.Sprintf("Add addressable failed %s, error: %v", addr.Name, err))
+				s.LoggingClient.Error(fmt.Sprintf("Add addressable failed %s, error: %v", addr.Name, err))
 				return nil, err
 			}
-			if err = common.VerifyIdFormat(id, "Addressable", sdk.LoggingClient); err != nil {
+			if err = common.VerifyIdFormat(id, "Addressable", s.LoggingClient); err != nil {
 				return nil, err
 			}
 			addr.Id = id
 		} else {
-			sdk.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
+			s.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
 			return nil, err
 		}
 	} else {
-		sdk.LoggingClient.Info(fmt.Sprintf("Addressable %s exists", sdk.ServiceName))
+		s.LoggingClient.Info(fmt.Sprintf("Addressable %s exists", s.ServiceName))
 	}
 
 	return &addr, nil

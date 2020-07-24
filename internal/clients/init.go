@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
@@ -51,19 +50,20 @@ func (_ *Clients) BootstrapHandler(
 // because they are important dependencies of Device Service.
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
 func InitDependencyClients(startupTimer startup.Timer, dic *di.Container) bool {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+
 	if err := validateClientConfig(dic); err != nil {
-		fmt.Println(err)
+		lc.Error(err.Error())
 		return false
 	}
 
 	if err := checkDependencyServices(dic, startupTimer); err != nil {
-		fmt.Println(err)
+		lc.Error(err.Error())
 		return false
 	}
 
 	initializeClients(dic)
 
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	lc.Info("Service clients initialize successful.")
 	return true
 }
@@ -147,7 +147,7 @@ func checkServiceAvailableByPing(serviceId string, dic *di.Container) error {
 
 	lc.Info(fmt.Sprintf("Check %v service's status ...", serviceId))
 	addr := configuration.Clients[serviceId].Url()
-	timeout := int64(configuration.Service.BootTimeout) * int64(time.Millisecond)
+	timeout := int64(configuration.Service.Timeout) * int64(time.Millisecond)
 
 	client := http.Client{
 		Timeout: time.Duration(timeout),
@@ -222,7 +222,7 @@ func initializeClients(dic *di.Container) {
 		container.CoredataEventClientName: func(get di.Get) interface{} {
 			return ec
 		},
-		container.CoredataValueDescriptorName: func(get di.Get) interface{} {
+		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
 			return vdc
 		},
 	})

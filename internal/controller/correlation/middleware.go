@@ -12,11 +12,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/google/uuid"
 )
-
-var LoggingClient logger.LoggingClient
 
 func ManageHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,18 +31,20 @@ func OnResponseComplete(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		begin := time.Now()
 		next.ServeHTTP(w, r)
-		correlationId := FromContext(r.Context())
-		if LoggingClient != nil {
-			LoggingClient.Trace("Response complete", clients.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
+		correlationId := IdFromContext(r.Context())
+		lc := LoggingClientFromContext(r.Context())
+		if lc != nil {
+			lc.Trace("Response complete", clients.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
 		}
 	})
 }
 
 func OnRequestBegin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		correlationId := FromContext(r.Context())
-		if LoggingClient != nil {
-			LoggingClient.Trace("Begin request", clients.CorrelationHeader, correlationId, "path", r.URL.Path)
+		correlationId := IdFromContext(r.Context())
+		lc := LoggingClientFromContext(r.Context())
+		if lc != nil {
+			lc.Trace("Begin request", clients.CorrelationHeader, correlationId, "path", r.URL.Path)
 		}
 		next.ServeHTTP(w, r)
 	})

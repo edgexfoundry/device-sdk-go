@@ -39,7 +39,7 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 }
 
 func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) (success bool) {
-	sdk.Update(b.router, dic)
+	sdk.UpdateFromContainer(b.router, dic)
 	sdk.controller.InitRestRoutes(dic)
 
 	configuration := container.ConfigurationFrom(dic.Get)

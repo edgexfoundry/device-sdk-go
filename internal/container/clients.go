@@ -20,7 +20,7 @@ var MetadataAddressableClientName = "MetadataAddressableClient"
 var MetadataProvisionWatcherClientName = "MetadataProvisionWatcherClient"
 var MetadataGeneralClientName = "MetadataGeneralClient"
 var CoredataEventClientName = "CoredataEventClient"
-var CoredataValueDescriptorName = "CoredataValueDescriptor"
+var CoredataValueDescriptorClientName = "CoredataValueDescriptorClient"
 
 func MetadataDeviceClientFrom(get di.Get) metadata.DeviceClient {
 	return get(MetadataDeviceClientName).(metadata.DeviceClient)
@@ -51,5 +51,5 @@ func CoredataEventClientFrom(get di.Get) coredata.EventClient {
 }
 
 func CoredataValueDescriptorClientFrom(get di.Get) coredata.ValueDescriptorClient {
-	return get(CoredataValueDescriptorName).(coredata.ValueDescriptorClient)
+	return get(CoredataValueDescriptorClientName).(coredata.ValueDescriptorClient)
 }

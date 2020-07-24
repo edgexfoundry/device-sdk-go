@@ -51,7 +51,5 @@ const (
 	SDKReservedPrefix = "ds-"
 )
 
-// ApplicationVersion indicates the version of the application itself, not the SDK - will be overwritten by build
+// ServiceVersion indicates the version of the device service itself, not the SDK - will be overwritten by build
 var ServiceVersion string = "0.0.0"
-
-var ServiceName string
