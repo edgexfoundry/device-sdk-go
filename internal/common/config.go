@@ -72,16 +72,17 @@ type ConfigurationStruct struct {
 
 // ServiceInfo is used to hold and configure various settings related to the hosting of this service
 type ServiceInfo struct {
-	BootTimeout   string
-	CheckInterval string
-	Host          string
-	HTTPSCert     string
-	HTTPSKey      string
-	Port          int
-	Protocol      string
-	StartupMsg    string
-	ReadMaxLimit  int
-	Timeout       string
+	BootTimeout    string
+	CheckInterval  string
+	Host           string
+	HTTPSCert      string
+	HTTPSKey       string
+	ServerBindAddr string
+	Port           int
+	Protocol       string
+	StartupMsg     string
+	ReadMaxLimit   int
+	Timeout        string
 }
 
 // BindingInfo contains Metadata associated with each binding
