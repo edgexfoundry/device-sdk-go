@@ -22,3 +22,4 @@ scopes:
     - sdk
     - triggers
     - context
+    - deps
