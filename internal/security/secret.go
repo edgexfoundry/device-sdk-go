@@ -35,6 +35,8 @@ import (
 	"github.com/edgexfoundry/go-mod-secrets/pkg/providers/vault"
 )
 
+const EnvSecretStore = "EDGEX_SECURITY_SECRET_STORE"
+
 // SecretProvider cache storage for the secrets
 type SecretProvider struct {
 	SharedSecretClient    pkg.SecretClient
@@ -77,6 +79,14 @@ func (s *SecretProvider) Initialize(ctx context.Context) bool {
 	}
 
 	return true
+}
+
+// InsecureSecretsUpdated resets LastUpdate is not running in secure mode.If running in secure mode, changes to
+// InsecureSecrets have no impact and are not used.
+func (s *SecretProvider) InsecureSecretsUpdated() {
+	if !s.isSecurityEnabled() {
+		s.LastUpdated = time.Now()
+	}
 }
 
 func (s *SecretProvider) initializeSecretClient(
@@ -169,6 +179,6 @@ func (s *SecretProvider) getSecretConfig(secretStoreInfo bootstrapConfig.SecretS
 
 // isSecurityEnabled determines if security has been enabled.
 func (s *SecretProvider) isSecurityEnabled() bool {
-	env := os.Getenv("EDGEX_SECURITY_SECRET_STORE")
+	env := os.Getenv(EnvSecretStore)
 	return env != "false"
 }

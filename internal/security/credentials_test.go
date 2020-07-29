@@ -214,19 +214,19 @@ func setupGetInsecureSecrets(t *testing.T) (sp *SecretProvider, origEnv string) 
 	}
 	secretProvider := newMockSecretProvider(&configuration)
 
-	origEnv = os.Getenv("EDGEX_SECURITY_SECRET_STORE")
+	origEnv = os.Getenv(EnvSecretStore)
 
 	//	disable secure store
-	if err := os.Setenv("EDGEX_SECURITY_SECRET_STORE", "false"); err != nil {
-		t.Fatalf("Failed to set env variable: EDGEX_SECURITY_SECRET_STORE")
+	if err := os.Setenv(EnvSecretStore, "false"); err != nil {
+		t.Fatalf("Failed to set env variable: " + EnvSecretStore)
 	}
 
 	return secretProvider, origEnv
 }
 
 func tearDownGetInsecureSecrets(t *testing.T, origEnv string) {
-	if err := os.Setenv("EDGEX_SECURITY_SECRET_STORE", origEnv); err != nil {
-		t.Fatalf("Failed to set env variable: EDGEX_SECURITY_SECRET_STORE back to original value")
+	if err := os.Setenv(EnvSecretStore, origEnv); err != nil {
+		t.Fatalf("Failed to set env variable: %s back to original value", EnvSecretStore)
 	}
 }
 

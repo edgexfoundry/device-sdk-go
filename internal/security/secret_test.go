@@ -192,6 +192,24 @@ func TestInitializeClientFromSecretProvider(t *testing.T) {
 	time.Sleep(7 * time.Second)
 }
 
+func TestInsecureSecretsUpdated(t *testing.T) {
+
+	expected := time.Now()
+	target := SecretProvider{
+		LastUpdated: expected,
+	}
+
+	os.Setenv(EnvSecretStore, "true")
+	target.InsecureSecretsUpdated()
+	assert.Equal(t, expected, target.LastUpdated, "LastUpdated should not have changed")
+
+	// Give a little time between tests so LastUpdated will be significantly different
+	time.Sleep(1 * time.Second)
+	os.Setenv(EnvSecretStore, "false")
+	target.InsecureSecretsUpdated()
+	assert.NotEqual(t, expected, target.LastUpdated, "LastUpdated should have changed")
+}
+
 func TestConfigAdditonalRetryAttempts(t *testing.T) {
 	// setup
 	tokenPeriod := 6
@@ -213,13 +231,13 @@ func TestConfigAdditonalRetryAttempts(t *testing.T) {
 
 	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 
-	origEnv := os.Getenv("EDGEX_SECURITY_SECRET_STORE")
+	origEnv := os.Getenv(EnvSecretStore)
 
 	defer func() {
-		_ = os.Setenv("EDGEX_SECURITY_SECRET_STORE", origEnv)
+		_ = os.Setenv(EnvSecretStore, origEnv)
 	}()
 
-	os.Setenv("EDGEX_SECURITY_SECRET_STORE", "true")
+	os.Setenv(EnvSecretStore, "true")
 
 	testSecretStoreInfo := config.SecretStoreInfo{
 		// configuration with AdditionalRetryAttempts omitted
