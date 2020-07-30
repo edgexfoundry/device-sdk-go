@@ -40,6 +40,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers/message"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -364,6 +365,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			handlers.NewClients().BootstrapHandler,
 			handlers.NewTelemetry().BootstrapHandler,
 			handlers.NewVersionValidator(sdk.skipVersionCheck, internal.SDKVersion).BootstrapHandler,
+			message.NewBootstrap(sdk.ServiceKey, internal.ApplicationVersion).BootstrapHandler,
 		},
 	)
 

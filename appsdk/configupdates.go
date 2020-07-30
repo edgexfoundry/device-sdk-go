@@ -73,6 +73,7 @@ func (processor *ConfigUpdateProcessor) WaitForConfigUpdates(configUpdated confi
 				// so ignore it if this is the case.
 				case currentWritable.InsecureSecrets != nil &&
 					!reflect.DeepEqual(previousWriteable.InsecureSecrets, currentWritable.InsecureSecrets):
+					sdk.secretProvider.InsecureSecretsUpdated()
 					sdk.LoggingClient.Info("Insecure Secrets have been updated")
 
 				case previousWriteable.StoreAndForward.MaxRetryCount != currentWritable.StoreAndForward.MaxRetryCount:
