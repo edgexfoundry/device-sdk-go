@@ -306,7 +306,7 @@ func (sdk *AppFunctionsSDK) GetAppSettingStrings(setting string) ([]string, erro
 // Initialize will parse command line flags, register for interrupts,
 // initialize the logging system, and ingest configuration.
 func (sdk *AppFunctionsSDK) Initialize() error {
-	startupTimer := startup.NewStartUpTimer(internal.BootRetrySecondsDefault, internal.BootTimeoutSecondsDefault)
+	startupTimer := startup.NewStartUpTimer(sdk.ServiceKey)
 
 	additionalUsage :=
 		"    -s/--skipVersionCheck           Indicates the service should skip the Core Service's version compatibility check.\n" +

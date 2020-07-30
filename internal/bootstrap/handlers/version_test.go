@@ -33,13 +33,12 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 )
 
 func TestValidateVersionMatch(t *testing.T) {
-	startupTimer := startup.NewStartUpTimer(internal.BootRetrySecondsDefault, internal.BootTimeoutSecondsDefault)
+	startupTimer := startup.NewStartUpTimer("unit-test")
 
 	clients := make(map[string]config.ClientInfo)
 	clients[common.CoreDataClientName] = config.ClientInfo{

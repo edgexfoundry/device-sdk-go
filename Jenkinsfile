@@ -19,7 +19,7 @@ edgeXBuildGoApp (
     semver: true,
     goVersion: '1.13',
     testScript: 'make test',
-    buildImage: false
+    buildImage: false,
     publishSwaggerDocs: true,
     swaggerApiFolders: ['openapi/v2']
 )

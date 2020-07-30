@@ -19,7 +19,6 @@ package common
 import (
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -66,8 +65,6 @@ type ConfigurationStruct struct {
 	SecretStore bootstrapConfig.SecretStoreInfo
 	// SecretStoreExclusive
 	SecretStoreExclusive bootstrapConfig.SecretStoreInfo
-	// Startup
-	Startup bootstrapConfig.StartupInfo
 }
 
 // ServiceInfo is used to hold and configure various settings related to the hosting of this service
@@ -160,14 +157,13 @@ func (c *ConfigurationStruct) UpdateWritableFromRaw(rawWritable interface{}) boo
 }
 
 // GetBootstrap returns the configuration elements required by the bootstrap.
-func (c *ConfigurationStruct) GetBootstrap() interfaces.BootstrapConfiguration {
-	return interfaces.BootstrapConfiguration{
+func (c *ConfigurationStruct) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
+	return bootstrapConfig.BootstrapConfiguration{
 		Clients:     c.Clients,
 		Service:     c.transformToBootstrapServiceInfo(),
 		Registry:    c.Registry,
 		Logging:     c.Logging,
 		SecretStore: c.SecretStore,
-		Startup:     c.Startup,
 	}
 }
 

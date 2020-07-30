@@ -25,7 +25,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/handlers"
 )
 
@@ -137,7 +136,7 @@ func (processor *ConfigUpdateProcessor) processConfigChangedStoreForwardEnabled(
 		// StoreClient must be set up for StoreAndForward
 		if sdk.storeClient == nil {
 			var err error
-			startupTimer := startup.NewStartUpTimer(internal.BootRetrySecondsDefault, internal.BootTimeoutSecondsDefault)
+			startupTimer := startup.NewStartUpTimer(sdk.ServiceKey)
 			sdk.storeClient, err = handlers.InitializeStoreClient(sdk.secretProvider, sdk.config, startupTimer, sdk.LoggingClient)
 			if err != nil {
 				// Error already logged

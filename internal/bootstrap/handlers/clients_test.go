@@ -30,7 +30,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 )
@@ -70,7 +69,7 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Protocol: "http",
 	}
 
-	startupTimer := startup.NewStartUpTimer(internal.BootRetrySecondsDefault, internal.BootTimeoutSecondsDefault)
+	startupTimer := startup.NewStartUpTimer("unit-test")
 
 	tests := []struct {
 		Name                    string
