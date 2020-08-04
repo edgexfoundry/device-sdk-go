@@ -29,9 +29,11 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 )
 
-func TestPingRquest(t *testing.T) {
+func TestPingRequest(t *testing.T) {
 	target := NewV2Controller(logger.NewMockClient())
 
 	req, err := http.NewRequest(http.MethodGet, contractsV2.ApiPingRoute, nil)
@@ -56,5 +58,38 @@ func TestPingRquest(t *testing.T) {
 	_, err = time.Parse(time.UnixDate, actual.Timestamp)
 	assert.NoError(t, err)
 
-	require.Equal(t, contractsV2.ApiVersion, actual.Versionable.ApiVersion)
+	require.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+}
+
+func TestVersionRquest(t *testing.T) {
+	expectedAppVersion := "1.2.5"
+	expectedSdkVersion := "1.3.1"
+
+	internal.ApplicationVersion = expectedAppVersion
+	internal.SDKVersion = expectedSdkVersion
+
+	target := NewV2Controller(logger.NewMockClient())
+
+	req, err := http.NewRequest(http.MethodGet, contractsV2.ApiVersionRoute, nil)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(target.Version)
+
+	handler.ServeHTTP(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	assert.Equal(t, clients.ContentTypeJSON, recorder.HeaderMap.Get(clients.ContentType))
+	assert.NotEmpty(t, recorder.HeaderMap.Get(clients.CorrelationHeader))
+
+	require.NotEmpty(t, recorder.Body.String())
+
+	actual := common.VersionSdkResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &actual)
+	require.NoError(t, err)
+
+	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, expectedAppVersion, actual.Version)
+	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
 }

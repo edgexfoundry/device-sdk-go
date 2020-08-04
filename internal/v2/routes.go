@@ -19,9 +19,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// ConfigureStandardRoutes loads default V2 routes
+// ConfigureStandardRoutes loads standard V2 routes
 func ConfigureStandardRoutes(router *mux.Router, lc logger.LoggingClient) {
 	controller := v2http.NewV2Controller(lc)
 
+	lc.Info("Registering standard V2 routes...")
+
 	router.HandleFunc(contractsV2.ApiPingRoute, controller.Ping).Methods(http.MethodGet)
+	router.HandleFunc(contractsV2.ApiVersionRoute, controller.Version).Methods(http.MethodGet)
 }

@@ -26,6 +26,8 @@ import (
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/google/uuid"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 )
 
 // V2Controller controller for V2 REST APIs
@@ -42,11 +44,16 @@ func NewV2Controller(lc logger.LoggingClient) *V2Controller {
 
 // Ping handles the request to /ping endpoint. Is used to test if the service is working
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2Controller) Ping(w http.ResponseWriter, r *http.Request) {
-	pingResponse := common.NewPingResponse()
+func (v2c *V2Controller) Ping(w http.ResponseWriter, _ *http.Request) {
+	response := common.NewPingResponse()
+	v2c.sendResponse(w, contractsV2.ApiPingRoute, response, uuid.New().String())
+}
 
-	v2c.sendResponse(w, contractsV2.ApiPingRoute, pingResponse, uuid.New().String())
-
+// Version handles the request to /version endpoint. Is used to request the service's versions
+// It returns a response as specified by the V2 API swagger in openapi/v2
+func (v2c *V2Controller) Version(w http.ResponseWriter, _ *http.Request) {
+	response := common.NewVersionSdkResponse(internal.ApplicationVersion, internal.SDKVersion)
+	v2c.sendResponse(w, contractsV2.ApiVersionRoute, response, uuid.New().String())
 }
 
 // sendResponse puts together the response packet for the V2 API
