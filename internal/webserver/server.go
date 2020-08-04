@@ -27,6 +27,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
+	v2 "github.com/edgexfoundry/app-functions-sdk-go/internal/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
@@ -293,6 +294,9 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 
 	// Secrets
 	webserver.router.HandleFunc(internal.SecretsAPIRoute, webserver.secretHandler).Methods(http.MethodPost)
+
+	// V2 API routes
+	v2.ConfigureStandardRoutes(webserver.router, webserver.LoggingClient)
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
