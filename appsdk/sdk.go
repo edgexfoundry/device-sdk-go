@@ -40,7 +40,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers/message"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -327,6 +326,8 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	sdk.setServiceKey(sdkFlags.Profile())
 
+	sdk.LoggingClient.Info(fmt.Sprintf("Starting %s %s ", sdk.ServiceKey, internal.ApplicationVersion))
+
 	// The use of the edgex_service environment variable (only used for App Services) has been deprecated
 	// and not included in the common bootstrap. Have to be handle here before calling into the common bootstrap
 	// so proper overrides are set.
@@ -365,7 +366,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 			handlers.NewClients().BootstrapHandler,
 			handlers.NewTelemetry().BootstrapHandler,
 			handlers.NewVersionValidator(sdk.skipVersionCheck, internal.SDKVersion).BootstrapHandler,
-			message.NewBootstrap(sdk.ServiceKey, internal.ApplicationVersion).BootstrapHandler,
 		},
 	)
 
@@ -392,6 +392,8 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	sdk.webserver = webserver.NewWebServer(sdk.config, sdk.secretProvider, sdk.LoggingClient, mux.NewRouter())
 	sdk.webserver.ConfigureStandardRoutes()
+
+	sdk.LoggingClient.Info("Service started in: " + startupTimer.SinceAsString())
 
 	return nil
 }
