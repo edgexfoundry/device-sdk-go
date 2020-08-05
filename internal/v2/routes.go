@@ -13,6 +13,7 @@ package v2
 import (
 	"net/http"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	v2http "github.com/edgexfoundry/app-functions-sdk-go/internal/v2/controller/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
@@ -20,12 +21,13 @@ import (
 )
 
 // ConfigureStandardRoutes loads standard V2 routes
-func ConfigureStandardRoutes(router *mux.Router, lc logger.LoggingClient) {
-	controller := v2http.NewV2Controller(lc)
+func ConfigureStandardRoutes(router *mux.Router, lc logger.LoggingClient, config *common.ConfigurationStruct) {
+	controller := v2http.NewV2Controller(lc, config)
 
 	lc.Info("Registering standard V2 routes...")
 
 	router.HandleFunc(contractsV2.ApiPingRoute, controller.Ping).Methods(http.MethodGet)
 	router.HandleFunc(contractsV2.ApiVersionRoute, controller.Version).Methods(http.MethodGet)
 	router.HandleFunc(contractsV2.ApiMetricsRoute, controller.Metrics).Methods(http.MethodGet)
+	router.HandleFunc(contractsV2.ApiConfigRoute, controller.Config).Methods(http.MethodGet)
 }

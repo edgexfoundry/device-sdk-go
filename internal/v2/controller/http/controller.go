@@ -21,25 +21,29 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/google/uuid"
 
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 )
 
 // V2Controller controller for V2 REST APIs
 type V2Controller struct {
-	lc logger.LoggingClient
+	lc     logger.LoggingClient
+	config *sdkCommon.ConfigurationStruct
 }
 
 // NewV2Controller creates and initializes an V2Controller
-func NewV2Controller(lc logger.LoggingClient) *V2Controller {
+func NewV2Controller(lc logger.LoggingClient, config *sdkCommon.ConfigurationStruct) *V2Controller {
 	return &V2Controller{
-		lc: lc,
+		lc:     lc,
+		config: config,
 	}
 }
 
@@ -54,6 +58,13 @@ func (v2c *V2Controller) Ping(w http.ResponseWriter, _ *http.Request) {
 // It returns a response as specified by the V2 API swagger in openapi/v2
 func (v2c *V2Controller) Version(w http.ResponseWriter, _ *http.Request) {
 	response := common.NewVersionSdkResponse(internal.ApplicationVersion, internal.SDKVersion)
+	v2c.sendResponse(w, contractsV2.ApiVersionRoute, response, uuid.New().String())
+}
+
+// Config handles the request to /config endpoint. Is used to request the service's configuration
+// It returns a response as specified by the V2 API swagger in openapi/v2
+func (v2c *V2Controller) Config(w http.ResponseWriter, _ *http.Request) {
+	response := common.NewConfigResponse(*v2c.config)
 	v2c.sendResponse(w, contractsV2.ApiVersionRoute, response, uuid.New().String())
 }
 

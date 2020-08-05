@@ -296,7 +296,7 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 	webserver.router.HandleFunc(internal.SecretsAPIRoute, webserver.secretHandler).Methods(http.MethodPost)
 
 	// V2 API routes
-	v2.ConfigureStandardRoutes(webserver.router, webserver.LoggingClient)
+	v2.ConfigureStandardRoutes(webserver.router, webserver.LoggingClient, webserver.Config)
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request
