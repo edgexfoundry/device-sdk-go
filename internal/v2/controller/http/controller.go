@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
@@ -54,6 +55,24 @@ func (v2c *V2Controller) Ping(w http.ResponseWriter, _ *http.Request) {
 func (v2c *V2Controller) Version(w http.ResponseWriter, _ *http.Request) {
 	response := common.NewVersionSdkResponse(internal.ApplicationVersion, internal.SDKVersion)
 	v2c.sendResponse(w, contractsV2.ApiVersionRoute, response, uuid.New().String())
+}
+
+// Metrics handles the request to the /metrics endpoint, memory and cpu utilization stats
+// It returns a response as specified by the V2 API swagger in openapi/v2
+func (v2c *V2Controller) Metrics(w http.ResponseWriter, r *http.Request) {
+	telem := telemetry.NewSystemUsage()
+	metrics := common.Metrics{
+		MemAlloc:       telem.Memory.Alloc,
+		MemFrees:       telem.Memory.Frees,
+		MemLiveObjects: telem.Memory.LiveObjects,
+		MemMallocs:     telem.Memory.Mallocs,
+		MemSys:         telem.Memory.Sys,
+		MemTotalAlloc:  telem.Memory.TotalAlloc,
+		CpuBusyAvg:     uint8(telem.CpuBusyAvg),
+	}
+
+	response := common.NewMetricsResponse(metrics)
+	v2c.sendResponse(w, contractsV2.ApiMetricsRoute, response, uuid.New().String())
 }
 
 // sendResponse puts together the response packet for the V2 API

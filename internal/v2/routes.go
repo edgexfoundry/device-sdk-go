@@ -27,4 +27,5 @@ func ConfigureStandardRoutes(router *mux.Router, lc logger.LoggingClient) {
 
 	router.HandleFunc(contractsV2.ApiPingRoute, controller.Ping).Methods(http.MethodGet)
 	router.HandleFunc(contractsV2.ApiVersionRoute, controller.Version).Methods(http.MethodGet)
+	router.HandleFunc(contractsV2.ApiMetricsRoute, controller.Metrics).Methods(http.MethodGet)
 }

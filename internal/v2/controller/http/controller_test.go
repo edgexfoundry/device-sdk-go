@@ -93,3 +93,35 @@ func TestVersionRquest(t *testing.T) {
 	assert.Equal(t, expectedAppVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
 }
+
+func TestMetricsRequest(t *testing.T) {
+	target := NewV2Controller(logger.NewMockClient())
+
+	req, err := http.NewRequest(http.MethodGet, contractsV2.ApiMetricsRoute, nil)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(target.Metrics)
+
+	handler.ServeHTTP(recorder, req)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	assert.Equal(t, clients.ContentTypeJSON, recorder.HeaderMap.Get(clients.ContentType))
+	assert.NotEmpty(t, recorder.HeaderMap.Get(clients.CorrelationHeader))
+
+	require.NotEmpty(t, recorder.Body.String())
+
+	actual := common.MetricsResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &actual)
+	require.NoError(t, err)
+
+	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	assert.NotZero(t, actual.MemAlloc)
+	assert.NotZero(t, actual.MemFrees)
+	assert.NotZero(t, actual.MemLiveObjects)
+	assert.NotZero(t, actual.MemMallocs)
+	assert.NotZero(t, actual.MemSys)
+	assert.NotZero(t, actual.MemTotalAlloc)
+	assert.NotNil(t, actual.CpuBusyAvg)
+}
