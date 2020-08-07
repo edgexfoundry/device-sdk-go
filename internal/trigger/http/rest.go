@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
@@ -46,7 +47,9 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	logger := trigger.EdgeXClients.LoggingClient
 
 	logger.Info("Initializing HTTP Trigger")
-	trigger.Webserver.SetupTriggerRoute(trigger.requestHandler)
+	trigger.Webserver.SetupTriggerRoute(internal.ApiTriggerRoute, trigger.requestHandler)
+	// Note: Trigger endpoint doesn't change for V2 API, so just using same handler.
+	trigger.Webserver.SetupTriggerRoute(internal.ApiV2TriggerRoute, trigger.requestHandler)
 	logger.Info("HTTP Trigger Initialized")
 
 	return nil, nil

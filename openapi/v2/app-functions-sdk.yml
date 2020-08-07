@@ -127,26 +127,6 @@ components:
       required:
         - key
         - value
-    TriggerRequest:
-      allOf:
-        - $ref: '#/components/schemas/BaseRequest'
-      description: The data that will be processed by the configured pipeline. Typically this is an EdgeX event. However, it can ingest other forms of data if a custom Target Type (https://docs.edgexfoundry.org/1.2/microservices/application/AdvancedTopics/#target-type) is being used.
-      type: object
-      properties:
-        data:
-          description: Incoming data from the request
-          type: object
-      required:
-        - data
-    TriggerResponse:
-      allOf:
-        - $ref: '#/components/schemas/BaseResponse'
-      description: "Provides a response containing the output data from the processed pipeline."
-      type: object
-      properties:
-        data:
-          description: "The output data from the triggered pipeline."
-          type: object
     VersionResponse:
       description: "A response returned from the /version endpoint whose purpose is to report out the latest version supported by the service."
       type: object
@@ -291,23 +271,50 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-                - $ref: '#/components/schemas/TriggerRequest'
+              type: object
+              description: Object type must match the Application Service's Target Type. Currently Target Type defaults to EdgeX model.Events from go-mod-core-contracts. This will change to default to a V2 dtos.Event in the future.
         required: true
       responses:
-        '207':
-          description: "Indicates a multi-part response supportive of accepting multiple requests at once. The 'statusCode' property of each response in the returned array will indicate success or failure."
+        '200':
+          description: "OK"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  anyOf:
-                    - $ref: '#/components/schemas/ErrorResponse'
-                    - $ref: '#/components/schemas/TriggerResponse'
+                type: object
+                description: Optional reponse is the output data from the Application Service's function pipeline, if set.
+        '400':
+          description: "Bad Request"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/text:
+              schema:
+                type: text
+                description: message describing the error encountered
+        '422':
+          description: "Unprocessable Entity"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/text:
+              schema:
+                type: text
+                description: message describing the error encountered
+        '500':
+          description: "Interval Server Error"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/text:
+              schema:
+                type: text
+                description: message describing the error encountered
   /version:
     get:
       summary: "A simple 'version' endpoint that will return the current version of the service, as well as the SDK version"

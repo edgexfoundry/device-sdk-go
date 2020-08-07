@@ -327,8 +327,8 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 //    schema:
 //      "$ref": "#/definitions/Version"
 //
-func (webserver *WebServer) SetupTriggerRoute(handlerForTrigger func(http.ResponseWriter, *http.Request)) {
-	webserver.router.HandleFunc(internal.ApiTriggerRoute, handlerForTrigger)
+func (webserver *WebServer) SetupTriggerRoute(path string, handlerForTrigger func(http.ResponseWriter, *http.Request)) {
+	webserver.router.HandleFunc(path, handlerForTrigger)
 }
 
 // StartWebServer starts the web server

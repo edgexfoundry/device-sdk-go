@@ -17,19 +17,16 @@
 package internal
 
 import (
-	"time"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 )
 
 const (
-	ClientMonitorDefault      = 15 * time.Second
-	BootTimeoutSecondsDefault = 30
-	BootRetrySecondsDefault   = 1
-	ConfigFileName            = "configuration.toml"
-	ConfigRegistryStem        = "edgex/appservices/1.0/"
-	ApiTriggerRoute           = "/api/v1/trigger"
-	DatabaseName              = "application-service"
+	ConfigRegistryStem = "edgex/appservices/1.0/"
+	DatabaseName       = "application-service"
+
+	ApiTriggerRoute   = clients.ApiBase + "/trigger"
+	ApiV2TriggerRoute = v2.ApiBase + "/trigger"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build
