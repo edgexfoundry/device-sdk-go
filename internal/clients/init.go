@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
@@ -28,12 +29,12 @@ import (
 // Service Client Initializer also needs to check the service status of Metadata and Core Data Services,
 // because they are important dependencies of Device Service.
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
-func InitDependencyClients(ctx context.Context, waitGroup *sync.WaitGroup) error {
+func InitDependencyClients(ctx context.Context, waitGroup *sync.WaitGroup, startupTimer startup.Timer) error {
 	if err := validateClientConfig(); err != nil {
 		return err
 	}
 
-	if err := checkDependencyServices(); err != nil {
+	if err := checkDependencyServices(startupTimer); err != nil {
 		return err
 	}
 
@@ -66,7 +67,7 @@ func validateClientConfig() error {
 	return nil
 }
 
-func checkDependencyServices() error {
+func checkDependencyServices(startupTimer startup.Timer) error {
 	var dependencyList = []string{common.ClientData, common.ClientMetadata}
 
 	var waitGroup sync.WaitGroup
@@ -77,7 +78,7 @@ func checkDependencyServices() error {
 	for i := 0; i < dependencyCount; i++ {
 		go func(wg *sync.WaitGroup, serviceName string) {
 			defer wg.Done()
-			if err := checkServiceAvailable(serviceName); err != nil {
+			if err := checkServiceAvailable(serviceName, startupTimer); err != nil {
 				checkingErrs <- err
 			}
 		}(&waitGroup, dependencyList[i])
@@ -87,14 +88,14 @@ func checkDependencyServices() error {
 	close(checkingErrs)
 
 	if len(checkingErrs) > 0 {
-		return fmt.Errorf("checking required dependencied services failed ")
+		return fmt.Errorf("fail to check required dependencied services in allotted time")
 	} else {
 		return nil
 	}
 }
 
-func checkServiceAvailable(serviceId string) error {
-	for i := 0; i < common.CurrentConfig.Service.ConnectRetries; i++ {
+func checkServiceAvailable(serviceId string, startupTimer startup.Timer) error {
+	for startupTimer.HasNotElapsed() {
 		if common.RegistryClient != nil {
 			if checkServiceAvailableViaRegistry(serviceId) == true {
 				return nil
@@ -104,8 +105,7 @@ func checkServiceAvailable(serviceId string) error {
 				return nil
 			}
 		}
-		time.Sleep(time.Duration(common.CurrentConfig.Service.Timeout) * time.Millisecond)
-		common.LoggingClient.Debug(fmt.Sprintf("Checked %d times for %s availibility", i+1, serviceId))
+		startupTimer.SleepForInterval()
 	}
 
 	errMsg := fmt.Sprintf("service dependency %s checking time out", serviceId)

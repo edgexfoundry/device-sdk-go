@@ -10,7 +10,6 @@ Port = 49990
 Protocol = 'http'
 StartupMsg = 'device simple started'
 Timeout = 20000
-ConnectRetries = 20
 Labels = []
 EnableAsyncReadings = true
 AsyncBufferSize = 16

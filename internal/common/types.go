@@ -46,10 +46,7 @@ type ServiceInfo struct {
 	// - timeout for processing REST calls and
 	// - interval time the DS will wait between each retry call.
 	Timeout int
-	// ConnectRetries is the number of times the DS will try to connect to all dependent services.
-	// If exceeded for even one dependent service, the DS will exit.
-	ConnectRetries int
-	// Labels are...
+	// Labels are properties applied to the device service to help with searching
 	Labels []string
 	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
 	EnableAsyncReadings bool

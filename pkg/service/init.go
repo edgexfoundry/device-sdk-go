@@ -40,7 +40,7 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 	}
 }
 
-func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) (success bool) {
+func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
 	common.CurrentConfig = container.ConfigurationFrom(dic.Get)
 	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
@@ -59,7 +59,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	svc.deviceCh = make(chan []dsModels.DiscoveredDevice)
 	go processAsyncFilterAndAdd(ctx, wg)
 
-	err := clients.InitDependencyClients(ctx, wg)
+	err := clients.InitDependencyClients(ctx, wg, startupTimer)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		return false
