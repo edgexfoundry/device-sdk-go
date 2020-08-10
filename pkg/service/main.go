@@ -28,7 +28,7 @@ import (
 var instanceName string
 
 func Main(serviceName string, serviceVersion string, proto interface{}, ctx context.Context, cancel context.CancelFunc, router *mux.Router, readyStream chan<- bool) {
-	startupTimer := startup.NewStartUpTimer(common.BootRetrySecondsDefault, common.BootTimeoutSecondsDefault)
+	startupTimer := startup.NewStartUpTimer(serviceName)
 
 	additionalUsage :=
 		"    -i, --instance                  Provides a service name suffix which allows unique instance to be created\n" +
