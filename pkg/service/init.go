@@ -59,13 +59,11 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	svc.deviceCh = make(chan []dsModels.DiscoveredDevice)
 	go processAsyncFilterAndAdd(ctx, wg)
 
-	err := clients.InitDependencyClients(ctx, wg, startupTimer)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	if clients.InitDependencyClients(ctx, wg, startupTimer) == false {
 		return false
 	}
 
-	err = selfRegister()
+	err := selfRegister()
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Couldn't register to metadata service: %v\n", err)
 		return false

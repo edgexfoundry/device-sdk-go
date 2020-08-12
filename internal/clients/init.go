@@ -29,19 +29,20 @@ import (
 // Service Client Initializer also needs to check the service status of Metadata and Core Data Services,
 // because they are important dependencies of Device Service.
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
-func InitDependencyClients(ctx context.Context, waitGroup *sync.WaitGroup, startupTimer startup.Timer) error {
+func InitDependencyClients(ctx context.Context, waitGroup *sync.WaitGroup, startupTimer startup.Timer) bool {
 	if err := validateClientConfig(); err != nil {
-		return err
+		common.LoggingClient.Error(err.Error())
+		return false
 	}
 
-	if err := checkDependencyServices(startupTimer); err != nil {
-		return err
+	if checkDependencyServices(ctx, startupTimer) == false {
+		return false
 	}
 
 	initializeClients(ctx, waitGroup)
 
 	common.LoggingClient.Info("Service clients initialize successful.")
-	return nil
+	return true
 }
 
 func validateClientConfig() error {
@@ -67,54 +68,52 @@ func validateClientConfig() error {
 	return nil
 }
 
-func checkDependencyServices(startupTimer startup.Timer) error {
+func checkDependencyServices(ctx context.Context, startupTimer startup.Timer) bool {
 	var dependencyList = []string{common.ClientData, common.ClientMetadata}
-
 	var waitGroup sync.WaitGroup
+	checkingErr := true
+
 	dependencyCount := len(dependencyList)
 	waitGroup.Add(dependencyCount)
-	checkingErrs := make(chan<- error, dependencyCount)
 
 	for i := 0; i < dependencyCount; i++ {
 		go func(wg *sync.WaitGroup, serviceName string) {
 			defer wg.Done()
-			if err := checkServiceAvailable(serviceName, startupTimer); err != nil {
-				checkingErrs <- err
+			if checkServiceAvailable(ctx, serviceName, startupTimer) == false {
+				checkingErr = false
 			}
 		}(&waitGroup, dependencyList[i])
 	}
-
 	waitGroup.Wait()
-	close(checkingErrs)
 
-	if len(checkingErrs) > 0 {
-		return fmt.Errorf("fail to check required dependencied services in allotted time")
-	} else {
-		return nil
-	}
+	return checkingErr
 }
 
-func checkServiceAvailable(serviceId string, startupTimer startup.Timer) error {
+func checkServiceAvailable(ctx context.Context, serviceId string, startupTimer startup.Timer) bool {
 	for startupTimer.HasNotElapsed() {
-		if common.RegistryClient != nil {
-			if checkServiceAvailableViaRegistry(serviceId) == true {
-				return nil
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+			if common.RegistryClient != nil {
+				if checkServiceAvailableViaRegistry(serviceId) == nil {
+					return true
+				}
+			} else {
+				if checkServiceAvailableByPing(serviceId) == nil {
+					return true
+				}
 			}
-		} else {
-			if checkServiceAvailableByPing(serviceId) == nil {
-				return nil
-			}
+			startupTimer.SleepForInterval()
 		}
-		startupTimer.SleepForInterval()
 	}
 
-	errMsg := fmt.Sprintf("service dependency %s checking time out", serviceId)
-	common.LoggingClient.Error(errMsg)
-	return fmt.Errorf(errMsg)
+	common.LoggingClient.Error(fmt.Sprintf("dependency %s service checking time out", serviceId))
+	return false
 }
 
 func checkServiceAvailableByPing(serviceId string) error {
-	common.LoggingClient.Info(fmt.Sprintf("Check %v service's status ...", serviceId))
+	common.LoggingClient.Info(fmt.Sprintf("Check %v service's status by ping...", serviceId))
 	addr := common.CurrentConfig.Clients[serviceId].Url()
 	timeout := int64(common.CurrentConfig.Service.BootTimeout) * int64(time.Millisecond)
 
@@ -123,20 +122,20 @@ func checkServiceAvailableByPing(serviceId string) error {
 	}
 
 	_, err := client.Get(addr + clients.ApiPingRoute)
-
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Error getting ping: %v ", err))
+		common.LoggingClient.Error(err.Error())
 	}
+
 	return err
 }
 
-func checkServiceAvailableViaRegistry(serviceId string) bool {
+func checkServiceAvailableViaRegistry(serviceId string) error {
 	common.LoggingClient.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceId))
 
 	if !common.RegistryClient.IsAlive() {
-		common.LoggingClient.Error("unable to check status of %s service: Registry not running")
-
-		return false
+		errMsg := fmt.Sprintf("unable to check status of %s service: Registry not running", serviceId)
+		common.LoggingClient.Error(errMsg)
+		return fmt.Errorf(errMsg)
 	}
 
 	if serviceId == common.ClientData {
@@ -147,10 +146,10 @@ func checkServiceAvailableViaRegistry(serviceId string) bool {
 	_, err := common.RegistryClient.IsServiceAvailable(serviceId)
 	if err != nil {
 		common.LoggingClient.Error(err.Error())
-		return false
+		return err
 	}
 
-	return true
+	return nil
 }
 
 func initializeClients(ctx context.Context, waitGroup *sync.WaitGroup) {
