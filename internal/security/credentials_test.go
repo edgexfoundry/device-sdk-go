@@ -151,7 +151,6 @@ func getSecretsTestData() secretTestData {
 }
 
 func TestGetSecrets(t *testing.T) {
-
 	secretProvider := newMockSecretProvider(nil)
 
 	for i, test := range getSecretsTestData() {
@@ -189,7 +188,7 @@ func TestGetInsecureSecrets(t *testing.T) {
 	tearDownGetInsecureSecrets(t, origEnv)
 }
 
-func setupGetInsecureSecrets(t *testing.T) (sp *SecretProvider, origEnv string) {
+func setupGetInsecureSecrets(t *testing.T) (sp *SecretProviderImpl, origEnv string) {
 	insecureSecrets := common.InsecureSecrets{
 		"no_path": common.InsecureSecretsInfo{
 			Path: "",
@@ -230,7 +229,7 @@ func tearDownGetInsecureSecrets(t *testing.T, origEnv string) {
 	}
 }
 
-func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretProvider {
+func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretProviderImpl {
 	logClient := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
 	mockSP := NewSecretProvider(logClient, configuration)
 	mockSP.SharedSecretClient = &mockSecretClient{}

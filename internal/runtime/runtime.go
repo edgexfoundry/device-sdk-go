@@ -45,7 +45,7 @@ type GolangRuntime struct {
 	transforms     []appcontext.AppFunction
 	isBusyCopying  sync.Mutex
 	storeForward   storeForwardInfo
-	secretProvider *security.SecretProvider
+	secretProvider security.SecretProvider
 }
 
 type MessageError struct {
@@ -139,7 +139,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 }
 
 // Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
-func (gr *GolangRuntime) Initialize(storeClient interfaces.StoreClient, secretProvider *security.SecretProvider) {
+func (gr *GolangRuntime) Initialize(storeClient interfaces.StoreClient, secretProvider security.SecretProvider) {
 	gr.storeForward.storeClient = storeClient
 	gr.storeForward.runtime = gr
 	gr.secretProvider = secretProvider

@@ -22,11 +22,14 @@ import (
 )
 
 const (
-	ConfigRegistryStem = "edgex/appservices/1.0/"
-	DatabaseName       = "application-service"
+	ConfigRegistryStem   = "edgex/appservices/1.0/"
+	DatabaseName         = "application-service"
+	CorrelationHeaderKey = "X-Correlation-ID"
 
 	ApiTriggerRoute   = clients.ApiBase + "/trigger"
 	ApiV2TriggerRoute = v2.ApiBase + "/trigger"
+	ApiSecretsRoute   = clients.ApiBase + "/secrets"
+	ApiV2SecretsRoute = v2.ApiBase + "/secrets"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build
@@ -34,6 +37,3 @@ var SDKVersion string = "0.0.0"
 
 // ApplicationVersion indicates the version of the application itself, not the SDK - will be overwritten by build
 var ApplicationVersion string = "0.0.0"
-
-// SecretsAPIRoute api route for posting secrets
-var SecretsAPIRoute = clients.ApiBase + "/secrets"

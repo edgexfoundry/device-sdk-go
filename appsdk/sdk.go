@@ -103,7 +103,7 @@ type AppFunctionsSDK struct {
 	registryClient            registry.Client
 	config                    *common.ConfigurationStruct
 	storeClient               interfaces.StoreClient
-	secretProvider            *security.SecretProvider
+	secretProvider            security.SecretProvider
 	storeForwardWg            *sync.WaitGroup
 	storeForwardCancelCtx     context.CancelFunc
 	appWg                     *sync.WaitGroup

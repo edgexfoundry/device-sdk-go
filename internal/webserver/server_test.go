@@ -196,7 +196,7 @@ func TestPostSecretRoute(t *testing.T) {
 	for _, test := range tests {
 		currentTest := test
 		t.Run(test.name, func(t *testing.T) {
-			req, _ := http.NewRequest(http.MethodPost, internal.SecretsAPIRoute, bytes.NewReader(currentTest.payload))
+			req, _ := http.NewRequest(http.MethodPost, internal.ApiSecretsRoute, bytes.NewReader(currentTest.payload))
 			rr := httptest.NewRecorder()
 			webserver.router.ServeHTTP(rr, req)
 			assert.Equal(t, currentTest.expectedStatus, rr.Result().StatusCode, "Expected secret doesn't match postSecret")
@@ -220,7 +220,7 @@ type mockSecretClient struct {
 }
 
 // NewMockSecretProvider provides a mocked version of the mockSecretClient to avoiding using vault in our tests
-func newMockSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) *security.SecretProvider {
+func newMockSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) security.SecretProvider {
 	mockSP := security.NewSecretProvider(logClient, config)
 	return mockSP
 }

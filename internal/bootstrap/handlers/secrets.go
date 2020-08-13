@@ -46,7 +46,9 @@ func (_ *Secrets) BootstrapHandler(
 	logger := bootstrapContainer.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
 
-	secretProvider := security.NewSecretProvider(logger, config)
+	var secretProvider security.SecretProvider
+
+	secretProvider = security.NewSecretProvider(logger, config)
 	ok := secretProvider.Initialize(ctx)
 	if !ok {
 		logger.Error("unable to initialize secret provider")

@@ -31,12 +31,13 @@ import (
 )
 
 func TestWaitForConfigUpdates_InsecureSecrets(t *testing.T) {
-	expected := time.Now()
+	_ = os.Setenv(security.EnvSecretStore, "false")
+	defer os.Clearenv()
 
 	sdk := &AppFunctionsSDK{}
-	sdk.secretProvider = &security.SecretProvider{
-		LastUpdated: expected,
-	}
+	sdk.secretProvider = &security.SecretProviderImpl{}
+	sdk.secretProvider.InsecureSecretsUpdated()
+	expected := sdk.secretProvider.SecretsLastUpdated()
 
 	// Create all dependencies that are going to be required for this test
 	sdk.LoggingClient = logger.NewMockClient()
@@ -67,7 +68,7 @@ func TestWaitForConfigUpdates_InsecureSecrets(t *testing.T) {
 	// Signal update occurred and give it time to process
 	configUpdated <- struct{}{}
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, expected, sdk.secretProvider.LastUpdated, "LastUpdated should not have changed")
+	assert.Equal(t, expected, sdk.secretProvider.SecretsLastUpdated(), "LastUpdated should not have changed")
 
 	// Add another new InsecureSecret entry so it is detected as changed. Must make a new map so
 	// it doesn't add to the old map.
@@ -83,5 +84,5 @@ func TestWaitForConfigUpdates_InsecureSecrets(t *testing.T) {
 	// Signal update occurred and give it time to process
 	configUpdated <- struct{}{}
 	time.Sleep(1 * time.Second)
-	assert.NotEqual(t, expected, sdk.secretProvider.LastUpdated, "LastUpdated should have changed")
+	assert.NotEqual(t, expected, sdk.secretProvider.SecretsLastUpdated(), "LastUpdated should have changed")
 }

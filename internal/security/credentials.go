@@ -26,7 +26,7 @@ import (
 
 // GetDatabaseCredentials retrieves the login credentials for the database
 // If security is disabled then we use the insecure credentials supplied by the configuration.
-func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (common.Credentials, error) {
+func (s *SecretProviderImpl) GetDatabaseCredentials(database db.DatabaseInfo) (common.Credentials, error) {
 	var credentials map[string]string
 	var err error
 
@@ -63,7 +63,7 @@ func (s *SecretProvider) GetDatabaseCredentials(database db.DatabaseInfo) (commo
 // path specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
-func (s *SecretProvider) GetSecrets(path string, keys ...string) (map[string]string, error) {
+func (s *SecretProviderImpl) GetSecrets(path string, keys ...string) (map[string]string, error) {
 	if !s.isSecurityEnabled() {
 		return s.getInsecureSecrets(path, keys...)
 	}
@@ -89,7 +89,7 @@ func (s *SecretProvider) GetSecrets(path string, keys ...string) (map[string]str
 // path specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
-func (s *SecretProvider) getInsecureSecrets(path string, keys ...string) (map[string]string, error) {
+func (s *SecretProviderImpl) getInsecureSecrets(path string, keys ...string) (map[string]string, error) {
 	secrets := make(map[string]string)
 	pathExists := false
 	var missingKeys []string
@@ -130,7 +130,7 @@ func (s *SecretProvider) getInsecureSecrets(path string, keys ...string) (map[st
 	return secrets, nil
 }
 
-func (s *SecretProvider) getSecretsCache(path string, keys ...string) map[string]string {
+func (s *SecretProviderImpl) getSecretsCache(path string, keys ...string) map[string]string {
 	secrets := make(map[string]string)
 
 	// Synchronize cache access
@@ -159,7 +159,7 @@ func (s *SecretProvider) getSecretsCache(path string, keys ...string) map[string
 	return nil
 }
 
-func (s *SecretProvider) updateSecretsCache(path string, secrets map[string]string) {
+func (s *SecretProviderImpl) updateSecretsCache(path string, secrets map[string]string) {
 	// Synchronize cache access
 	s.cacheMuxtex.Lock()
 	defer s.cacheMuxtex.Unlock()
@@ -177,7 +177,7 @@ func (s *SecretProvider) updateSecretsCache(path string, secrets map[string]stri
 // it sets the values requested at provided keys
 // path specifies the type or location of the secrets to store
 // secrets map specifies the "key": "value" pairs of secrets to store
-func (s *SecretProvider) StoreSecrets(path string, secrets map[string]string) error {
+func (s *SecretProviderImpl) StoreSecrets(path string, secrets map[string]string) error {
 	if !s.isSecurityEnabled() {
 		return errors.New("Storing secrets is not supported when running in insecure mode")
 	}

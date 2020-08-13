@@ -195,11 +195,12 @@ func TestInitializeClientFromSecretProvider(t *testing.T) {
 func TestInsecureSecretsUpdated(t *testing.T) {
 
 	expected := time.Now()
-	target := SecretProvider{
+	target := SecretProviderImpl{
 		LastUpdated: expected,
 	}
 
 	os.Setenv(EnvSecretStore, "true")
+
 	target.InsecureSecretsUpdated()
 	assert.Equal(t, expected, target.LastUpdated, "LastUpdated should not have changed")
 

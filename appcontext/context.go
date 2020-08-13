@@ -62,7 +62,7 @@ type Context struct {
 	// RetryData holds the data to be stored for later retry when the pipeline function returns an error
 	RetryData []byte
 	// SecretProvider exposes the support for getting and storing secrets
-	SecretProvider *security.SecretProvider
+	SecretProvider security.SecretProvider
 }
 
 // Complete is optional and provides a way to return the specified data.

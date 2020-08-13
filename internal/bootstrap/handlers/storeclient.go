@@ -81,7 +81,7 @@ func (_ *Database) BootstrapHandler(
 // InitializeStoreClient initializes the database client for Store and Forward. This is not a receiver function so that
 // it can be called directly when configuration has changed and store and forward has been enabled for the first time
 func InitializeStoreClient(
-	secretProvider *security.SecretProvider,
+	secretProvider security.SecretProvider,
 	config *common.ConfigurationStruct,
 	startupTimer startup.Timer,
 	logger logger.LoggingClient) (interfaces.StoreClient, error) {

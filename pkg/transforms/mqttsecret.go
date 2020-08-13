@@ -237,7 +237,7 @@ func (sender *MQTTSecretSender) MQTTSend(edgexcontext *appcontext.Context, param
 		return false, err
 	}
 	// if we havent initialized the client yet OR the cache has been invalidated (due to new/updated secrets) we need to (re)initialize the client
-	if sender.client == nil || sender.secretsLastRetrieved.Before(edgexcontext.SecretProvider.LastUpdated) {
+	if sender.client == nil || sender.secretsLastRetrieved.Before(edgexcontext.SecretProvider.SecretsLastUpdated()) {
 		err := sender.initializeMQTTClient(edgexcontext)
 		if err != nil {
 			return false, err

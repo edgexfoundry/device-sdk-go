@@ -28,6 +28,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/authtokenloader"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/client"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security/fileioperformer"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
@@ -37,8 +38,17 @@ import (
 
 const EnvSecretStore = "EDGEX_SECURITY_SECRET_STORE"
 
+type SecretProvider interface {
+	Initialize(_ context.Context) bool
+	StoreSecrets(path string, secrets map[string]string) error
+	GetSecrets(path string, _ ...string) (map[string]string, error)
+	GetDatabaseCredentials(database db.DatabaseInfo) (common.Credentials, error)
+	InsecureSecretsUpdated()
+	SecretsLastUpdated() time.Time
+}
+
 // SecretProvider cache storage for the secrets
-type SecretProvider struct {
+type SecretProviderImpl struct {
 	SharedSecretClient    pkg.SecretClient
 	ExclusiveSecretClient pkg.SecretClient
 	secretsCache          map[string]map[string]string // secret's path, key, value
@@ -50,8 +60,8 @@ type SecretProvider struct {
 }
 
 // NewSecretProvider returns a new secret provider
-func NewSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) *SecretProvider {
-	sp := &SecretProvider{
+func NewSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) *SecretProviderImpl {
+	sp := &SecretProviderImpl{
 		secretsCache:  make(map[string]map[string]string),
 		cacheMuxtex:   &sync.Mutex{},
 		configuration: configuration,
@@ -63,7 +73,7 @@ func NewSecretProvider(loggingClient logger.LoggingClient, configuration *common
 }
 
 // Initialize creates SecretClients to be used for obtaining secrets from a secrets store manager.
-func (s *SecretProvider) Initialize(ctx context.Context) bool {
+func (s *SecretProviderImpl) Initialize(ctx context.Context) bool {
 	var err error
 
 	// initialize shared secret client if configured
@@ -83,13 +93,17 @@ func (s *SecretProvider) Initialize(ctx context.Context) bool {
 
 // InsecureSecretsUpdated resets LastUpdate is not running in secure mode.If running in secure mode, changes to
 // InsecureSecrets have no impact and are not used.
-func (s *SecretProvider) InsecureSecretsUpdated() {
+func (s *SecretProviderImpl) InsecureSecretsUpdated() {
 	if !s.isSecurityEnabled() {
 		s.LastUpdated = time.Now()
 	}
 }
 
-func (s *SecretProvider) initializeSecretClient(
+func (s *SecretProviderImpl) SecretsLastUpdated() time.Time {
+	return s.LastUpdated
+}
+
+func (s *SecretProviderImpl) initializeSecretClient(
 	ctx context.Context,
 	secretStoreInfo bootstrapConfig.SecretStoreInfo) (pkg.SecretClient, error) {
 	var secretClient pkg.SecretClient
@@ -140,7 +154,7 @@ func (s *SecretProvider) initializeSecretClient(
 // getSecretConfig creates a SecretConfig based on the SecretStoreInfo configuration properties.
 // If a tokenfile is present it will override the Authentication.AuthToken value.
 // the return boolean is used to indicate whether the secret store configuration is empty or not
-func (s *SecretProvider) getSecretConfig(secretStoreInfo bootstrapConfig.SecretStoreInfo) (vault.SecretConfig, bool, error) {
+func (s *SecretProviderImpl) getSecretConfig(secretStoreInfo bootstrapConfig.SecretStoreInfo) (vault.SecretConfig, bool, error) {
 	emptySecretStore := bootstrapConfig.SecretStoreInfo{}
 	if secretStoreInfo == emptySecretStore {
 		return vault.SecretConfig{}, true, nil
@@ -178,7 +192,7 @@ func (s *SecretProvider) getSecretConfig(secretStoreInfo bootstrapConfig.SecretS
 }
 
 // isSecurityEnabled determines if security has been enabled.
-func (s *SecretProvider) isSecurityEnabled() bool {
+func (s *SecretProviderImpl) isSecurityEnabled() bool {
 	env := os.Getenv(EnvSecretStore)
 	return env != "false"
 }

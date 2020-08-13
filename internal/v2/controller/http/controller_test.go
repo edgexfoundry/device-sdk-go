@@ -18,8 +18,11 @@ package http
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,17 +31,61 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/v2/dtos/requests"
 )
 
-func TestPingRequest(t *testing.T) {
-	target := NewV2Controller(logger.NewMockClient(), nil)
+var expectedCorrelationId = uuid.New().String()
 
-	recorder := doGetRequest(t, contractsV2.ApiPingRoute, target.Ping)
+func TestConfigureStandardRoutes(t *testing.T) {
+	router := mux.NewRouter()
+	target := NewV2HttpController(router, logger.NewMockClient(), nil, nil)
+	target.ConfigureStandardRoutes()
+
+	var routes []*mux.Route
+	walkFunc := func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		routes = append(routes, route)
+		return nil
+	}
+	err := router.Walk(walkFunc)
+
+	require.NoError(t, err)
+	assert.Len(t, routes, 5)
+
+	paths := make(map[string]string)
+	for _, route := range routes {
+		url, err := route.URLPath("", "")
+		require.NoError(t, err)
+		methods, err := route.GetMethods()
+		require.NoError(t, err)
+		require.Len(t, methods, 1)
+		paths[url.Path] = methods[0]
+	}
+
+	assert.Contains(t, paths, contractsV2.ApiPingRoute)
+	assert.Contains(t, paths, contractsV2.ApiConfigRoute)
+	assert.Contains(t, paths, contractsV2.ApiMetricsRoute)
+	assert.Contains(t, paths, contractsV2.ApiVersionRoute)
+	assert.Contains(t, paths, internal.ApiV2SecretsRoute)
+
+	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiPingRoute])
+	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiConfigRoute])
+	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiMetricsRoute])
+	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiVersionRoute])
+	assert.Equal(t, http.MethodPost, paths[internal.ApiV2SecretsRoute])
+}
+
+func TestPingRequest(t *testing.T) {
+	target := NewV2HttpController(nil, logger.NewMockClient(), nil, nil)
+
+	recorder := doRequest(t, http.MethodGet, contractsV2.ApiPingRoute, target.Ping, nil)
 
 	actual := common.PingResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -57,9 +104,9 @@ func TestVersionRequest(t *testing.T) {
 	internal.ApplicationVersion = expectedAppVersion
 	internal.SDKVersion = expectedSdkVersion
 
-	target := NewV2Controller(logger.NewMockClient(), nil)
+	target := NewV2HttpController(nil, logger.NewMockClient(), nil, nil)
 
-	recorder := doGetRequest(t, contractsV2.ApiVersion, target.Version)
+	recorder := doRequest(t, http.MethodGet, contractsV2.ApiVersion, target.Version, nil)
 
 	actual := common.VersionSdkResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -71,9 +118,9 @@ func TestVersionRequest(t *testing.T) {
 }
 
 func TestMetricsRequest(t *testing.T) {
-	target := NewV2Controller(logger.NewMockClient(), nil)
+	target := NewV2HttpController(nil, logger.NewMockClient(), nil, nil)
 
-	recorder := doGetRequest(t, contractsV2.ApiMetricsRoute, target.Metrics)
+	recorder := doRequest(t, http.MethodGet, contractsV2.ApiMetricsRoute, target.Metrics, nil)
 
 	actual := common.MetricsResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -101,9 +148,9 @@ func TestConfigRequest(t *testing.T) {
 		},
 	}
 
-	target := NewV2Controller(logger.NewMockClient(), &expectedConfig)
+	target := NewV2HttpController(nil, logger.NewMockClient(), &expectedConfig, nil)
 
-	recorder := doGetRequest(t, contractsV2.ApiConfigRoute, target.Config)
+	recorder := doRequest(t, http.MethodGet, contractsV2.ApiConfigRoute, target.Config, nil)
 
 	actualResponse := common.ConfigResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
@@ -123,20 +170,120 @@ func TestConfigRequest(t *testing.T) {
 	assert.Equal(t, expectedConfig, actualConfig)
 }
 
-func doGetRequest(t *testing.T, api string, handler http.HandlerFunc) *httptest.ResponseRecorder {
-	req, err := http.NewRequest(http.MethodGet, api, nil)
+func TestSecretsRequest(t *testing.T) {
+	expectedRequestId := "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc"
+	config := &sdkCommon.ConfigurationStruct{
+		SecretStoreExclusive: bootstrapConfig.SecretStoreInfo{
+			Path: "TBD",
+		},
+	}
+	lc := logger.NewMockClient()
+
+	mockProvider := NewSecretProviderMock(config)
+	target := NewV2HttpController(nil, lc, config, mockProvider)
+	assert.NotNil(t, target)
+
+	validRequest := requests.SecretsRequest{
+		BaseRequest: common.BaseRequest{RequestID: expectedRequestId},
+		Path:        "mqtt",
+		Secrets: []requests.SecretsKeyValue{
+			{Key: "username", Value: "username"},
+			{Key: "password", Value: "password"},
+		},
+	}
+
+	validNoPath := validRequest
+	validNoPath.Path = ""
+	validPathWithSlash := validRequest
+	validPathWithSlash.Path = "/mqtt"
+	noRequestId := validRequest
+	noRequestId.RequestID = ""
+	noSecrets := validRequest
+	noSecrets.Secrets = []requests.SecretsKeyValue{}
+	missingSecretKey := validRequest
+	missingSecretKey.Secrets = []requests.SecretsKeyValue{
+		{Key: "", Value: "username"},
+	}
+	missingSecretValue := validRequest
+	missingSecretValue.Secrets = []requests.SecretsKeyValue{
+		{Key: "username", Value: ""},
+	}
+
+	tests := []struct {
+		Name               string
+		Request            requests.SecretsRequest
+		SecretsPath        string
+		SecretStoreEnabled string
+		ErrorExpected      bool
+		ExpectedStatusCode int
+	}{
+		{"Valid - sub-path no trailing slash, SecretsPath has trailing slash", validRequest, "my-secrets/", "true", false, http.StatusCreated},
+		{"Valid - no trailing slashes", validNoPath, "my-secrets", "true", false, http.StatusCreated},
+		{"Valid - sub-path only with trailing slash", validPathWithSlash, "my-secrets", "true", false, http.StatusCreated},
+		{"Valid - both trailing slashes", validPathWithSlash, "my-secrets/", "true", false, http.StatusCreated},
+		{"Invalid - no requestId", noRequestId, "", "true", true, http.StatusBadRequest},
+		{"Invalid - no secrets", noSecrets, "", "true", true, http.StatusBadRequest},
+		{"Invalid - missing secret key", missingSecretKey, "", "true", true, http.StatusBadRequest},
+		{"Invalid - missing secret value", missingSecretValue, "", "true", true, http.StatusBadRequest},
+		{"Invalid - No Secret Store", validRequest, "", "false", true, http.StatusInternalServerError},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			os.Setenv(security.EnvSecretStore, testCase.SecretStoreEnabled)
+
+			jsonData, err := json.Marshal(testCase.Request)
+			require.NoError(t, err)
+
+			reader := strings.NewReader(string(jsonData))
+
+			req, err := http.NewRequest(http.MethodPost, internal.ApiV2SecretsRoute, reader)
+			require.NoError(t, err)
+			req.Header.Set(internal.CorrelationHeaderKey, expectedCorrelationId)
+
+			config.SecretStoreExclusive.Path = testCase.SecretsPath
+
+			recorder := httptest.NewRecorder()
+			handler := http.HandlerFunc(target.Secrets)
+			handler.ServeHTTP(recorder, req)
+
+			actualResponse := common.BaseResponse{}
+			err = json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
+			require.NoError(t, err)
+
+			assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
+			assert.Equal(t, testCase.ExpectedStatusCode, int(actualResponse.StatusCode), "Response status code not as expected")
+
+			if testCase.ErrorExpected {
+				assert.NotEmpty(t, actualResponse.Message, "Message is empty")
+				return // Test complete for error cases
+			}
+
+			assert.Equal(t, expectedRequestId, actualResponse.RequestID, "RequestID not as expected")
+			assert.Empty(t, actualResponse.Message, "Message not empty, as expected")
+		})
+	}
+}
+
+func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc, body io.Reader) *httptest.ResponseRecorder {
+	req, err := http.NewRequest(method, api, body)
 	require.NoError(t, err)
+	req.Header.Set(internal.CorrelationHeaderKey, expectedCorrelationId)
 
 	recorder := httptest.NewRecorder()
 
 	handler.ServeHTTP(recorder, req)
 
-	require.Equal(t, http.StatusOK, recorder.Code)
+	expectedStatusCode := http.StatusOK
+	if method == http.MethodPost {
+		expectedStatusCode = http.StatusMultiStatus
+	}
 
-	assert.Equal(t, clients.ContentTypeJSON, recorder.HeaderMap.Get(clients.ContentType))
-	assert.NotEmpty(t, recorder.HeaderMap.Get(clients.CorrelationHeader))
+	assert.Equal(t, expectedStatusCode, recorder.Code, "Wrong status code")
+	assert.Equal(t, clients.ContentTypeJSON, recorder.HeaderMap.Get(clients.ContentType), "Content type not set or not JSON")
+	assert.Equal(t, expectedCorrelationId, recorder.HeaderMap.Get(internal.CorrelationHeaderKey), "CorrelationHeader not as expected")
 
-	require.NotEmpty(t, recorder.Body.String())
+	require.NotEmpty(t, recorder.Body.String(), "Response body is empty")
 
 	return recorder
 }

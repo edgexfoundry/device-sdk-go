@@ -186,7 +186,7 @@ type mockSecretClient struct {
 }
 
 // NewMockSecretProvider provides a mocked version of the mockSecretClient to avoiding using vault in our tests
-func newMockSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) *security.SecretProvider {
+func newMockSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) security.SecretProvider {
 	mockSP := security.NewSecretProvider(logClient, config)
 	mockSP.ExclusiveSecretClient = &mockSecretClient{}
 	return mockSP

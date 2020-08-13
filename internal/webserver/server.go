@@ -27,7 +27,8 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-	v2 "github.com/edgexfoundry/app-functions-sdk-go/internal/v2"
+	v2 "github.com/edgexfoundry/app-functions-sdk-go/internal/v2/controller/http"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
@@ -36,10 +37,11 @@ import (
 
 // WebServer handles the webserver configuration
 type WebServer struct {
-	Config         *common.ConfigurationStruct
-	LoggingClient  logger.LoggingClient
-	router         *mux.Router
-	secretProvider *security.SecretProvider
+	Config           *common.ConfigurationStruct
+	LoggingClient    logger.LoggingClient
+	router           *mux.Router
+	secretProvider   security.SecretProvider
+	v2HttpController *v2.V2HttpController
 }
 
 // swagger:model
@@ -49,12 +51,13 @@ type Version struct {
 }
 
 // NewWebserver returns a new instance of *WebServer
-func NewWebServer(config *common.ConfigurationStruct, secretProvider *security.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
+func NewWebServer(config *common.ConfigurationStruct, secretProvider security.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
 	ws := &WebServer{
-		Config:         config,
-		LoggingClient:  lc,
-		router:         router,
-		secretProvider: secretProvider,
+		Config:           config,
+		LoggingClient:    lc,
+		router:           router,
+		secretProvider:   secretProvider,
+		v2HttpController: v2.NewV2HttpController(router, lc, config, secretProvider),
 	}
 
 	return ws
@@ -293,10 +296,10 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 	webserver.router.HandleFunc(clients.ApiVersionRoute, webserver.versionHandler).Methods(http.MethodGet)
 
 	// Secrets
-	webserver.router.HandleFunc(internal.SecretsAPIRoute, webserver.secretHandler).Methods(http.MethodPost)
+	webserver.router.HandleFunc(internal.ApiSecretsRoute, webserver.secretHandler).Methods(http.MethodPost)
 
 	// V2 API routes
-	v2.ConfigureStandardRoutes(webserver.router, webserver.LoggingClient, webserver.Config)
+	webserver.v2HttpController.ConfigureStandardRoutes()
 }
 
 // SetupTriggerRoute adds a route to handle trigger pipeline from HTTP request

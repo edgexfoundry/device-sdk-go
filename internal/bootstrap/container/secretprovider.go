@@ -22,9 +22,9 @@ import (
 )
 
 // SecretProviderName contains the name of the security.SecretProvider implementation in the DIC.
-var SecretProviderName = di.TypeInstanceToName(&security.SecretProvider{})
+var SecretProviderName = di.TypeInstanceToName((*security.SecretProvider)(nil))
 
 // SecretProviderFrom helper function queries the DIC and returns the security.SecretProvider implementation.
-func SecretProviderFrom(get di.Get) *security.SecretProvider {
-	return get(SecretProviderName).(*security.SecretProvider)
+func SecretProviderFrom(get di.Get) security.SecretProvider {
+	return get(SecretProviderName).(security.SecretProvider)
 }
