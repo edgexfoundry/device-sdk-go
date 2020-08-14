@@ -41,7 +41,7 @@ func (_ *Clients) BootstrapHandler(
 	wg *sync.WaitGroup,
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
-	return InitDependencyClients(dic)
+	return InitDependencyClients(startupTimer, dic)
 }
 
 // InitDependencyClients triggers Service Client Initializer to establish connection to Metadata and Core Data Services

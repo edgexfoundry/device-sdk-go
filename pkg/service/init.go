@@ -10,7 +10,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -42,6 +41,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	sdk.UpdateFromContainer(b.router, dic)
 	sdk.controller.InitRestRoutes(dic)
 
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
 
 	// init autoevent manager in the beginning so that if there's error
@@ -60,7 +60,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 
 	err := sdk.selfRegister()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Couldn't register to metadata service: %v\n", err)
+		lc.Error(fmt.Sprintf("Couldn't register to metadata service: %v\n", err))
 		return false
 	}
 
@@ -74,7 +74,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 
 	err = sdk.driver.Initialize(sdk.LoggingClient, sdk.asyncCh, sdk.deviceCh)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Driver.Initialize failed: %v\n", err)
+		lc.Error(fmt.Sprintf("Driver.Initialize failed: %v\n", err))
 		return false
 	}
 	sdk.initialized = true
@@ -93,13 +93,13 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 
 	err = provision.LoadProfiles(configuration.Device.ProfilesDir, dic)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to create the pre-defined Device Profiles: %v\n", err)
+		lc.Error(fmt.Sprintf("Failed to create the pre-defined device profiles: %v\n", err))
 		return false
 	}
 
 	err = provision.LoadDevices(configuration.DeviceList, dic)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Failed to create the pre-defined Devices: %v\n", err)
+		lc.Error(fmt.Sprintf("Failed to create the pre-defined devices: %v\n", err))
 		return false
 	}
 
