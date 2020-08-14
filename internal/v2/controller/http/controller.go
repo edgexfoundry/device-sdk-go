@@ -120,7 +120,7 @@ func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.R
 	err := json.NewDecoder(request.Body).Decode(&secretRequest)
 	if err != nil {
 		response := common.NewBaseResponse("unknown", err.Error(), http.StatusBadRequest)
-		v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusMultiStatus)
+		v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusBadRequest)
 		return
 	}
 
@@ -129,12 +129,12 @@ func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.R
 	if err := v2c.secretProvider.StoreSecrets(path, secrets); err != nil {
 		msg := fmt.Sprintf("Storing secrets failed: %v", err)
 		response := common.NewBaseResponse(secretRequest.RequestID, msg, http.StatusInternalServerError)
-		v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusMultiStatus)
+		v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusInternalServerError)
 		return
 	}
 
 	response := common.NewBaseResponseNoMessage(secretRequest.RequestID, http.StatusCreated)
-	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusMultiStatus)
+	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusCreated)
 }
 
 // sendResponse puts together the response packet for the V2 API

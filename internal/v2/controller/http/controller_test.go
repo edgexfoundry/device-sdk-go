@@ -251,8 +251,9 @@ func TestSecretsRequest(t *testing.T) {
 			err = json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
 			require.NoError(t, err)
 
+			assert.Equal(t, testCase.ExpectedStatusCode, recorder.Result().StatusCode, "HTTP status code not as expected")
 			assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
-			assert.Equal(t, testCase.ExpectedStatusCode, int(actualResponse.StatusCode), "Response status code not as expected")
+			assert.Equal(t, testCase.ExpectedStatusCode, int(actualResponse.StatusCode), "BaseResponse status code not as expected")
 
 			if testCase.ErrorExpected {
 				assert.NotEmpty(t, actualResponse.Message, "Message is empty")
