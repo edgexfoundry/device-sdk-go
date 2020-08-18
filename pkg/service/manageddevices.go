@@ -20,7 +20,7 @@ import (
 
 // AddDevice adds a new Device to the Device Service and Core Metadata
 // Returns new Device id or non-nil error.
-func (s *DeviceServiceSDK) AddDevice(device contract.Device) (id string, err error) {
+func (s *DeviceService) AddDevice(device contract.Device) (id string, err error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
 		return d.Id, fmt.Errorf("name conflicted, Device %s exists", device.Name)
 	}
@@ -58,12 +58,12 @@ func (s *DeviceServiceSDK) AddDevice(device contract.Device) (id string, err err
 }
 
 // Devices return all managed Devices from cache
-func (s *DeviceServiceSDK) Devices() []contract.Device {
+func (s *DeviceService) Devices() []contract.Device {
 	return cache.Devices().All()
 }
 
 // GetDeviceByName returns the Device by its name if it exists in the cache, or returns an error.
-func (s *DeviceServiceSDK) GetDeviceByName(name string) (contract.Device, error) {
+func (s *DeviceService) GetDeviceByName(name string) (contract.Device, error) {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", name)
@@ -75,7 +75,7 @@ func (s *DeviceServiceSDK) GetDeviceByName(name string) (contract.Device, error)
 
 // RemoveDevice removes the specified Device by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceServiceSDK) RemoveDevice(id string) error {
+func (s *DeviceService) RemoveDevice(id string) error {
 	device, ok := cache.Devices().ForId(id)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", id)
@@ -95,7 +95,7 @@ func (s *DeviceServiceSDK) RemoveDevice(id string) error {
 
 // RemoveDevice removes the specified Device by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceServiceSDK) RemoveDeviceByName(name string) error {
+func (s *DeviceService) RemoveDeviceByName(name string) error {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", name)
@@ -115,7 +115,7 @@ func (s *DeviceServiceSDK) RemoveDeviceByName(name string) error {
 
 // UpdateDevice updates the Device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceServiceSDK) UpdateDevice(device contract.Device) error {
+func (s *DeviceService) UpdateDevice(device contract.Device) error {
 	_, ok := cache.Devices().ForId(device.Id)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", device.Id)
@@ -135,7 +135,7 @@ func (s *DeviceServiceSDK) UpdateDevice(device contract.Device) error {
 
 // UpdateDeviceOperatingState updates the Device's OperatingState with given name
 // in Core Metadata and device service cache.
-func (s *DeviceServiceSDK) UpdateDeviceOperatingState(deviceName string, state string) error {
+func (s *DeviceService) UpdateDeviceOperatingState(deviceName string, state string) error {
 	d, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		msg := fmt.Sprintf("Device %s cannot be found in cache", deviceName)

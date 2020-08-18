@@ -26,7 +26,7 @@ import (
 // processAsyncResults processes readings that are pushed from
 // a DS implementation. Each is reading is optionally transformed
 // before being pushed to Core Data.
-func (s *DeviceServiceSDK) processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
+func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
 		close(s.asyncCh)
@@ -96,7 +96,7 @@ func (s *DeviceServiceSDK) processAsyncResults(ctx context.Context, wg *sync.Wai
 
 // processAsyncFilterAndAdd filter and add devices discovered by
 // device service protocol discovery.
-func (s *DeviceServiceSDK) processAsyncFilterAndAdd(ctx context.Context, wg *sync.WaitGroup) {
+func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
 		close(s.deviceCh)

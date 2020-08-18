@@ -44,23 +44,23 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 
-	sdk.UpdateFromContainer(dic)
-	lc := sdk.LoggingClient
-	configuration := sdk.config
+	ds.UpdateFromContainer(dic)
+	lc := ds.LoggingClient
+	configuration := ds.config
 
 	// init autoevent manager in the beginning so that if there's error
 	// in following bootstrap process the device service can correctly
 	autoevent.NewManager(ctx, wg)
 
-	if sdk.AsyncReadings() {
-		sdk.asyncCh = make(chan *dsModels.AsyncValues, sdk.config.Service.AsyncBufferSize)
-		go sdk.processAsyncResults(ctx, wg)
+	if ds.AsyncReadings() {
+		ds.asyncCh = make(chan *dsModels.AsyncValues, ds.config.Service.AsyncBufferSize)
+		go ds.processAsyncResults(ctx, wg)
 	}
 
-	sdk.deviceCh = make(chan []dsModels.DiscoveredDevice)
-	go sdk.processAsyncFilterAndAdd(ctx, wg)
+	ds.deviceCh = make(chan []dsModels.DiscoveredDevice)
+	go ds.processAsyncFilterAndAdd(ctx, wg)
 
-	err := sdk.selfRegister()
+	err := ds.selfRegister()
 	if err != nil {
 		lc.Error(fmt.Sprintf("Couldn't register to metadata service: %v\n", err))
 		return false
@@ -69,22 +69,22 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	// initialize devices, deviceResources, provisionwatcheres & profiles cache
 	cache.InitCache()
 
-	err = sdk.driver.Initialize(sdk.LoggingClient, sdk.asyncCh, sdk.deviceCh)
+	err = ds.driver.Initialize(ds.LoggingClient, ds.asyncCh, ds.deviceCh)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Driver.Initialize failed: %v\n", err))
 		return false
 	}
-	sdk.initialized = true
+	ds.initialized = true
 
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceServiceName: func(get di.Get) interface{} {
-			return sdk.deviceService
+			return ds.deviceService
 		},
 		container.ProtocolDiscoveryName: func(get di.Get) interface{} {
-			return sdk.discovery
+			return ds.discovery
 		},
 		container.ProtocolDriverName: func(get di.Get) interface{} {
-			return sdk.driver
+			return ds.driver
 		},
 	})
 

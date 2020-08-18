@@ -21,7 +21,7 @@ import (
 
 // AddDeviceProfile adds a new DeviceProfile to the Device Service and Core Metadata
 // Returns new DeviceProfile id or non-nil error.
-func (s *DeviceServiceSDK) AddDeviceProfile(profile contract.DeviceProfile) (id string, err error) {
+func (s *DeviceService) AddDeviceProfile(profile contract.DeviceProfile) (id string, err error) {
 	if p, ok := cache.Profiles().ForName(profile.Name); ok {
 		return p.Id, fmt.Errorf("name conflicted, Profile %s exists", profile.Name)
 	}
@@ -48,13 +48,13 @@ func (s *DeviceServiceSDK) AddDeviceProfile(profile contract.DeviceProfile) (id 
 }
 
 // DeviceProfiles return all managed DeviceProfiles from cache
-func (s *DeviceServiceSDK) DeviceProfiles() []contract.DeviceProfile {
+func (s *DeviceService) DeviceProfiles() []contract.DeviceProfile {
 	return cache.Profiles().All()
 }
 
 // RemoveDeviceProfile removes the specified DeviceProfile by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceServiceSDK) RemoveDeviceProfile(id string) error {
+func (s *DeviceService) RemoveDeviceProfile(id string) error {
 	profile, ok := cache.Profiles().ForId(id)
 	if !ok {
 		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", id)
@@ -76,7 +76,7 @@ func (s *DeviceServiceSDK) RemoveDeviceProfile(id string) error {
 
 // RemoveDeviceProfileByName removes the specified DeviceProfile by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceServiceSDK) RemoveDeviceProfileByName(name string) error {
+func (s *DeviceService) RemoveDeviceProfileByName(name string) error {
 	profile, ok := cache.Profiles().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", name)
@@ -98,7 +98,7 @@ func (s *DeviceServiceSDK) RemoveDeviceProfileByName(name string) error {
 
 // UpdateDeviceProfile updates the DeviceProfile in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceServiceSDK) UpdateDeviceProfile(profile contract.DeviceProfile) error {
+func (s *DeviceService) UpdateDeviceProfile(profile contract.DeviceProfile) error {
 	_, ok := cache.Profiles().ForId(profile.Id)
 	if !ok {
 		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", profile.Id)
@@ -122,7 +122,7 @@ func (s *DeviceServiceSDK) UpdateDeviceProfile(profile contract.DeviceProfile) e
 
 // ResourceOperation retrieves the first matched ResourceOpereation instance from cache according to
 // the Device name, Device Resource name, and the method (get or set).
-func (s *DeviceServiceSDK) ResourceOperation(deviceName string, deviceResource string, method string) (contract.ResourceOperation, bool) {
+func (s *DeviceService) ResourceOperation(deviceName string, deviceResource string, method string) (contract.ResourceOperation, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		s.LoggingClient.Error(fmt.Sprintf("retrieving ResourceOperation - Device %s not found", deviceName))
@@ -138,7 +138,7 @@ func (s *DeviceServiceSDK) ResourceOperation(deviceName string, deviceResource s
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
 // the Device name and Device Resource name
-func (s *DeviceServiceSDK) DeviceResource(deviceName string, deviceResource string, _ string) (contract.DeviceResource, bool) {
+func (s *DeviceService) DeviceResource(deviceName string, deviceResource string, _ string) (contract.DeviceResource, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		s.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))

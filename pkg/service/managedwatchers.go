@@ -19,7 +19,7 @@ import (
 
 // AddProvisionWatcher adds a new Watcher to the cache and Core Metadata
 // Returns new Watcher id or non-nil error.
-func (s *DeviceServiceSDK) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id string, err error) {
+func (s *DeviceService) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id string, err error) {
 	if pw, ok := cache.ProvisionWatchers().ForName(watcher.Name); ok {
 		return pw.Id, fmt.Errorf("name conflicted, watcher %s exists", watcher.Name)
 	}
@@ -54,12 +54,12 @@ func (s *DeviceServiceSDK) AddProvisionWatcher(watcher contract.ProvisionWatcher
 }
 
 // ProvisionWatchers return all managed Watchers from cache
-func (s *DeviceServiceSDK) ProvisionWatchers() []contract.ProvisionWatcher {
+func (s *DeviceService) ProvisionWatchers() []contract.ProvisionWatcher {
 	return cache.ProvisionWatchers().All()
 }
 
 // GetProvisionWatcherByName returns the Watcher by its name if it exists in the cache, or returns an error.
-func (s *DeviceServiceSDK) GetProvisionWatcherByName(name string) (contract.ProvisionWatcher, error) {
+func (s *DeviceService) GetProvisionWatcherByName(name string) (contract.ProvisionWatcher, error) {
 	pw, ok := cache.ProvisionWatchers().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Watcher %s cannot be found in cache", name)
@@ -71,7 +71,7 @@ func (s *DeviceServiceSDK) GetProvisionWatcherByName(name string) (contract.Prov
 
 // RemoveProvisionWatcher removes the specified Watcher by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceServiceSDK) RemoveProvisionWatcher(id string) error {
+func (s *DeviceService) RemoveProvisionWatcher(id string) error {
 	pw, ok := cache.ProvisionWatchers().ForId(id)
 	if !ok {
 		msg := fmt.Sprintf("ProvisionWatcher %s cannot be found in cache", id)
@@ -92,7 +92,7 @@ func (s *DeviceServiceSDK) RemoveProvisionWatcher(id string) error {
 
 // UpdateProvisionWatcher updates the Watcher in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceServiceSDK) UpdateProvisionWatcher(watcher contract.ProvisionWatcher) error {
+func (s *DeviceService) UpdateProvisionWatcher(watcher contract.ProvisionWatcher) error {
 	_, ok := cache.ProvisionWatchers().ForId(watcher.Id)
 	if !ok {
 		msg := fmt.Sprintf("provisionwatcher %s cannot be found in cache", watcher.Id)

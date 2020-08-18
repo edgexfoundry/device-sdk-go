@@ -38,12 +38,12 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	sdkFlags.Parse(os.Args[1:])
 
 	serviceName = setServiceName(serviceName, sdkFlags.Profile())
-	sdk = &DeviceServiceSDK{}
-	sdk.Initialize(serviceName, serviceVersion, proto)
+	ds = &DeviceService{}
+	ds.Initialize(serviceName, serviceVersion, proto)
 
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
-			return sdk.config
+			return ds.config
 		},
 	})
 
@@ -54,9 +54,9 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		ctx,
 		cancel,
 		sdkFlags,
-		sdk.ServiceName,
+		ds.ServiceName,
 		common.ConfigStemDevice+common.ConfigMajorVersion,
-		sdk.config,
+		ds.config,
 		startupTimer,
 		dic,
 		[]interfaces.BootstrapHandler{
@@ -66,7 +66,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			message.NewBootstrap(serviceName, serviceVersion).BootstrapHandler,
 		})
 
-	sdk.Stop(false)
+	ds.Stop(false)
 }
 
 func setServiceName(name string, profile string) string {

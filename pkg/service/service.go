@@ -34,10 +34,10 @@ import (
 )
 
 var (
-	sdk *DeviceServiceSDK
+	ds *DeviceService
 )
 
-type DeviceServiceSDK struct {
+type DeviceService struct {
 	ServiceName    string
 	LoggingClient  logger.LoggingClient
 	registryClient registry.Client
@@ -53,7 +53,7 @@ type DeviceServiceSDK struct {
 }
 
 // TODO: remove common.xxx = xxx assignment after refactor are done.
-func (s *DeviceServiceSDK) Initialize(serviceName, serviceVersion string, proto interface{}) {
+func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto interface{}) {
 	if serviceName == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service name")
 		os.Exit(1)
@@ -85,7 +85,7 @@ func (s *DeviceServiceSDK) Initialize(serviceName, serviceVersion string, proto 
 	s.config = &common.ConfigurationStruct{}
 }
 
-func (s *DeviceServiceSDK) UpdateFromContainer(dic *di.Container) {
+func (s *DeviceService) UpdateFromContainer(dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.registryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.edgexClients.GeneralClient = container.GeneralClientFrom(dic.Get)
@@ -101,27 +101,27 @@ func (s *DeviceServiceSDK) UpdateFromContainer(dic *di.Container) {
 }
 
 // Name returns the name of this Device Service
-func (s *DeviceServiceSDK) Name() string {
+func (s *DeviceService) Name() string {
 	return s.ServiceName
 }
 
 // Version returns the version number of this Device Service
-func (s *DeviceServiceSDK) Version() string {
+func (s *DeviceService) Version() string {
 	return common.ServiceVersion
 }
 
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
-func (s *DeviceServiceSDK) AsyncReadings() bool {
+func (s *DeviceService) AsyncReadings() bool {
 	return s.config.Service.EnableAsyncReadings
 }
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-func (s *DeviceServiceSDK) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+func (s *DeviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
 	return s.controller.AddRoute(route, handler, methods...)
 }
 
 // Stop shuts down the Service
-func (s *DeviceServiceSDK) Stop(force bool) {
+func (s *DeviceService) Stop(force bool) {
 	if s.initialized {
 		//_ = s.driver.Stop(false)
 		_ = common.Driver.Stop(force)
@@ -130,7 +130,7 @@ func (s *DeviceServiceSDK) Stop(force bool) {
 }
 
 // selfRegister register device service itself onto metadata.
-func (s *DeviceServiceSDK) selfRegister() error {
+func (s *DeviceService) selfRegister() error {
 	s.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
@@ -156,7 +156,7 @@ func (s *DeviceServiceSDK) selfRegister() error {
 	return nil
 }
 
-func (s *DeviceServiceSDK) createNewDeviceService() (contract.DeviceService, error) {
+func (s *DeviceService) createNewDeviceService() (contract.DeviceService, error) {
 	addr, err := s.makeNewAddressable()
 	if err != nil {
 		s.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
@@ -191,7 +191,7 @@ func (s *DeviceServiceSDK) createNewDeviceService() (contract.DeviceService, err
 	return ds, nil
 }
 
-func (s *DeviceServiceSDK) makeNewAddressable() (*contract.Addressable, error) {
+func (s *DeviceService) makeNewAddressable() (*contract.Addressable, error) {
 	// check whether there has been an existing addressable
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	addr, err := s.edgexClients.AddressableClient.AddressableForName(ctx, s.ServiceName)
@@ -231,11 +231,11 @@ func (s *DeviceServiceSDK) makeNewAddressable() (*contract.Addressable, error) {
 }
 
 // RunningService returns the Service instance which is running
-func RunningService() *DeviceServiceSDK {
-	return sdk
+func RunningService() *DeviceService {
+	return ds
 }
 
 // DriverConfigs retrieves the driver specific configuration
 func DriverConfigs() map[string]string {
-	return sdk.config.Driver
+	return ds.config.Driver
 }
