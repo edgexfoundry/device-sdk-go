@@ -139,8 +139,7 @@ func (s *DeviceServiceSDK) processAsyncFilterAndAdd(ctx context.Context, wg *syn
 					device.Origin = millis
 					device.Description = d.Description
 
-					dc := s.edgexClients.DeviceClient
-					_, err := dc.Add(ctx, device)
+					_, err := s.edgexClients.DeviceClient.Add(ctx, device)
 					if err != nil {
 						s.LoggingClient.Error(fmt.Sprintf("Created discovered device %s failed: %v", device.Name, err))
 					}

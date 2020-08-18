@@ -44,7 +44,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 
-	sdk.UpdateFromContainer(b.router, dic)
+	sdk.UpdateFromContainer(dic)
 	lc := sdk.LoggingClient
 	configuration := sdk.config
 
@@ -53,7 +53,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	autoevent.NewManager(ctx, wg)
 
 	if sdk.AsyncReadings() {
-		sdk.asyncCh = make(chan *dsModels.AsyncValues, sdk.svcInfo.AsyncBufferSize)
+		sdk.asyncCh = make(chan *dsModels.AsyncValues, sdk.config.Service.AsyncBufferSize)
 		go sdk.processAsyncResults(ctx, wg)
 	}
 

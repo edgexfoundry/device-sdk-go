@@ -14,8 +14,8 @@ import (
 
 // DeviceServiceName contains the name of device service implementation in the DIC.
 var DeviceServiceName = di.TypeInstanceToName(contract.DeviceService{})
-var ProtocolDiscoveryName = "ProtocolDiscovery"
-var ProtocolDriverName = "ProtocolDriver"
+var ProtocolDiscoveryName = di.TypeInstanceToName((*models.ProtocolDiscovery)(nil))
+var ProtocolDriverName = di.TypeInstanceToName((*models.ProtocolDriver)(nil))
 
 // DeviceServiceFrom helper function queries the DIC and returns device service implementation.
 func DeviceServiceFrom(get di.Get) contract.DeviceService {

@@ -206,7 +206,7 @@ func initializeClients(dic *di.Container) {
 		container.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
 			return dpc
 		},
-		container.MetadataGeneralClientName: func(get di.Get) interface{} {
+		container.GeneralClientName: func(get di.Get) interface{} {
 			return gc
 		},
 		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {

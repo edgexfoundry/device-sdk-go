@@ -12,7 +12,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 )
 
-type EdgeXClient struct {
+type EdgeXClients struct {
 	GeneralClient          general.GeneralClient
 	DeviceClient           metadata.DeviceClient
 	DeviceServiceClient    metadata.DeviceServiceClient

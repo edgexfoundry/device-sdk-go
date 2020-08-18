@@ -27,11 +27,9 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-registry/registry"
-	"github.com/gorilla/mux"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/google/uuid"
 )
 
@@ -43,10 +41,9 @@ type DeviceServiceSDK struct {
 	ServiceName    string
 	LoggingClient  logger.LoggingClient
 	registryClient registry.Client
-	edgexClients   clients.EdgeXClient
+	edgexClients   clients.EdgeXClients
 	controller     controller.RestController
 	config         *common.ConfigurationStruct
-	svcInfo        *common.ServiceInfo
 	deviceService  contract.DeviceService
 	driver         dsModels.ProtocolDriver
 	discovery      dsModels.ProtocolDiscovery
@@ -88,10 +85,10 @@ func (s *DeviceServiceSDK) Initialize(serviceName, serviceVersion string, proto 
 	s.config = &common.ConfigurationStruct{}
 }
 
-func (s *DeviceServiceSDK) UpdateFromContainer(r *mux.Router, dic *di.Container) {
+func (s *DeviceServiceSDK) UpdateFromContainer(dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.registryClient = bootstrapContainer.RegistryFrom(dic.Get)
-	s.edgexClients.GeneralClient = container.MetadataGeneralClientFrom(dic.Get)
+	s.edgexClients.GeneralClient = container.GeneralClientFrom(dic.Get)
 	s.edgexClients.DeviceClient = container.MetadataDeviceClientFrom(dic.Get)
 	s.edgexClients.DeviceServiceClient = container.MetadataDeviceServiceClientFrom(dic.Get)
 	s.edgexClients.DeviceProfileClient = container.MetadataDeviceProfileClientFrom(dic.Get)
@@ -99,8 +96,7 @@ func (s *DeviceServiceSDK) UpdateFromContainer(r *mux.Router, dic *di.Container)
 	s.edgexClients.ProvisionWatcherClient = container.MetadataProvisionWatcherClientFrom(dic.Get)
 	s.edgexClients.EventClient = container.CoredataEventClientFrom(dic.Get)
 	s.edgexClients.ValueDescriptorClient = container.CoredataValueDescriptorClientFrom(dic.Get)
-
-	s.svcInfo = &container.ConfigurationFrom(dic.Get).Service
+	s.config = container.ConfigurationFrom(dic.Get)
 	s.controller = container.RestControllerFrom(dic.Get)
 }
 
@@ -170,7 +166,7 @@ func (s *DeviceServiceSDK) createNewDeviceService() (contract.DeviceService, err
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	ds := contract.DeviceService{
 		Name:           s.ServiceName,
-		Labels:         s.svcInfo.Labels,
+		Labels:         s.config.Service.Labels,
 		OperatingState: contract.Enabled,
 		Addressable:    *addr,
 		AdminState:     contract.Unlocked,
@@ -210,8 +206,8 @@ func (s *DeviceServiceSDK) makeNewAddressable() (*contract.Addressable, error) {
 				Name:       s.ServiceName,
 				HTTPMethod: http.MethodPost,
 				Protocol:   common.HttpProto,
-				Address:    s.svcInfo.Host,
-				Port:       s.svcInfo.Port,
+				Address:    s.config.Service.Host,
+				Port:       s.config.Service.Port,
 				Path:       common.APICallbackRoute,
 			}
 			id, err := s.edgexClients.AddressableClient.Add(ctx, &addr)
