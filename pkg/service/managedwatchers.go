@@ -19,17 +19,17 @@ import (
 
 // AddProvisionWatcher adds a new Watcher to the cache and Core Metadata
 // Returns new Watcher id or non-nil error.
-func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id string, err error) {
+func (s *DeviceService) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id string, err error) {
 	if pw, ok := cache.ProvisionWatchers().ForName(watcher.Name); ok {
 		return pw.Id, fmt.Errorf("name conflicted, watcher %s exists", watcher.Name)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Adding managed watcher: %s\n", watcher.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Adding managed watcher: %s\n", watcher.Name))
 
 	prf, ok := cache.Profiles().ForName(watcher.Profile.Name)
 	if !ok {
 		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Watcher %s", watcher.Profile.Name, watcher.Name)
-		common.LoggingClient.Error(errMsg)
+		s.LoggingClient.Error(errMsg)
 		return "", fmt.Errorf(errMsg)
 	}
 
@@ -39,9 +39,9 @@ func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id str
 	watcher.Profile = prf
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err = common.ProvisionWatcherClient.Add(ctx, &watcher)
+	id, err = s.edgexClients.ProvisionWatcherClient.Add(ctx, &watcher)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Add Watcher failed %s, error: %v", watcher.Name, err))
+		s.LoggingClient.Error(fmt.Sprintf("Add Watcher failed %s, error: %v", watcher.Name, err))
 		return "", err
 	}
 	if err = common.VerifyIdFormat(id, "Watcher"); err != nil {
@@ -54,16 +54,16 @@ func (s *Service) AddProvisionWatcher(watcher contract.ProvisionWatcher) (id str
 }
 
 // ProvisionWatchers return all managed Watchers from cache
-func (s *Service) ProvisionWatchers() []contract.ProvisionWatcher {
+func (s *DeviceService) ProvisionWatchers() []contract.ProvisionWatcher {
 	return cache.ProvisionWatchers().All()
 }
 
 // GetProvisionWatcherByName returns the Watcher by its name if it exists in the cache, or returns an error.
-func (s *Service) GetProvisionWatcherByName(name string) (contract.ProvisionWatcher, error) {
+func (s *DeviceService) GetProvisionWatcherByName(name string) (contract.ProvisionWatcher, error) {
 	pw, ok := cache.ProvisionWatchers().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("Watcher %s cannot be found in cache", name)
-		common.LoggingClient.Info(msg)
+		s.LoggingClient.Info(msg)
 		return contract.ProvisionWatcher{}, fmt.Errorf(msg)
 	}
 	return pw, nil
@@ -71,19 +71,19 @@ func (s *Service) GetProvisionWatcherByName(name string) (contract.ProvisionWatc
 
 // RemoveProvisionWatcher removes the specified Watcher by id from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *Service) RemoveProvisionWatcher(id string) error {
+func (s *DeviceService) RemoveProvisionWatcher(id string) error {
 	pw, ok := cache.ProvisionWatchers().ForId(id)
 	if !ok {
 		msg := fmt.Sprintf("ProvisionWatcher %s cannot be found in cache", id)
-		common.LoggingClient.Error(msg)
+		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Removing managed ProvisionWatcher: %s", pw.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Removing managed ProvisionWatcher: %s", pw.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.ProvisionWatcherClient.Delete(ctx, id)
+	err := s.edgexClients.ProvisionWatcherClient.Delete(ctx, id)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Delete ProvisionWatcher %s from Core Metadata failed", id))
+		s.LoggingClient.Error(fmt.Sprintf("Delete ProvisionWatcher %s from Core Metadata failed", id))
 		return err
 	}
 
@@ -92,19 +92,19 @@ func (s *Service) RemoveProvisionWatcher(id string) error {
 
 // UpdateProvisionWatcher updates the Watcher in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *Service) UpdateProvisionWatcher(watcher contract.ProvisionWatcher) error {
+func (s *DeviceService) UpdateProvisionWatcher(watcher contract.ProvisionWatcher) error {
 	_, ok := cache.ProvisionWatchers().ForId(watcher.Id)
 	if !ok {
 		msg := fmt.Sprintf("provisionwatcher %s cannot be found in cache", watcher.Id)
-		common.LoggingClient.Error(msg)
+		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	common.LoggingClient.Debug(fmt.Sprintf("Updating managed ProvisionWatcher: %s", watcher.Name))
+	s.LoggingClient.Debug(fmt.Sprintf("Updating managed ProvisionWatcher: %s", watcher.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := common.ProvisionWatcherClient.Update(ctx, watcher)
+	err := s.edgexClients.ProvisionWatcherClient.Update(ctx, watcher)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Update ProvisionWatcher %s from Core Metadata failed: %v", watcher.Name, err))
+		s.LoggingClient.Error(fmt.Sprintf("Update ProvisionWatcher %s from Core Metadata failed: %v", watcher.Name, err))
 		return err
 	}
 

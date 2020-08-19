@@ -17,18 +17,16 @@ import (
 
 func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 	var clientConfig = map[string]bootstrapConfig.ClientInfo{
-		common.ClientData: bootstrapConfig.ClientInfo{
+		common.ClientData: {
 			Host:     "www.google.com",
 			Port:     81,
 			Protocol: "http",
 		},
 	}
-	var config = &common.ConfigurationStruct{Clients: clientConfig}
-	common.CurrentConfig = config
-	common.LoggingClient = logger.NewClient("test_service", false, "./device-simple.log", "DEBUG")
+	config := &common.ConfigurationStruct{Clients: clientConfig}
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
 
-	err := checkServiceAvailableByPing(common.ClientData)
-
+	err := checkServiceAvailableByPing(common.ClientData, config, lc)
 	if err, ok := err.(net.Error); ok && !err.Timeout() {
 		test.Fatal("Should be timeout error")
 	}
