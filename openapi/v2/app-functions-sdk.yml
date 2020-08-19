@@ -307,7 +307,7 @@ paths:
           content:
             application/text:
               schema:
-                type: text
+                type: string
                 description: message describing the error encountered
         '422':
           description: "Unprocessable Entity"
@@ -317,7 +317,7 @@ paths:
           content:
             application/text:
               schema:
-                type: text
+                type: string
                 description: message describing the error encountered
         '500':
           description: "Interval Server Error"
@@ -327,7 +327,7 @@ paths:
           content:
             application/text:
               schema:
-                type: text
+                type: string
                 description: message describing the error encountered
   /version:
     get:
