@@ -10,10 +10,11 @@ import (
 	"context"
 	"os"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
+	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers/httpserver"
@@ -48,7 +49,6 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	})
 
 	httpServer := httpserver.NewBootstrap(router, true)
-	controller.LoadRestRoutes(router, dic)
 
 	bootstrap.Run(
 		ctx,
@@ -63,6 +63,8 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			httpServer.BootstrapHandler,
 			clients.NewClients().BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
+			autoevent.NewManager().BootstrapHandler,
+			autodiscovery.BootstrapHandler,
 			message.NewBootstrap(serviceName, serviceVersion).BootstrapHandler,
 		})
 

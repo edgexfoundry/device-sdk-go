@@ -31,6 +31,7 @@ import (
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -42,7 +43,7 @@ type DeviceService struct {
 	LoggingClient  logger.LoggingClient
 	registryClient registry.Client
 	edgexClients   clients.EdgeXClients
-	controller     controller.RestController
+	controller     *controller.RestController
 	config         *common.ConfigurationStruct
 	deviceService  contract.DeviceService
 	driver         dsModels.ProtocolDriver
@@ -85,7 +86,7 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 	s.config = &common.ConfigurationStruct{}
 }
 
-func (s *DeviceService) UpdateFromContainer(dic *di.Container) {
+func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.registryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.edgexClients.GeneralClient = container.GeneralClientFrom(dic.Get)
@@ -97,7 +98,7 @@ func (s *DeviceService) UpdateFromContainer(dic *di.Container) {
 	s.edgexClients.EventClient = container.CoredataEventClientFrom(dic.Get)
 	s.edgexClients.ValueDescriptorClient = container.CoredataValueDescriptorClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
-	s.controller = container.RestControllerFrom(dic.Get)
+	s.controller = controller.NewRestController(r, s.LoggingClient)
 }
 
 // Name returns the name of this Device Service
@@ -113,6 +114,10 @@ func (s *DeviceService) Version() string {
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *DeviceService) AsyncReadings() bool {
 	return s.config.Service.EnableAsyncReadings
+}
+
+func (s *DeviceService) DeviceDiscovery() bool {
+	return s.config.Device.Discovery.Enabled
 }
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.

@@ -11,25 +11,29 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-func CallbackHandler(cbAlert contract.CallbackAlert, method string) common.AppError {
+func CallbackHandler(cbAlert contract.CallbackAlert, method string, dic *di.Container) common.AppError {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+
 	if (cbAlert.Id == "") || (cbAlert.ActionType == "") {
 		appErr := common.NewBadRequestError("Missing parameters", nil)
-		common.LoggingClient.Error(fmt.Sprintf("Missing callback parameters"))
+		lc.Error(fmt.Sprintf("Missing callback parameters"))
 		return appErr
 	}
 
 	if cbAlert.ActionType == contract.DEVICE {
-		return handleDevice(method, cbAlert.Id)
+		return handleDevice(method, cbAlert.Id, dic)
 	} else if cbAlert.ActionType == contract.PROFILE {
-		return handleProfile(method, cbAlert.Id)
+		return handleProfile(method, cbAlert.Id, dic)
 	} else if cbAlert.ActionType == contract.PROVISIONWATCHER {
-		return handleProvisionWatcher(method, cbAlert.Id)
+		return handleProvisionWatcher(method, cbAlert.Id, dic)
 	}
 
-	common.LoggingClient.Error(fmt.Sprintf("Invalid callback action type: %s", cbAlert.ActionType))
+	lc.Error(fmt.Sprintf("Invalid callback action type: %s", cbAlert.ActionType))
 	appErr := common.NewBadRequestError("Invalid callback action type", nil)
 	return appErr
 }

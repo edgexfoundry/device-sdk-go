@@ -147,7 +147,7 @@ func (s *DeviceService) UpdateDeviceOperatingState(deviceName string, state stri
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	err := s.edgexClients.DeviceClient.UpdateOpState(ctx, d.Id, state)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("Update Device %s OperatingState from Core Metadata failed: %v", d.Name, err))
+		s.LoggingClient.Error(fmt.Sprintf("Update Device %s OperatingState from Core Metadata failed: %v", d.Name, err))
 	}
 
 	return err

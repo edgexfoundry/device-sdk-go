@@ -42,7 +42,11 @@ func (s *DeviceService) AddDeviceProfile(profile contract.DeviceProfile) (id str
 	profile.Id = id
 	_ = cache.Profiles().Add(profile)
 
-	provision.CreateDescriptorsFromProfile(&profile)
+	provision.CreateDescriptorsFromProfile(
+		&profile,
+		s.LoggingClient,
+		s.edgexClients.GeneralClient,
+		s.edgexClients.ValueDescriptorClient)
 
 	return id, nil
 }
@@ -115,7 +119,11 @@ func (s *DeviceService) UpdateDeviceProfile(profile contract.DeviceProfile) erro
 	}
 
 	err = cache.Profiles().Update(profile)
-	provision.CreateDescriptorsFromProfile(&profile)
+	provision.CreateDescriptorsFromProfile(
+		&profile,
+		s.LoggingClient,
+		s.edgexClients.GeneralClient,
+		s.edgexClients.ValueDescriptorClient)
 
 	return err
 }

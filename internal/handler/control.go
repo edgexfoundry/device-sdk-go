@@ -14,6 +14,8 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/google/uuid"
 )
 
@@ -25,12 +27,12 @@ type discoveryLocker struct {
 
 var locker discoveryLocker
 
-func TransformHandler(requestMap map[string]string) (map[string]string, common.AppError) {
-	common.LoggingClient.Info(fmt.Sprintf("service: transform request: transformData: %s", requestMap["transformData"]))
+func TransformHandler(requestMap map[string]string, lc logger.LoggingClient) (map[string]string, common.AppError) {
+	lc.Info(fmt.Sprintf("service: transform request: transformData: %s", requestMap["transformData"]))
 	return requestMap, nil
 }
 
-func DiscoveryHandler(w http.ResponseWriter) {
+func DiscoveryHandler(w http.ResponseWriter, discovery models.ProtocolDiscovery, lc logger.LoggingClient) {
 	locker.mux.Lock()
 	if locker.id == "" {
 		locker.id = uuid.New().String()
@@ -46,13 +48,13 @@ func DiscoveryHandler(w http.ResponseWriter) {
 	locker.mux.Lock()
 	defer locker.mux.Unlock()
 	if locker.busy {
-		common.LoggingClient.Info(fmt.Sprintf("Device discovery process is running, id = %s", locker.id))
+		lc.Info(fmt.Sprintf("Device discovery process is running, id = %s", locker.id))
 		return
 	}
 	locker.busy = true
-	common.LoggingClient.Info(fmt.Sprintf("service %s discovery triggered", common.ServiceName))
+	lc.Info(fmt.Sprintf("Device discovery triggered"))
 
-	go common.Discovery.Discover()
+	go discovery.Discover()
 }
 
 func ReleaseLock() string {
