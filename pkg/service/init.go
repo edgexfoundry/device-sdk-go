@@ -13,8 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
-	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
@@ -44,21 +42,20 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	common.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	common.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 
-	ds.UpdateFromContainer(dic)
+	ds.UpdateFromContainer(b.router, dic)
+	ds.controller.InitRestRoutes(dic)
+
 	lc := ds.LoggingClient
 	configuration := ds.config
 
-	// init autoevent manager in the beginning so that if there's error
-	// in following bootstrap process the device service can correctly
-	autoevent.NewManager(ctx, wg)
-
 	if ds.AsyncReadings() {
-		ds.asyncCh = make(chan *dsModels.AsyncValues, ds.config.Service.AsyncBufferSize)
+		ds.asyncCh = make(chan *dsModels.AsyncValues, configuration.Service.AsyncBufferSize)
 		go ds.processAsyncResults(ctx, wg)
 	}
-
-	ds.deviceCh = make(chan []dsModels.DiscoveredDevice)
-	go ds.processAsyncFilterAndAdd(ctx, wg)
+	if ds.DeviceDiscovery() {
+		ds.deviceCh = make(chan []dsModels.DiscoveredDevice)
+		go ds.processAsyncFilterAndAdd(ctx, wg)
+	}
 
 	err := ds.selfRegister()
 	if err != nil {
@@ -69,7 +66,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	// initialize devices, deviceResources, provisionwatcheres & profiles cache
 	cache.InitCache()
 
-	err = ds.driver.Initialize(ds.LoggingClient, ds.asyncCh, ds.deviceCh)
+	err = ds.driver.Initialize(lc, ds.asyncCh, ds.deviceCh)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Driver.Initialize failed: %v\n", err))
 		return false
@@ -88,20 +85,18 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		},
 	})
 
-	err = provision.LoadProfiles(configuration.Device.ProfilesDir)
+	err = provision.LoadProfiles(configuration.Device.ProfilesDir, dic)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Failed to create the pre-defined device profiles: %v\n", err))
 		return false
 	}
 
-	err = provision.LoadDevices(configuration.DeviceList)
+	err = provision.LoadDevices(configuration.DeviceList, dic)
 	if err != nil {
 		lc.Error(fmt.Sprintf("Failed to create the pre-defined devices: %v\n", err))
 		return false
 	}
 
-	go autodiscovery.Run()
-	autoevent.GetManager().StartAutoEvents()
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(configuration.Service.Timeout), "Request timed out")
 
 	return true

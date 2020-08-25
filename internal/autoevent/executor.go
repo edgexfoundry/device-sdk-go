@@ -16,11 +16,14 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Executor interface {
-	Run(ctx context.Context, wg *sync.WaitGroup)
+	Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Container)
 	Stop()
 }
 
@@ -34,9 +37,11 @@ type executor struct {
 }
 
 // Run triggers this Executor executes the handler for the resource periodically
-func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Container) {
 	wg.Add(1)
 	defer wg.Done()
+
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	for {
 		select {
 		case <-ctx.Done():
@@ -46,25 +51,25 @@ func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			}
 
-			common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - executing %v", e.autoEvent))
-			evt, appErr := readResource(e)
+			lc.Debug(fmt.Sprintf("AutoEvent - executing %v", e.autoEvent))
+			evt, appErr := readResource(e, dic)
 			if appErr != nil {
-				common.LoggingClient.Error(fmt.Sprintf("AutoEvent - error occurs when reading resource %s",
+				lc.Error(fmt.Sprintf("AutoEvent - error occurs when reading resource %s",
 					e.autoEvent.Resource))
 				continue
 			}
 
 			if evt != nil {
 				if e.autoEvent.OnChange {
-					if compareReadings(e, evt.Readings, evt.HasBinaryValue()) {
-						common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - readings are the same as previous one %v", e.lastReadings))
+					if compareReadings(e, evt.Readings, evt.HasBinaryValue(), lc) {
+						lc.Debug(fmt.Sprintf("AutoEvent - readings are the same as previous one %v", e.lastReadings))
 						continue
 					}
 				}
 				if evt.HasBinaryValue() {
-					common.LoggingClient.Debug("AutoEvent - pushing CBOR event")
+					lc.Debug("AutoEvent - pushing CBOR event")
 				} else {
-					common.LoggingClient.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
+					lc.Debug(fmt.Sprintf("AutoEvent - pushing event %s", evt.String()))
 				}
 				event := &dsModels.Event{Event: evt.Event}
 				// Attach origin timestamp for events if none yet specified
@@ -73,22 +78,22 @@ func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				go common.SendEvent(event)
 			} else {
-				common.LoggingClient.Info(fmt.Sprintf("AutoEvent - no event generated when reading resource %s", e.autoEvent.Resource))
+				lc.Info(fmt.Sprintf("AutoEvent - no event generated when reading resource %s", e.autoEvent.Resource))
 			}
 		}
 	}
 }
 
-func readResource(e *executor) (*dsModels.Event, common.AppError) {
+func readResource(e *executor, dic *di.Container) (*dsModels.Event, common.AppError) {
 	vars := make(map[string]string, 2)
 	vars[common.NameVar] = e.deviceName
 	vars[common.CommandVar] = e.autoEvent.Resource
 
-	evt, appErr := handler.CommandHandler(vars, "", common.GetCmdMethod, "")
+	evt, appErr := handler.CommandHandler(vars, "", common.GetCmdMethod, "", dic)
 	return evt, appErr
 }
 
-func compareReadings(e *executor, readings []contract.Reading, hasBinary bool) bool {
+func compareReadings(e *executor, readings []contract.Reading, hasBinary bool, lc logger.LoggingClient) bool {
 	var identical bool = true
 	e.rwmutex.RLock()
 	defer e.rwmutex.RUnlock()
@@ -114,7 +119,7 @@ func compareReadings(e *executor, readings []contract.Reading, hasBinary bool) b
 			}
 			identical = false
 		default:
-			common.LoggingClient.Error("Error: unsupported reading type (%T) in autoevent - %v\n", e.lastReadings[r.Name], e.autoEvent)
+			lc.Error("Error: unsupported reading type (%T) in autoevent - %v\n", e.lastReadings[r.Name], e.autoEvent)
 			identical = false
 		}
 	}
@@ -131,10 +136,13 @@ func NewExecutor(deviceName string, ae contract.AutoEvent) (Executor, error) {
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Frequency)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("AutoEvent Frequency %s cannot be parsed error, %v", ae.Frequency, err))
 		return nil, err
 	}
 
-	return &executor{deviceName: deviceName, autoEvent: ae,
-		lastReadings: make(map[string]interface{}), duration: duration, stop: false}, nil
+	return &executor{
+		deviceName:   deviceName,
+		autoEvent:    ae,
+		lastReadings: make(map[string]interface{}),
+		duration:     duration,
+		stop:         false}, nil
 }

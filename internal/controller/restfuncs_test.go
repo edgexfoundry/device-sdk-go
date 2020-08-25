@@ -16,16 +16,19 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/gorilla/mux"
 )
 
 const (
-	badDeviceId       = "e0fe7ac0-f7f3-4b76-b1b0-4b9bf4788d3e"
-	deviceCommandTest = "device-command-test"
-	testCmd           = "TestCmd"
+	badDeviceId = "e0fe7ac0-f7f3-4b76-b1b0-4b9bf4788d3e"
+	testCmd     = "TestCmd"
 )
 
 // Test callback REST calls
@@ -43,12 +46,24 @@ func TestCallback(t *testing.T) {
 		{"Invalid id", http.MethodPut, `{"id":"","type":"DEVICE"}`, http.StatusBadRequest},
 	}
 
-	lc := logger.NewClient("update_test", false, "./device-simple.log", "DEBUG")
-	common.LoggingClient = lc
-	common.DeviceClient = &mock.DeviceClientMock{}
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	deviceClient := &mock.DeviceClientMock{}
+	ds := contract.DeviceService{}
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+		container.MetadataDeviceClientName: func(get di.Get) interface{} {
+			return deviceClient
+		},
+		container.DeviceServiceName: func(get di.Get) interface{} {
+			return ds
+		},
+	})
+
 	r := mux.NewRouter()
-	controller := NewRestController(r)
-	controller.InitRestRoutes()
+	controller := NewRestController(r, lc)
+	controller.InitRestRoutes(dic)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -69,13 +84,21 @@ func TestCallback(t *testing.T) {
 
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
-	lc := logger.NewClient("command_test", false, "./command_test.log", "DEBUG")
-	common.LoggingClient = lc
-	common.ServiceLocked = true
-	common.ServiceName = deviceCommandTest
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	ds := contract.DeviceService{
+		AdminState: contract.Locked,
+	}
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+		container.DeviceServiceName: func(get di.Get) interface{} {
+			return ds
+		},
+	})
 	r := mux.NewRouter()
-	controller := NewRestController(r)
-	controller.InitRestRoutes()
+	controller := NewRestController(r, lc)
+	controller.InitRestRoutes(dic)
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, "nil", "nil"), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": "nil", "cmd": "nil"})
@@ -88,7 +111,7 @@ func TestCommandServiceLocked(t *testing.T) {
 	}
 
 	body := strings.TrimSpace(rr.Body.String())
-	expected := deviceCommandTest + " is locked; GET " + clients.ApiDeviceRoute + "/nil/nil"
+	expected := "Service is locked; GET " + clients.ApiDeviceRoute + "/nil/nil"
 
 	if body != expected {
 		t.Errorf("ServiceLocked: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
@@ -98,15 +121,38 @@ func TestCommandServiceLocked(t *testing.T) {
 // TestCommandNoDevice tests the command REST call when the given deviceId doesn't
 // specify an existing device.
 func TestCommandNoDevice(t *testing.T) {
-	lc := logger.NewClient("command_test", false, "./command_test.log", "DEBUG")
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	ds := contract.DeviceService{}
+	deviceClient := &mock.DeviceClientMock{}
+	valueDescriptorClient := &mock.ValueDescriptorMock{}
+	provisionWatcherClient := &mock.ProvisionWatcherClientMock{}
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+		container.DeviceServiceName: func(get di.Get) interface{} {
+			return ds
+		},
+		container.MetadataDeviceClientName: func(get di.Get) interface{} {
+			return deviceClient
+		},
+		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
+			return valueDescriptorClient
+		},
+		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
+			return provisionWatcherClient
+		},
+	})
+	// TODO: remove these after refactor are done (currently required by cache package)
 	common.LoggingClient = lc
 	common.ServiceLocked = false
-	common.DeviceClient = &mock.DeviceClientMock{}
-	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
-	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
+	common.DeviceClient = deviceClient
+	common.ValueDescriptorClient = valueDescriptorClient
+	common.ProvisionWatcherClient = provisionWatcherClient
+
 	r := mux.NewRouter()
-	controller := NewRestController(r)
-	controller.InitRestRoutes()
+	controller := NewRestController(r, lc)
+	controller.InitRestRoutes(dic)
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": badDeviceId, "cmd": testCmd})

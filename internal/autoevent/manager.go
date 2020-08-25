@@ -12,16 +12,25 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 type Manager interface {
-	StartAutoEvents()
+	StartAutoEvents(dic *di.Container) bool
 	StopAutoEvents()
-	RestartForDevice(deviceName string)
+	RestartForDevice(deviceName string, dic *di.Container)
 	StopForDevice(deviceName string)
+}
+
+type manager struct {
+	execsMap map[string][]Executor
+	ctx      context.Context
+	wg       *sync.WaitGroup
 }
 
 var (
@@ -30,22 +39,33 @@ var (
 	mutex      sync.Mutex
 )
 
-type manager struct {
-	execsMap  map[string][]Executor
-	startOnce sync.Once
-	ctx       context.Context
-	wg        *sync.WaitGroup
+// NewManager initiates the AutoEvent manager once
+func NewManager() *manager {
+	m = &manager{execsMap: make(map[string][]Executor)}
+	return m
 }
 
-func (m *manager) StartAutoEvents() {
+func (m *manager) BootstrapHandler(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	_ startup.Timer,
+	dic *di.Container) bool {
+	m.ctx = ctx
+	m.wg = wg
+	return m.StartAutoEvents(dic)
+}
+
+func (m *manager) StartAutoEvents(dic *di.Container) bool {
 	mutex.Lock()
-	m.startOnce.Do(func() {
+	defer mutex.Unlock()
+	createOnce.Do(func() {
 		for _, d := range cache.Devices().All() {
-			execs := triggerExecutors(d.Name, d.AutoEvents, m.ctx, m.wg)
+			execs := triggerExecutors(d.Name, d.AutoEvents, m.ctx, m.wg, dic)
 			m.execsMap[d.Name] = execs
 		}
 	})
-	mutex.Unlock()
+
+	return true
 }
 
 func (m *manager) StopAutoEvents() {
@@ -59,23 +79,25 @@ func (m *manager) StopAutoEvents() {
 	mutex.Unlock()
 }
 
-func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, ctx context.Context, wg *sync.WaitGroup) []Executor {
+func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, ctx context.Context, wg *sync.WaitGroup, dic *di.Container) []Executor {
 	var execs []Executor
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+
 	for _, autoEvent := range autoEvents {
 		exec, err := NewExecutor(deviceName, autoEvent)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("AutoEvent for resource %s cannot be created, %v", autoEvent.Resource, err))
+			lc.Error(fmt.Sprintf("AutoEvent for resource %s cannot be created, %v", autoEvent.Resource, err))
 			// skip this AutoEvent if it causes error during creation
 			continue
 		}
 		execs = append(execs, exec)
-		go exec.Run(ctx, wg)
+		go exec.Run(ctx, wg, dic)
 	}
 	return execs
 }
 
 // RestartForDevice stops all the AutoEvents of the specific Device
-func (m *manager) RestartForDevice(deviceName string) {
+func (m *manager) RestartForDevice(deviceName string, dic *di.Container) {
 	m.StopForDevice(deviceName)
 	d, ok := cache.Devices().ForName(deviceName)
 	if !ok {
@@ -83,14 +105,15 @@ func (m *manager) RestartForDevice(deviceName string) {
 	}
 
 	mutex.Lock()
-	execs := triggerExecutors(deviceName, d.AutoEvents, m.ctx, m.wg)
+	defer mutex.Unlock()
+	execs := triggerExecutors(deviceName, d.AutoEvents, m.ctx, m.wg, dic)
 	m.execsMap[deviceName] = execs
-	mutex.Unlock()
 }
 
 // StopForDevice stops all the AutoEvents of the specific Device
 func (m *manager) StopForDevice(deviceName string) {
 	mutex.Lock()
+	defer mutex.Unlock()
 	execs, ok := m.execsMap[deviceName]
 	if ok {
 		for _, e := range execs {
@@ -98,14 +121,6 @@ func (m *manager) StopForDevice(deviceName string) {
 		}
 		delete(m.execsMap, deviceName)
 	}
-	mutex.Unlock()
-}
-
-// NewManager initiates the AutoEvent manager once
-func NewManager(ctx context.Context, wg *sync.WaitGroup) {
-	createOnce.Do(func() {
-		m = &manager{execsMap: make(map[string][]Executor), ctx: ctx, wg: wg}
-	})
 }
 
 // GetManager returns Manager instance

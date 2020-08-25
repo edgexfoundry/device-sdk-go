@@ -12,6 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/container"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
@@ -47,15 +50,54 @@ var (
 	operationSetInt8, operationSetInt16, operationSetInt32, operationSetInt64     contract.ResourceOperation
 	operationSetUint8, operationSetUint16, operationSetUint32, operationSetUint64 contract.ResourceOperation
 	operationSetFloat32, operationSetFloat64                                      contract.ResourceOperation
+	valueDescriptorClient                                                         *mock.ValueDescriptorMock
+	provisionWatcherClient                                                        *mock.ProvisionWatcherClientMock
+	deviceClient                                                                  *mock.DeviceClientMock
+	eventClient                                                                   *mock.EventClientMock
+	lc                                                                            logger.LoggingClient
+	driver                                                                        *mock.DriverMock
+	configuration                                                                 *common.ConfigurationStruct
+	dic                                                                           *di.Container
 )
 
 func init() {
-	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
-	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
-	common.DeviceClient = &mock.DeviceClientMock{}
-	common.EventClient = &mock.EventClientMock{}
-	common.LoggingClient = logger.MockLogger{}
-	common.Driver = &mock.DriverMock{}
+	valueDescriptorClient = &mock.ValueDescriptorMock{}
+	provisionWatcherClient = &mock.ProvisionWatcherClientMock{}
+	deviceClient = &mock.DeviceClientMock{}
+	eventClient = &mock.EventClientMock{}
+	lc = logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	driver = &mock.DriverMock{}
+	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
+	configuration = &common.ConfigurationStruct{Device: deviceInfo}
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return configuration
+		},
+		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
+			return valueDescriptorClient
+		},
+		container.MetadataDeviceClientName: func(get di.Get) interface{} {
+			return deviceClient
+		},
+		container.CoredataEventClientName: func(get di.Get) interface{} {
+			return eventClient
+		},
+		container.ProtocolDriverName: func(get di.Get) interface{} {
+			return driver
+		},
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+	})
+	// TODO: remove these after refactor are done (currently required by cache package)
+	common.ValueDescriptorClient = valueDescriptorClient
+	common.ProvisionWatcherClient = provisionWatcherClient
+	common.DeviceClient = deviceClient
+	common.EventClient = eventClient
+	common.LoggingClient = lc
+	common.Driver = driver
+	common.CurrentConfig = configuration
+
 	cache.InitCache()
 	pc = cache.Profiles()
 	operationSetBool, _ = pc.ResourceOperation(mock.ProfileBool, mock.ResourceObjectBool, methodSet)
@@ -71,12 +113,8 @@ func init() {
 	operationSetFloat64, _ = pc.ResourceOperation(mock.ProfileFloat, mock.ResourceObjectFloat64, methodSet)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, _ = common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
+	ds, _ = deviceClient.DevicesForServiceByName(ctx, "device-sdk-test")
 	deviceIntegerGenerator = ds[1]
-
-	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
-	common.CurrentConfig = &common.ConfigurationStruct{Device: deviceInfo}
-	common.LoggingClient = logger.NewClient("command_test", false, "./device-simple.log", "INFO")
 }
 
 func TestParseWriteParamsWrongParamName(t *testing.T) {
@@ -84,7 +122,7 @@ func TestParseWriteParamsWrongParamName(t *testing.T) {
 	ro := []contract.ResourceOperation{{Index: ""}}
 	params := "{ \"key\": \"value\" }"
 
-	_, err := parseWriteParams(profileName, ro, params)
+	_, err := parseWriteParams(profileName, ro, params, lc)
 
 	if err == nil {
 		t.Error("expected error")
@@ -96,7 +134,7 @@ func TestParseWriteParamsNoParams(t *testing.T) {
 	ro := []contract.ResourceOperation{{Index: ""}}
 	params := "{ }"
 
-	_, err := parseWriteParams(profileName, ro, params)
+	_, err := parseWriteParams(profileName, ro, params, lc)
 
 	if err == nil {
 		t.Error("expected error")
@@ -194,7 +232,7 @@ func TestCreateCommandValueForParam(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			cv, err := createCommandValueFromRO(tt.profileName, tt.op, tt.v)
+			cv, err := createCommandValueFromRO(tt.profileName, tt.op, tt.v, lc)
 			if !tt.expectErr && err != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, err)
 				return
@@ -268,7 +306,7 @@ func TestParseWriteParams(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, err := parseWriteParams(tt.profile, tt.resourceOps, tt.params)
+			_, err := parseWriteParams(tt.profile, tt.resourceOps, tt.params, lc)
 			if !tt.expectErr && err != nil {
 				t.Errorf("unexpected parse error params:%s %s", tt.params, err.Error())
 				return
@@ -306,12 +344,12 @@ func TestExecReadCmd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			if tt.testName == "MaxCmdOpsExceeded" {
-				common.CurrentConfig.Device.MaxCmdOps = 1
+				configuration.Device.MaxCmdOps = 1
 				defer func() {
-					common.CurrentConfig.Device.MaxCmdOps = 128
+					configuration.Device.MaxCmdOps = 128
 				}()
 			}
-			v, err := execReadCmd(tt.device, tt.cmd, tt.queryParams)
+			v, err := execReadCmd(tt.device, tt.cmd, tt.queryParams, driver, lc, configuration)
 			if !tt.expectErr && err != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, err)
 				return
@@ -363,12 +401,12 @@ func TestExecWriteCmd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			if tt.testName == "MaxCmdOpsExceeded" {
-				common.CurrentConfig.Device.MaxCmdOps = 1
+				configuration.Device.MaxCmdOps = 1
 				defer func() {
-					common.CurrentConfig.Device.MaxCmdOps = 128
+					configuration.Device.MaxCmdOps = 128
 				}()
 			}
-			appErr := execWriteCmd(tt.device, tt.cmd, tt.params)
+			appErr := execWriteCmd(tt.device, tt.cmd, tt.params, driver, lc, configuration)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return
@@ -398,7 +436,7 @@ func TestCommandAllHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, appErr := CommandAllHandler(tt.cmd, tt.body, tt.method, tt.queryParams)
+			_, appErr := CommandAllHandler(tt.cmd, tt.body, tt.method, tt.queryParams, dic)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return
@@ -451,7 +489,7 @@ func TestCommandHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			_, appErr := CommandHandler(tt.vars, tt.body, tt.method, tt.queryParams)
+			_, appErr := CommandHandler(tt.vars, tt.body, tt.method, tt.queryParams, dic)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return

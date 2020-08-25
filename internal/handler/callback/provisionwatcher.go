@@ -13,20 +13,24 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/container"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/google/uuid"
 )
 
-func handleProvisionWatcher(method string, id string) common.AppError {
+func handleProvisionWatcher(method string, id string, dic *di.Container) common.AppError {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	switch method {
 	case http.MethodPost:
-		handleAddProvisionWatcher(ctx, id)
+		handleAddProvisionWatcher(ctx, id, dic)
 	case http.MethodPut:
-		handleUpdateProvisionWatcher(ctx, id)
+		handleUpdateProvisionWatcher(ctx, id, dic)
 	case http.MethodDelete:
-		handleDeleteProvisionWatcher(id)
+		handleDeleteProvisionWatcher(id, dic)
 	default:
-		common.LoggingClient.Error(fmt.Sprintf("Invalid provisionwatcher method type: %s", method))
+		lc.Error(fmt.Sprintf("Invalid provisionwatcher method type: %s", method))
 		appErr := common.NewBadRequestError("Invalid provisionwatcher method", nil)
 		return appErr
 	}
@@ -34,53 +38,60 @@ func handleProvisionWatcher(method string, id string) common.AppError {
 	return nil
 }
 
-func handleAddProvisionWatcher(ctx context.Context, id string) common.AppError {
-	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(ctx, id)
+func handleAddProvisionWatcher(ctx context.Context, id string, dic *di.Container) common.AppError {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	pwc := container.MetadataProvisionWatcherClientFrom(dic.Get)
+
+	pw, err := pwc.ProvisionWatcher(ctx, id)
 	if err != nil {
 		appErr := common.NewBadRequestError(err.Error(), err)
-		common.LoggingClient.Error(fmt.Sprintf("Cannot find provisionwatcher %s in Core Metadata: %v", id, err))
+		lc.Error(fmt.Sprintf("Cannot find provisionwatcher %s in Core Metadata: %v", id, err))
 		return appErr
 	}
 
 	err = cache.ProvisionWatchers().Add(pw)
 	if err == nil {
-		common.LoggingClient.Info(fmt.Sprintf("Added provisionwatcher %s", id))
+		lc.Info(fmt.Sprintf("Added provisionwatcher %s", id))
 	} else {
 		appErr := common.NewServerError(err.Error(), err)
-		common.LoggingClient.Error(fmt.Sprintf("Cannot add provisionwatcher %s: %v", id, err.Error()))
+		lc.Error(fmt.Sprintf("Cannot add provisionwatcher %s: %v", id, err.Error()))
 		return appErr
 	}
 
 	return nil
 }
 
-func handleUpdateProvisionWatcher(ctx context.Context, id string) common.AppError {
-	pw, err := common.ProvisionWatcherClient.ProvisionWatcher(ctx, id)
+func handleUpdateProvisionWatcher(ctx context.Context, id string, dic *di.Container) common.AppError {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	pwc := container.MetadataProvisionWatcherClientFrom(dic.Get)
+
+	pw, err := pwc.ProvisionWatcher(ctx, id)
 	if err != nil {
 		appErr := common.NewBadRequestError(err.Error(), err)
-		common.LoggingClient.Error(fmt.Sprintf("Cannot find provisionwatcher %s in Core Metadata: %v", id, err))
+		lc.Error(fmt.Sprintf("Cannot find provisionwatcher %s in Core Metadata: %v", id, err))
 		return appErr
 	}
 
 	err = cache.ProvisionWatchers().Update(pw)
 	if err == nil {
-		common.LoggingClient.Info(fmt.Sprintf("Updated provisionwatcher %s", id))
+		lc.Info(fmt.Sprintf("Updated provisionwatcher %s", id))
 	} else {
 		appErr := common.NewServerError(err.Error(), err)
-		common.LoggingClient.Error(fmt.Sprintf("Cannot update provisionwatcher %s: %v", id, err.Error()))
+		lc.Error(fmt.Sprintf("Cannot update provisionwatcher %s: %v", id, err.Error()))
 		return appErr
 	}
 
 	return nil
 }
 
-func handleDeleteProvisionWatcher(id string) common.AppError {
+func handleDeleteProvisionWatcher(id string, dic *di.Container) common.AppError {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	err := cache.ProvisionWatchers().Remove(id)
 	if err == nil {
-		common.LoggingClient.Info(fmt.Sprintf("Removed provisionwatcher %s", id))
+		lc.Info(fmt.Sprintf("Removed provisionwatcher %s", id))
 	} else {
 		appErr := common.NewServerError(err.Error(), err)
-		common.LoggingClient.Error(fmt.Sprintf("Cannot remove provisionwatcher %s: %v", id, err.Error()))
+		lc.Error(fmt.Sprintf("Cannot remove provisionwatcher %s: %v", id, err.Error()))
 		return appErr
 	}
 
