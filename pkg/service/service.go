@@ -53,13 +53,11 @@ type DeviceService struct {
 	initialized    bool
 }
 
-// TODO: remove common.xxx = xxx assignment after refactor are done.
 func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto interface{}) {
 	if serviceName == "" {
 		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service name")
 		os.Exit(1)
 	}
-	common.ServiceName = serviceName
 	s.ServiceName = serviceName
 
 	if serviceVersion == "" {
@@ -69,7 +67,6 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 	common.ServiceVersion = serviceVersion
 
 	if driver, ok := proto.(dsModels.ProtocolDriver); ok {
-		common.Driver = driver
 		s.driver = driver
 	} else {
 		_, _ = fmt.Fprintf(os.Stderr, "Please implement and specify the protocoldriver")
@@ -77,7 +74,6 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 	}
 
 	if discovery, ok := proto.(dsModels.ProtocolDiscovery); ok {
-		common.Discovery = discovery
 		s.discovery = discovery
 	} else {
 		s.discovery = nil
@@ -128,18 +124,17 @@ func (s *DeviceService) AddRoute(route string, handler func(http.ResponseWriter,
 // Stop shuts down the Service
 func (s *DeviceService) Stop(force bool) {
 	if s.initialized {
-		//_ = s.driver.Stop(false)
-		_ = common.Driver.Stop(force)
+		_ = s.driver.Stop(false)
 	}
 	autoevent.GetManager().StopAutoEvents()
 }
 
 // selfRegister register device service itself onto metadata.
 func (s *DeviceService) selfRegister() error {
-	s.LoggingClient.Debug("Trying to find Device Service: " + common.ServiceName)
+	s.LoggingClient.Debug("Trying to find Device Service: " + s.ServiceName)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, err := s.edgexClients.DeviceServiceClient.DeviceServiceForName(ctx, common.ServiceName)
+	ds, err := s.edgexClients.DeviceServiceClient.DeviceServiceForName(ctx, s.ServiceName)
 
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
@@ -153,10 +148,8 @@ func (s *DeviceService) selfRegister() error {
 		s.LoggingClient.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
 	}
 
-	s.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %s", common.ServiceName))
+	s.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %s", s.ServiceName))
 	s.deviceService = ds
-	// TODO: remove this after refactor are done.
-	common.CurrentDeviceService = ds
 
 	return nil
 }
@@ -191,7 +184,7 @@ func (s *DeviceService) createNewDeviceService() (contract.DeviceService, error)
 	// NOTE - this differs from Addressable and Device Resources,
 	// neither of which require the '.Service'prefix
 	ds.Id = id
-	common.LoggingClient.Debug("New device service Id: " + ds.Id)
+	s.LoggingClient.Debug("New device service Id: " + ds.Id)
 
 	return ds, nil
 }
@@ -229,7 +222,7 @@ func (s *DeviceService) makeNewAddressable() (*contract.Addressable, error) {
 			return nil, err
 		}
 	} else {
-		s.LoggingClient.Info(fmt.Sprintf("Addressable %s exists", common.ServiceName))
+		s.LoggingClient.Info(fmt.Sprintf("Addressable %s exists", s.ServiceName))
 	}
 
 	return &addr, nil

@@ -152,7 +152,7 @@ func (c *RestController) commandFunc(w http.ResponseWriter, req *http.Request, d
 			json.NewEncoder(w).Encode(event)
 		}
 		// push to Core Data
-		go common.SendEvent(event)
+		go common.SendEvent(event, c.LoggingClient, container.CoredataEventClientFrom(dic.Get))
 	}
 }
 
@@ -176,7 +176,7 @@ func (c *RestController) commandAllFunc(w http.ResponseWriter, req *http.Request
 		// push to Core Data
 		for _, event := range events {
 			if event != nil {
-				go common.SendEvent(event)
+				go common.SendEvent(event, c.LoggingClient, container.CoredataEventClientFrom(dic.Get))
 			}
 		}
 		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)

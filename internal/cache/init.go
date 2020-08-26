@@ -12,6 +12,9 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 )
@@ -21,27 +24,32 @@ var (
 )
 
 // Init basic state for cache
-func InitCache() {
+func InitCache(
+	serviceName string,
+	lc logger.LoggingClient,
+	vdc coredata.ValueDescriptorClient,
+	dc metadata.DeviceClient,
+	pwc metadata.ProvisionWatcherClient) {
 	initOnce.Do(func() {
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 
-		vds, err := common.ValueDescriptorClient.ValueDescriptors(ctx)
+		vds, err := vdc.ValueDescriptors(ctx)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Value Descriptor cache initialization failed: %v", err))
+			lc.Error(fmt.Sprintf("Value Descriptor cache initialization failed: %v", err))
 			vds = make([]contract.ValueDescriptor, 0)
 		}
 		newValueDescriptorCache(vds)
 
-		ds, err := common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
+		ds, err := dc.DevicesForServiceByName(ctx, serviceName)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Device cache initialization failed: %v", err))
+			lc.Error(fmt.Sprintf("Device cache initialization failed: %v", err))
 			ds = make([]contract.Device, 0)
 		}
 		newDeviceCache(ds)
 
-		pws, err := common.ProvisionWatcherClient.ProvisionWatchersForServiceByName(ctx, common.ServiceName)
+		pws, err := pwc.ProvisionWatchersForServiceByName(ctx, serviceName)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("Provision Watcher cache initialization failed %v", err))
+			lc.Error(fmt.Sprintf("Provision Watcher cache initialization failed %v", err))
 			pws = make([]contract.ProvisionWatcher, 0)
 		}
 		newProvisionWatcherCache(pws)

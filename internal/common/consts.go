@@ -22,9 +22,6 @@ const (
 	HttpScheme = "http://"
 	HttpProto  = "HTTP"
 
-	BootTimeoutSecondsDefault = 30
-	BootRetrySecondsDefault   = 1
-
 	ConfigStemDevice   = "edgex/devices/"
 	ConfigMajorVersion = "1.0/"
 
@@ -50,3 +47,6 @@ const (
 	URLRawQuery       = "urlRawQuery"
 	SDKReservedPrefix = "ds-"
 )
+
+// ServiceVersion indicates the version of the device service itself, not the SDK - will be overwritten by build
+var ServiceVersion string = "0.0.0"

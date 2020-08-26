@@ -104,9 +104,9 @@ func (ValueDescriptorMock) DeleteByName(_ context.Context, _ string) error {
 }
 
 func populateValueDescriptorMock() error {
-	common.DeviceProfileClient = &DeviceProfileClientMock{}
+	dpc := &DeviceProfileClientMock{}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	dps, _ := common.DeviceProfileClient.DeviceProfiles(ctx)
+	dps, _ := dpc.DeviceProfiles(ctx)
 
 	_, b, _, _ := runtime.Caller(0)
 	basepath := filepath.Dir(b)

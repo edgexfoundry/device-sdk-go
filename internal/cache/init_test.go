@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +10,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -19,18 +20,21 @@ import (
 )
 
 func TestInitCache(t *testing.T) {
-	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
-	common.DeviceClient = &mock.DeviceClientMock{}
-	InitCache()
+	serviceName := "init-cache-test"
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	vdc := &mock.ValueDescriptorMock{}
+	dc := &mock.DeviceClientMock{}
+	pwc := &mock.ProvisionWatcherClientMock{}
+	InitCache(serviceName, lc, vdc, dc, pwc)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 
-	vdsBeforeAddingToCache, _ := common.ValueDescriptorClient.ValueDescriptors(ctx)
+	vdsBeforeAddingToCache, _ := vdc.ValueDescriptors(ctx)
 	if vl := len(ValueDescriptors().All()); vl != len(vdsBeforeAddingToCache) {
 		t.Errorf("the expected number of valuedescriptors in cache is %d but got: %d:", len(vdsBeforeAddingToCache), vl)
 	}
 
-	dsBeforeAddingToCache, _ := common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
+	dsBeforeAddingToCache, _ := dc.DevicesForServiceByName(ctx, serviceName)
 	if dl := len(Devices().All()); dl != len(dsBeforeAddingToCache) {
 		t.Errorf("the expected number of devices in cache is %d but got: %d:", len(dsBeforeAddingToCache), dl)
 	}

@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,15 +12,15 @@ import (
 	"math"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
+var lc logger.LoggingClient
+
 func init() {
-	lc := logger.NewClient("sdk", false, "./test.log", "DEBUG")
-	common.LoggingClient = lc
+	lc = logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
 }
 
 func TestTransformReadResult_base_unt8(t *testing.T) {
@@ -33,7 +33,7 @@ func TestTransformReadResult_base_unt8(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -59,7 +59,7 @@ func TestTransformReadResult_base_unt8_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -79,7 +79,7 @@ func TestTransformReadResult_scale_unt8(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -105,7 +105,7 @@ func TestTransformReadResult_scale_unt8_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -125,7 +125,7 @@ func TestTransformReadResult_offset_unt8(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -151,7 +151,7 @@ func TestTransformReadResult_offset_unt8_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -171,7 +171,7 @@ func TestTransformReadResult_base_unt16(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -197,7 +197,7 @@ func TestTransformReadResult_base_uint16_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -217,7 +217,7 @@ func TestTransformReadResult_scale_uint16(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -243,7 +243,7 @@ func TestTransformReadResult_scale_uint16_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -263,7 +263,7 @@ func TestTransformReadResult_offset_uint16(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -289,7 +289,7 @@ func TestTransformReadResult_offset_uint16_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -309,7 +309,7 @@ func TestTransformReadResult_base_uint32(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -335,7 +335,7 @@ func TestTransformReadResult_base_uint32_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -355,7 +355,7 @@ func TestTransformReadResult_scale_uint32(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -381,7 +381,7 @@ func TestTransformReadResult_scale_uint32_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -401,7 +401,7 @@ func TestTransformReadResult_offset_uint32(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -427,7 +427,7 @@ func TestTransformReadResult_offset_uint32_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -447,7 +447,7 @@ func TestTransformReadResult_base_uint64(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -474,7 +474,7 @@ func TestTransformReadResult_scale_uint64(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -501,7 +501,7 @@ func TestTransformReadResult_offset_uint64(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -528,7 +528,7 @@ func TestTransformReadResult_base_int8(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -554,7 +554,7 @@ func TestTransformReadResult_base_int8_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -574,7 +574,7 @@ func TestTransformReadResult_scale_int8(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -600,7 +600,7 @@ func TestTransformReadResult_scale_int8_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -620,7 +620,7 @@ func TestTransformReadResult_offset_int8(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -646,7 +646,7 @@ func TestTransformReadResult_offset_int8_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -666,7 +666,7 @@ func TestTransformReadResult_base_int16(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -692,7 +692,7 @@ func TestTransformReadResult_base_int16_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -712,7 +712,7 @@ func TestTransformReadResult_scale_int16(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -738,7 +738,7 @@ func TestTransformReadResult_scale_int16_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -758,7 +758,7 @@ func TestTransformReadResult_offset_int16(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -784,7 +784,7 @@ func TestTransformReadResult_offset_int16_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -804,7 +804,7 @@ func TestTransformReadResult_base_int32(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -830,7 +830,7 @@ func TestTransformReadResult_base_int32_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -850,7 +850,7 @@ func TestTransformReadResult_scale_int32(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -876,7 +876,7 @@ func TestTransformReadResult_scale_int32_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -896,7 +896,7 @@ func TestTransformReadResult_offset_int32(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -922,7 +922,7 @@ func TestTransformReadResult_offset_int32_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -942,7 +942,7 @@ func TestTransformReadResult_base_int64(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -969,7 +969,7 @@ func TestTransformReadResult_scale_int64(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -996,7 +996,7 @@ func TestTransformReadResult_offset_int64(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1023,7 +1023,7 @@ func TestTransformReadResult_base_float32(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1049,7 +1049,7 @@ func TestTransformReadResult_base_float32_overflow(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
@@ -1069,7 +1069,7 @@ func TestTransformReadResult_scale_float32(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1095,7 +1095,7 @@ func TestTransformReadResult_scale_float32_overflow(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
@@ -1115,7 +1115,7 @@ func TestTransformReadResult_offset_float32(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1141,7 +1141,7 @@ func TestTransformReadResult_offset_float32_overflow(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
@@ -1161,7 +1161,7 @@ func TestTransformReadResult_base_float64(t *testing.T) {
 		Base: base,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1188,7 +1188,7 @@ func TestTransformReadResult_scale_float64(t *testing.T) {
 		Scale: scale,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1215,7 +1215,7 @@ func TestTransformReadResult_offset_float64(t *testing.T) {
 		Offset: offset,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1242,7 +1242,7 @@ func TestTransformReadResult_mask_uint8(t *testing.T) {
 		Mask: mask,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1269,7 +1269,7 @@ func TestTransformReadResult_mask_uint16(t *testing.T) {
 		Mask: mask,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1296,7 +1296,7 @@ func TestTransformReadResult_mask_uint32(t *testing.T) {
 		Mask: mask,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1323,7 +1323,7 @@ func TestTransformReadResult_mask_uint64(t *testing.T) {
 		Mask: mask,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1349,7 +1349,7 @@ func TestTransformReadResult_mask_should_be_unsigned(t *testing.T) {
 		Mask: mask,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil || err.Error() != "invalid mask value, the mask -256 should be unsigned and parsed to uint64. strconv.ParseUint: parsing \"-256\": invalid syntax" {
 		t.Fatalf("Unexpected test result, transform function should throw the correct error. %v", err)
@@ -1366,7 +1366,7 @@ func TestTransformReadResult_shift_uint8(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1393,7 +1393,7 @@ func TestTransformReadResult_signedShift_uint8(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1420,7 +1420,7 @@ func TestTransformReadResult_shift_uint16(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1447,7 +1447,7 @@ func TestTransformReadResult_signedShift_uint16(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1474,7 +1474,7 @@ func TestTransformReadResult_shift_uint32(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1501,7 +1501,7 @@ func TestTransformReadResult_signedShift_uint32(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1528,7 +1528,7 @@ func TestTransformReadResult_shift_uint64(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1555,7 +1555,7 @@ func TestTransformReadResult_signedShift_uint64(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err != nil {
 		t.Fatalf("Fail to transform read result, error: %v", err)
@@ -1581,7 +1581,7 @@ func TestTransformReadResult_shift_should_be_valid(t *testing.T) {
 		Shift: shift,
 	}
 
-	err = TransformReadResult(cv, pv)
+	err = TransformReadResult(cv, pv, lc)
 
 	if err == nil || err.Error() != "invalid shift value, the shift -+4 should be parsed to float64 for checking the sign of the number. strconv.ParseFloat: parsing \"-+4\": invalid syntax" {
 		t.Fatalf("Unexpected test result, transform function should throw the correct error. %v", err)

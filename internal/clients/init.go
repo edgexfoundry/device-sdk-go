@@ -219,14 +219,4 @@ func initializeClients(dic *di.Container) {
 			return vdc
 		},
 	})
-
-	// TODO: remove these after refactor are done.
-	common.AddressableClient = ac
-	common.DeviceClient = dc
-	common.DeviceServiceClient = dsc
-	common.DeviceProfileClient = dpc
-	common.MetadataGeneralClient = gc
-	common.ProvisionWatcherClient = pwc
-	common.EventClient = ec
-	common.ValueDescriptorClient = vdc
 }

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +10,8 @@ package common
 import (
 	"fmt"
 	"testing"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 func TestBuildAddr(t *testing.T) {
@@ -105,8 +107,9 @@ func TestFilterQueryParams(t *testing.T) {
 			fmt.Sprintf("%sname", SDKReservedPrefix), false},
 	}
 
+	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
 	for _, tt := range tests {
-		actual := FilterQueryParams(tt.query)
+		actual := FilterQueryParams(tt.query, lc)
 		if _, ok := actual[tt.key]; ok != tt.expected {
 			t.Errorf("Parameters with ds- prefix should be filtered out.")
 		}

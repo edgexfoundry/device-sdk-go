@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
-func checkTransformedValueInRange(origin interface{}, transformed float64) bool {
+func checkTransformedValueInRange(origin interface{}, transformed float64, lc logger.LoggingClient) bool {
 	inRange := false
 	switch origin.(type) {
 	case uint8:
@@ -59,7 +59,7 @@ func checkTransformedValueInRange(origin interface{}, transformed float64) bool 
 			inRange = true
 		}
 	default:
-		common.LoggingClient.Error(fmt.Sprintf("data type %T doesn't support range checking", origin))
+		lc.Error(fmt.Sprintf("data type %T doesn't support range checking", origin))
 	}
 
 	return inRange

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
@@ -86,10 +85,12 @@ func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, ctx co
 
 // RestartForDevice stops all the AutoEvents of the specific Device
 func (m *manager) RestartForDevice(deviceName string, dic *di.Container) {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+
 	m.StopForDevice(deviceName)
 	d, ok := cache.Devices().ForName(deviceName)
 	if !ok {
-		common.LoggingClient.Error(fmt.Sprintf("there is no Device %s in cache to start AutoEvent", deviceName))
+		lc.Error(fmt.Sprintf("there is no Device %s in cache to start AutoEvent", deviceName))
 	}
 
 	mutex.Lock()

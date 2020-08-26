@@ -27,6 +27,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -85,7 +86,12 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		}
 
 		if strings.ToLower(method) == common.GetCmdMethod {
-			evt, appErr = execReadDeviceResource(&d, &dr, queryParams, container.ProtocolDriverFrom(dic.Get), lc, container.ConfigurationFrom(dic.Get))
+			evt, appErr = execReadDeviceResource(
+				&d, &dr, queryParams,
+				container.ProtocolDriverFrom(dic.Get),
+				lc,
+				container.MetadataDeviceClientFrom(dic.Get),
+				container.ConfigurationFrom(dic.Get))
 		} else {
 			appErr = execWriteDeviceResource(
 				&d, &dr, body,
@@ -95,7 +101,12 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		}
 	} else {
 		if strings.ToLower(method) == common.GetCmdMethod {
-			evt, appErr = execReadCmd(&d, cmd, queryParams, container.ProtocolDriverFrom(dic.Get), lc, container.ConfigurationFrom(dic.Get))
+			evt, appErr = execReadCmd(
+				&d, cmd, queryParams,
+				container.ProtocolDriverFrom(dic.Get),
+				lc,
+				container.MetadataDeviceClientFrom(dic.Get),
+				container.ConfigurationFrom(dic.Get))
 		} else {
 			appErr = execWriteCmd(
 				&d, cmd, body,
@@ -105,7 +116,11 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 		}
 	}
 
-	go common.UpdateLastConnected(d.Name)
+	go common.UpdateLastConnected(
+		d.Name,
+		container.ConfigurationFrom(dic.Get),
+		lc,
+		container.MetadataDeviceClientFrom(dic.Get))
 	return evt, appErr
 }
 
@@ -115,6 +130,7 @@ func execReadDeviceResource(
 	queryParams string,
 	driver dsModels.ProtocolDriver,
 	lc logger.LoggingClient,
+	dc metadata.DeviceClient,
 	configuration *common.ConfigurationStruct) (*dsModels.Event, common.AppError) {
 	var reqs []dsModels.CommandRequest
 	var req dsModels.CommandRequest
@@ -126,7 +142,7 @@ func execReadDeviceResource(
 		if len(req.Attributes) <= 0 {
 			req.Attributes = make(map[string]string)
 		}
-		m := common.FilterQueryParams(queryParams)
+		m := common.FilterQueryParams(queryParams, lc)
 		req.Attributes[common.URLRawQuery] = m.Encode()
 	}
 	req.Type = dsModels.ParseValueType(dr.Properties.Value.Type)
@@ -138,7 +154,7 @@ func execReadDeviceResource(
 		return nil, common.NewServerError(msg, err)
 	}
 
-	return cvsToEvent(device, results, dr.Name, lc, configuration)
+	return cvsToEvent(device, results, dr.Name, lc, dc, configuration)
 }
 
 func cvsToEvent(
@@ -146,6 +162,7 @@ func cvsToEvent(
 	cvs []*dsModels.CommandValue,
 	cmd string,
 	lc logger.LoggingClient,
+	dc metadata.DeviceClient,
 	configuration *common.ConfigurationStruct) (*dsModels.Event, common.AppError) {
 	readings := make([]contract.Reading, 0, configuration.Device.MaxCmdOps)
 	var transformsOK = true
@@ -161,14 +178,14 @@ func cvsToEvent(
 		}
 
 		if configuration.Device.DataTransform {
-			err = transformer.TransformReadResult(cv, dr.Properties.Value)
+			err = transformer.TransformReadResult(cv, dr.Properties.Value, lc)
 			if err != nil {
 				lc.Error(fmt.Sprintf("Handler - execReadCmd: CommandValue (%s) transformed failed: %v", cv.String(), err))
 				transformsOK = false
 			}
 		}
 
-		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, device)
+		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, device, lc, dc)
 		if err != nil {
 			lc.Error(fmt.Sprintf("Handler - execReadCmd: Assertion failed for device resource: %s, with value: %v", cv.String(), err))
 			cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
@@ -229,6 +246,7 @@ func execReadCmd(
 	queryParams string,
 	driver dsModels.ProtocolDriver,
 	lc logger.LoggingClient,
+	dc metadata.DeviceClient,
 	configuration *common.ConfigurationStruct) (*dsModels.Event, common.AppError) {
 	// make ResourceOperations
 	ros, err := cache.Profiles().ResourceOperations(device.Profile.Name, cmd, common.GetCmdMethod)
@@ -268,7 +286,7 @@ func execReadCmd(
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]string)
 			}
-			m := common.FilterQueryParams(queryParams)
+			m := common.FilterQueryParams(queryParams, lc)
 			reqs[i].Attributes[common.URLRawQuery] = m.Encode()
 		}
 		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
@@ -280,7 +298,7 @@ func execReadCmd(
 		return nil, common.NewServerError(msg, err)
 	}
 
-	return cvsToEvent(device, results, cmd, lc, configuration)
+	return cvsToEvent(device, results, cmd, lc, dc, configuration)
 }
 
 func execWriteDeviceResource(
@@ -320,7 +338,7 @@ func execWriteDeviceResource(
 	reqs[0].Type = cv.Type
 
 	if configuration.Device.DataTransform {
-		err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
+		err = transformer.TransformWriteParameter(cv, dr.Properties.Value, lc)
 		if err != nil {
 			msg := fmt.Sprintf("Handler - execWriteDeviceResource: CommandValue (%s) transformed failed: %v", cv.String(), err)
 			lc.Error(msg)
@@ -387,7 +405,7 @@ func execWriteCmd(
 		reqs[i].Type = cv.Type
 
 		if configuration.Device.DataTransform {
-			err = transformer.TransformWriteParameter(cv, dr.Properties.Value)
+			err = transformer.TransformWriteParameter(cv, dr.Properties.Value, lc)
 			if err != nil {
 				msg := fmt.Sprintf("Handler - execWriteCmd: CommandValue (%s) transformed failed: %v", cv.String(), err)
 				lc.Error(msg)
@@ -726,7 +744,14 @@ func CommandAllHandler(cmd string, body string, method string, queryParams strin
 			var event *dsModels.Event = nil
 			var appErr common.AppError = nil
 			if strings.ToLower(method) == common.GetCmdMethod {
-				event, appErr = execReadCmd(device, cmd, queryParams, container.ProtocolDriverFrom(dic.Get), lc, container.ConfigurationFrom(dic.Get))
+				event, appErr = execReadCmd(
+					device,
+					cmd,
+					queryParams,
+					container.ProtocolDriverFrom(dic.Get),
+					lc,
+					container.MetadataDeviceClientFrom(dic.Get),
+					container.ConfigurationFrom(dic.Get))
 			} else {
 				appErr = execWriteCmd(
 					device, cmd, body,

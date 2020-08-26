@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -21,10 +21,10 @@ import (
 var ds []contract.Device
 
 func init() {
-	common.ServiceName = "device-cache-test"
-	common.DeviceClient = &mock.DeviceClientMock{}
+	serviceName := "device-cache-test"
+	dc := &mock.DeviceClientMock{}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, _ = common.DeviceClient.DevicesForServiceByName(ctx, common.ServiceName)
+	ds, _ = dc.DevicesForServiceByName(ctx, serviceName)
 }
 
 func TestNewDeviceCache(t *testing.T) {

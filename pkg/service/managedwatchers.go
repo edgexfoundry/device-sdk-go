@@ -35,7 +35,7 @@ func (s *DeviceService) AddProvisionWatcher(watcher contract.ProvisionWatcher) (
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	watcher.Origin = millis
-	watcher.Service = common.CurrentDeviceService
+	watcher.Service = s.deviceService
 	watcher.Profile = prf
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())

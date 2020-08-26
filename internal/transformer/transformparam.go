@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,12 +11,12 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-func TransformWriteParameter(cv *dsModels.CommandValue, pv contract.PropertyValue) error {
+func TransformWriteParameter(cv *dsModels.CommandValue, pv contract.PropertyValue, lc logger.LoggingClient) error {
 	var err error
 	if cv.Type == dsModels.String || cv.Type == dsModels.Bool || cv.Type == dsModels.Binary {
 		return nil // do nothing for String, Bool and Binary
@@ -26,33 +26,33 @@ func TransformWriteParameter(cv *dsModels.CommandValue, pv contract.PropertyValu
 	newValue := value
 
 	if pv.Offset != "" && pv.Offset != defaultOffset {
-		newValue, err = transformWriteOffset(newValue, pv.Offset)
+		newValue, err = transformWriteOffset(newValue, pv.Offset, lc)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pv.Scale != "" && pv.Scale != defaultScale {
-		newValue, err = transformWriteScale(newValue, pv.Scale)
+		newValue, err = transformWriteScale(newValue, pv.Scale, lc)
 		if err != nil {
 			return err
 		}
 	}
 
 	if pv.Base != "" && pv.Base != defaultBase {
-		newValue, err = transformWriteBase(newValue, pv.Base)
+		newValue, err = transformWriteBase(newValue, pv.Base, lc)
 	}
 
 	if value != newValue {
-		err = replaceNewCommandValue(cv, newValue)
+		err = replaceNewCommandValue(cv, newValue, lc)
 	}
 	return err
 }
 
-func transformWriteBase(value interface{}, base string) (interface{}, error) {
+func transformWriteBase(value interface{}, base string, lc logger.LoggingClient) (interface{}, error) {
 	b, err := strconv.ParseFloat(base, 64)
 	if err != nil {
-		common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to float64: %v", base, err))
+		lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to float64: %v", base, err))
 		return value, err
 	} else if b == 0 {
 		return value, nil // do nothing if Base = 0
@@ -110,12 +110,12 @@ func transformWriteBase(value interface{}, base string) (interface{}, error) {
 	return value, err
 }
 
-func transformWriteScale(value interface{}, scale string) (interface{}, error) {
+func transformWriteScale(value interface{}, scale string, lc logger.LoggingClient) (interface{}, error) {
 	switch v := value.(type) {
 	case uint8:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -123,7 +123,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case uint16:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -131,7 +131,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case uint32:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -139,7 +139,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case uint64:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -147,7 +147,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case int8:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -155,7 +155,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case int16:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -163,7 +163,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case int32:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -171,7 +171,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case int64:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		nv := float64(v)
@@ -179,7 +179,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case float32:
 		s, err := strconv.ParseFloat(scale, 32)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		ns := float32(s)
@@ -187,7 +187,7 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	case float64:
 		s, err := strconv.ParseFloat(scale, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
+			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
 			return value, err
 		}
 		value = v / s
@@ -196,12 +196,12 @@ func transformWriteScale(value interface{}, scale string) (interface{}, error) {
 	return value, nil
 }
 
-func transformWriteOffset(value interface{}, offset string) (interface{}, error) {
+func transformWriteOffset(value interface{}, offset string, lc logger.LoggingClient) (interface{}, error) {
 	switch v := value.(type) {
 	case uint8:
 		o, err := strconv.ParseUint(offset, 10, 8)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := uint8(o)
@@ -209,7 +209,7 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case uint16:
 		o, err := strconv.ParseUint(offset, 10, 16)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := uint16(o)
@@ -217,7 +217,7 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case uint32:
 		o, err := strconv.ParseUint(offset, 10, 32)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := uint32(o)
@@ -225,14 +225,14 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case uint64:
 		o, err := strconv.ParseUint(offset, 10, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		value = v - o
 	case int8:
 		o, err := strconv.ParseInt(offset, 10, 8)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := int8(o)
@@ -240,7 +240,7 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case int16:
 		o, err := strconv.ParseInt(offset, 10, 16)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := int16(o)
@@ -248,7 +248,7 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case int32:
 		o, err := strconv.ParseInt(offset, 10, 32)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := int32(o)
@@ -256,14 +256,14 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case int64:
 		o, err := strconv.ParseInt(offset, 10, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		value = v - o
 	case float32:
 		o, err := strconv.ParseFloat(offset, 32)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		no := float32(o)
@@ -271,7 +271,7 @@ func transformWriteOffset(value interface{}, offset string) (interface{}, error)
 	case float64:
 		o, err := strconv.ParseFloat(offset, 64)
 		if err != nil {
-			common.LoggingClient.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
+			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
 			return value, err
 		}
 		value = v - o
