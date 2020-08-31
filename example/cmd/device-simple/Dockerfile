@@ -50,4 +50,5 @@ COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/Simple-Driver.y
 COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/on.png /res/on.png
 COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/off.jpg /res/off.jpg
 
-CMD [ "/usr/local/bin/device-simple","-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
+ENTRYPOINT ["/usr/local/bin/device-simple"]
+CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
