@@ -24,29 +24,29 @@ func TestBatchInCountMode(t *testing.T) {
 
 	continuePipeline1, _ := bs.Batch(context, []byte(dataToBatch[0]))
 	assert.False(t, continuePipeline1)
-	assert.Len(t, bs.batchData, 1, "Should have 1 record")
+	assert.Len(t, bs.batchData.all(), 1, "Should have 1 record")
 
 	continuePipeline2, _ := bs.Batch(context, []byte(dataToBatch[0]))
 	assert.False(t, continuePipeline2)
-	assert.Len(t, bs.batchData, 2, "Should have 2 records")
+	assert.Len(t, bs.batchData.all(), 2, "Should have 2 records")
 
 	continuePipeline3, result3 := bs.Batch(context, []byte(dataToBatch[0]))
 	assert.True(t, continuePipeline3)
 	assert.Len(t, result3, 3, "Should have 3 records")
-	assert.Len(t, bs.batchData, 0, "Records should have been cleared")
+	assert.Len(t, bs.batchData.all(), 0, "Records should have been cleared")
 
 	continuePipeline4, _ := bs.Batch(context, []byte(dataToBatch[0]))
 	assert.False(t, continuePipeline4)
-	assert.Len(t, bs.batchData, 1, "Should have 1 record")
+	assert.Len(t, bs.batchData.all(), 1, "Should have 1 record")
 
 	continuePipeline5, _ := bs.Batch(context, []byte(dataToBatch[0]))
 	assert.False(t, continuePipeline5)
-	assert.Len(t, bs.batchData, 2, "Should have 2 records")
+	assert.Len(t, bs.batchData.all(), 2, "Should have 2 records")
 
 	continuePipeline6, result4 := bs.Batch(context, []byte(dataToBatch[0]))
 	assert.True(t, continuePipeline6)
 	assert.Len(t, result4, 3, "Should have 3 records")
-	assert.Len(t, bs.batchData, 0, "Records should have been cleared")
+	assert.Len(t, bs.batchData.all(), 0, "Records should have been cleared")
 }
 func TestBatchInTimeAndCountMode_TimeElapsed(t *testing.T) {
 
@@ -64,7 +64,7 @@ func TestBatchInTimeAndCountMode_TimeElapsed(t *testing.T) {
 		continuePipeline1, result := bs.Batch(context, []byte(dataToBatch[0]))
 		assert.True(t, continuePipeline1)
 		assert.Equal(t, 3, len(result.([][]byte)))
-		assert.Len(t, bs.batchData, 0, "Should have 0 records")
+		assert.Len(t, bs.batchData.all(), 0, "Should have 0 records")
 		wgAll.Done()
 	}()
 	go func() {
@@ -117,7 +117,7 @@ func TestBatchInTimeAndCountMode_CountMet(t *testing.T) {
 		continuePipeline3, result := bs.Batch(context, []byte(dataToBatch[0]))
 		assert.True(t, continuePipeline3)
 		assert.Equal(t, 3, len(result.([][]byte)))
-		assert.Nil(t, bs.batchData, "Should have 0 records")
+		assert.Nil(t, bs.batchData.all(), "Should have 0 records")
 		wgAll.Done()
 	}()
 	wgAll.Wait()

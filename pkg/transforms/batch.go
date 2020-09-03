@@ -2,9 +2,11 @@ package transforms
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
 
@@ -17,15 +19,48 @@ const (
 	BatchByTimeAndCount
 )
 
+type atomicBatchData struct {
+	mutex sync.Mutex
+	data  [][]byte
+}
+
+func (d *atomicBatchData) append(toBeAdded []byte) [][]byte {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.data = append(d.data, toBeAdded)
+	result := d.data
+	return result
+}
+
+func (d *atomicBatchData) all() [][]byte {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	result := d.data
+	return result
+}
+
+func (d *atomicBatchData) removeAll() {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	d.data = nil
+}
+
+func (d *atomicBatchData) length() int {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	result := len(d.data)
+	return result
+}
+
 // BatchConfig ...
 type BatchConfig struct {
 	timeInterval                string
 	parsedDuration              time.Duration
 	batchThreshold              int
 	batchMode                   BatchMode
-	batchData                   [][]byte
+	batchData                   atomicBatchData
 	continuedPipelineTransforms []appcontext.AppFunction
-	timerActive                 bool
+	timerActive                 common.AtomicBool
 	done                        chan bool
 }
 
@@ -85,12 +120,12 @@ func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...inte
 		return false, err
 	}
 	// always append data
-	batch.batchData = append(batch.batchData, data)
+	batch.batchData.append(data)
 
 	// If its time only or time and count
 	if batch.batchMode != BatchByCountOnly {
-		if batch.timerActive == false {
-			batch.timerActive = true
+		if !batch.timerActive.Value() {
+			batch.timerActive.Set(true)
 			for {
 				select {
 				case <-batch.done:
@@ -100,7 +135,7 @@ func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...inte
 				}
 				break
 			}
-			batch.timerActive = false
+			batch.timerActive.Set(false)
 		} else {
 			if batch.batchMode == BatchByTimeOnly {
 				return false, nil
@@ -111,9 +146,9 @@ func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...inte
 	if batch.batchMode != BatchByTimeOnly {
 		//Only want to check the threshold if the timer is running and in TimeAndCount mode OR if we are
 		// in CountOnly mode
-		if batch.batchMode == BatchByCountOnly || (batch.timerActive == true && batch.batchMode == BatchByTimeAndCount) {
+		if batch.batchMode == BatchByCountOnly || (batch.timerActive.Value() && batch.batchMode == BatchByTimeAndCount) {
 			// if we have not reached the threshold, then stop pipeline and continue batching
-			if len(batch.batchData) < batch.batchThreshold {
+			if batch.batchData.length() < batch.batchThreshold {
 				return false, nil
 			}
 			// if in BatchByCountOnly mode, there are no listeners so this would hang indefinitely
@@ -125,9 +160,9 @@ func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...inte
 
 	edgexcontext.LoggingClient.Debug("Forwarding Batched Data...")
 	// we've met the threshold, lets clear out the buffer and send it forward in the pipeline
-	if len(batch.batchData) > 0 {
-		copy := batch.batchData
-		batch.batchData = nil
+	if batch.batchData.length() > 0 {
+		copy := batch.batchData.all()
+		batch.batchData.removeAll()
 		return true, copy
 	}
 	return false, nil
