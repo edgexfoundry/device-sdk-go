@@ -17,14 +17,14 @@
 package appsdk
 
 import (
+	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -66,6 +66,22 @@ func TestAddRoute(t *testing.T) {
 		return nil
 	})
 
+}
+
+func TestAddBackgroundPublisher(t *testing.T) {
+	sdk := AppFunctionsSDK{}
+	pub, ok := sdk.AddBackgroundPublisher(1).(*backgroundPublisher)
+
+	if !ok {
+		assert.Fail(t, fmt.Sprintf("Unexpected BackgroundPublisher implementation encountered: %T", pub))
+	}
+
+	require.NotNil(t, pub.output, "publisher should have an output channel set")
+	require.NotNil(t, sdk.backgroundChannel, "sdk should have a background channel set for passing to trigger intitialization")
+
+	// compare addresses since types will not match
+	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundChannel), fmt.Sprintf("%p", pub.output),
+		"same channel should be referenced by the BackgroundPublisher and the SDK.")
 }
 
 func TestSetupHTTPTrigger(t *testing.T) {

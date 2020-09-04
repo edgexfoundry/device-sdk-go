@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 	nethttp "net/http"
 	"net/url"
 	"os"
@@ -111,6 +112,7 @@ type AppFunctionsSDK struct {
 	appCancelCtx              context.CancelFunc
 	deferredFunctions         []bootstrap.Deferred
 	serviceKeyOverride        string
+	backgroundChannel         <-chan types.MessageEnvelope
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -123,6 +125,14 @@ func (sdk *AppFunctionsSDK) AddRoute(route string, handler func(nethttp.Response
 		return errors.New("route is reserved")
 	}
 	return sdk.webserver.AddRoute(route, sdk.addContext(handler), methods...)
+}
+
+// AddBackgroundPublisher will create a channel of provided capacity to be
+// consumed by the MessageBus output and return a publisher that writes to it
+func (sdk *AppFunctionsSDK) AddBackgroundPublisher(capacity int) BackgroundPublisher {
+	bgchan, pub := newBackgroundPublisher(capacity)
+	sdk.backgroundChannel = bgchan
+	return pub
 }
 
 // MakeItRun will initialize and start the trigger as specifed in the
@@ -143,7 +153,7 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 	t := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
-	deferred, err := t.Initialize(sdk.appWg, sdk.appCtx)
+	deferred, err := t.Initialize(sdk.appWg, sdk.appCtx, sdk.backgroundChannel)
 	if err != nil {
 		sdk.LoggingClient.Error(err.Error())
 	}

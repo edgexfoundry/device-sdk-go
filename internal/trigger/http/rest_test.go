@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2020 Technotects
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,18 +14,21 @@
 // limitations under the License.
 //
 
-package trigger
+package http
 
 import (
-	"context"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-	"sync"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-// Trigger interface is used to hold event data and allow function to
-type Trigger interface {
-	// Initialize performs post creation initializations
-	Initialize(wg *sync.WaitGroup, ctx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error)
+func TestTriggerInitializeWitBackgroundChannel(t *testing.T) {
+	background := make(chan types.MessageEnvelope)
+	trigger := Trigger{}
+
+	deferred, err := trigger.Initialize(nil, nil, background)
+
+	assert.Nil(t, deferred)
+	assert.NotNil(t, err)
+	assert.Equal(t, "background publishing not supported for services using HTTP trigger", err.Error())
 }

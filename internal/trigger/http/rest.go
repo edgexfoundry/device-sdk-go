@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -43,8 +44,12 @@ type Trigger struct {
 }
 
 // Initialize initializes the Trigger for logging and REST route
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) (bootstrap.Deferred, error) {
+func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
 	logger := trigger.EdgeXClients.LoggingClient
+
+	if background != nil {
+		return nil, errors.New("background publishing not supported for services using HTTP trigger")
+	}
 
 	logger.Info("Initializing HTTP Trigger")
 	trigger.Webserver.SetupTriggerRoute(internal.ApiTriggerRoute, trigger.requestHandler)

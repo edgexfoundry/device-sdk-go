@@ -40,7 +40,7 @@ type Trigger struct {
 }
 
 // Initialize ...
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context) (bootstrap.Deferred, error) {
+func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
 	var err error
 	logger := trigger.EdgeXClients.LoggingClient
 
@@ -117,10 +117,21 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 						err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Binding.PublishTopic)
 						if err != nil {
 							logger.Error(fmt.Sprintf("Failed to publish Message to bus, %v", err))
+							return
 						}
 
 						logger.Trace("Published message to bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, msgs.CorrelationID)
 					}
+				}()
+			case bg := <-background:
+				go func() {
+					err := trigger.client.Publish(bg, trigger.Configuration.Binding.PublishTopic)
+					if err != nil {
+						logger.Error(fmt.Sprintf("Failed to publish background Message to bus, %v", err))
+						return
+					}
+
+					logger.Trace("Published background message to bus", "topic", trigger.Configuration.Binding.PublishTopic, clients.CorrelationHeader, bg.CorrelationID)
 				}()
 			}
 		}
