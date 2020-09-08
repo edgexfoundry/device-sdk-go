@@ -266,3 +266,36 @@ func TestConfigurableMQTTSecretSend(t *testing.T) {
 	trx := configurable.MQTTSecretSend(params)
 	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
 }
+
+func TestAppFunctionsSDKConfigurable_AddTags(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	tests := []struct {
+		Name      string
+		ParamName string
+		TagsSpec  string
+		ExpectNil bool
+	}{
+		{"Good - non-empty list", Tags, "GatewayId:HoustonStore000123,Latitude:29.630771,Longitude:-95.377603", false},
+		{"Good - empty list", Tags, "", false},
+		{"Bad - No : separator", Tags, "GatewayId HoustonStore000123, Latitude:29.630771,Longitude:-95.377603", true},
+		{"Bad - Missing value", Tags, "GatewayId:,Latitude:29.630771,Longitude:-95.377603", true},
+		{"Bad - Missing key", Tags, "GatewayId:HoustonStore000123,:29.630771,Longitude:-95.377603", true},
+		{"Bad - Missing key & value", Tags, ":,:,:", true},
+		{"Bad - No Tags parameter", "NotTags", ":,:,:", true},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			params := make(map[string]string)
+			params[testCase.ParamName] = testCase.TagsSpec
+
+			transform := configurable.AddTags(params)
+			assert.Equal(t, testCase.ExpectNil, transform == nil)
+		})
+	}
+}

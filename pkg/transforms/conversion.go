@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2020 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ package transforms
 
 import (
 	"encoding/json"
-	"encoding/xml"
 	"errors"
+	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
@@ -41,15 +41,12 @@ func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...i
 		return false, errors.New("No Event Received")
 	}
 	edgexcontext.LoggingClient.Debug("Transforming to XML")
-	if result, ok := params[0].(models.Event); ok {
-		b, err := xml.Marshal(result)
+	if event, ok := params[0].(models.Event); ok {
+		xml, err := event.ToXML()
 		if err != nil {
-			// LoggingClient.Error(fmt.Sprintf("Error parsing XML. Error: %s", err.Error()))
-			return false, errors.New("Incorrect type received, expecting models.Event")
+			return false, fmt.Errorf("unable to marshal Event to XML: %s", err.Error())
 		}
-		// should we return a byte[] or string?
-		// return b
-		return true, string(b)
+		return true, xml
 	}
 	return false, errors.New("Unexpected type received")
 }

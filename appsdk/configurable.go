@@ -52,6 +52,7 @@ const (
 	ClientID         = "clientid"
 	Topic            = "topic"
 	AuthMode         = "authmode"
+	Tags             = "tags"
 )
 
 // AppFunctionsSDKConfigurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -522,4 +523,41 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSecretSend(parameters map[string]
 	}
 	transform := transforms.NewMQTTSecretSender(mqttConfig, persistOnError)
 	return transform.MQTTSend
+}
+
+// AddTags adds the configured list of tags to Events passed to the transform.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) AddTags(parameters map[string]string) appcontext.AppFunction {
+	tagsSpec, ok := parameters[Tags]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not find '%s' parameter", Tags))
+		return nil
+	}
+
+	tagKeyValues := util.DeleteEmptyAndTrim(strings.FieldsFunc(tagsSpec, util.SplitComma))
+
+	tags := make(map[string]string)
+	for _, tag := range tagKeyValues {
+		keyValue := util.DeleteEmptyAndTrim(strings.FieldsFunc(tag, util.SplitColon))
+		if len(keyValue) != 2 {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Bad Tags specification format. Expect comma separated list of 'key:value'. Got `%s`", tagsSpec))
+			return nil
+		}
+
+		if len(keyValue[0]) == 0 {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Tag key missing. Got '%s'", tag))
+			return nil
+		}
+		if len(keyValue[1]) == 0 {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Tag value missing. Got '%s'", tag))
+			return nil
+		}
+
+		tags[keyValue[0]] = keyValue[1]
+	}
+
+	transform := transforms.NewTags(tags)
+	dynamic.Sdk.LoggingClient.Debug("Add Tags", Tags, fmt.Sprintf("%v", tags))
+
+	return transform.AddTags
 }
