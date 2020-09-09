@@ -127,13 +127,13 @@ func TestMetricsRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
-	assert.NotZero(t, actual.MemAlloc)
-	assert.NotZero(t, actual.MemFrees)
-	assert.NotZero(t, actual.MemLiveObjects)
-	assert.NotZero(t, actual.MemMallocs)
-	assert.NotZero(t, actual.MemSys)
-	assert.NotZero(t, actual.MemTotalAlloc)
-	assert.NotNil(t, actual.CpuBusyAvg)
+	assert.NotZero(t, actual.Metrics.MemAlloc)
+	assert.NotZero(t, actual.Metrics.MemFrees)
+	assert.NotZero(t, actual.Metrics.MemLiveObjects)
+	assert.NotZero(t, actual.Metrics.MemMallocs)
+	assert.NotZero(t, actual.Metrics.MemSys)
+	assert.NotZero(t, actual.Metrics.MemTotalAlloc)
+	assert.NotNil(t, actual.Metrics.CpuBusyAvg)
 }
 
 func TestConfigRequest(t *testing.T) {
@@ -196,8 +196,10 @@ func TestSecretsRequest(t *testing.T) {
 	validNoPath.Path = ""
 	validPathWithSlash := validRequest
 	validPathWithSlash.Path = "/mqtt"
-	noRequestId := validRequest
-	noRequestId.RequestID = ""
+	validNoRequestId := validRequest
+	validNoRequestId.RequestID = ""
+	badRequestId := validRequest
+	badRequestId.RequestID = "bad requestId"
 	noSecrets := validRequest
 	noSecrets.Secrets = []requests.SecretsKeyValue{}
 	missingSecretKey := validRequest
@@ -212,25 +214,27 @@ func TestSecretsRequest(t *testing.T) {
 	tests := []struct {
 		Name               string
 		Request            requests.SecretsRequest
+		ExpectedRequestId  string
 		SecretsPath        string
 		SecretStoreEnabled string
 		ErrorExpected      bool
 		ExpectedStatusCode int
 	}{
-		{"Valid - sub-path no trailing slash, SecretsPath has trailing slash", validRequest, "my-secrets/", "true", false, http.StatusCreated},
-		{"Valid - no trailing slashes", validNoPath, "my-secrets", "true", false, http.StatusCreated},
-		{"Valid - sub-path only with trailing slash", validPathWithSlash, "my-secrets", "true", false, http.StatusCreated},
-		{"Valid - both trailing slashes", validPathWithSlash, "my-secrets/", "true", false, http.StatusCreated},
-		{"Invalid - no requestId", noRequestId, "", "true", true, http.StatusBadRequest},
-		{"Invalid - no secrets", noSecrets, "", "true", true, http.StatusBadRequest},
-		{"Invalid - missing secret key", missingSecretKey, "", "true", true, http.StatusBadRequest},
-		{"Invalid - missing secret value", missingSecretValue, "", "true", true, http.StatusBadRequest},
-		{"Invalid - No Secret Store", validRequest, "", "false", true, http.StatusInternalServerError},
+		{"Valid - sub-path no trailing slash, SecretsPath has trailing slash", validRequest, expectedRequestId, "my-secrets/", "true", false, http.StatusCreated},
+		{"Valid - no trailing slashes", validNoPath, expectedRequestId, "my-secrets", "true", false, http.StatusCreated},
+		{"Valid - sub-path only with trailing slash", validPathWithSlash, expectedRequestId, "my-secrets", "true", false, http.StatusCreated},
+		{"Valid - both trailing slashes", validPathWithSlash, expectedRequestId, "my-secrets/", "true", false, http.StatusCreated},
+		{"Valid - no requestId", validNoRequestId, "", "", "true", false, http.StatusCreated},
+		{"Invalid - bad requestId", badRequestId, "", "", "true", true, http.StatusBadRequest},
+		{"Invalid - no secrets", noSecrets, "", "", "true", true, http.StatusBadRequest},
+		{"Invalid - missing secret key", missingSecretKey, "", "", "true", true, http.StatusBadRequest},
+		{"Invalid - missing secret value", missingSecretValue, "", "", "true", true, http.StatusBadRequest},
+		{"Invalid - No Secret Store", validRequest, "", "", "false", true, http.StatusInternalServerError},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
-			os.Setenv(security.EnvSecretStore, testCase.SecretStoreEnabled)
+			_ = os.Setenv(security.EnvSecretStore, testCase.SecretStoreEnabled)
 
 			jsonData, err := json.Marshal(testCase.Request)
 			require.NoError(t, err)
@@ -260,7 +264,7 @@ func TestSecretsRequest(t *testing.T) {
 				return // Test complete for error cases
 			}
 
-			assert.Equal(t, expectedRequestId, actualResponse.RequestID, "RequestID not as expected")
+			assert.Equal(t, testCase.ExpectedRequestId, actualResponse.RequestID, "RequestID not as expected")
 			assert.Empty(t, actualResponse.Message, "Message not empty, as expected")
 		})
 	}

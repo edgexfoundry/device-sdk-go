@@ -49,8 +49,10 @@ func TestSecretsRequest_Validate(t *testing.T) {
 	validNoPath := validRequest
 	validWithPath := validRequest
 	validWithPath.Path = "mqtt"
-	noRequestId := validRequest
-	noRequestId.RequestID = ""
+	validNoRequestId := validRequest
+	validNoRequestId.RequestID = ""
+	badRequestId := validRequest
+	badRequestId.RequestID = "Bad Request Id"
 	noSecrets := validRequest
 	noSecrets.Secrets = []SecretsKeyValue{}
 	missingSecretKey := validRequest
@@ -63,13 +65,13 @@ func TestSecretsRequest_Validate(t *testing.T) {
 		Request       SecretsRequest
 		ErrorExpected bool
 	}{
-		{"valid with no path", validNoPath, false},
-		{"valid with with path", validWithPath, false},
-
-		{"invalid no requestId", noRequestId, true},
-		{"invalid no Secrets", noSecrets, true},
-		{"invalid missing secret key", missingSecretKey, true},
-		{"invalid missing secret value", missingSecretValue, true},
+		{"valid - with no path", validNoPath, false},
+		{"valid - with with path", validWithPath, false},
+		{"valid - no requestId", validNoRequestId, false},
+		{"invalid - bad requestId", badRequestId, true},
+		{"invalid - no Secrets", noSecrets, true},
+		{"invalid - missing secret key", missingSecretKey, true},
+		{"invalid - missing secret value", missingSecretValue, true},
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
