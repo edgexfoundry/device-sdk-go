@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
@@ -52,6 +53,7 @@ type KeyCertPair struct {
 }
 
 type MQTTSender struct {
+	lock           sync.Mutex
 	client         MQTT.Client
 	topic          string
 	opts           MqttConfig
@@ -108,7 +110,7 @@ func NewMQTTSender(logging logger.LoggingClient, addr models.Addressable, keyCer
 
 // MQTTSend sends data from the previous function to the specified MQTT broker.
 // If no previous function exists, then the event that triggered the pipeline will be used.
-func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+func (sender *MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
@@ -120,16 +122,10 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 	}
 
 	if !sender.client.IsConnected() {
-		edgexcontext.LoggingClient.Info("Connecting to mqtt server")
-		if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
-			sender.setRetryData(edgexcontext, exportData)
-			subMessage := "drop event"
-			if sender.persistOnError {
-				subMessage = "persisting Event for later retry"
-			}
-			return false, fmt.Errorf("Could not connect to mqtt server, %s. Error: %s", subMessage, token.Error().Error())
+		err = sender.connectToBroker(edgexcontext, exportData)
+		if err != nil {
+			return false, err
 		}
-		edgexcontext.LoggingClient.Info("Connected to mqtt server")
 	}
 
 	token := sender.client.Publish(sender.topic, sender.opts.Qos, sender.opts.Retain, exportData)
@@ -145,7 +141,30 @@ func (sender MQTTSender) MQTTSend(edgexcontext *appcontext.Context, params ...in
 	return true, nil
 }
 
-func (sender MQTTSender) setRetryData(ctx *appcontext.Context, exportData []byte) {
+func (sender *MQTTSender) connectToBroker(edgexcontext *appcontext.Context, exportData []byte) error {
+	sender.lock.Lock()
+	defer sender.lock.Unlock()
+
+	// If other thread made the connection while this one was waiting for the lock
+	// then skip trying to connect
+	if sender.client.IsConnected() {
+		return nil
+	}
+
+	edgexcontext.LoggingClient.Info("Connecting to mqtt server")
+	if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
+		sender.setRetryData(edgexcontext, exportData)
+		subMessage := "drop event"
+		if sender.persistOnError {
+			subMessage = "persisting Event for later retry"
+		}
+		return fmt.Errorf("Could not connect to mqtt server, %s. Error: %s", subMessage, token.Error().Error())
+	}
+	edgexcontext.LoggingClient.Info("Connected to mqtt server")
+	return nil
+}
+
+func (sender *MQTTSender) setRetryData(ctx *appcontext.Context, exportData []byte) {
 	if sender.persistOnError {
 		ctx.RetryData = exportData
 	}

@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
@@ -32,6 +33,7 @@ import (
 
 // MQTTSecretSender ...
 type MQTTSecretSender struct {
+	lock                 sync.Mutex
 	client               MQTT.Client
 	mqttConfig           MQTTSecretConfig
 	persistOnError       bool
@@ -182,6 +184,15 @@ func (sender *MQTTSecretSender) configureMQTTClientForAuth(secrets mqttSecrets) 
 	return nil
 }
 func (sender *MQTTSecretSender) initializeMQTTClient(edgexcontext *appcontext.Context) error {
+	sender.lock.Lock()
+	defer sender.lock.Unlock()
+
+	// If the conditions changed while waiting for the lock, i.e. other thread completed the initialization,
+	// then skip doing anything
+	if sender.client != nil && !sender.secretsLastRetrieved.Before(edgexcontext.SecretProvider.SecretsLastUpdated()) {
+		return nil
+	}
+
 	if sender.mqttConfig.AuthMode == "" {
 		sender.mqttConfig.AuthMode = AuthModeNone
 		edgexcontext.LoggingClient.Warn("AuthMode not set, defaulting to \"" + AuthModeNone + "\"")
@@ -211,6 +222,15 @@ func (sender *MQTTSecretSender) initializeMQTTClient(edgexcontext *appcontext.Co
 }
 
 func (sender *MQTTSecretSender) connectToBroker(edgexcontext *appcontext.Context, exportData []byte) error {
+	sender.lock.Lock()
+	defer sender.lock.Unlock()
+
+	// If other thread made the connection while this one was waiting for the lock
+	// then skip trying to connect
+	if sender.client.IsConnected() {
+		return nil
+	}
+
 	edgexcontext.LoggingClient.Info("Connecting to mqtt server for export")
 	if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
 		sender.setRetryData(edgexcontext, exportData)
