@@ -52,7 +52,7 @@ parts:
   # This go part is necessary because it's expected that this snapcraft.yaml
   # will be build on Linux Foundation infrastructure and as such runs in a 
   # docker container. Since this may be run in a docker container, we can't 
-  # use the default (and convenient) `build-snaps: [go/1.13]` inside the
+  # use the default (and convenient) `build-snaps: [go/1.15]` inside the
   # device-simple part which requires a working snapd which isn't available
   # inside a docker container
   go:
@@ -65,20 +65,20 @@ parts:
       # armhf, etc.
       case "$(dpkg --print-architecture)" in
         amd64)
-          FILE_NAME=go1.11.9.linux-amd64.tar.gz
-          FILE_HASH=e88aa3e39104e3ba6a95a4e05629348b4a1ec82791fb3c941a493ca349730608
+          FILE_NAME=go1.15.2.linux-amd64.tar.gz
+          FILE_HASH=b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552
           ;;
         arm64)
-          FILE_NAME=go1.11.9.linux-arm64.tar.gz
-          FILE_HASH=892ab6c2510c4caa5905b3b1b6a1d4c6f04e384841fec50881ca2be7e8accf05
+          FILE_NAME=go1.15.2.linux-arm64.tar.gz
+          FILE_HASH=c8ec460cc82d61604b048f9439c06bd591722efce5cd48f49e19b5f6226bd36d
           ;;
         armhf)
-          FILE_NAME=go1.11.9.linux-armv6l.tar.gz
-          FILE_HASH=f0d7b039cae61efdc346669f3459460e3dc03b6c6de528ca107fc53970cba0d1
+          FILE_NAME=go1.15.2.linux-armv6l.tar.gz
+          FILE_HASH=c12e2afdcb21e530d332d4994919f856dd2a676e9d67034c7d6fefcb241412d9
           ;;
         i386)
-          FILE_NAME=go1.11.9.linux-386.tar.gz
-          FILE_HASH=0fa4001fcf1ef0644e261bf6dde02fc9f10ae4df6d74fda61fc4d3c3cbef1d79
+          FILE_NAME=go1.15.2.linux-386.tar.gz
+          FILE_HASH=5a91080469df6b91f1022bdfb0ca75e01ca50387950b13518def3d0a7f6af9f1
           ;;
       esac
       # Download the archive, failing on ssl cert problems.
