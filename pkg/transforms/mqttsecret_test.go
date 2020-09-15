@@ -169,8 +169,11 @@ func TestMQTTClientGetSecrets(t *testing.T) {
 		{"No Auth No error", AuthModeNone, "", nil, false},
 		{"Auth No Secrets found", AuthModeCA, "/notfound", nil, true},
 		{"Auth With Secrets", AuthModeUsernamePassword, "/mqtt", &mqttSecrets{
-			username: "TEST_USER",
-			password: "TEST_PASS",
+			username:     "TEST_USER",
+			password:     "TEST_PASS",
+			keypemblock:  []uint8{},
+			certpemblock: []uint8{},
+			capemblock:   []uint8{},
 		}, false},
 	}
 	// setup mock secret client
@@ -336,12 +339,15 @@ func TestConfigureMQTTClientWithNone(t *testing.T) {
 }
 
 func TestSetRetryDataPersistFalse(t *testing.T) {
+	context.RetryData = nil
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, false)
 	sender.mqttConfig = MQTTSecretConfig{}
 	sender.setRetryData(context, []byte("data"))
 	assert.Nil(t, context.RetryData)
 }
+
 func TestSetRetryDataPersistTrue(t *testing.T) {
+	context.RetryData = nil
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
 	sender.setRetryData(context, []byte("data"))

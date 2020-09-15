@@ -179,7 +179,7 @@ func TestSecretsRequest(t *testing.T) {
 	}
 	lc := logger.NewMockClient()
 
-	mockProvider := NewSecretProviderMock(config)
+	mockProvider := security.NewSecretProviderMock(config)
 	target := NewV2HttpController(nil, lc, config, mockProvider)
 	assert.NotNil(t, target)
 

@@ -212,7 +212,7 @@ func TestFilterOutByValueDescriptor(t *testing.T) {
 	assert.EqualError(t, res.(error), "no Event Received")
 
 	continuePipeline, res = f1.FilterByValueDescriptor(context, event1)
-	assert.True(t, continuePipeline, "Pipeline should continue")
+	assert.False(t, continuePipeline, "Pipeline should NOT continue")
 	assert.Len(t, res.(models.Event).Readings, 0, "Event should have no readings")
 
 	continuePipeline, res = f1.FilterByValueDescriptor(context, event2)
@@ -224,16 +224,16 @@ func TestFilterOutByValueDescriptor(t *testing.T) {
 	assert.Len(t, res.(models.Event).Readings, 1, "Event should have one reading")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event1)
-	assert.False(t, continuePipeline, "Pipeline should continue")
+	assert.False(t, continuePipeline, "Pipeline should NOT continue")
 	assert.Len(t, res.(models.Event).Readings, 0, "Event should have one reading")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event2)
-	assert.True(t, continuePipeline, "Pipeline should continue")
-	assert.Len(t, res.(models.Event).Readings, 0, "Event should have one reading")
+	assert.False(t, continuePipeline, "Pipeline should NOT continue")
+	assert.Len(t, res.(models.Event).Readings, 0, "Event should have no reading")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event12)
-	assert.True(t, continuePipeline, "Pipeline should continue")
-	assert.Len(t, res.(models.Event).Readings, 0, "Event should have one reading")
+	assert.False(t, continuePipeline, "Pipeline should NOT continue")
+	assert.Len(t, res.(models.Event).Readings, 0, "Event should have no reading")
 
 	continuePipeline, res = f12.FilterByValueDescriptor(context, event3)
 	assert.True(t, continuePipeline, "Event should be filtered out")

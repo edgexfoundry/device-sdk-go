@@ -24,15 +24,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 )
 
 var logClient logger.LoggingClient
@@ -116,7 +116,7 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-	sp := newMockSecretProvider(logClient, config)
+	sp := security.NewSecretProviderMock(config)
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
@@ -138,7 +138,7 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	sp := newMockSecretProvider(logClient, config)
+	sp := security.NewSecretProviderMock(config)
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 
 	handlerFunctionNotCalled := true
@@ -162,7 +162,7 @@ func TestSetupTriggerRoute(t *testing.T) {
 
 func TestPostSecretRoute(t *testing.T) {
 
-	sp := newMockSecretProvider(logClient, config)
+	sp := security.NewSecretProviderMock(config)
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
@@ -213,24 +213,4 @@ func TestValidateSecretRoute(t *testing.T) {
 
 	secretDataGoodPath := SecretData{Path: "/foo/bar", Secrets: []KeyValue{KeyValue{Key: "key", Value: "val"}}}
 	assert.NoError(t, secretDataGoodPath.validateSecretData())
-}
-
-// mockSecretClient is fake vault client
-type mockSecretClient struct {
-}
-
-// NewMockSecretProvider provides a mocked version of the mockSecretClient to avoiding using vault in our tests
-func newMockSecretProvider(loggingClient logger.LoggingClient, configuration *common.ConfigurationStruct) security.SecretProvider {
-	mockSP := security.NewSecretProvider(logClient, config)
-	return mockSP
-}
-
-// GetSecrets mock implementation of GetSecrets
-func (s *mockSecretClient) GetSecrets(path string, keys ...string) (map[string]string, error) {
-	return nil, nil
-}
-
-// StoreSecrets mock implementation of StoreSecrets
-func (s *mockSecretClient) StoreSecrets(path string, secrets map[string]string) error {
-	return nil
 }

@@ -151,6 +151,7 @@ func getSecretsTestData() secretTestData {
 }
 
 func TestGetSecrets(t *testing.T) {
+	os.Clearenv()
 	secretProvider := newMockSecretProvider(nil)
 
 	for i, test := range getSecretsTestData() {
@@ -172,7 +173,7 @@ func TestGetSecrets(t *testing.T) {
 }
 
 func TestGetInsecureSecrets(t *testing.T) {
-
+	os.Clearenv()
 	secretProvider, origEnv := setupGetInsecureSecrets(t)
 
 	for _, test := range getSecretsTestData() {

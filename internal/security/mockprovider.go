@@ -14,7 +14,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-package http
+package security
 
 import (
 	"context"
@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 )
 
@@ -99,6 +98,6 @@ func (s *SecretProviderMock) SecretsLastUpdated() time.Time {
 
 // isSecurityEnabled determines if security has been enabled.
 func (s *SecretProviderMock) isSecurityEnabled() bool {
-	env := os.Getenv(security.EnvSecretStore)
+	env := os.Getenv(EnvSecretStore)
 	return env != "false"
 }

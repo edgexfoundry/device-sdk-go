@@ -107,6 +107,7 @@ func TestHTTPPost(t *testing.T) {
 
 func TestHTTPPostWithSecrets(t *testing.T) {
 
+	expectedValue := "value"
 	handler := func(w http.ResponseWriter, r *http.Request) {
 
 		if r.URL.EscapedPath() == badPath {
@@ -116,9 +117,10 @@ func TestHTTPPostWithSecrets(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 
-		// this should be here on successful secret retrieval
-		if assert.Equal(t, r.Header.Get("Secret-Header-Name"), "value") {
-			t.Errorf("Unexpected header name received %s, expected %s", r.Header.Get("Content-type"), "application/json")
+		actualValue := r.Header.Get("Secret-Header-Name")
+		if actualValue != "" {
+			// Only validate is key was found in the header
+			require.Equal(t, expectedValue, actualValue)
 		}
 	}
 
