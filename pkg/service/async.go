@@ -26,6 +26,12 @@ import (
 // processAsyncResults processes readings that are pushed from
 // a DS implementation. Each is reading is optionally transformed
 // before being pushed to Core Data.
+// In this function, AsyncBufferSize is used to create a buffer for
+// processing AsyncValues concurrently, so that events may arrive
+// out-of-order in core-data / app service when AsyncBufferSize value
+// is greater than or equal to two. Alternatively, we can process
+// AsyncValues one by one in the same order by changing the AsyncBufferSize
+// value to one.
 func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
@@ -33,65 +39,74 @@ func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGr
 		wg.Done()
 	}()
 
+	working := make(chan bool, s.config.Service.AsyncBufferSize)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case acv := <-s.asyncCh:
-			readings := make([]contract.Reading, 0, len(acv.CommandValues))
-
-			device, ok := cache.Devices().ForName(acv.DeviceName)
-			if !ok {
-				s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - recieved Device %s not found in cache", acv.DeviceName))
-				continue
-			}
-
-			for _, cv := range acv.CommandValues {
-				// get the device resource associated with the rsp.RO
-				dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.DeviceResourceName)
-				if !ok {
-					s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.DeviceResourceName, acv.DeviceName))
-					continue
-				}
-
-				if s.config.Device.DataTransform {
-					err := transformer.TransformReadResult(cv, dr.Properties.Value)
-					if err != nil {
-						s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
-						cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
-					}
-				}
-
-				err := transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, &device)
-				if err != nil {
-					s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Assertion failed for device resource: %s, with value: %s and assertion: %s, %v", cv.DeviceResourceName, cv.String(), dr.Properties.Value.Assertion, err))
-					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
-				}
-
-				ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
-				if err != nil {
-					s.LoggingClient.Debug(fmt.Sprintf("processAsyncResults - getting resource operation failed: %s", err.Error()))
-				} else if len(ro.Mappings) > 0 {
-					newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
-					if ok {
-						cv = newCV
-					} else {
-						s.LoggingClient.Warn(fmt.Sprintf("processAsyncResults - Mapping failed for Device Resource Operation: %s, with value: %s, %v", ro.DeviceCommand, cv.String(), err))
-					}
-				}
-
-				reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
-				readings = append(readings, *reading)
-			}
-
-			// push to Core Data
-			cevent := contract.Event{Device: device.Name, Readings: readings}
-			event := &dsModels.Event{Event: cevent}
-			event.Origin = common.GetUniqueOrigin()
-			common.SendEvent(event)
-
+			go s.sendAsyncValues(acv, working)
 		}
 	}
+}
+
+// sendAsyncValues convert AsyncValues to event and send the event to CoreData
+func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan bool) {
+	working <- true
+	defer func() {
+		<-working
+	}()
+	readings := make([]contract.Reading, 0, len(acv.CommandValues))
+
+	device, ok := cache.Devices().ForName(acv.DeviceName)
+	if !ok {
+		s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - recieved Device %s not found in cache", acv.DeviceName))
+		return
+	}
+
+	for _, cv := range acv.CommandValues {
+		// get the device resource associated with the rsp.RO
+		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.DeviceResourceName)
+		if !ok {
+			s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.DeviceResourceName, acv.DeviceName))
+			continue
+		}
+
+		if s.config.Device.DataTransform {
+			err := transformer.TransformReadResult(cv, dr.Properties.Value)
+			if err != nil {
+				s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
+				cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
+			}
+		}
+
+		err := transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, &device)
+		if err != nil {
+			s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Assertion failed for device resource: %s, with value: %s and assertion: %s, %v", cv.DeviceResourceName, cv.String(), dr.Properties.Value.Assertion, err))
+			cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
+		}
+
+		ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
+		if err != nil {
+			s.LoggingClient.Debug(fmt.Sprintf("processAsyncResults - getting resource operation failed: %s", err.Error()))
+		} else if len(ro.Mappings) > 0 {
+			newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
+			if ok {
+				cv = newCV
+			} else {
+				s.LoggingClient.Warn(fmt.Sprintf("processAsyncResults - Mapping failed for Device Resource Operation: %s, with value: %s, %v", ro.DeviceCommand, cv.String(), err))
+			}
+		}
+
+		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
+		readings = append(readings, *reading)
+	}
+
+	// push to Core Data
+	cevent := contract.Event{Device: device.Name, Readings: readings}
+	event := &dsModels.Event{Event: cevent}
+	event.Origin = common.GetUniqueOrigin()
+	common.SendEvent(event)
 }
 
 // processAsyncFilterAndAdd filter and add devices discovered by
