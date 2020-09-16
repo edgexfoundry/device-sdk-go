@@ -134,10 +134,10 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	var expectedEvent models.Event
 	json.Unmarshal([]byte(expectedPayload), &expectedEvent)
 
-	transformWasCalled := false
+	transformWasCalled := common.AtomicBool{}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		transformWasCalled = true
+		transformWasCalled.Set(true)
 		assert.Equal(t, expectedEvent, params[0])
 		return false, nil
 	}
@@ -165,13 +165,13 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	testClient, err := messaging.NewMessageClient(testClientConfig)
 	require.NoError(t, err, "Unable to create to publisher")
-	assert.False(t, transformWasCalled)
+	assert.False(t, transformWasCalled.Value())
 
 	err = testClient.Publish(message, "") //transform1 should be called after this executes
 	require.NoError(t, err, "Failed to publish message")
 
 	time.Sleep(3 * time.Second)
-	assert.True(t, transformWasCalled, "Transform never called")
+	assert.True(t, transformWasCalled.Value(), "Transform never called")
 }
 
 func TestInitializeAndProcessEventWithOutput(t *testing.T) {
@@ -203,10 +203,10 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	var expectedEvent models.Event
 	json.Unmarshal([]byte(expectedPayload), &expectedEvent)
 
-	transformWasCalled := false
+	transformWasCalled := common.AtomicBool{}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		transformWasCalled = true
+		transformWasCalled.Set(true)
 		assert.Equal(t, expectedEvent, params[0])
 		edgexcontext.Complete([]byte("Transformed")) //transformed message published to message bus
 		return false, nil
@@ -247,12 +247,12 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 		ContentType:   clients.ContentTypeJSON,
 	}
 
-	assert.False(t, transformWasCalled)
+	assert.False(t, transformWasCalled.Value())
 	err = testClient.Publish(message, "SubscribeTopic")
 	require.NoError(t, err, "Failed to publish message")
 
 	time.Sleep(3 * time.Second)
-	require.True(t, transformWasCalled, "Transform never called")
+	require.True(t, transformWasCalled.Value(), "Transform never called")
 
 	receiveMessage := true
 
