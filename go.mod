@@ -1,6 +1,6 @@
 module github.com/edgexfoundry/app-functions-sdk-go
 
-go 1.13
+go 1.15
 
 require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
