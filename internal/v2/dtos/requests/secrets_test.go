@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,12 @@ func TestSecretsRequest_Validate(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
 			err := testCase.Request.Validate()
-			assert.Equal(t, testCase.ErrorExpected, err != nil, "Unexpected addDeviceRequest validation result.", err)
+			if testCase.ErrorExpected {
+				require.Error(t, err)
+				return // Test complete
+			}
+
+			require.NoError(t, err)
 		})
 	}
 }
@@ -89,10 +95,11 @@ func TestSecretsRequest_UnmarshalJSON(t *testing.T) {
 		Expected      SecretsRequest
 		Data          []byte
 		ErrorExpected bool
+		ErrorKind     errors.ErrKind
 	}{
-		{"unmarshal with success", validRequest, resultTestBytes, false},
-		{"unmarshal invalid, empty data", SecretsRequest{}, []byte{}, true},
-		{"unmarshal invalid, non-json data", SecretsRequest{}, []byte("Invalid SecretsRequest"), true},
+		{"unmarshal with success", validRequest, resultTestBytes, false, ""},
+		{"unmarshal invalid, empty data", SecretsRequest{}, []byte{}, true, errors.KindContractInvalid},
+		{"unmarshal invalid, non-json data", SecretsRequest{}, []byte("Invalid SecretsRequest"), true, errors.KindContractInvalid},
 	}
 
 	for _, testCase := range tests {
@@ -101,12 +108,12 @@ func TestSecretsRequest_UnmarshalJSON(t *testing.T) {
 			err := actual.UnmarshalJSON(testCase.Data)
 			if testCase.ErrorExpected {
 				require.Error(t, err)
+				require.Equal(t, testCase.ErrorKind, errors.Kind(err))
 				return // Test complete
 			}
 
 			require.NoError(t, err)
 			assert.Equal(t, testCase.Expected, actual, "Unmarshal did not result in expected SecretsRequest.")
-
 		})
 	}
 }

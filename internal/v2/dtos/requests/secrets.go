@@ -19,6 +19,7 @@ package requests
 import (
 	"encoding/json"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/errors"
 	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 )
@@ -53,14 +54,14 @@ func (sr *SecretsRequest) UnmarshalJSON(b []byte) error {
 	}
 
 	if err := json.Unmarshal(b, &alias); err != nil {
-		return v2.NewErrContractInvalid("Failed to unmarshal request body as JSON.")
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "Failed to unmarshal SecretsRequest body as JSON.", err)
 	}
 
 	*sr = SecretsRequest(alias)
 
 	// validate SecretsRequest DTO
 	if err := sr.Validate(); err != nil {
-		return err
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "SecretsRequest validation failed.", err)
 	}
 	return nil
 }

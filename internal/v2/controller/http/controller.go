@@ -24,6 +24,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/errors"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/gorilla/mux"
@@ -94,15 +95,15 @@ func (v2c *V2HttpController) Config(writer http.ResponseWriter, request *http.Re
 // Metrics handles the request to the /metrics endpoint, memory and cpu utilization stats
 // It returns a response as specified by the V2 API swagger in openapi/v2
 func (v2c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.Request) {
-	telem := telemetry.NewSystemUsage()
+	t := telemetry.NewSystemUsage()
 	metrics := common.Metrics{
-		MemAlloc:       telem.Memory.Alloc,
-		MemFrees:       telem.Memory.Frees,
-		MemLiveObjects: telem.Memory.LiveObjects,
-		MemMallocs:     telem.Memory.Mallocs,
-		MemSys:         telem.Memory.Sys,
-		MemTotalAlloc:  telem.Memory.TotalAlloc,
-		CpuBusyAvg:     uint8(telem.CpuBusyAvg),
+		MemAlloc:       t.Memory.Alloc,
+		MemFrees:       t.Memory.Frees,
+		MemLiveObjects: t.Memory.LiveObjects,
+		MemMallocs:     t.Memory.Mallocs,
+		MemSys:         t.Memory.Sys,
+		MemTotalAlloc:  t.Memory.TotalAlloc,
+		CpuBusyAvg:     uint8(t.CpuBusyAvg),
 	}
 
 	response := common.NewMetricsResponse(metrics)
@@ -119,22 +120,33 @@ func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.R
 	secretRequest := requests.SecretsRequest{}
 	err := json.NewDecoder(request.Body).Decode(&secretRequest)
 	if err != nil {
-		response := common.NewBaseResponse("unknown", err.Error(), http.StatusBadRequest)
-		v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusBadRequest)
+		v2c.sendError(writer, request, errors.KindContractInvalid, "JSON decode failed", err, "")
 		return
 	}
 
 	path, secrets := v2c.prepareSecrets(secretRequest)
 
 	if err := v2c.secretProvider.StoreSecrets(path, secrets); err != nil {
-		msg := fmt.Sprintf("Storing secrets failed: %v", err)
-		response := common.NewBaseResponse(secretRequest.RequestID, msg, http.StatusInternalServerError)
-		v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusInternalServerError)
+		v2c.sendError(writer, request, errors.KindServerError, "Storing secrets failed", err, secretRequest.RequestID)
 		return
 	}
 
 	response := common.NewBaseResponseNoMessage(secretRequest.RequestID, http.StatusCreated)
 	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusCreated)
+}
+
+func (v2c *V2HttpController) sendError(
+	writer http.ResponseWriter,
+	request *http.Request,
+	errKind errors.ErrKind,
+	message string,
+	err error,
+	requestID string) {
+	edgexErr := errors.NewCommonEdgeX(errKind, message, err)
+	v2c.lc.Error(edgexErr.Error())
+	v2c.lc.Debug(edgexErr.DebugMessages())
+	response := common.NewBaseResponse(requestID, edgexErr.Message(), edgexErr.Code())
+	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, edgexErr.Code())
 }
 
 // sendResponse puts together the response packet for the V2 API
@@ -174,7 +186,7 @@ func (v2c *V2HttpController) prepareSecrets(request requests.SecretsRequest) (st
 
 	path := strings.TrimSpace(request.Path)
 
-	// add '/' in the full URL path if it's not already at the end of the basepath or subpath
+	// add '/' in the full URL path if it's not already at the end of the base path or sub path
 	if !strings.HasSuffix(v2c.config.SecretStoreExclusive.Path, "/") && !strings.HasPrefix(path, "/") {
 		path = "/" + path
 	} else if strings.HasSuffix(v2c.config.SecretStoreExclusive.Path, "/") && strings.HasPrefix(path, "/") {
