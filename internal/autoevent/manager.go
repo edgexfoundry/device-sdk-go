@@ -13,7 +13,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
@@ -40,19 +39,8 @@ var (
 )
 
 // NewManager initiates the AutoEvent manager once
-func NewManager() *manager {
-	m = &manager{execsMap: make(map[string][]Executor)}
-	return m
-}
-
-func (m *manager) BootstrapHandler(
-	ctx context.Context,
-	wg *sync.WaitGroup,
-	_ startup.Timer,
-	dic *di.Container) bool {
-	m.ctx = ctx
-	m.wg = wg
-	return m.StartAutoEvents(dic)
+func NewManager(ctx context.Context, wg *sync.WaitGroup) {
+	m = &manager{execsMap: make(map[string][]Executor), ctx: ctx, wg: wg}
 }
 
 func (m *manager) StartAutoEvents(dic *di.Container) bool {

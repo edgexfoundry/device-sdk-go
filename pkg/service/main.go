@@ -11,7 +11,6 @@ import (
 	"os"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
-	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
@@ -63,7 +62,6 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			httpServer.BootstrapHandler,
 			clients.NewClients().BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
-			autoevent.NewManager().BootstrapHandler,
 			autodiscovery.BootstrapHandler,
 			message.NewBootstrap(serviceName, serviceVersion).BootstrapHandler,
 		})
