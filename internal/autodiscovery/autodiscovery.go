@@ -28,6 +28,10 @@ func BootstrapHandler(
 	configuration := container.ConfigurationFrom(dic.Get)
 	var runDiscovery bool = true
 
+	if configuration.Device.Discovery.Enabled == false {
+		lc.Info("AutoDiscovery stopped: disabled by configuration")
+		runDiscovery = false
+	}
 	duration, err := time.ParseDuration(configuration.Device.Discovery.Interval)
 	if err != nil || duration <= 0 {
 		lc.Info("AutoDiscovery stopped: interval error in configuration")
