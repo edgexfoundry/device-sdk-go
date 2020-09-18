@@ -35,7 +35,7 @@ type SecretsKeyValue struct {
 // See detail specified by the V2 API swagger in openapi/v2
 type SecretsRequest struct {
 	common.BaseRequest `json:",inline"`
-	Path               string            `json:"path"`
+	Path               string            `json:"path" validate:"required"`
 	Secrets            []SecretsKeyValue `json:"secrets" validate:"required,gt=0,dive"`
 }
 

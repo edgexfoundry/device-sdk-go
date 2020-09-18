@@ -45,6 +45,11 @@ func (secretData SecretData) validateSecretData() error {
 			return errors.New("'Secrets' key should not be empty")
 		}
 	}
+
+	if len(secretData.Path) == 0 {
+		return errors.New("'Secrets' path should not be empty")
+	}
+
 	if _, err := url.Parse(secretData.Path); err != nil {
 		return fmt.Errorf("'Path' is invalid %v", err)
 	}

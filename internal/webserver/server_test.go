@@ -182,6 +182,11 @@ func TestPostSecretRoute(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
+			name:           "PostSecretRoute: missing path",
+			payload:        []byte(`{"secrets":[{"key":"MySecretKey1","value":"MySecretValue1"}, {"key":"MySecretKey2","value":"MySecretValue2"}]}`),
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
 			name:           "PostSecretRoute: missing secrets",
 			payload:        []byte(`{"path":"MyPath"}`),
 			expectedStatus: http.StatusBadRequest,

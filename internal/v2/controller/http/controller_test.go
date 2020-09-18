@@ -192,8 +192,8 @@ func TestSecretsRequest(t *testing.T) {
 		},
 	}
 
-	validNoPath := validRequest
-	validNoPath.Path = ""
+	NoPath := validRequest
+	NoPath.Path = ""
 	validPathWithSlash := validRequest
 	validPathWithSlash.Path = "/mqtt"
 	validNoRequestId := validRequest
@@ -221,10 +221,10 @@ func TestSecretsRequest(t *testing.T) {
 		ExpectedStatusCode int
 	}{
 		{"Valid - sub-path no trailing slash, SecretsPath has trailing slash", validRequest, expectedRequestId, "my-secrets/", "true", false, http.StatusCreated},
-		{"Valid - no trailing slashes", validNoPath, expectedRequestId, "my-secrets", "true", false, http.StatusCreated},
 		{"Valid - sub-path only with trailing slash", validPathWithSlash, expectedRequestId, "my-secrets", "true", false, http.StatusCreated},
 		{"Valid - both trailing slashes", validPathWithSlash, expectedRequestId, "my-secrets/", "true", false, http.StatusCreated},
 		{"Valid - no requestId", validNoRequestId, "", "", "true", false, http.StatusCreated},
+		{"Invalid - no path", NoPath, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - bad requestId", badRequestId, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - no secrets", noSecrets, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - missing secret key", missingSecretKey, "", "", "true", true, http.StatusBadRequest},
