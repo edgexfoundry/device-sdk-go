@@ -475,7 +475,7 @@ components:
             floatEncoding:
               description: "Indicates how a float value is encoded, if the value property contains a float."
               type: string
-            type:
+            valueType:
               description: "Indicates the datatype of the value property"
               type: string
             value:
@@ -559,8 +559,8 @@ paths:
     post:
       description: "This call is used by core-metadata to inform the device service of the creation of a new Device"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -591,13 +591,22 @@ paths:
     put:
       description: "This call is used by core-metadata to inform the device service that a Device's characteristics have been updated"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
         '400':
           description: Invalid callback request.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The device doesn't exist.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -634,13 +643,13 @@ paths:
     delete:
       description: "This call is used by core-metadata to inform the device service that a Device has been deleted"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
-        '400':
-          description: Invalid callback request.
+        '404':
+          description: No device exists for the ID provided.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -664,8 +673,8 @@ paths:
     post:
       description: "This call is used by core-metadata to inform the device service of the creation of a new Device Profile"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -696,13 +705,22 @@ paths:
     put:
       description: "This call is used by core-metadata to inform the device service that a Device Profile has been updated"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
         '400':
           description: Invalid callback request.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The device profile doesn't exist.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -739,13 +757,13 @@ paths:
     delete:
       description: "This call is used by core-metadata to inform the device service that a Device Profile has been deleted"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
-        '400':
-          description: Invalid callback request.
+        '404':
+          description: No device profile exists for the ID provided.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -769,8 +787,8 @@ paths:
     post:
       description: "This call is used by core-metadata to inform the device service of the creation of a new Provision Watcher"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -801,13 +819,22 @@ paths:
     put:
       description: "This call is used by core-metadata to inform the device service that a Provision Watcher's characteristics have been updated"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
         '400':
           description: Invalid callback request.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The provision watcher doesn't exist.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
@@ -844,13 +871,13 @@ paths:
     delete:
       description: "This call is used by core-metadata to inform the device service that a Provision Watcher has been deleted"
       responses:
-        '200':
-          description: Indicating success of the operation.
+        '204':
+          description: Indicating success of the operation and no content returned.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
-        '400':
-          description: Invalid callback request.
+        '404':
+          description: No provision watcher exists for the ID provided.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
