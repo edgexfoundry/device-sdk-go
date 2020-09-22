@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
@@ -47,6 +48,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 
 	lc := ds.LoggingClient
 	configuration := ds.config
+	autoevent.NewManager(ctx, wg)
 
 	if ds.AsyncReadings() {
 		ds.asyncCh = make(chan *dsModels.AsyncValues, configuration.Service.AsyncBufferSize)
@@ -97,6 +99,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		return false
 	}
 
+	autoevent.GetManager().StartAutoEvents(dic)
 	http.TimeoutHandler(nil, time.Millisecond*time.Duration(configuration.Service.Timeout), "Request timed out")
 
 	return true
