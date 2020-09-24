@@ -101,18 +101,19 @@ type AppFunctionsSDK struct {
 	runtime                   *runtime.GolangRuntime
 	webserver                 *webserver.WebServer
 	edgexClients              common.EdgeXClients
-	registryClient            registry.Client
-	config                    *common.ConfigurationStruct
-	storeClient               interfaces.StoreClient
-	secretProvider            security.SecretProvider
-	storeForwardWg            *sync.WaitGroup
-	storeForwardCancelCtx     context.CancelFunc
-	appWg                     *sync.WaitGroup
-	appCtx                    context.Context
-	appCancelCtx              context.CancelFunc
-	deferredFunctions         []bootstrap.Deferred
-	serviceKeyOverride        string
-	backgroundChannel         <-chan types.MessageEnvelope
+	// RegistryClient is the client used by service to communicate with service registry.
+	RegistryClient        registry.Client
+	config                *common.ConfigurationStruct
+	storeClient           interfaces.StoreClient
+	secretProvider        security.SecretProvider
+	storeForwardWg        *sync.WaitGroup
+	storeForwardCancelCtx context.CancelFunc
+	appWg                 *sync.WaitGroup
+	appCtx                context.Context
+	appCancelCtx          context.CancelFunc
+	deferredFunctions     []bootstrap.Deferred
+	serviceKeyOverride    string
+	backgroundChannel     <-chan types.MessageEnvelope
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -390,6 +391,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.secretProvider = container.SecretProviderFrom(dic.Get)
 	sdk.storeClient = container.StoreClientFrom(dic.Get)
 	sdk.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
+	sdk.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	sdk.edgexClients.LoggingClient = sdk.LoggingClient
 	sdk.edgexClients.EventClient = container.EventClientFrom(dic.Get)
 	sdk.edgexClients.ValueDescriptorClient = container.ValueDescriptorClientFrom(dic.Get)
