@@ -56,6 +56,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/mqtt"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
@@ -150,13 +151,18 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.runtime.Initialize(sdk.storeClient, sdk.secretProvider)
 	sdk.runtime.SetTransforms(sdk.transforms)
+
 	// determine input type and create trigger for it
 	t := sdk.setupTrigger(sdk.config, sdk.runtime)
+	if t == nil {
+		return errors.New("Failed to create Trigger")
+	}
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
 	deferred, err := t.Initialize(sdk.appWg, sdk.appCtx, sdk.backgroundChannel)
 	if err != nil {
 		sdk.LoggingClient.Error(err.Error())
+		return errors.New("Failed to initialize Trigger")
 	}
 
 	// deferred is a a function that needs to be called when services exits.
@@ -437,9 +443,18 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStru
 	case "HTTP":
 		sdk.LoggingClient.Info("HTTP trigger selected")
 		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
-	case "MESSAGEBUS":
-		sdk.LoggingClient.Info("MessageBus trigger selected")
+
+	case "MESSAGEBUS",
+		"EDGEX-MESSAGEBUS": // Allows for more explicit name now that we have plain MQTT option also
+		sdk.LoggingClient.Info("EdgeX MessageBus trigger selected")
 		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
+
+	case "EXTERNAL-MQTT":
+		sdk.LoggingClient.Info("External MQTT trigger selected")
+		t = mqtt.NewTrigger(configuration, runtime, sdk.edgexClients, sdk.secretProvider)
+
+	default:
+		sdk.LoggingClient.Error(fmt.Sprintf("Invalid Trigger type of '%s' specified", configuration.Binding.Type))
 	}
 
 	return t

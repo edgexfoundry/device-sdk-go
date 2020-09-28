@@ -17,8 +17,6 @@
 package transforms
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
@@ -26,9 +24,11 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/secure"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
 
 // MQTTSecretSender ...
@@ -63,26 +63,6 @@ type MQTTSecretConfig struct {
 	// If a CA Cert exists in the SecretPath then it will be used for all modes except "none".
 	AuthMode string
 }
-type mqttSecrets struct {
-	username     string
-	password     string
-	keypemblock  []byte
-	certpemblock []byte
-	capemblock   []byte
-}
-
-const (
-	AuthModeNone             = "none"
-	AuthModeUsernamePassword = "usernamepassword"
-	AuthModeCert             = "clientcert"
-	AuthModeCA               = "cacert"
-	// Name of the keys to look for in secret provider
-	MQTTSecretUsername   = "username"
-	MQTTSecretPassword   = "password"
-	MQTTSecretClientKey  = "clientkey"
-	MQTTSecretClientCert = AuthModeCert
-	MQTTSecretCACert     = AuthModeCA
-)
 
 // NewMQTTSecretSender ...
 func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTTSecretSender {
@@ -102,89 +82,7 @@ func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTT
 
 	return sender
 }
-func (sender *MQTTSecretSender) getSecrets(edgexcontext *appcontext.Context) (*mqttSecrets, error) {
-	// No Auth? No Problem!...No secrets required.
-	if sender.mqttConfig.AuthMode == AuthModeNone {
-		return nil, nil
-	}
 
-	secrets, err := edgexcontext.GetSecrets(sender.mqttConfig.SecretPath)
-	if err != nil {
-		return nil, err
-	}
-	mqttSecrets := &mqttSecrets{
-		username:     secrets[MQTTSecretUsername],
-		password:     secrets[MQTTSecretPassword],
-		keypemblock:  []byte(secrets[MQTTSecretClientKey]),
-		certpemblock: []byte(secrets[MQTTSecretClientCert]),
-		capemblock:   []byte(secrets[MQTTSecretCACert]),
-	}
-
-	return mqttSecrets, nil
-}
-func (sender *MQTTSecretSender) validateSecrets(secrets mqttSecrets) error {
-	caCertPool := x509.NewCertPool()
-	if sender.mqttConfig.AuthMode == AuthModeUsernamePassword {
-		if secrets.username == "" || secrets.password == "" {
-			return errors.New("AuthModeUsernamePassword selected however username or password was not found at secret path")
-		}
-
-	} else if sender.mqttConfig.AuthMode == AuthModeCert {
-		// need both to make a successful connection
-		if len(secrets.keypemblock) <= 0 || len(secrets.certpemblock) <= 0 {
-			return errors.New("AuthModeCert selected however the key or cert PEM block was not found at secret path")
-		}
-	} else if sender.mqttConfig.AuthMode == AuthModeCA {
-		if len(secrets.capemblock) <= 0 {
-			return errors.New("AuthModeCA selected however no PEM Block was found at secret path")
-		}
-	} else if sender.mqttConfig.AuthMode != AuthModeNone {
-		return errors.New("Invalid AuthMode selected")
-	}
-
-	if len(secrets.capemblock) > 0 {
-		ok := caCertPool.AppendCertsFromPEM([]byte(secrets.capemblock))
-		if !ok {
-			return errors.New("Error parsing CA Certificate")
-		}
-	}
-	return nil
-}
-func (sender *MQTTSecretSender) configureMQTTClientForAuth(secrets mqttSecrets) error {
-	var cert tls.Certificate
-	var err error
-	caCertPool := x509.NewCertPool()
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: sender.mqttConfig.SkipCertVerify,
-	}
-	switch sender.mqttConfig.AuthMode {
-	case AuthModeUsernamePassword:
-		sender.opts.SetUsername(secrets.username)
-		sender.opts.SetPassword(secrets.password)
-	case AuthModeCert:
-		cert, err = tls.X509KeyPair(secrets.certpemblock, secrets.keypemblock)
-		if err != nil {
-			return err
-		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
-	case AuthModeCA:
-		break
-	case AuthModeNone:
-		return nil
-	}
-
-	if len(secrets.capemblock) > 0 {
-		ok := caCertPool.AppendCertsFromPEM(secrets.capemblock)
-		if !ok {
-			return errors.New("Error parsing CA PEM block")
-		}
-		tlsConfig.ClientCAs = caCertPool
-	}
-
-	sender.opts.SetTLSConfig(tlsConfig)
-
-	return nil
-}
 func (sender *MQTTSecretSender) initializeMQTTClient(edgexcontext *appcontext.Context) error {
 	sender.lock.Lock()
 	defer sender.lock.Unlock()
@@ -195,31 +93,22 @@ func (sender *MQTTSecretSender) initializeMQTTClient(edgexcontext *appcontext.Co
 		return nil
 	}
 
-	if sender.mqttConfig.AuthMode == "" {
-		sender.mqttConfig.AuthMode = AuthModeNone
-		edgexcontext.LoggingClient.Warn("AuthMode not set, defaulting to \"" + AuthModeNone + "\"")
-	}
+	mqttFactory := secure.NewMqttFactory(
+		edgexcontext.LoggingClient,
+		edgexcontext.SecretProvider,
+		sender.mqttConfig.AuthMode,
+		sender.mqttConfig.SecretPath,
+		sender.mqttConfig.SkipCertVerify,
+	)
 
-	//get the secrets from the secret provider and populate the struct
-	secrets, err := sender.getSecrets(edgexcontext)
+	client, err := mqttFactory.Create(sender.opts)
 	if err != nil {
 		return err
 	}
-	//ensure that the authmode selected has the required secret values
-	if secrets != nil {
-		err = sender.validateSecrets(*secrets)
-		if err != nil {
-			return err
-		}
-		// configure the mqtt client with the retrieved secret values
-		err = sender.configureMQTTClientForAuth(*secrets)
-		if err != nil {
-			return err
-		}
-	}
 
+	sender.client = client
 	sender.secretsLastRetrieved = time.Now()
-	sender.client = MQTT.NewClient(sender.opts)
+
 	return nil
 }
 

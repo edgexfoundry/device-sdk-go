@@ -53,6 +53,8 @@ type ConfigurationStruct struct {
 	Service ServiceInfo
 	// MessageBus
 	MessageBus types.MessageBusConfig
+	// MqttBroker
+	MqttBroker MqttBrokerConfig
 	// Binding
 	Binding BindingInfo
 	// ApplicationSettings
@@ -88,10 +90,35 @@ type BindingInfo struct {
 	//
 	// example: messagebus
 	// required: true
-	// enum: messagebus,http
+	// enum: messagebus (edgex-messagebus), http, external-mqtt
 	Type           string
 	SubscribeTopic string
 	PublishTopic   string
+}
+
+// MqttBrokerConfig contains the MQTT broker configuration for MQTT Trigger
+type MqttBrokerConfig struct {
+	// Url contains the fully qualified URL to connect to the MQTT broker
+	Url string
+	// ClientId to connect to the broker with.
+	ClientId string
+	// ConnectTimeout is a time duration indicating how long to wait timing out on the broker connection
+	ConnectTimeout string
+	// AutoReconnect indicated whether or not to retry connection if disconnected
+	AutoReconnect bool
+	// KeepAlive is seconds between client ping when no active data flowing to avoid client being disconnected
+	KeepAlive int64
+	// QoS for MQTT Connection
+	QoS byte
+	// Retain setting for MQTT Connection
+	Retain bool
+	// SkipCertVerify indicates if the certificate verification should be skipped
+	SkipCertVerify bool
+	// SecretPath is the name of the path in secret provider to retrieve your secrets
+	SecretPath string
+	// AuthMode indicates what to use when connecting to the broker. Options are "none", "cacert" , "usernamepassword", "clientcert".
+	// If a CA Cert exists in the SecretPath then it will be used for all modes except "none".
+	AuthMode string
 }
 
 type PipelineInfo struct {
