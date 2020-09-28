@@ -15,6 +15,8 @@ import (
 	"runtime"
 
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/admin"
+	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/operating"
 )
 
 const (
@@ -104,11 +106,11 @@ func (dc *DeviceClientMock) Update(_ context.Context, _ contract.Device) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateAdminState(_ context.Context, _ string, _ string) error {
+func (dc *DeviceClientMock) UpdateAdminState(_ context.Context, _ string, _ admin.UpdateRequest) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateAdminStateByName(_ context.Context, _ string, _ string) error {
+func (dc *DeviceClientMock) UpdateAdminStateByName(_ context.Context, _ string, _ admin.UpdateRequest) error {
 	return nil
 }
 
@@ -128,11 +130,11 @@ func (dc *DeviceClientMock) UpdateLastReportedByName(_ context.Context, _ string
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateOpState(_ context.Context, _ string, _ string) error {
+func (dc *DeviceClientMock) UpdateOpState(_ context.Context, _ string, _ operating.UpdateRequest) error {
 	return nil
 }
 
-func (dc *DeviceClientMock) UpdateOpStateByName(_ context.Context, _ string, _ string) error {
+func (dc *DeviceClientMock) UpdateOpStateByName(_ context.Context, _ string, _ operating.UpdateRequest) error {
 	return nil
 }
 

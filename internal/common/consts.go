@@ -10,6 +10,7 @@ package common
 
 import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 )
 
 const (
@@ -37,16 +38,30 @@ const (
 	APIDiscoveryRoute       = clients.ApiBase + "/discovery"
 	APITransformRoute       = clients.ApiBase + "/debug/transformData/{transformData}"
 
+	APIV2DeviceCallbackRoute    = v2.ApiBase + "/callback/device"
+	APIV2DeviceCallbackIdRoute  = v2.ApiBase + "/callback/device/id/{id}"
+	APIV2ProfileCallbackRoute   = v2.ApiBase + "/callback/profile"
+	APIV2ProfileCallbackIdRoute = v2.ApiBase + "/callback/profile/id/{id}"
+	APIV2WatcherCallbackRoute   = v2.ApiBase + "/callback/watcher"
+	APIV2WatcherCallbackIdRoute = v2.ApiBase + "/callback/watcher/id/{id}"
+	APIV2DiscoveryRoute         = v2.ApiBase + "/discovery"
+	APIV2IdCommandRoute         = v2.ApiBase + "/{id}/{command}"
+	APIV2NameCommandRoute       = v2.ApiBase + "/name/{name}/{command}"
+
 	IdVar        string = "id"
 	NameVar      string = "name"
 	CommandVar   string = "command"
 	GetCmdMethod string = "get"
 	SetCmdMethod string = "set"
 
-	CorrelationHeader = clients.CorrelationHeader
-	URLRawQuery       = "urlRawQuery"
-	SDKReservedPrefix = "ds-"
+	V2CorrelationHeaderKey = "X-Correlation-ID"
+	CorrelationHeader      = clients.CorrelationHeader
+	URLRawQuery            = "urlRawQuery"
+	SDKReservedPrefix      = "ds-"
 )
+
+// SDKVersion indicates the version of the SDK - will be overwritten by build
+var SDKVersion string = "0.0.0"
 
 // ServiceVersion indicates the version of the device service itself, not the SDK - will be overwritten by build
 var ServiceVersion string = "0.0.0"

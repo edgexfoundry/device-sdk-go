@@ -15,6 +15,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/operating"
 	"github.com/google/uuid"
 )
 
@@ -145,7 +146,7 @@ func (s *DeviceService) UpdateDeviceOperatingState(deviceName string, state stri
 
 	s.LoggingClient.Debug(fmt.Sprintf("Updating managed Device OperatingState: : %s\n", d.Name))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := s.edgexClients.DeviceClient.UpdateOpState(ctx, d.Id, state)
+	err := s.edgexClients.DeviceClient.UpdateOpState(ctx, d.Id, operating.UpdateRequest{OperatingState: contract.OperatingState(state)})
 	if err != nil {
 		s.LoggingClient.Error(fmt.Sprintf("Update Device %s OperatingState from Core Metadata failed: %v", d.Name, err))
 	}
