@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/operating"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -608,7 +609,7 @@ func CheckAssertion(
 		device.OperatingState = contract.Disabled
 		cache.Devices().Update(*device)
 		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		go dc.UpdateOpStateByName(ctx, device.Name, contract.Disabled)
+		go dc.UpdateOpStateByName(ctx, device.Name, operating.UpdateRequest{OperatingState: contract.Disabled})
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		lc.Error(msg)
 		return fmt.Errorf(msg)
