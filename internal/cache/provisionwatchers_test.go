@@ -21,10 +21,10 @@ import (
 var pws []contract.ProvisionWatcher
 
 func init() {
-	common.ServiceName = "watcher-cache-test"
-	common.ProvisionWatcherClient = &mock.ProvisionWatcherClientMock{}
+	serviceName := "watcher-cache-test"
+	pwc := &mock.ProvisionWatcherClientMock{}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	pws, _ = common.ProvisionWatcherClient.ProvisionWatchersForServiceByName(ctx, common.ServiceName)
+	pws, _ = pwc.ProvisionWatchersForServiceByName(ctx, serviceName)
 }
 
 func TestNewProvisionWatcherCache(t *testing.T) {

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2019 IOTech Ltd
+// Copyright (C) 2018-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -127,8 +127,5 @@ func newValueDescriptorCache(descriptors []contract.ValueDescriptor) ValueDescri
 }
 
 func ValueDescriptors() ValueDescriptorCache {
-	if vdc == nil {
-		InitCache()
-	}
 	return vdc
 }

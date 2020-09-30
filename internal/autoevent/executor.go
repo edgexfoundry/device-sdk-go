@@ -14,6 +14,7 @@ import (
 
 	"github.com/OneOfOne/xxhash"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
@@ -76,7 +77,7 @@ func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Containe
 				if event.Origin == 0 {
 					event.Origin = common.GetUniqueOrigin()
 				}
-				go common.SendEvent(event)
+				go common.SendEvent(event, lc, container.CoredataEventClientFrom(dic.Get))
 			} else {
 				lc.Info(fmt.Sprintf("AutoEvent - no event generated when reading resource %s", e.autoEvent.Resource))
 			}

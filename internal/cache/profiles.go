@@ -293,8 +293,5 @@ func newProfileCache(profiles []contract.DeviceProfile) ProfileCache {
 }
 
 func Profiles() ProfileCache {
-	if pc == nil {
-		InitCache()
-	}
 	return pc
 }

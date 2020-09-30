@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -20,9 +20,9 @@ import (
 var vs []contract.ValueDescriptor
 
 func init() {
-	common.ValueDescriptorClient = &mock.ValueDescriptorMock{}
+	vdc := &mock.ValueDescriptorMock{}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	vs, _ = common.ValueDescriptorClient.ValueDescriptors(ctx)
+	vs, _ = vdc.ValueDescriptors(ctx)
 }
 
 func TestValueDescriptorCache(t *testing.T) {

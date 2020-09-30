@@ -50,10 +50,10 @@ var (
 	operationSetInt8, operationSetInt16, operationSetInt32, operationSetInt64     contract.ResourceOperation
 	operationSetUint8, operationSetUint16, operationSetUint32, operationSetUint64 contract.ResourceOperation
 	operationSetFloat32, operationSetFloat64                                      contract.ResourceOperation
-	valueDescriptorClient                                                         *mock.ValueDescriptorMock
-	provisionWatcherClient                                                        *mock.ProvisionWatcherClientMock
-	deviceClient                                                                  *mock.DeviceClientMock
-	eventClient                                                                   *mock.EventClientMock
+	vdc                                                                           *mock.ValueDescriptorMock
+	pwc                                                                           *mock.ProvisionWatcherClientMock
+	dc                                                                            *mock.DeviceClientMock
+	ec                                                                            *mock.EventClientMock
 	lc                                                                            logger.LoggingClient
 	driver                                                                        *mock.DriverMock
 	configuration                                                                 *common.ConfigurationStruct
@@ -61,10 +61,10 @@ var (
 )
 
 func init() {
-	valueDescriptorClient = &mock.ValueDescriptorMock{}
-	provisionWatcherClient = &mock.ProvisionWatcherClientMock{}
-	deviceClient = &mock.DeviceClientMock{}
-	eventClient = &mock.EventClientMock{}
+	vdc = &mock.ValueDescriptorMock{}
+	pwc = &mock.ProvisionWatcherClientMock{}
+	dc = &mock.DeviceClientMock{}
+	ec = &mock.EventClientMock{}
 	lc = logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
 	driver = &mock.DriverMock{}
 	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
@@ -74,13 +74,13 @@ func init() {
 			return configuration
 		},
 		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
-			return valueDescriptorClient
+			return vdc
 		},
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {
-			return deviceClient
+			return dc
 		},
 		container.CoredataEventClientName: func(get di.Get) interface{} {
-			return eventClient
+			return ec
 		},
 		container.ProtocolDriverName: func(get di.Get) interface{} {
 			return driver
@@ -89,16 +89,8 @@ func init() {
 			return lc
 		},
 	})
-	// TODO: remove these after refactor are done (currently required by cache package)
-	common.ValueDescriptorClient = valueDescriptorClient
-	common.ProvisionWatcherClient = provisionWatcherClient
-	common.DeviceClient = deviceClient
-	common.EventClient = eventClient
-	common.LoggingClient = lc
-	common.Driver = driver
-	common.CurrentConfig = configuration
 
-	cache.InitCache()
+	cache.InitCache("device-sdk-test", lc, vdc, dc, pwc)
 	pc = cache.Profiles()
 	operationSetBool, _ = pc.ResourceOperation(mock.ProfileBool, mock.ResourceObjectBool, methodSet)
 	operationSetInt8, _ = pc.ResourceOperation(mock.ProfileInt, mock.ResourceObjectInt8, methodSet)
@@ -113,7 +105,7 @@ func init() {
 	operationSetFloat64, _ = pc.ResourceOperation(mock.ProfileFloat, mock.ResourceObjectFloat64, methodSet)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, _ = deviceClient.DevicesForServiceByName(ctx, "device-sdk-test")
+	ds, _ = dc.DevicesForServiceByName(ctx, "device-sdk-test")
 	deviceIntegerGenerator = ds[1]
 }
 
@@ -349,7 +341,7 @@ func TestExecReadCmd(t *testing.T) {
 					configuration.Device.MaxCmdOps = 128
 				}()
 			}
-			v, err := execReadCmd(tt.device, tt.cmd, tt.queryParams, driver, lc, configuration)
+			v, err := execReadCmd(tt.device, tt.cmd, tt.queryParams, driver, lc, dc, configuration)
 			if !tt.expectErr && err != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, err)
 				return

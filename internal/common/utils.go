@@ -18,6 +18,9 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/google/uuid"
 
@@ -66,7 +69,7 @@ func CommandValueToReading(cv *dsModels.CommandValue, devName string, mediaType 
 	return reading
 }
 
-func SendEvent(event *dsModels.Event) {
+func SendEvent(event *dsModels.Event, lc logger.LoggingClient, ec coredata.EventClient) {
 	correlation := uuid.New().String()
 	ctx := context.WithValue(context.Background(), CorrelationHeader, correlation)
 	if event.HasBinaryValue() {
@@ -77,22 +80,22 @@ func SendEvent(event *dsModels.Event) {
 	// Call MarshalEvent to encode as byte array whether event contains binary or JSON readings
 	var err error
 	if len(event.EncodedEvent) <= 0 {
-		event.EncodedEvent, err = EventClient.MarshalEvent(event.Event)
+		event.EncodedEvent, err = ec.MarshalEvent(event.Event)
 		if err != nil {
-			LoggingClient.Error("SendEvent: Error encoding event", "device", event.Device, clients.CorrelationHeader, correlation, "error", err)
+			lc.Error("SendEvent: Error encoding event", "device", event.Device, clients.CorrelationHeader, correlation, "error", err)
 		} else {
-			LoggingClient.Debug("SendEvent: EventClient.MarshalEvent encoded event", clients.CorrelationHeader, correlation)
+			lc.Debug("SendEvent: EventClient.MarshalEvent encoded event", clients.CorrelationHeader, correlation)
 		}
 	} else {
-		LoggingClient.Debug("SendEvent: EventClient.MarshalEvent passed through encoded event", clients.CorrelationHeader, correlation)
+		lc.Debug("SendEvent: EventClient.MarshalEvent passed through encoded event", clients.CorrelationHeader, correlation)
 	}
 	// Call AddBytes to post event to core data
-	responseBody, errPost := EventClient.AddBytes(ctx, event.EncodedEvent)
+	responseBody, errPost := ec.AddBytes(ctx, event.EncodedEvent)
 	if errPost != nil {
-		LoggingClient.Error("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost)
+		lc.Error("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost)
 	} else {
-		LoggingClient.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation)
-		LoggingClient.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation, "event", event)
+		lc.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation)
+		lc.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation, "event", event)
 	}
 }
 
@@ -256,7 +259,6 @@ func CompareStrStrMap(a map[string]string, b map[string]string) bool {
 func VerifyIdFormat(id string, drName string) error {
 	if len(id) == 0 {
 		errMsg := fmt.Sprintf("The Id of %s is empty string", drName)
-		LoggingClient.Error(errMsg)
 		return fmt.Errorf(errMsg)
 	}
 	return nil
@@ -273,10 +275,10 @@ func GetUniqueOrigin() int64 {
 	return now
 }
 
-func FilterQueryParams(queryParams string) url.Values {
+func FilterQueryParams(queryParams string, lc logger.LoggingClient) url.Values {
 	m, err := url.ParseQuery(queryParams)
 	if err != nil {
-		LoggingClient.Error("Error parsing query parameters: %s\n", err)
+		lc.Error("Error parsing query parameters: %s\n", err)
 	}
 	// Filter out parameters with predefined prefix
 	for k := range m {
@@ -288,15 +290,15 @@ func FilterQueryParams(queryParams string) url.Values {
 	return m
 }
 
-func UpdateLastConnected(name string) {
-	if !CurrentConfig.Device.UpdateLastConnected {
-		LoggingClient.Debug("Update of last connected times is disabled for: " + name)
+func UpdateLastConnected(name string, configuration *ConfigurationStruct, lc logger.LoggingClient, dc metadata.DeviceClient) {
+	if !configuration.Device.UpdateLastConnected {
+		lc.Debug("Update of last connected times is disabled for: " + name)
 		return
 	}
 
 	t := time.Now().UnixNano() / int64(time.Millisecond)
-	err := DeviceClient.UpdateLastConnectedByName(context.Background(), name, t)
+	err := dc.UpdateLastConnectedByName(context.Background(), name, t)
 	if err != nil {
-		LoggingClient.Error("Failed to update last connected value for device: " + name)
+		lc.Error("Failed to update last connected value for device: " + name)
 	}
 }

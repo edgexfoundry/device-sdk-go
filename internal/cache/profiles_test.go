@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2020 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -20,9 +20,9 @@ import (
 var dps []contract.DeviceProfile
 
 func init() {
-	common.DeviceProfileClient = &mock.DeviceProfileClientMock{}
+	dpc := &mock.DeviceProfileClientMock{}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	dps, _ = common.DeviceProfileClient.DeviceProfiles(ctx)
+	dps, _ = dpc.DeviceProfiles(ctx)
 }
 
 func TestNewProfileCache(t *testing.T) {

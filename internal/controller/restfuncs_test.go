@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
@@ -123,9 +124,9 @@ func TestCommandServiceLocked(t *testing.T) {
 func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
 	ds := contract.DeviceService{}
-	deviceClient := &mock.DeviceClientMock{}
-	valueDescriptorClient := &mock.ValueDescriptorMock{}
-	provisionWatcherClient := &mock.ProvisionWatcherClientMock{}
+	dc := &mock.DeviceClientMock{}
+	vdc := &mock.ValueDescriptorMock{}
+	pwc := &mock.ProvisionWatcherClientMock{}
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc
@@ -134,21 +135,16 @@ func TestCommandNoDevice(t *testing.T) {
 			return ds
 		},
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {
-			return deviceClient
+			return dc
 		},
 		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
-			return valueDescriptorClient
+			return vdc
 		},
 		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
-			return provisionWatcherClient
+			return pwc
 		},
 	})
-	// TODO: remove these after refactor are done (currently required by cache package)
-	common.LoggingClient = lc
-	common.ServiceLocked = false
-	common.DeviceClient = deviceClient
-	common.ValueDescriptorClient = valueDescriptorClient
-	common.ProvisionWatcherClient = provisionWatcherClient
+	cache.InitCache("device-sdk-test", lc, vdc, dc, pwc)
 
 	r := mux.NewRouter()
 	controller := NewRestController(r, lc)
