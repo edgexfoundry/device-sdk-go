@@ -171,6 +171,16 @@ func (d *deviceCache) UpdateAdminState(id string, state models.AdminState) error
 	return nil
 }
 
+func CheckProfileNotUsed(profileName string) bool {
+	for _, device := range dc.deviceMap {
+		if device.ProfileName == profileName {
+			return false
+		}
+	}
+
+	return true
+}
+
 func Devices() DeviceCache {
 	return dc
 }
