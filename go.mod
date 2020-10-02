@@ -7,7 +7,7 @@ require (
 	github.com/edgexfoundry/go-mod-core-contracts v0.1.85
 	github.com/edgexfoundry/go-mod-registry v0.1.23
 	github.com/fxamacker/cbor/v2 v2.2.0
-	github.com/google/uuid v1.1.0
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.1
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.5.1
