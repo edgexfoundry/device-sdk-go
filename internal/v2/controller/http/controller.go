@@ -16,27 +16,29 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
-	"github.com/gorilla/mux"
 )
 
 // V2HttpController controller for V2 REST APIs
 type V2HttpController struct {
-	router *mux.Router
-	lc     logger.LoggingClient
+	dic *di.Container
+	lc  logger.LoggingClient
 }
 
 // NewV2HttpController creates and initializes an V2HttpController
-func NewV2HttpController(router *mux.Router, lc logger.LoggingClient) *V2HttpController {
+func NewV2HttpController(dic *di.Container) *V2HttpController {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	return &V2HttpController{
-		router: router,
-		lc:     lc,
+		dic: dic,
+		lc:  lc,
 	}
 }
 
@@ -86,9 +88,9 @@ func (c *V2HttpController) sendResponse(
 	response interface{},
 	statusCode int) {
 
-	correlationID := request.Header.Get(sdkCommon.V2CorrelationHeaderKey)
+	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
 
-	writer.Header().Set(sdkCommon.V2CorrelationHeaderKey, correlationID)
+	writer.Header().Set(sdkCommon.CorrelationHeader, correlationID)
 	writer.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 	writer.WriteHeader(statusCode)
 

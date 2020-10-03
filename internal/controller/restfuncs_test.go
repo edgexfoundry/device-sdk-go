@@ -63,8 +63,8 @@ func TestCallback(t *testing.T) {
 	})
 
 	r := mux.NewRouter()
-	controller := NewRestController(r, lc)
-	controller.InitRestRoutes(dic)
+	controller := NewRestController(r, dic)
+	controller.InitRestRoutes()
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -98,8 +98,8 @@ func TestCommandServiceLocked(t *testing.T) {
 		},
 	})
 	r := mux.NewRouter()
-	controller := NewRestController(r, lc)
-	controller.InitRestRoutes(dic)
+	controller := NewRestController(r, dic)
+	controller.InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, "nil", "nil"), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": "nil", "cmd": "nil"})
@@ -147,8 +147,8 @@ func TestCommandNoDevice(t *testing.T) {
 	cache.InitCache("device-sdk-test", lc, vdc, dc, pwc)
 
 	r := mux.NewRouter()
-	controller := NewRestController(r, lc)
-	controller.InitRestRoutes(dic)
+	controller := NewRestController(r, dic)
+	controller.InitRestRoutes()
 
 	req := httptest.NewRequest("GET", fmt.Sprintf("%s/%s/%s", clients.ApiDeviceRoute, badDeviceId, testCmd), nil)
 	req = mux.SetURLVars(req, map[string]string{"deviceId": badDeviceId, "cmd": testCmd})

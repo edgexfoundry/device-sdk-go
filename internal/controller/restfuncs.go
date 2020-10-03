@@ -18,9 +18,10 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler/callback"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
 	"github.com/gorilla/mux"
 )
 
@@ -35,12 +36,12 @@ type ConfigRespMap struct {
 	Configuration map[string]interface{}
 }
 
-func (c *RestController) statusFunc(w http.ResponseWriter, _ *http.Request, _ *di.Container) {
+func (c *RestController) statusFunc(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set(clients.ContentType, clients.ContentTypeText)
 	w.Write([]byte("pong"))
 }
 
-func (c *RestController) versionFunc(w http.ResponseWriter, _ *http.Request, _ *di.Container) {
+func (c *RestController) versionFunc(w http.ResponseWriter, _ *http.Request) {
 	res := struct {
 		Version string `json:"version"`
 	}{handler.VersionHandler()}
@@ -49,8 +50,8 @@ func (c *RestController) versionFunc(w http.ResponseWriter, _ *http.Request, _ *
 	c.encode(res, w)
 }
 
-func (c *RestController) discoveryFunc(w http.ResponseWriter, req *http.Request, dic *di.Container) {
-	ds := container.DeviceServiceFrom(dic.Get)
+func (c *RestController) discoveryFunc(w http.ResponseWriter, req *http.Request) {
+	ds := container.DeviceServiceFrom(c.dic.Get)
 	if c.checkServiceLocked(w, req, ds.AdminState) {
 		return
 	}
@@ -60,13 +61,13 @@ func (c *RestController) discoveryFunc(w http.ResponseWriter, req *http.Request,
 		return
 	}
 
-	configuration := container.ConfigurationFrom(dic.Get)
+	configuration := container.ConfigurationFrom(c.dic.Get)
 	if !configuration.Device.Discovery.Enabled {
 		http.Error(w, statusUnavailable, http.StatusServiceUnavailable) // status=503
 		return
 	}
 
-	discovery := container.ProtocolDiscoveryFrom(dic.Get)
+	discovery := container.ProtocolDiscoveryFrom(c.dic.Get)
 	if discovery == nil {
 		http.Error(w, statusNotImplemented, http.StatusNotImplemented) // status=501
 		return
@@ -75,8 +76,8 @@ func (c *RestController) discoveryFunc(w http.ResponseWriter, req *http.Request,
 	handler.DiscoveryHandler(w, discovery, c.LoggingClient)
 }
 
-func (c *RestController) transformFunc(w http.ResponseWriter, req *http.Request, dic *di.Container) {
-	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(dic.Get).AdminState) {
+func (c *RestController) transformFunc(w http.ResponseWriter, req *http.Request) {
+	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(c.dic.Get).AdminState) {
 		return
 	}
 
@@ -89,8 +90,8 @@ func (c *RestController) transformFunc(w http.ResponseWriter, req *http.Request,
 	}
 }
 
-func (c *RestController) callbackFunc(w http.ResponseWriter, req *http.Request, dic *di.Container) {
-	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(dic.Get).AdminState) {
+func (c *RestController) callbackFunc(w http.ResponseWriter, req *http.Request) {
+	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(c.dic.Get).AdminState) {
 		return
 	}
 
@@ -105,7 +106,7 @@ func (c *RestController) callbackFunc(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	appErr := callback.CallbackHandler(cbAlert, req.Method, dic)
+	appErr := callback.CallbackHandler(cbAlert, req.Method, c.dic)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else {
@@ -113,8 +114,8 @@ func (c *RestController) callbackFunc(w http.ResponseWriter, req *http.Request, 
 	}
 }
 
-func (c *RestController) commandFunc(w http.ResponseWriter, req *http.Request, dic *di.Container) {
-	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(dic.Get).AdminState) {
+func (c *RestController) commandFunc(w http.ResponseWriter, req *http.Request) {
+	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(c.dic.Get).AdminState) {
 		return
 	}
 	vars := mux.Vars(req)
@@ -124,12 +125,12 @@ func (c *RestController) commandFunc(w http.ResponseWriter, req *http.Request, d
 		return
 	}
 
-	event, appErr := handler.CommandHandler(vars, body, req.Method, req.URL.RawQuery, dic)
+	event, appErr := handler.CommandHandler(vars, body, req.Method, req.URL.RawQuery, c.dic)
 
 	if appErr != nil {
 		http.Error(w, fmt.Sprintf("%s %s", appErr.Message(), req.URL.Path), appErr.Code())
 	} else if event != nil {
-		ec := container.CoredataEventClientFrom(dic.Get)
+		ec := container.CoredataEventClientFrom(c.dic.Get)
 		if event.HasBinaryValue() {
 			// TODO: Add conditional toggle in case caller of command does not require this response.
 			// Encode response as application/CBOR.
@@ -152,12 +153,12 @@ func (c *RestController) commandFunc(w http.ResponseWriter, req *http.Request, d
 			json.NewEncoder(w).Encode(event)
 		}
 		// push to Core Data
-		go common.SendEvent(event, c.LoggingClient, container.CoredataEventClientFrom(dic.Get))
+		go common.SendEvent(event, c.LoggingClient, container.CoredataEventClientFrom(c.dic.Get))
 	}
 }
 
-func (c *RestController) commandAllFunc(w http.ResponseWriter, req *http.Request, dic *di.Container) {
-	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(dic.Get).AdminState) {
+func (c *RestController) commandAllFunc(w http.ResponseWriter, req *http.Request) {
+	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(c.dic.Get).AdminState) {
 		return
 	}
 
@@ -169,14 +170,14 @@ func (c *RestController) commandAllFunc(w http.ResponseWriter, req *http.Request
 		return
 	}
 
-	events, appErr := handler.CommandAllHandler(vars[common.CommandVar], body, req.Method, req.URL.RawQuery, dic)
+	events, appErr := handler.CommandAllHandler(vars[common.CommandVar], body, req.Method, req.URL.RawQuery, c.dic)
 	if appErr != nil {
 		http.Error(w, appErr.Message(), appErr.Code())
 	} else if len(events) > 0 {
 		// push to Core Data
 		for _, event := range events {
 			if event != nil {
-				go common.SendEvent(event, c.LoggingClient, container.CoredataEventClientFrom(dic.Get))
+				go common.SendEvent(event, c.LoggingClient, container.CoredataEventClientFrom(c.dic.Get))
 			}
 		}
 		w.Header().Set(clients.ContentType, clients.ContentTypeJSON)
@@ -213,7 +214,7 @@ func (c *RestController) readBodyAsString(w http.ResponseWriter, req *http.Reque
 	return string(body), true
 }
 
-func (c *RestController) metricsFunc(w http.ResponseWriter, _ *http.Request, _ *di.Container) {
+func (c *RestController) metricsFunc(w http.ResponseWriter, _ *http.Request) {
 	var t common.Telemetry
 
 	// The device service is to be considered the System Of Record (SOR) for accurate information.
@@ -238,8 +239,8 @@ func (c *RestController) metricsFunc(w http.ResponseWriter, _ *http.Request, _ *
 	return
 }
 
-func (c *RestController) configFunc(w http.ResponseWriter, _ *http.Request, dic *di.Container) {
-	configuration := container.ConfigurationFrom(dic.Get)
+func (c *RestController) configFunc(w http.ResponseWriter, _ *http.Request) {
+	configuration := container.ConfigurationFrom(c.dic.Get)
 	c.encode(configuration, w)
 }
 
