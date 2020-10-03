@@ -17,10 +17,13 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller/correlation"
 	v2 "github.com/edgexfoundry/device-sdk-go/internal/v2/controller/http"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
+
 	"github.com/gorilla/mux"
 )
 
@@ -29,52 +32,55 @@ type RestController struct {
 	router           *mux.Router
 	reservedRoutes   map[string]bool
 	v2HttpController *v2.V2HttpController
+	dic              *di.Container
 }
 
-func NewRestController(r *mux.Router, lc logger.LoggingClient) *RestController {
+func NewRestController(r *mux.Router, dic *di.Container) *RestController {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	return &RestController{
 		LoggingClient:    lc,
 		router:           r,
 		reservedRoutes:   make(map[string]bool),
-		v2HttpController: v2.NewV2HttpController(r, lc),
+		v2HttpController: v2.NewV2HttpController(dic),
+		dic:              dic,
 	}
 }
 
-func (c *RestController) InitRestRoutes(dic *di.Container) {
+func (c *RestController) InitRestRoutes() {
 	// Status
-	c.addReservedRoute(sdkCommon.APIPingRoute, c.statusFunc, dic).Methods(http.MethodGet)
+	c.addReservedRoute(sdkCommon.APIPingRoute, c.statusFunc).Methods(http.MethodGet)
 	// Version
-	c.addReservedRoute(sdkCommon.APIVersionRoute, c.versionFunc, dic).Methods(http.MethodGet)
+	c.addReservedRoute(sdkCommon.APIVersionRoute, c.versionFunc).Methods(http.MethodGet)
 	// Command
-	c.addReservedRoute(sdkCommon.APIAllCommandRoute, c.commandAllFunc, dic).Methods(http.MethodGet, http.MethodPut)
-	c.addReservedRoute(sdkCommon.APIIdCommandRoute, c.commandFunc, dic).Methods(http.MethodGet, http.MethodPut)
-	c.addReservedRoute(sdkCommon.APINameCommandRoute, c.commandFunc, dic).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(sdkCommon.APIAllCommandRoute, c.commandAllFunc).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(sdkCommon.APIIdCommandRoute, c.commandFunc).Methods(http.MethodGet, http.MethodPut)
+	c.addReservedRoute(sdkCommon.APINameCommandRoute, c.commandFunc).Methods(http.MethodGet, http.MethodPut)
 	// Callback
-	c.addReservedRoute(sdkCommon.APICallbackRoute, c.callbackFunc, dic)
+	c.addReservedRoute(sdkCommon.APICallbackRoute, c.callbackFunc)
 	// Discovery and Transform
-	c.addReservedRoute(sdkCommon.APIDiscoveryRoute, c.discoveryFunc, dic).Methods(http.MethodPost)
-	c.addReservedRoute(sdkCommon.APITransformRoute, c.transformFunc, dic).Methods(http.MethodGet)
+	c.addReservedRoute(sdkCommon.APIDiscoveryRoute, c.discoveryFunc).Methods(http.MethodPost)
+	c.addReservedRoute(sdkCommon.APITransformRoute, c.transformFunc).Methods(http.MethodGet)
 	// Metric and Config
-	c.addReservedRoute(sdkCommon.APIMetricsRoute, c.metricsFunc, dic).Methods(http.MethodGet)
-	c.addReservedRoute(sdkCommon.APIConfigRoute, c.configFunc, dic).Methods(http.MethodGet)
+	c.addReservedRoute(sdkCommon.APIMetricsRoute, c.metricsFunc).Methods(http.MethodGet)
+	c.addReservedRoute(sdkCommon.APIConfigRoute, c.configFunc).Methods(http.MethodGet)
 
-	c.InitV2RestRoutes(dic)
+	c.InitV2RestRoutes()
 
 	c.router.Use(correlation.ManageHeader)
 	c.router.Use(correlation.OnResponseComplete)
 	c.router.Use(correlation.OnRequestBegin)
 }
 
-func (c *RestController) InitV2RestRoutes(dic *di.Container) {
+func (c *RestController) InitV2RestRoutes() {
 	c.LoggingClient.Info("Registering v2 routes...")
 
-	c.addReservedRoute(contractsV2.ApiPingRoute, c.v2HttpController.Ping, dic).Methods(http.MethodGet)
-	c.addReservedRoute(contractsV2.ApiVersionRoute, c.v2HttpController.Version, dic).Methods(http.MethodGet)
-	c.addReservedRoute(contractsV2.ApiConfigRoute, c.v2HttpController.Config, dic).Methods(http.MethodGet)
-	c.addReservedRoute(contractsV2.ApiMetricsRoute, c.v2HttpController.Metrics, dic).Methods(http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiPingRoute, c.v2HttpController.Ping).Methods(http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiVersionRoute, c.v2HttpController.Version).Methods(http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiConfigRoute, c.v2HttpController.Config).Methods(http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiMetricsRoute, c.v2HttpController.Metrics).Methods(http.MethodGet)
 }
 
-func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request, *di.Container), dic *di.Container) *mux.Route {
+func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
 	c.reservedRoutes[route] = true
 	return c.router.HandleFunc(
 		route,
@@ -82,9 +88,7 @@ func (c *RestController) addReservedRoute(route string, handler func(http.Respon
 			ctx := context.WithValue(r.Context(), bootstrapContainer.LoggingClientInterfaceName, c.LoggingClient)
 			handler(
 				w,
-				r.WithContext(ctx),
-				dic)
-
+				r.WithContext(ctx))
 		})
 }
 

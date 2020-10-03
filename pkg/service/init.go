@@ -81,7 +81,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		},
 	})
 
-	ds.controller.InitRestRoutes(dic)
+	ds.controller.InitRestRoutes()
 
 	err = provision.LoadProfiles(ds.config.Device.ProfilesDir, dic)
 	if err != nil {

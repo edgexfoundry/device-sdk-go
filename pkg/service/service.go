@@ -24,12 +24,17 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/controller"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+
 	"github.com/edgexfoundry/go-mod-registry/registry"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -94,7 +99,7 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.edgexClients.EventClient = container.CoredataEventClientFrom(dic.Get)
 	s.edgexClients.ValueDescriptorClient = container.CoredataValueDescriptorClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
-	s.controller = controller.NewRestController(r, s.LoggingClient)
+	s.controller = controller.NewRestController(r, dic)
 }
 
 // Name returns the name of this Device Service

@@ -54,10 +54,9 @@ const (
 	GetCmdMethod string = "get"
 	SetCmdMethod string = "set"
 
-	V2CorrelationHeaderKey = "X-Correlation-ID"
-	CorrelationHeader      = clients.CorrelationHeader
-	URLRawQuery            = "urlRawQuery"
-	SDKReservedPrefix      = "ds-"
+	CorrelationHeader = clients.CorrelationHeader
+	URLRawQuery       = "urlRawQuery"
+	SDKReservedPrefix = "ds-"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build
