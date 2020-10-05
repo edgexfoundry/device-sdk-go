@@ -45,8 +45,8 @@ const (
 	APIV2WatcherCallbackRoute   = v2.ApiBase + "/callback/watcher"
 	APIV2WatcherCallbackIdRoute = v2.ApiBase + "/callback/watcher/id/{id}"
 	APIV2DiscoveryRoute         = v2.ApiBase + "/discovery"
-	APIV2IdCommandRoute         = v2.ApiBase + "/{id}/{command}"
-	APIV2NameCommandRoute       = v2.ApiBase + "/name/{name}/{command}"
+	APIV2IdCommandRoute         = v2.ApiBase + "/device/{id}/{command}"
+	APIV2NameCommandRoute       = v2.ApiBase + "/device/name/{name}/{command}"
 
 	IdVar        string = "id"
 	NameVar      string = "name"

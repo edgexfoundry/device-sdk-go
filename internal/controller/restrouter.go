@@ -80,6 +80,9 @@ func (c *RestController) InitV2RestRoutes() {
 	c.addReservedRoute(contractsV2.ApiMetricsRoute, c.v2HttpController.Metrics).Methods(http.MethodGet)
 
 	c.addReservedRoute(sdkCommon.APIV2DiscoveryRoute, c.v2HttpController.Discovery).Methods(http.MethodPost)
+
+	c.addReservedRoute(sdkCommon.APIV2IdCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
+	c.addReservedRoute(sdkCommon.APIV2NameCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {

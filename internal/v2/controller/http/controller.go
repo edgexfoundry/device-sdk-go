@@ -16,6 +16,8 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -94,18 +96,20 @@ func (c *V2HttpController) sendResponse(
 	writer.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 	writer.WriteHeader(statusCode)
 
-	data, err := json.Marshal(response)
-	if err != nil {
-		c.lc.Error(fmt.Sprintf("Unable to marshal %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	if response != nil {
+		data, err := json.Marshal(response)
+		if err != nil {
+			c.lc.Error(fmt.Sprintf("Unable to marshal %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	_, err = writer.Write(data)
-	if err != nil {
-		c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
+		_, err = writer.Write(data)
+		if err != nil {
+			c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
@@ -118,8 +122,49 @@ func (c *V2HttpController) sendError(
 	api string,
 	requestID string) {
 	edgexErr := edgexErr.NewCommonEdgeX(errKind, message, err)
-	c.lc.Error(edgexErr.Error())
-	c.lc.Debug(edgexErr.DebugMessages())
-	response := common.NewBaseResponse(requestID, edgexErr.Message(), edgexErr.Code())
-	c.sendResponse(writer, request, api, response, edgexErr.Code())
+	c.sendEdgexError(writer, request, edgexErr, api, requestID)
+}
+
+func (c *V2HttpController) sendEdgexError(
+	writer http.ResponseWriter,
+	request *http.Request,
+	err edgexErr.EdgeX,
+	api string,
+	requestID string) {
+	c.lc.Error(err.Error())
+	c.lc.Debug(err.DebugMessages())
+	response := common.NewBaseResponse(requestID, err.Message(), err.Code())
+	c.sendResponse(writer, request, api, response, err.Code())
+}
+
+func (c *V2HttpController) returnEvent(
+	writer http.ResponseWriter,
+	request *http.Request,
+	event *dsModels.Event,
+	ec coredata.EventClient,
+	api string,
+	requestID string) {
+	if event != nil {
+		if event.HasBinaryValue() {
+			// Encode response as application/CBOR.
+			if len(event.EncodedEvent) <= 0 {
+				var err error
+				event.EncodedEvent, err = ec.MarshalEvent(event.Event)
+				if err != nil {
+					c.lc.Error("DeviceCommand: error encoding event", "device", event.Device, "error", err)
+					http.Error(writer, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			writer.Header().Set(clients.ContentType, clients.ContentTypeCBOR)
+			_, err := writer.Write(event.EncodedEvent)
+			if err != nil {
+				c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), clients.CorrelationHeader, requestID)
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			c.sendResponse(writer, request, api, event, http.StatusOK)
+		}
+	}
 }
