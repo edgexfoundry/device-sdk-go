@@ -127,36 +127,33 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 			ctx := context.WithValue(context.Background(), common.CorrelationHeader, id)
 			for _, d := range devices {
 				for _, pw := range pws {
-					if !whitelistPass(d, pw, s.LoggingClient) {
-						break
-					}
-					if !blacklistPass(d, pw, s.LoggingClient) {
-						break
-					}
+					if whitelistPass(d, pw, s.LoggingClient) && blacklistPass(d, pw, s.LoggingClient) {
+						if _, ok := cache.Devices().ForName(d.Name); ok {
+							s.LoggingClient.Debug(fmt.Sprintf("Candidate discovered device %s already existed", d.Name))
+							break
+						}
 
-					if _, ok := cache.Devices().ForName(d.Name); ok {
-						s.LoggingClient.Debug(fmt.Sprintf("Candidate discovered device %s already existed", d.Name))
-						break
-					}
+						s.LoggingClient.Info(fmt.Sprintf("Adding discovered device %s to Edgex", d.Name))
+						millis := time.Now().UnixNano() / int64(time.Millisecond)
+						device := &contract.Device{
+							Name:           d.Name,
+							Profile:        pw.Profile,
+							Protocols:      d.Protocols,
+							Labels:         d.Labels,
+							Service:        pw.Service,
+							AdminState:     pw.AdminState,
+							OperatingState: contract.Enabled,
+							AutoEvents:     nil,
+						}
+						device.Origin = millis
+						device.Description = d.Description
 
-					s.LoggingClient.Info(fmt.Sprintf("Updating discovered device %s to Edgex", d.Name))
-					millis := time.Now().UnixNano() / int64(time.Millisecond)
-					device := &contract.Device{
-						Name:           d.Name,
-						Profile:        pw.Profile,
-						Protocols:      d.Protocols,
-						Labels:         d.Labels,
-						Service:        pw.Service,
-						AdminState:     pw.AdminState,
-						OperatingState: contract.Enabled,
-						AutoEvents:     nil,
-					}
-					device.Origin = millis
-					device.Description = d.Description
-
-					_, err := s.edgexClients.DeviceClient.Add(ctx, device)
-					if err != nil {
-						s.LoggingClient.Error(fmt.Sprintf("Created discovered device %s failed: %v", device.Name, err))
+						_, err := s.edgexClients.DeviceClient.Add(ctx, device)
+						if err != nil {
+							s.LoggingClient.Error(fmt.Sprintf("failed to create discovered device %s: %v", device.Name, err))
+						} else {
+							break
+						}
 					}
 				}
 			}
@@ -166,23 +163,25 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 }
 
 func whitelistPass(d dsModels.DiscoveredDevice, pw contract.ProvisionWatcher, lc logger.LoggingClient) bool {
-	// a candidate device should pass all identifiers
-	for name, regex := range pw.Identifiers {
-		// ignore the device protocol properties name
-		for _, protocol := range d.Protocols {
+	// ignore the device protocol properties name
+	for _, protocol := range d.Protocols {
+		matchedCount := 0
+		for name, regex := range pw.Identifiers {
 			if value, ok := protocol[name]; ok {
 				matched, err := regexp.MatchString(regex, value)
 				if !matched || err != nil {
 					lc.Debug(fmt.Sprintf("Device %s's %s value %s did not match PW identifier: %s", d.Name, name, value, regex))
-					return false
+					break
 				}
-			} else {
-				lc.Debug(fmt.Sprintf("Identifier field: %s, did not exist in discovered device %s", name, d.Name))
-				return false
+				matchedCount += 1
 			}
 		}
+		// match succeed on all identifiers
+		if matchedCount == len(pw.Identifiers) {
+			return true
+		}
 	}
-	return true
+	return false
 }
 
 func blacklistPass(d dsModels.DiscoveredDevice, pw contract.ProvisionWatcher, lc logger.LoggingClient) bool {
