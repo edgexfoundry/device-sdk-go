@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2020 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,5 +19,7 @@ edgeXBuildGoApp (
     project: 'device-sdk-go',
     dockerImageName: 'docker-device-sdk-simple',
     dockerFilePath: 'example/cmd/device-simple/Dockerfile',
-    pushImage: false
+    pushImage: false,
+    publishSwaggerDocs: true,
+    swaggerApiFolders: ['openapi/v1', 'openapi/v2']
 )
