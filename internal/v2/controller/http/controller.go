@@ -137,7 +137,7 @@ func (c *V2HttpController) sendEdgexError(
 	c.sendResponse(writer, request, api, response, err.Code())
 }
 
-func (c *V2HttpController) returnEvent(
+func (c *V2HttpController) sendEventResponse(
 	writer http.ResponseWriter,
 	request *http.Request,
 	event *dsModels.Event,

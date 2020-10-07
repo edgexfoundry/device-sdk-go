@@ -290,23 +290,6 @@ func FilterQueryParams(queryParams string, lc logger.LoggingClient) url.Values {
 	return m
 }
 
-func V2FilterQueryParams(queryParams string, lc logger.LoggingClient) (string, url.Values) {
-	m, err := url.ParseQuery(queryParams)
-	if err != nil {
-		lc.Error("Error parsing query parameters: %s\n", err)
-	}
-	var reserved = make(url.Values)
-	// Separate parameters with SDK reserved prefix
-	for k := range m {
-		if strings.HasPrefix(k, SDKReservedPrefix) {
-			reserved.Set(k, m.Get(k))
-			delete(m, k)
-		}
-	}
-
-	return m.Encode(), reserved
-}
-
 func UpdateLastConnected(name string, configuration *ConfigurationStruct, lc logger.LoggingClient, dc metadata.DeviceClient) {
 	if !configuration.Device.UpdateLastConnected {
 		lc.Debug("Update of last connected times is disabled for: " + name)

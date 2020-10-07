@@ -8,19 +8,16 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/v2/application"
-	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/gorilla/mux"
 )
 
@@ -28,29 +25,33 @@ const SDKPostEventReserved = "ds-postevent"
 const SDKReturnEventReserved = "ds-returnevent"
 
 func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Request) {
-	var reserved url.Values
+	defer request.Body.Close()
 	vars := mux.Vars(request)
-	ds := container.DeviceServiceFrom(c.dic.Get)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
 
+	ds := container.DeviceServiceFrom(c.dic.Get)
 	err := checkServiceLocked(request, ds.AdminState)
 	if err != nil {
 		c.sendError(writer, request, edgexErr.KindServiceLocked, "service locked", err, sdkCommon.APIV2NameCommandRoute, correlationID)
 		return
 	}
 
-	// read request body for PUT command
-	body, err := readBodyAsString(request)
-	if err != nil {
-		c.sendError(writer, request, edgexErr.KindServerError, "failed to read request body", err, sdkCommon.APIV2NameCommandRoute, correlationID)
-		return
-	}
-	// filter out the SDK reserved parameters and save the result for GET command
-	if len(body) == 0 {
-		body, reserved = sdkCommon.V2FilterQueryParams(request.URL.RawQuery, c.lc)
+	var body string
+	var reserved url.Values
+	if request.Method == http.MethodPut {
+		// read request body for PUT command
+		body, err = readBodyAsString(request)
+		if err != nil {
+			c.sendError(writer, request, edgexErr.KindServerError, "failed to read request body", err, sdkCommon.APIV2NameCommandRoute, correlationID)
+			return
+		}
+	} else if request.Method == http.MethodGet {
+		// filter out the SDK reserved parameters and save the result for GET command
+		body, reserved = filterQueryParams(request.URL.RawQuery, c.lc)
 	}
 
-	event, edgexErr := c.CommandHandler(request.Method, vars, body, correlationID)
+	isRead := request.Method == http.MethodGet
+	event, edgexErr := application.CommandHandler(isRead, vars, body, correlationID, c.dic)
 	if edgexErr != nil {
 		c.sendEdgexError(writer, request, edgexErr, sdkCommon.APIV2NameCommandRoute, correlationID)
 		return
@@ -61,60 +62,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 		go sdkCommon.SendEvent(event, c.lc, container.CoredataEventClientFrom(c.dic.Get))
 	}
 	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == "yes" {
-		c.returnEvent(writer, request, event, container.CoredataEventClientFrom(c.dic.Get), sdkCommon.APIV2NameCommandRoute, correlationID)
-	}
-}
-
-func (c *V2HttpController) CommandHandler(method string, vars map[string]string, body string, id string) (event *dsModels.Event, err edgexErr.EdgeX) {
-	var device contract.Device
-	deviceKey := vars[sdkCommon.IdVar]
-
-	defer func() {
-		if err == nil {
-			go sdkCommon.UpdateLastConnected(
-				device.Name,
-				container.ConfigurationFrom(c.dic.Get),
-				bootstrapContainer.LoggingClientFrom(c.dic.Get),
-				container.MetadataDeviceClientFrom(c.dic.Get))
-		}
-	}()
-
-	// check provided device exists
-	device, exist := cache.Devices().ForId(deviceKey)
-	if !exist {
-		deviceKey = vars[sdkCommon.NameVar]
-		device, exist = cache.Devices().ForName(deviceKey)
-		if !exist {
-			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "device not found", nil)
-		}
-	}
-
-	// check device's AdminState
-	if device.AdminState == contract.Locked {
-		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
-	}
-
-	cmd := vars[sdkCommon.CommandVar]
-	helper := application.NewCommandHelper(&device, nil, id, cmd, body, c.dic)
-	cmdExists, _ := cache.Profiles().CommandExists(device.Profile.Name, cmd, method)
-	if !cmdExists {
-		dr, drExists := cache.Profiles().DeviceResource(device.Profile.Name, cmd)
-		if !drExists {
-			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "command not found", nil)
-		}
-
-		helper = application.NewCommandHelper(&device, &dr, id, cmd, body, c.dic)
-		if method == http.MethodGet {
-			return application.ReadDeviceResource(helper)
-		} else {
-			return nil, application.WriteDeviceResource(helper)
-		}
-	} else {
-		if method == http.MethodGet {
-			return application.ReadCommand(helper)
-		} else {
-			return nil, application.WriteCommand(helper)
-		}
+		c.sendEventResponse(writer, request, event, container.CoredataEventClientFrom(c.dic.Get), sdkCommon.APIV2NameCommandRoute, correlationID)
 	}
 }
 
@@ -130,4 +78,22 @@ func readBodyAsString(req *http.Request) (string, error) {
 	}
 
 	return string(body), nil
+}
+
+func filterQueryParams(queryParams string, lc logger.LoggingClient) (string, url.Values) {
+	m, err := url.ParseQuery(queryParams)
+	if err != nil {
+		lc.Error("Error parsing query parameters: %s\n", err)
+		return "", nil
+	}
+	var reserved = make(url.Values)
+	// Separate parameters with SDK reserved prefix
+	for k := range m {
+		if strings.HasPrefix(k, sdkCommon.SDKReservedPrefix) {
+			reserved.Set(k, m.Get(k))
+			delete(m, k)
+		}
+	}
+
+	return m.Encode(), reserved
 }

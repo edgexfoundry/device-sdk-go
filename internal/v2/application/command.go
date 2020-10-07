@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -30,33 +31,90 @@ import (
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-type CommandHelper struct {
+type CommandProcessor struct {
 	device         *contract.Device
 	deviceResource *contract.DeviceResource
-	id             string
 	cmd            string
 	params         string
 	dic            *di.Container
 }
 
-func NewCommandHelper(device *contract.Device, dr *contract.DeviceResource, id string, cmd string, params string, dic *di.Container) *CommandHelper {
-	return &CommandHelper{
+func NewCommandProcessor(device *contract.Device, dr *contract.DeviceResource, id string, cmd string, params string, dic *di.Container) *CommandProcessor {
+	return &CommandProcessor{
 		device:         device,
 		deviceResource: dr,
-		id:             id,
 		cmd:            cmd,
 		params:         params,
 		dic:            dic,
 	}
 }
 
-func ReadDeviceResource(helper *CommandHelper) (*dsModels.Event, edgexErr.EdgeX) {
-	lc := bootstrapContainer.LoggingClientFrom(helper.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - readDeviceResource: reading deviceResource: %s", helper.deviceResource.Name))
+func CommandHandler(isRead bool, vars map[string]string, body string, id string, dic *di.Container) (event *dsModels.Event, err edgexErr.EdgeX) {
+	var device contract.Device
+	deviceKey := vars[sdkCommon.IdVar]
+
+	defer func() {
+		if err == nil {
+			go sdkCommon.UpdateLastConnected(
+				device.Name,
+				container.ConfigurationFrom(dic.Get),
+				bootstrapContainer.LoggingClientFrom(dic.Get),
+				container.MetadataDeviceClientFrom(dic.Get))
+		}
+	}()
+
+	// check provided device exists
+	device, exist := cache.Devices().ForId(deviceKey)
+	if !exist {
+		deviceKey = vars[sdkCommon.NameVar]
+		device, exist = cache.Devices().ForName(deviceKey)
+		if !exist {
+			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "device not found", nil)
+		}
+	}
+
+	// check device's AdminState
+	if device.AdminState == contract.Locked {
+		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
+	}
+
+	var method string
+	if isRead {
+		method = sdkCommon.GetCmdMethod
+	} else {
+		method = sdkCommon.SetCmdMethod
+	}
+	cmd := vars[sdkCommon.CommandVar]
+	helper := NewCommandProcessor(&device, nil, id, cmd, body, dic)
+	cmdExists, _ := cache.Profiles().CommandExists(device.Profile.Name, cmd, method)
+	if !cmdExists {
+		dr, drExists := cache.Profiles().DeviceResource(device.Profile.Name, cmd)
+		if !drExists {
+			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "command not found", nil)
+		}
+
+		helper = NewCommandProcessor(&device, &dr, id, cmd, body, dic)
+		if isRead {
+			return helper.ReadDeviceResource()
+		} else {
+			return nil, helper.WriteDeviceResource()
+		}
+	} else {
+		if isRead {
+			return helper.ReadCommand()
+		} else {
+			return nil, helper.WriteCommand()
+		}
+	}
+}
+
+func (c *CommandProcessor) ReadDeviceResource() (*dsModels.Event, edgexErr.EdgeX) {
+	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
+	lc.Debug(fmt.Sprintf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name))
 
 	// check provided deviceResource is not write-only
-	if helper.deviceResource.Properties.Value.ReadWrite == "W" {
-		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", helper.deviceResource.Name)
+	if c.deviceResource.Properties.Value.ReadWrite == "W" {
+		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", c.deviceResource.Name)
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
 
@@ -64,27 +122,27 @@ func ReadDeviceResource(helper *CommandHelper) (*dsModels.Event, edgexErr.EdgeX)
 	var reqs []dsModels.CommandRequest
 
 	// prepare CommandRequest
-	req.DeviceResourceName = helper.deviceResource.Name
-	req.Attributes = helper.deviceResource.Attributes
-	if helper.params != "" {
+	req.DeviceResourceName = c.deviceResource.Name
+	req.Attributes = c.deviceResource.Attributes
+	if c.params != "" {
 		if len(req.Attributes) <= 0 {
 			req.Attributes = make(map[string]string)
 		}
-		req.Attributes[sdkCommon.URLRawQuery] = helper.params
+		req.Attributes[sdkCommon.URLRawQuery] = c.params
 	}
-	req.Type = dsModels.ParseValueType(helper.deviceResource.Properties.Value.Type)
+	req.Type = dsModels.ParseValueType(c.deviceResource.Properties.Value.Type)
 	reqs = append(reqs, req)
 
 	// execute protocol-specific read operation
-	driver := container.ProtocolDriverFrom(helper.dic.Get)
-	results, err := driver.HandleReadCommands(helper.device.Name, helper.device.Protocols, reqs)
+	driver := container.ProtocolDriverFrom(c.dic.Get)
+	results, err := driver.HandleReadCommands(c.device.Name, c.device.Protocols, reqs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error reading DeviceResourece %s for %s: %v", helper.deviceResource.Name, helper.device.Name, err)
+		errMsg := fmt.Sprintf("error reading DeviceResourece %s for %s: %v", c.deviceResource.Name, c.device.Name, err)
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
-	event, err := cvsToEvent(helper.device, results, helper.deviceResource.Name, lc, container.MetadataDeviceClientFrom(helper.dic.Get), container.ConfigurationFrom(helper.dic.Get))
+	event, err := commandValuesToEvent(c.device, results, c.deviceResource.Name, lc, container.MetadataDeviceClientFrom(c.dic.Get), container.ConfigurationFrom(c.dic.Get))
 	if err != nil {
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to convert CommandValue to Event", err)
 	}
@@ -92,21 +150,21 @@ func ReadDeviceResource(helper *CommandHelper) (*dsModels.Event, edgexErr.EdgeX)
 	return event, nil
 }
 
-func ReadCommand(helper *CommandHelper) (*dsModels.Event, edgexErr.EdgeX) {
-	lc := bootstrapContainer.LoggingClientFrom(helper.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - readCmd: reading cmd: %s", helper.cmd))
+func (c *CommandProcessor) ReadCommand() (*dsModels.Event, edgexErr.EdgeX) {
+	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
+	lc.Debug(fmt.Sprintf("Application - readCmd: reading cmd: %s", c.cmd))
 
 	// check GET ResourceOperation(s) exist for provided command
-	ros, err := cache.Profiles().ResourceOperations(helper.device.Profile.Name, helper.cmd, sdkCommon.GetCmdMethod)
+	ros, err := cache.Profiles().ResourceOperations(c.device.Profile.Name, c.cmd, sdkCommon.GetCmdMethod)
 	if err != nil {
-		errMsg := fmt.Sprintf("GET ResourceOperation(s) for %s command not found", helper.cmd)
+		errMsg := fmt.Sprintf("GET ResourceOperation(s) for %s command not found", c.cmd)
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, err)
 	}
 
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
-	configuration := container.ConfigurationFrom(helper.dic.Get)
+	configuration := container.ConfigurationFrom(c.dic.Get)
 	if len(ros) > configuration.Device.MaxCmdOps {
-		errMsg := fmt.Sprintf("GET command %s exceed device %s MaxCmdOps (%d)", helper.cmd, helper.device.Name, configuration.Device.MaxCmdOps)
+		errMsg := fmt.Sprintf("GET command %s exceed device %s MaxCmdOps (%d)", c.cmd, c.device.Name, configuration.Device.MaxCmdOps)
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 	}
 
@@ -115,39 +173,39 @@ func ReadCommand(helper *CommandHelper) (*dsModels.Event, edgexErr.EdgeX) {
 	for i, op := range ros {
 		drName := op.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
-		dr, ok := cache.Profiles().DeviceResource(helper.device.Profile.Name, drName)
+		dr, ok := cache.Profiles().DeviceResource(c.device.Profile.Name, drName)
 		if !ok {
-			errMsg := fmt.Sprintf("deviceResource %s in GET commnd %s for %s not defined", drName, helper.cmd, helper.device.Name)
+			errMsg := fmt.Sprintf("deviceResource %s in GET commnd %s for %s not defined", drName, c.cmd, c.device.Name)
 			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 		}
 
 		// check the deviceResource isn't write-only
 		if dr.Properties.Value.ReadWrite == "W" {
-			errMsg := fmt.Sprintf("deviceResource %s in GET command %s is marked as write-only", drName, helper.cmd)
+			errMsg := fmt.Sprintf("deviceResource %s in GET command %s is marked as write-only", drName, c.cmd)
 			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
 
 		reqs[i].DeviceResourceName = dr.Name
 		reqs[i].Attributes = dr.Attributes
-		if helper.params != "" {
+		if c.params != "" {
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]string)
 			}
-			reqs[i].Attributes[sdkCommon.URLRawQuery] = helper.params
+			reqs[i].Attributes[sdkCommon.URLRawQuery] = c.params
 		}
 		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
 	}
 
 	// execute protocol-specific read operation
-	driver := container.ProtocolDriverFrom(helper.dic.Get)
-	results, err := driver.HandleReadCommands(helper.device.Name, helper.device.Protocols, reqs)
+	driver := container.ProtocolDriverFrom(c.dic.Get)
+	results, err := driver.HandleReadCommands(c.device.Name, c.device.Protocols, reqs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error reading DeviceCommand %s for %s: %v", helper.cmd, helper.device.Name, err)
+		errMsg := fmt.Sprintf("error reading DeviceCommand %s for %s: %v", c.cmd, c.device.Name, err)
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
-	event, err := cvsToEvent(helper.device, results, helper.cmd, lc, container.MetadataDeviceClientFrom(helper.dic.Get), configuration)
+	event, err := commandValuesToEvent(c.device, results, c.cmd, lc, container.MetadataDeviceClientFrom(c.dic.Get), configuration)
 	if err != nil {
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform CommandValue to Event", err)
 	}
@@ -155,35 +213,35 @@ func ReadCommand(helper *CommandHelper) (*dsModels.Event, edgexErr.EdgeX) {
 	return event, nil
 }
 
-func WriteDeviceResource(helper *CommandHelper) edgexErr.EdgeX {
-	lc := bootstrapContainer.LoggingClientFrom(helper.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - writeDeviceResource: writting deviceResource: %s", helper.deviceResource.Name))
+func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
+	lc.Debug(fmt.Sprintf("Application - writeDeviceResource: writting deviceResource: %s", c.deviceResource.Name))
 
 	// check provided deviceResource is not read-only
-	if helper.deviceResource.Properties.Value.ReadWrite == "R" {
-		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", helper.deviceResource.Name)
+	if c.deviceResource.Properties.Value.ReadWrite == "R" {
+		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", c.deviceResource.Name)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
 
 	// parse request body string
-	paramMap, err := parseParams(helper.params)
+	paramMap, err := parseParams(c.params)
 	if err != nil {
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse PUT parameters", err)
 	}
 
 	// check request body contains provided deviceResource
-	v, ok := paramMap[helper.deviceResource.Name]
+	v, ok := paramMap[c.deviceResource.Name]
 	if !ok {
-		if helper.deviceResource.Properties.Value.DefaultValue != "" {
-			v = helper.deviceResource.Properties.Value.DefaultValue
+		if c.deviceResource.Properties.Value.DefaultValue != "" {
+			v = c.deviceResource.Properties.Value.DefaultValue
 		} else {
-			errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", helper.deviceResource.Name)
+			errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", c.deviceResource.Name)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 		}
 	}
 
 	// create CommandValue
-	cv, err := createCommandValueFromDR(helper.deviceResource, v)
+	cv, err := createCommandValueFromDeviceResource(c.deviceResource, v)
 	if err != nil {
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to create CommandValue", err)
 	}
@@ -191,49 +249,49 @@ func WriteDeviceResource(helper *CommandHelper) edgexErr.EdgeX {
 	// prepare CommandRequest
 	reqs := make([]dsModels.CommandRequest, 1)
 	reqs[0].DeviceResourceName = cv.DeviceResourceName
-	reqs[0].Attributes = helper.deviceResource.Attributes
+	reqs[0].Attributes = c.deviceResource.Attributes
 	reqs[0].Type = cv.Type
 
 	// transform write value
-	configuration := container.ConfigurationFrom(helper.dic.Get)
+	configuration := container.ConfigurationFrom(c.dic.Get)
 	if configuration.Device.DataTransform {
-		err = transformer.TransformWriteParameter(cv, helper.deviceResource.Properties.Value, lc)
+		err = transformer.TransformWriteParameter(cv, c.deviceResource.Properties.Value, lc)
 		if err != nil {
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform write value", nil)
 		}
 	}
 
 	// execute protocol-specific write operation
-	driver := container.ProtocolDriverFrom(helper.dic.Get)
-	err = driver.HandleWriteCommands(helper.device.Name, helper.device.Protocols, reqs, []*dsModels.CommandValue{cv})
+	driver := container.ProtocolDriverFrom(c.dic.Get)
+	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*dsModels.CommandValue{cv})
 	if err != nil {
-		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s: %v", helper.deviceResource.Name, helper.device.Name, err)
+		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s: %v", c.deviceResource.Name, c.device.Name, err)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
 	return nil
 }
 
-func WriteCommand(helper *CommandHelper) edgexErr.EdgeX {
-	lc := bootstrapContainer.LoggingClientFrom(helper.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - writeCmd: writting command: %s", helper.cmd))
+func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
+	lc.Debug(fmt.Sprintf("Application - writeCmd: writting command: %s", c.cmd))
 
 	// check SET ResourceOperation(s) exist for provided command
-	ros, err := cache.Profiles().ResourceOperations(helper.device.Profile.Name, helper.cmd, sdkCommon.SetCmdMethod)
+	ros, err := cache.Profiles().ResourceOperations(c.device.Profile.Name, c.cmd, sdkCommon.SetCmdMethod)
 	if err != nil {
-		errMsg := fmt.Sprintf("SET ResourceOperation(s) for %s command not found", helper.cmd)
+		errMsg := fmt.Sprintf("SET ResourceOperation(s) for %s command not found", c.cmd)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, err)
 	}
 
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
-	configuration := container.ConfigurationFrom(helper.dic.Get)
+	configuration := container.ConfigurationFrom(c.dic.Get)
 	if len(ros) > configuration.Device.MaxCmdOps {
-		errMsg := fmt.Sprintf("PUT command %s exceed device %s MaxCmdOps (%d)", helper.cmd, helper.device.Name, configuration.Device.MaxCmdOps)
+		errMsg := fmt.Sprintf("PUT command %s exceed device %s MaxCmdOps (%d)", c.cmd, c.device.Name, configuration.Device.MaxCmdOps)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 	}
 
 	// parse request body
-	paramMap, err := parseParams(helper.params)
+	paramMap, err := parseParams(c.params)
 	if err != nil {
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse PUT parameters", err)
 	}
@@ -243,15 +301,15 @@ func WriteCommand(helper *CommandHelper) edgexErr.EdgeX {
 	for _, ro := range ros {
 		drName := ro.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
-		dr, ok := cache.Profiles().DeviceResource(helper.device.Profile.Name, drName)
+		dr, ok := cache.Profiles().DeviceResource(c.device.Profile.Name, drName)
 		if !ok {
-			errMsg := fmt.Sprintf("deviceResource %s in PUT commnd %s for %s not defined", drName, helper.cmd, helper.device.Name)
+			errMsg := fmt.Sprintf("deviceResource %s in PUT commnd %s for %s not defined", drName, c.cmd, c.device.Name)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 		}
 
 		// check the deviceResource isn't read-only
 		if dr.Properties.Value.ReadWrite == "R" {
-			errMsg := fmt.Sprintf("deviceResource %s in PUT command %s is marked as read-only", drName, helper.cmd)
+			errMsg := fmt.Sprintf("deviceResource %s in PUT command %s is marked as read-only", drName, c.cmd)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
 
@@ -279,7 +337,7 @@ func WriteCommand(helper *CommandHelper) edgexErr.EdgeX {
 		}
 
 		// create CommandValue
-		cv, err := createCommandValueFromDR(&dr, value)
+		cv, err := createCommandValueFromDeviceResource(&dr, value)
 		if err == nil {
 			cvs = append(cvs, cv)
 		} else {
@@ -290,7 +348,7 @@ func WriteCommand(helper *CommandHelper) edgexErr.EdgeX {
 	// prepare CommandRequests
 	reqs := make([]dsModels.CommandRequest, len(cvs))
 	for i, cv := range cvs {
-		dr, _ := cache.Profiles().DeviceResource(helper.device.Profile.Name, cv.DeviceResourceName)
+		dr, _ := cache.Profiles().DeviceResource(c.device.Profile.Name, cv.DeviceResourceName)
 
 		reqs[i].DeviceResourceName = cv.DeviceResourceName
 		reqs[i].Attributes = dr.Attributes
@@ -306,10 +364,10 @@ func WriteCommand(helper *CommandHelper) edgexErr.EdgeX {
 	}
 
 	// execute protocol-specific write operation
-	driver := container.ProtocolDriverFrom(helper.dic.Get)
-	err = driver.HandleWriteCommands(helper.device.Name, helper.device.Protocols, reqs, cvs)
+	driver := container.ProtocolDriverFrom(c.dic.Get)
+	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, cvs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error writing DeviceResourece for %s: %v", helper.device.Name, err)
+		errMsg := fmt.Sprintf("error writing DeviceResourece for %s: %v", c.device.Name, err)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
@@ -330,7 +388,7 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func cvsToEvent(
+func commandValuesToEvent(
 	device *contract.Device,
 	cvs []*dsModels.CommandValue,
 	cmd string,
@@ -400,7 +458,7 @@ func cvsToEvent(
 	return event, nil
 }
 
-func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.CommandValue, error) {
+func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string) (*dsModels.CommandValue, error) {
 	var err error
 	var result *dsModels.CommandValue
 
@@ -604,6 +662,8 @@ func createCommandValueFromDR(dr *contract.DeviceResource, v string) (*dsModels.
 			return result, err
 		}
 		result, err = dsModels.NewFloat64ArrayValue(dr.Name, origin, arr)
+	default:
+		err = errors.New("unsupported deviceResource value type")
 	}
 
 	if err != nil {
