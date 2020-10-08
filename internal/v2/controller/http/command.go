@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/v2/application"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
@@ -29,14 +28,9 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	vars := mux.Vars(request)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
 
-	ds := container.DeviceServiceFrom(c.dic.Get)
-	err := checkServiceLocked(request, ds.AdminState)
-	if err != nil {
-		c.sendError(writer, request, edgexErr.KindServiceLocked, "service locked", err, sdkCommon.APIV2NameCommandRoute, correlationID)
-		return
-	}
-
+	var err error
 	var body string
+	var sendEvent bool
 	var reserved url.Values
 	if request.Method == http.MethodPut {
 		// read request body for PUT command
@@ -50,19 +44,22 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 		body, reserved = filterQueryParams(request.URL.RawQuery, c.lc)
 	}
 
+	// push event to coredata if specified in GET command query parameters (default no)
+	if ok, exist := reserved[SDKPostEventReserved]; exist && ok[0] == "yes" {
+		sendEvent = true
+	}
 	isRead := request.Method == http.MethodGet
-	event, edgexErr := application.CommandHandler(isRead, vars, body, correlationID, c.dic)
+	event, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, body, c.dic)
 	if edgexErr != nil {
 		c.sendEdgexError(writer, request, edgexErr, sdkCommon.APIV2NameCommandRoute, correlationID)
 		return
 	}
 
-	// push to core and return event in http response based on SDK reserved query parameters
-	if ok, exist := reserved[SDKPostEventReserved]; exist && ok[0] == "yes" {
-		go sdkCommon.SendEvent(event, c.lc, container.CoredataEventClientFrom(c.dic.Get))
-	}
+	// return http response based on SDK reserved query parameters (default yes)
 	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == "yes" {
-		c.sendEventResponse(writer, request, event, container.CoredataEventClientFrom(c.dic.Get), sdkCommon.APIV2NameCommandRoute, correlationID)
+		// TODO: the usage of CBOR encoding for binary reading is under discussion
+		// make the desired change when we have conclusion
+		c.sendResponse(writer, request, sdkCommon.APIV2NameCommandRoute, event, http.StatusOK)
 	}
 }
 
