@@ -1,11 +1,17 @@
+// -*- Mode: Go; indent-tabs-mode: t -*-
+//
+// Copyright (C) 2020 IOTech Ltd
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package http
 
 import (
 	"net/http"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
 )
 
@@ -31,5 +37,6 @@ func (c *V2HttpController) Discovery(writer http.ResponseWriter, request *http.R
 		return
 	}
 
-	handler.DiscoveryHandler(writer, discovery, c.lc)
+	go autodiscovery.DiscoveryWrapper(discovery, c.lc)
+	c.sendResponse(writer, request, sdkCommon.APIV2DiscoveryRoute, nil, http.StatusAccepted)
 }

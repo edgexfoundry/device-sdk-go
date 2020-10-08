@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"runtime"
 
+	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/handler"
@@ -73,7 +74,8 @@ func (c *RestController) discoveryFunc(w http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	handler.DiscoveryHandler(w, discovery, c.LoggingClient)
+	go autodiscovery.DiscoveryWrapper(discovery, c.LoggingClient)
+	w.WriteHeader(http.StatusAccepted) //status=202
 }
 
 func (c *RestController) transformFunc(w http.ResponseWriter, req *http.Request) {
