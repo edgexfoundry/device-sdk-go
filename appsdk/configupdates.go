@@ -185,7 +185,7 @@ func (sdk *AppFunctionsSDK) startStoreForward() {
 		storeForwardEnabledCtx,
 		sdk.ServiceKey,
 		sdk.config,
-		sdk.edgexClients)
+		sdk.EdgexClients)
 }
 
 // stopStoreForward stops the Store and Forward processing

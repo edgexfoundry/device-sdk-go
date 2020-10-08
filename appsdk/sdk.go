@@ -94,27 +94,31 @@ type AppFunctionsSDK struct {
 	// TargetType is the expected type of the incoming data. Must be set to a pointer to an instance of the type.
 	// Defaults to &models.Event{} if nil. The income data is unmarshaled (JSON or CBOR) in to the type,
 	// except when &[]byte{} is specified. In this case the []byte data is pass to the first function in the Pipeline.
-	TargetType                interface{}
+	TargetType interface{}
+	// EdgexClients allows access to the EdgeX clients such as the CommandClient.
+	// Note that the individual clients (e.g EdgexClients.CommandClient) may be nil if the Service (Command) is not configured
+	// in the [Clients] section of the App Service's configuration.
+	// It is highly recommend that the clients are verified to not be nil before use.
+	EdgexClients common.EdgeXClients
+	// RegistryClient is the client used by service to communicate with service registry.
+	RegistryClient            registry.Client
 	transforms                []appcontext.AppFunction
 	skipVersionCheck          bool
 	usingConfigurablePipeline bool
 	httpErrors                chan error
 	runtime                   *runtime.GolangRuntime
 	webserver                 *webserver.WebServer
-	edgexClients              common.EdgeXClients
-	// RegistryClient is the client used by service to communicate with service registry.
-	RegistryClient        registry.Client
-	config                *common.ConfigurationStruct
-	storeClient           interfaces.StoreClient
-	secretProvider        security.SecretProvider
-	storeForwardWg        *sync.WaitGroup
-	storeForwardCancelCtx context.CancelFunc
-	appWg                 *sync.WaitGroup
-	appCtx                context.Context
-	appCancelCtx          context.CancelFunc
-	deferredFunctions     []bootstrap.Deferred
-	serviceKeyOverride    string
-	backgroundChannel     <-chan types.MessageEnvelope
+	config                    *common.ConfigurationStruct
+	storeClient               interfaces.StoreClient
+	secretProvider            security.SecretProvider
+	storeForwardWg            *sync.WaitGroup
+	storeForwardCancelCtx     context.CancelFunc
+	appWg                     *sync.WaitGroup
+	appCtx                    context.Context
+	appCancelCtx              context.CancelFunc
+	deferredFunctions         []bootstrap.Deferred
+	serviceKeyOverride        string
+	backgroundChannel         <-chan types.MessageEnvelope
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -398,11 +402,11 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.storeClient = container.StoreClientFrom(dic.Get)
 	sdk.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	sdk.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
-	sdk.edgexClients.LoggingClient = sdk.LoggingClient
-	sdk.edgexClients.EventClient = container.EventClientFrom(dic.Get)
-	sdk.edgexClients.ValueDescriptorClient = container.ValueDescriptorClientFrom(dic.Get)
-	sdk.edgexClients.NotificationsClient = container.NotificationsClientFrom(dic.Get)
-	sdk.edgexClients.CommandClient = container.CommandClientFrom(dic.Get)
+	sdk.EdgexClients.LoggingClient = sdk.LoggingClient
+	sdk.EdgexClients.EventClient = container.EventClientFrom(dic.Get)
+	sdk.EdgexClients.ValueDescriptorClient = container.ValueDescriptorClientFrom(dic.Get)
+	sdk.EdgexClients.NotificationsClient = container.NotificationsClientFrom(dic.Get)
+	sdk.EdgexClients.CommandClient = container.CommandClientFrom(dic.Get)
 
 	// We do special processing when the writeable section of the configuration changes, so have
 	// to wait to be signaled when the configuration has been updated and then process the changes
@@ -442,16 +446,16 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStru
 	switch strings.ToUpper(configuration.Binding.Type) {
 	case "HTTP":
 		sdk.LoggingClient.Info("HTTP trigger selected")
-		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.edgexClients}
+		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.EdgexClients}
 
 	case "MESSAGEBUS",
 		"EDGEX-MESSAGEBUS": // Allows for more explicit name now that we have plain MQTT option also
 		sdk.LoggingClient.Info("EdgeX MessageBus trigger selected")
-		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.edgexClients}
+		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.EdgexClients}
 
 	case "EXTERNAL-MQTT":
 		sdk.LoggingClient.Info("External MQTT trigger selected")
-		t = mqtt.NewTrigger(configuration, runtime, sdk.edgexClients, sdk.secretProvider)
+		t = mqtt.NewTrigger(configuration, runtime, sdk.EdgexClients, sdk.secretProvider)
 
 	default:
 		sdk.LoggingClient.Error(fmt.Sprintf("Invalid Trigger type of '%s' specified", configuration.Binding.Type))
