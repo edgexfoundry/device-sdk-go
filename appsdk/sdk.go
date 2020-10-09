@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 	nethttp "net/http"
 	"net/url"
@@ -71,6 +72,13 @@ const (
 	envServiceProtocol       = "Service_Protocol" // Used for envV1Service processing TODO: Remove for release v2.0.0
 	envServiceHost           = "Service_Host"     // Used for envV1Service processing TODO: Remove for release v2.0.0
 	envServicePort           = "Service_Port"     // Used for envV1Service processing TODO: Remove for release v2.0.0
+
+	bindingTypeMessageBus      = "MESSAGEBUS"
+	bindingTypeEdgeXMessageBus = "EDGEX-MESSAGEBUS"
+	bindingTypeMQTT            = "EXTERNAL-MQTT"
+	bindingTypeHTTP            = "HTTP"
+
+	OptionalPasswordKey = "Password"
 )
 
 // The key type is unexported to prevent collisions with context keys defined in
@@ -408,6 +416,18 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdk.EdgexClients.NotificationsClient = container.NotificationsClientFrom(dic.Get)
 	sdk.EdgexClients.CommandClient = container.CommandClientFrom(dic.Get)
 
+	// If using the RedisStreams MessageBus implementation then need to make sure the
+	// password for the Redis DB is set in the MessageBus Optional properties.
+	bindingType := strings.ToUpper(sdk.config.Binding.Type)
+	if (bindingType == bindingTypeMessageBus || bindingType == bindingTypeEdgeXMessageBus) &&
+		sdk.config.MessageBus.Type == messaging.RedisStreams {
+		credentials, err := sdk.secretProvider.GetDatabaseCredentials(sdk.config.Database)
+		if err != nil {
+			return fmt.Errorf("unable to set RedisStreams password from DB credentials")
+		}
+		sdk.config.MessageBus.Optional[OptionalPasswordKey] = credentials.Password
+	}
+
 	// We do special processing when the writeable section of the configuration changes, so have
 	// to wait to be signaled when the configuration has been updated and then process the changes
 	NewConfigUpdateProcessor(sdk).WaitForConfigUpdates(configUpdated)
@@ -444,16 +464,16 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStru
 	// Need to make dynamic, search for the binding that is input
 
 	switch strings.ToUpper(configuration.Binding.Type) {
-	case "HTTP":
+	case bindingTypeHTTP:
 		sdk.LoggingClient.Info("HTTP trigger selected")
 		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.EdgexClients}
 
-	case "MESSAGEBUS",
-		"EDGEX-MESSAGEBUS": // Allows for more explicit name now that we have plain MQTT option also
+	case bindingTypeMessageBus,
+		bindingTypeEdgeXMessageBus: // Allows for more explicit name now that we have plain MQTT option also
 		sdk.LoggingClient.Info("EdgeX MessageBus trigger selected")
 		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.EdgexClients}
 
-	case "EXTERNAL-MQTT":
+	case bindingTypeMQTT:
 		sdk.LoggingClient.Info("External MQTT trigger selected")
 		t = mqtt.NewTrigger(configuration, runtime, sdk.EdgexClients, sdk.secretProvider)
 
