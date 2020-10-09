@@ -86,6 +86,7 @@ func TestValidateVersionMatch(t *testing.T) {
 		{"SDK Beta Version", "1.0.0", "v0.2.0", false, false},
 		{"SDK Version malformed", "1.0.0", "", false, true},
 		{"Core prerelease version", CorePreReleaseVersion, "v1.0.0", false, false},
+		{"Core developer version", CoreDeveloperVersion, "v1.0.0", false, false},
 		{"Core version malformed", "12", "v1.0.0", false, true},
 		{"Core version JSON bad", "", "v1.0.0", false, true},
 		{"Core version JSON empty", "{}", "v1.0.0", false, true},

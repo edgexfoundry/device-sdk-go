@@ -34,6 +34,7 @@ import (
 
 const (
 	CorePreReleaseVersion = "master"
+	CoreDeveloperVersion  = "0.0.0"
 	CoreServiceVersionKey = "version"
 	VersionMajorIndex     = 0
 )
@@ -118,7 +119,15 @@ func (vv *VersionValidator) BootstrapHandler(
 		logger.Info(
 			"Skipping version compatibility check for Core Pre-release version",
 			"version",
-			internal.SDKVersion)
+			coreVersion)
+		return true
+	}
+
+	if coreVersion == CoreDeveloperVersion {
+		logger.Info(
+			"Skipping version compatibility check for Core Developer version",
+			"version",
+			coreVersion)
 		return true
 	}
 
