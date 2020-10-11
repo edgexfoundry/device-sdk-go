@@ -46,7 +46,7 @@ var (
 type DeviceService struct {
 	ServiceName    string
 	LoggingClient  logger.LoggingClient
-	registryClient registry.Client
+	RegistryClient registry.Client
 	edgexClients   clients.EdgeXClients
 	controller     *controller.RestController
 	config         *common.ConfigurationStruct
@@ -89,7 +89,7 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 
 func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
-	s.registryClient = bootstrapContainer.RegistryFrom(dic.Get)
+	s.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.edgexClients.GeneralClient = container.GeneralClientFrom(dic.Get)
 	s.edgexClients.DeviceClient = container.MetadataDeviceClientFrom(dic.Get)
 	s.edgexClients.DeviceServiceClient = container.MetadataDeviceServiceClientFrom(dic.Get)
