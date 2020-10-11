@@ -16,7 +16,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -122,9 +121,8 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 		case <-ctx.Done():
 			return
 		case devices := <-s.deviceCh:
-			id := handler.ReleaseLock()
+			ctx := context.Background()
 			pws := cache.ProvisionWatchers().All()
-			ctx := context.WithValue(context.Background(), common.CorrelationHeader, id)
 			for _, d := range devices {
 				for _, pw := range pws {
 					if whitelistPass(d, pw, s.LoggingClient) && blacklistPass(d, pw, s.LoggingClient) {
