@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -53,7 +52,7 @@ func BootstrapHandler(
 					return
 				case <-time.After(duration):
 					lc.Debug("Auto-discovery triggered")
-					handler.DiscoveryHandler(nil, discovery, lc)
+					DiscoveryWrapper(discovery, lc)
 				}
 			}
 		}()
