@@ -7,7 +7,6 @@
 package http
 
 import (
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,7 +14,6 @@ import (
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/v2/application"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
 	"github.com/gorilla/mux"
 )
@@ -27,64 +25,64 @@ const QueryParameterValueNo = "no"
 
 func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
+
+	var body string
+	var sendEvent bool
+	var err edgexErr.EdgeX
+	var reserved url.Values
 	vars := mux.Vars(request)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
 
-	var err error
-	var body string
-	var sendEvent bool
-	var reserved url.Values
+	// read request body for PUT command, or parse query parameters for GET command.
 	if request.Method == http.MethodPut {
-		// read request body for PUT command
 		body, err = readBodyAsString(request)
-		if err != nil {
-			c.sendError(writer, request, edgexErr.KindServerError, "failed to read request body", err, sdkCommon.APIV2NameCommandRoute, correlationID)
-			return
-		}
 	} else if request.Method == http.MethodGet {
-		// filter out the SDK reserved parameters and save the result for GET command
-		body, reserved = filterQueryParams(request.URL.RawQuery, c.lc)
+		body, reserved, err = filterQueryParams(request.URL.RawQuery)
+	}
+	if err != nil {
+		c.sendEdgexError(writer, request, err, sdkCommon.APIV2NameCommandRoute)
+		return
 	}
 
-	// push event to coredata if specified in GET command query parameters (default no)
+	// push event to CoreData if specified (default no)
 	if ok, exist := reserved[SDKPostEventReserved]; exist && ok[0] == QueryParameterValueYes {
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
 	event, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, body, c.dic)
 	if edgexErr != nil {
-		c.sendEdgexError(writer, request, edgexErr, sdkCommon.APIV2NameCommandRoute, correlationID)
+		c.sendEdgexError(writer, request, edgexErr, sdkCommon.APIV2NameCommandRoute)
 		return
 	}
 
-	// return http response based on SDK reserved query parameters (default yes)
+	// return event in http response if specified (default yes)
 	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == QueryParameterValueYes {
 		// TODO: the usage of CBOR encoding for binary reading is under discussion
-		// make the desired change when we have conclusion
 		c.sendResponse(writer, request, sdkCommon.APIV2NameCommandRoute, event, http.StatusOK)
 	}
 }
 
-func readBodyAsString(req *http.Request) (string, error) {
+func readBodyAsString(req *http.Request) (string, edgexErr.EdgeX) {
 	defer req.Body.Close()
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		return "", err
+		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to read request body", err)
 	}
 
 	if len(body) == 0 && req.Method == http.MethodPut {
-		return "", errors.New("no request body provided for PUT command")
+		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "no request body provided for PUT command", nil)
 	}
 
 	return string(body), nil
 }
 
-func filterQueryParams(queryParams string, lc logger.LoggingClient) (string, url.Values) {
+func filterQueryParams(queryParams string) (string, url.Values, edgexErr.EdgeX) {
 	m, err := url.ParseQuery(queryParams)
 	if err != nil {
-		lc.Error("Error parsing query parameters: %s\n", err)
-		return "", nil
+		edgexErr := edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse query parameter", err)
+		return "", nil, edgexErr
 	}
+
 	var reserved = make(url.Values)
 	// Separate parameters with SDK reserved prefix
 	for k := range m {
@@ -94,5 +92,5 @@ func filterQueryParams(queryParams string, lc logger.LoggingClient) (string, url
 		}
 	}
 
-	return m.Encode(), reserved
+	return m.Encode(), reserved, nil
 }

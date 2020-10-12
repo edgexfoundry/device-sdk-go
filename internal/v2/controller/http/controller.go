@@ -23,7 +23,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 )
 
@@ -72,14 +71,6 @@ func updateSpecifiedProfile(profileName string, dic *di.Container) error {
 	return nil
 }
 
-func checkServiceLocked(request *http.Request, locked contract.AdminState) error {
-	if locked == contract.Locked {
-		return fmt.Errorf("service is locked; %s %s", request.Method, request.URL)
-	}
-
-	return nil
-}
-
 // sendResponse puts together the response packet for the V2 API
 func (c *V2HttpController) sendResponse(
 	writer http.ResponseWriter,
@@ -111,26 +102,14 @@ func (c *V2HttpController) sendResponse(
 	}
 }
 
-func (c *V2HttpController) sendError(
-	writer http.ResponseWriter,
-	request *http.Request,
-	errKind edgexErr.ErrKind,
-	message string,
-	err error,
-	api string,
-	requestID string) {
-	edgexErr := edgexErr.NewCommonEdgeX(errKind, message, err)
-	c.sendEdgexError(writer, request, edgexErr, api, requestID)
-}
-
 func (c *V2HttpController) sendEdgexError(
 	writer http.ResponseWriter,
 	request *http.Request,
 	err edgexErr.EdgeX,
-	api string,
-	requestID string) {
-	c.lc.Error(err.Error())
-	c.lc.Debug(err.DebugMessages())
-	response := common.NewBaseResponse(requestID, err.Message(), err.Code())
+	api string) {
+	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
+	c.lc.Error(err.Error(), sdkCommon.CorrelationHeader, correlationID)
+	c.lc.Debug(err.DebugMessages(), sdkCommon.CorrelationHeader, correlationID)
+	response := common.NewBaseResponse("", err.Message(), err.Code())
 	c.sendResponse(writer, request, api, response, err.Code())
 }
