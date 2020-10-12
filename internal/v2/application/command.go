@@ -56,16 +56,20 @@ func CommandHandler(isRead bool, sendEvent bool, id string, vars map[string]stri
 	var device contract.Device
 	deviceKey := vars[sdkCommon.IdVar]
 
+	// the device service will perform some operations(e.g. update LastConnected timestamp,
+	// push returning event to core-data) after a device is successfully interacted with if
+	// it has been configured to do so, and those operation apply to every protocol and
+	// need to be finished in the end of application layer before returning to protocol layer.
 	defer func() {
-		// update LastConnected when the device was successfully interacted with
-		if err == nil {
-			go sdkCommon.UpdateLastConnected(
-				device.Name,
-				container.ConfigurationFrom(dic.Get),
-				bootstrapContainer.LoggingClientFrom(dic.Get),
-				container.MetadataDeviceClientFrom(dic.Get))
+		if err != nil {
+			return
 		}
-		// push event to coredata if specified
+		go sdkCommon.UpdateLastConnected(
+			device.Name,
+			container.ConfigurationFrom(dic.Get),
+			bootstrapContainer.LoggingClientFrom(dic.Get),
+			container.MetadataDeviceClientFrom(dic.Get))
+
 		if sendEvent {
 			ec := container.CoredataEventClientFrom(dic.Get)
 			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
@@ -723,7 +727,8 @@ func commandValueToReading(cv *dsModels.CommandValue, deviceName string, mediaTy
 }
 
 func SendEvent(event *dtos.Event, id string, lc logger.LoggingClient, ec coredata.EventClient) {
-	// TODO: comment out until core-contracts supports v2models and there's conclusion about binary encoding
+	// TODO: comment out until core-contracts(EventClient) supports v2models
+	// TODO: the usage of CBOR encoding for binary reading is under discussion
 	//ctx := context.WithValue(context.Background(), sdkCommon.CorrelationHeader, id)
 	//ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeJSON)
 	//responseBody, err := ec.Add(ctx, event)
