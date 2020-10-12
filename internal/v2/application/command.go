@@ -35,7 +35,7 @@ import (
 type CommandProcessor struct {
 	device         *contract.Device
 	deviceResource *contract.DeviceResource
-	id             string
+	requestID      string
 	cmd            string
 	params         string
 	dic            *di.Container
@@ -45,14 +45,14 @@ func NewCommandProcessor(device *contract.Device, dr *contract.DeviceResource, i
 	return &CommandProcessor{
 		device:         device,
 		deviceResource: dr,
-		id:             id,
+		requestID:      id,
 		cmd:            cmd,
 		params:         params,
 		dic:            dic,
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, id string, vars map[string]string, body string, dic *di.Container) (event *dtos.Event, err edgexErr.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, requestID string, vars map[string]string, body string, dic *di.Container) (event *dtos.Event, err edgexErr.EdgeX) {
 	var device contract.Device
 	deviceKey := vars[sdkCommon.IdVar]
 
@@ -73,7 +73,7 @@ func CommandHandler(isRead bool, sendEvent bool, id string, vars map[string]stri
 		if sendEvent {
 			ec := container.CoredataEventClientFrom(dic.Get)
 			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-			go SendEvent(event, id, lc, ec)
+			go SendEvent(event, requestID, lc, ec)
 		}
 	}()
 
@@ -105,25 +105,30 @@ func CommandHandler(isRead bool, sendEvent bool, id string, vars map[string]stri
 		method = sdkCommon.SetCmdMethod
 	}
 	cmd := vars[sdkCommon.CommandVar]
-	helper := NewCommandProcessor(&device, nil, id, cmd, body, dic)
-	cmdExists, _ := cache.Profiles().CommandExists(device.Profile.Name, cmd, method)
-	if !cmdExists {
+	cmdExists, e := cache.Profiles().CommandExists(device.Profile.Name, cmd, method)
+	if e != nil {
+		errMsg := fmt.Sprintf("failed to identify command %s in cache", cmd)
+		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, e)
+	}
+
+	helper := NewCommandProcessor(&device, nil, requestID, cmd, body, dic)
+	if cmdExists {
+		if isRead {
+			return helper.ReadCommand()
+		} else {
+			return nil, helper.WriteCommand()
+		}
+	} else {
 		dr, drExists := cache.Profiles().DeviceResource(device.Profile.Name, cmd)
 		if !drExists {
 			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "command not found", nil)
 		}
 
-		helper = NewCommandProcessor(&device, &dr, id, cmd, body, dic)
+		helper = NewCommandProcessor(&device, &dr, requestID, cmd, body, dic)
 		if isRead {
 			return helper.ReadDeviceResource()
 		} else {
 			return nil, helper.WriteDeviceResource()
-		}
-	} else {
-		if isRead {
-			return helper.ReadCommand()
-		} else {
-			return nil, helper.WriteCommand()
 		}
 	}
 }
@@ -133,7 +138,7 @@ func (c *CommandProcessor) ReadDeviceResource() (*dtos.Event, edgexErr.EdgeX) {
 	lc.Debug(fmt.Sprintf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name))
 
 	// check provided deviceResource is not write-only
-	if c.deviceResource.Properties.Value.ReadWrite == "W" {
+	if c.deviceResource.Properties.Value.ReadWrite == sdkCommon.DeviceResourceWriteOnly {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", c.deviceResource.Name)
 		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
@@ -200,7 +205,7 @@ func (c *CommandProcessor) ReadCommand() (*dtos.Event, edgexErr.EdgeX) {
 		}
 
 		// check the deviceResource isn't write-only
-		if dr.Properties.Value.ReadWrite == "W" {
+		if dr.Properties.Value.ReadWrite == sdkCommon.DeviceResourceWriteOnly {
 			errMsg := fmt.Sprintf("deviceResource %s in GET command %s is marked as write-only", drName, c.cmd)
 			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
@@ -238,7 +243,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	lc.Debug(fmt.Sprintf("Application - writeDeviceResource: writting deviceResource: %s", c.deviceResource.Name))
 
 	// check provided deviceResource is not read-only
-	if c.deviceResource.Properties.Value.ReadWrite == "R" {
+	if c.deviceResource.Properties.Value.ReadWrite == sdkCommon.DeviceResourceReadOnly {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", c.deviceResource.Name)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
@@ -328,7 +333,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		}
 
 		// check the deviceResource isn't read-only
-		if dr.Properties.Value.ReadWrite == "R" {
+		if dr.Properties.Value.ReadWrite == sdkCommon.DeviceResourceReadOnly {
 			errMsg := fmt.Sprintf("deviceResource %s in PUT command %s is marked as read-only", drName, c.cmd)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
@@ -479,28 +484,28 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 
 	origin := time.Now().UnixNano()
 	switch strings.ToLower(dr.Properties.Value.Type) {
-	case "string":
+	case strings.ToLower(dtos.ValueTypeString):
 		result = dsModels.NewStringValue(dr.Name, origin, v)
-	case "bool":
+	case strings.ToLower(dtos.ValueTypeBool):
 		value, err := strconv.ParseBool(v)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewBoolValue(dr.Name, origin, value)
-	case "boolarray":
+	case strings.ToLower(dtos.ValueTypeBoolArray):
 		var arr []bool
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewBoolArrayValue(dr.Name, origin, arr)
-	case "uint8":
+	case strings.ToLower(dtos.ValueTypeUint8):
 		n, err := strconv.ParseUint(v, 10, 8)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint8Value(dr.Name, origin, uint8(n))
-	case "uint8array":
+	case strings.ToLower(dtos.ValueTypeUint8Array):
 		var arr []uint8
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -511,13 +516,13 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, uint8(n))
 		}
 		result, err = dsModels.NewUint8ArrayValue(dr.Name, origin, arr)
-	case "uint16":
+	case strings.ToLower(dtos.ValueTypeUint16):
 		n, err := strconv.ParseUint(v, 10, 16)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint16Value(dr.Name, origin, uint16(n))
-	case "uint16array":
+	case strings.ToLower(dtos.ValueTypeUint16Array):
 		var arr []uint16
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -528,13 +533,13 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, uint16(n))
 		}
 		result, err = dsModels.NewUint16ArrayValue(dr.Name, origin, arr)
-	case "uint32":
+	case strings.ToLower(dtos.ValueTypeUint32):
 		n, err := strconv.ParseUint(v, 10, 32)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint32Value(dr.Name, origin, uint32(n))
-	case "uint32array":
+	case strings.ToLower(dtos.ValueTypeUint32Array):
 		var arr []uint32
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -545,13 +550,13 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, uint32(n))
 		}
 		result, err = dsModels.NewUint32ArrayValue(dr.Name, origin, arr)
-	case "uint64":
+	case strings.ToLower(dtos.ValueTypeUint64):
 		n, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint64Value(dr.Name, origin, n)
-	case "uint64array":
+	case strings.ToLower(dtos.ValueTypeUint64Array):
 		var arr []uint64
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -562,59 +567,59 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, n)
 		}
 		result, err = dsModels.NewUint64ArrayValue(dr.Name, origin, arr)
-	case "int8":
+	case strings.ToLower(dtos.ValueTypeInt8):
 		n, err := strconv.ParseInt(v, 10, 8)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt8Value(dr.Name, origin, int8(n))
-	case "int8array":
+	case strings.ToLower(dtos.ValueTypeInt8Array):
 		var arr []int8
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt8ArrayValue(dr.Name, origin, arr)
-	case "int16":
+	case strings.ToLower(dtos.ValueTypeInt16):
 		n, err := strconv.ParseInt(v, 10, 16)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt16Value(dr.Name, origin, int16(n))
-	case "int16array":
+	case strings.ToLower(dtos.ValueTypeInt16Array):
 		var arr []int16
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt16ArrayValue(dr.Name, origin, arr)
-	case "int32":
+	case strings.ToLower(dtos.ValueTypeInt32):
 		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt32Value(dr.Name, origin, int32(n))
-	case "int32array":
+	case strings.ToLower(dtos.ValueTypeInt32Array):
 		var arr []int32
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt32ArrayValue(dr.Name, origin, arr)
-	case "int64":
+	case strings.ToLower(dtos.ValueTypeInt64):
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt64Value(dr.Name, origin, n)
-	case "int64array":
+	case strings.ToLower(dtos.ValueTypeInt64Array):
 		var arr []int64
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt64ArrayValue(dr.Name, origin, arr)
-	case "float32":
+	case strings.ToLower(dtos.ValueTypeFloat32):
 		n, e := strconv.ParseFloat(v, 32)
 		if e == nil {
 			result, err = dsModels.NewFloat32Value(dr.Name, origin, float32(n))
@@ -639,14 +644,14 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 				result, err = dsModels.NewFloat32Value(dr.Name, origin, val)
 			}
 		}
-	case "float32array":
+	case strings.ToLower(dtos.ValueTypeFloat32Array):
 		var arr []float32
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewFloat32ArrayValue(dr.Name, origin, arr)
-	case "float64":
+	case strings.ToLower(dtos.ValueTypeFloat64):
 		var val float64
 		val, err = strconv.ParseFloat(v, 64)
 		if err == nil {
@@ -670,7 +675,7 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 				result, err = dsModels.NewFloat64Value(dr.Name, origin, val)
 			}
 		}
-	case "float64array":
+	case strings.ToLower(dtos.ValueTypeFloat64Array):
 		var arr []float64
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {

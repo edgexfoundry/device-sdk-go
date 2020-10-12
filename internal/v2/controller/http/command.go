@@ -22,6 +22,8 @@ import (
 
 const SDKPostEventReserved = "ds-postevent"
 const SDKReturnEventReserved = "ds-returnevent"
+const QueryParameterValueYes = "yes"
+const QueryParameterValueNo = "no"
 
 func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
@@ -45,7 +47,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	}
 
 	// push event to coredata if specified in GET command query parameters (default no)
-	if ok, exist := reserved[SDKPostEventReserved]; exist && ok[0] == "yes" {
+	if ok, exist := reserved[SDKPostEventReserved]; exist && ok[0] == QueryParameterValueYes {
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
@@ -56,7 +58,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	}
 
 	// return http response based on SDK reserved query parameters (default yes)
-	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == "yes" {
+	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == QueryParameterValueYes {
 		// TODO: the usage of CBOR encoding for binary reading is under discussion
 		// make the desired change when we have conclusion
 		c.sendResponse(writer, request, sdkCommon.APIV2NameCommandRoute, event, http.StatusOK)

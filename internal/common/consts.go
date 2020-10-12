@@ -54,6 +54,9 @@ const (
 	GetCmdMethod string = "get"
 	SetCmdMethod string = "set"
 
+	DeviceResourceReadOnly  string = "R"
+	DeviceResourceWriteOnly string = "W"
+
 	CorrelationHeader = clients.CorrelationHeader
 	URLRawQuery       = "urlRawQuery"
 	SDKReservedPrefix = "ds-"
