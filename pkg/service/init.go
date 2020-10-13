@@ -17,6 +17,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/provision"
+	v2cache "github.com/edgexfoundry/device-sdk-go/internal/v2/cache"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
@@ -52,6 +53,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		container.CoredataValueDescriptorClientFrom(dic.Get),
 		container.MetadataDeviceClientFrom(dic.Get),
 		container.MetadataProvisionWatcherClientFrom(dic.Get))
+	v2cache.InitV2Cache()
 
 	if ds.AsyncReadings() {
 		ds.asyncCh = make(chan *dsModels.AsyncValues, ds.config.Service.AsyncBufferSize)
