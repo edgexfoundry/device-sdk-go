@@ -83,6 +83,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 
 	opts := pahoMqtt.NewClientOptions()
 	opts.AutoReconnect = brokerConfig.AutoReconnect
+	opts.OnConnect = trigger.onConnectHandler
 	opts.ClientID = brokerConfig.ClientId
 	if len(brokerConfig.ConnectTimeout) > 0 {
 		duration, err := time.ParseDuration(brokerConfig.ConnectTimeout)
@@ -112,14 +113,8 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		return nil, fmt.Errorf("could not connect to broker for MQTT trigger: %s", token.Error().Error())
 	}
+
 	logger.Info("Connected to mqtt server for MQTT trigger")
-
-	if token := mqttClient.Subscribe(topic, brokerConfig.QoS, trigger.messageHandler); token.Wait() && token.Error() != nil {
-		mqttClient.Disconnect(0)
-		return nil, fmt.Errorf("could not subscribe to topic '%s' for MQTT trigger: %s", topic, token.Error().Error())
-	}
-
-	logger.Info(fmt.Sprintf("Subscribed to topic '%s' for MQTT trigger", topic))
 
 	deferred := func() {
 		logger.Info("Disconnecting from broker for MQTT trigger")
@@ -129,6 +124,22 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	trigger.mqttClient = mqttClient
 
 	return deferred, nil
+}
+
+func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
+	// Convenience short cuts
+	logger := trigger.edgeXClients.LoggingClient
+	topic := trigger.configuration.Binding.SubscribeTopic
+	qos := trigger.configuration.MqttBroker.QoS
+
+	if token := mqttClient.Subscribe(topic, qos, trigger.messageHandler); token.Wait() && token.Error() != nil {
+		mqttClient.Disconnect(0)
+		logger.Error(fmt.Sprintf("could not subscribe to topic '%s' for MQTT trigger: %s",
+			topic, token.Error().Error()))
+		return
+	}
+
+	logger.Info(fmt.Sprintf("Subscribed to topic '%s' for MQTT trigger", topic))
 }
 
 func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.Message) {
