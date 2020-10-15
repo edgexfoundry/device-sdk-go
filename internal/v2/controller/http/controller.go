@@ -23,7 +23,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 )
 
@@ -72,14 +71,6 @@ func updateSpecifiedProfile(profileName string, dic *di.Container) error {
 	return nil
 }
 
-func checkServiceLocked(request *http.Request, locked contract.AdminState) error {
-	if locked == contract.Locked {
-		return fmt.Errorf("service is locked; %s %s", request.Method, request.URL)
-	}
-
-	return nil
-}
-
 // sendResponse puts together the response packet for the V2 API
 func (c *V2HttpController) sendResponse(
 	writer http.ResponseWriter,
@@ -94,32 +85,31 @@ func (c *V2HttpController) sendResponse(
 	writer.Header().Set(clients.ContentType, clients.ContentTypeJSON)
 	writer.WriteHeader(statusCode)
 
-	data, err := json.Marshal(response)
-	if err != nil {
-		c.lc.Error(fmt.Sprintf("Unable to marshal %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	if response != nil {
+		data, err := json.Marshal(response)
+		if err != nil {
+			c.lc.Error(fmt.Sprintf("Unable to marshal %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	_, err = writer.Write(data)
-	if err != nil {
-		c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
+		_, err = writer.Write(data)
+		if err != nil {
+			c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), clients.CorrelationHeader, correlationID)
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
-func (c *V2HttpController) sendError(
+func (c *V2HttpController) sendEdgexError(
 	writer http.ResponseWriter,
 	request *http.Request,
-	errKind edgexErr.ErrKind,
-	message string,
-	err error,
-	api string,
-	requestID string) {
-	edgexErr := edgexErr.NewCommonEdgeX(errKind, message, err)
-	c.lc.Error(edgexErr.Error())
-	c.lc.Debug(edgexErr.DebugMessages())
-	response := common.NewBaseResponse(requestID, edgexErr.Message(), edgexErr.Code())
-	c.sendResponse(writer, request, api, response, edgexErr.Code())
+	err edgexErr.EdgeX,
+	api string) {
+	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
+	c.lc.Error(err.Error(), sdkCommon.CorrelationHeader, correlationID)
+	c.lc.Debug(err.DebugMessages(), sdkCommon.CorrelationHeader, correlationID)
+	response := common.NewBaseResponse("", err.Message(), err.Code())
+	c.sendResponse(writer, request, api, response, err.Code())
 }

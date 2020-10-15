@@ -13,27 +13,28 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 func (c *V2HttpController) Discovery(writer http.ResponseWriter, request *http.Request) {
 	ds := container.DeviceServiceFrom(c.dic.Get)
-	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
-
-	err := checkServiceLocked(request, ds.AdminState)
-	if err != nil {
-		c.sendError(writer, request, edgexErr.KindServiceLocked, "Service Locked", err, sdkCommon.APIV2DiscoveryRoute, correlationID)
+	if ds.AdminState == contract.Locked {
+		err := edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, "service locked", nil)
+		c.sendEdgexError(writer, request, err, sdkCommon.APIV2DiscoveryRoute)
 		return
 	}
 
 	configuration := container.ConfigurationFrom(c.dic.Get)
 	if !configuration.Device.Discovery.Enabled {
-		c.sendError(writer, request, edgexErr.KindServiceUnavailable, "Device discovery disabled", nil, sdkCommon.APIV2DiscoveryRoute, correlationID)
+		err := edgexErr.NewCommonEdgeX(edgexErr.KindServiceUnavailable, "device discovery disabled", nil)
+		c.sendEdgexError(writer, request, err, sdkCommon.APIV2DiscoveryRoute)
 		return
 	}
 
 	discovery := container.ProtocolDiscoveryFrom(c.dic.Get)
 	if discovery == nil {
-		c.sendError(writer, request, edgexErr.KindNotImplemented, "ProtocolDiscovery not implemented", nil, sdkCommon.APIV2DiscoveryRoute, correlationID)
+		err := edgexErr.NewCommonEdgeX(edgexErr.KindNotImplemented, "protocolDiscovery not implemented", nil)
+		c.sendEdgexError(writer, request, err, sdkCommon.APIV2DiscoveryRoute)
 		return
 	}
 
