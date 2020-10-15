@@ -31,7 +31,7 @@ const (
 )
 
 var validRequest = SecretsRequest{
-	BaseRequest: common.BaseRequest{RequestID: TestUUID},
+	BaseRequest: common.BaseRequest{RequestId: TestUUID},
 	Path:        "something",
 	Secrets: []SecretsKeyValue{
 		{Key: "password", Value: "password"},
@@ -51,9 +51,9 @@ func TestSecretsRequest_Validate(t *testing.T) {
 	validNoPath.Path = ""
 	validWithPath := validRequest
 	validNoRequestId := validRequest
-	validNoRequestId.RequestID = ""
+	validNoRequestId.RequestId = ""
 	badRequestId := validRequest
-	badRequestId.RequestID = "Bad Request Id"
+	badRequestId.RequestId = "Bad Request Id"
 	noSecrets := validRequest
 	noSecrets.Secrets = []SecretsKeyValue{}
 	missingSecretKey := validRequest

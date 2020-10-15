@@ -127,11 +127,11 @@ func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.R
 	path, secrets := v2c.prepareSecrets(secretRequest)
 
 	if err := v2c.secretProvider.StoreSecrets(path, secrets); err != nil {
-		v2c.sendError(writer, request, errors.KindServerError, "Storing secrets failed", err, secretRequest.RequestID)
+		v2c.sendError(writer, request, errors.KindServerError, "Storing secrets failed", err, secretRequest.RequestId)
 		return
 	}
 
-	response := common.NewBaseResponseNoMessage(secretRequest.RequestID, http.StatusCreated)
+	response := common.NewBaseResponseNoMessage(secretRequest.RequestId, http.StatusCreated)
 	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusCreated)
 }
 

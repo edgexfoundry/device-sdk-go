@@ -184,7 +184,7 @@ func TestSecretsRequest(t *testing.T) {
 	assert.NotNil(t, target)
 
 	validRequest := requests.SecretsRequest{
-		BaseRequest: common.BaseRequest{RequestID: expectedRequestId},
+		BaseRequest: common.BaseRequest{RequestId: expectedRequestId},
 		Path:        "mqtt",
 		Secrets: []requests.SecretsKeyValue{
 			{Key: "username", Value: "username"},
@@ -197,9 +197,9 @@ func TestSecretsRequest(t *testing.T) {
 	validPathWithSlash := validRequest
 	validPathWithSlash.Path = "/mqtt"
 	validNoRequestId := validRequest
-	validNoRequestId.RequestID = ""
+	validNoRequestId.RequestId = ""
 	badRequestId := validRequest
-	badRequestId.RequestID = "bad requestId"
+	badRequestId.RequestId = "bad requestId"
 	noSecrets := validRequest
 	noSecrets.Secrets = []requests.SecretsKeyValue{}
 	missingSecretKey := validRequest
@@ -264,7 +264,7 @@ func TestSecretsRequest(t *testing.T) {
 				return // Test complete for error cases
 			}
 
-			assert.Equal(t, testCase.ExpectedRequestId, actualResponse.RequestID, "RequestID not as expected")
+			assert.Equal(t, testCase.ExpectedRequestId, actualResponse.RequestId, "RequestID not as expected")
 			assert.Empty(t, actualResponse.Message, "Message not empty, as expected")
 		})
 	}
