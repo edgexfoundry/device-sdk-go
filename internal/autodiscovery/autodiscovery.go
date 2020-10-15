@@ -8,6 +8,7 @@ package autodiscovery
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -46,12 +47,13 @@ func BootstrapHandler(
 			wg.Add(1)
 			defer wg.Done()
 
+			lc.Info(fmt.Sprintf("Starting auto-discovery with duration %v", duration))
+			DiscoveryWrapper(discovery, lc)
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				case <-time.After(duration):
-					lc.Debug("Auto-discovery triggered")
 					DiscoveryWrapper(discovery, lc)
 				}
 			}
