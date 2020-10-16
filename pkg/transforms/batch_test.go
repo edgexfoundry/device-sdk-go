@@ -58,13 +58,20 @@ func TestBatchInTimeAndCountMode_TimeElapsed(t *testing.T) {
 
 	go func() {
 		go func() {
-			time.Sleep(time.Second * 2)
+			time.Sleep(time.Second * 1)
 			wgFirst.Done()
 		}()
+
+		// Key to this test is this call occurs first and will be blocked until
+		// batch time interval has elapsed. In the mean time the other go func have to execute
+		// before the batch time interval has elapsed, so the sleep above has to be less than the
+		// batch time interval.
 		continuePipeline1, result := bs.Batch(context, []byte(dataToBatch[0]))
 		assert.True(t, continuePipeline1)
-		assert.Equal(t, 3, len(result.([][]byte)))
-		assert.Len(t, bs.batchData.all(), 0, "Should have 0 records")
+		if continuePipeline1 {
+			assert.Equal(t, 3, len(result.([][]byte)))
+			assert.Len(t, bs.batchData.all(), 0, "Should have 0 records")
+		}
 		wgAll.Done()
 	}()
 	go func() {
