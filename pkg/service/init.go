@@ -60,7 +60,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		go ds.processAsyncResults(ctx, wg)
 	}
 	if ds.DeviceDiscovery() {
-		ds.deviceCh = make(chan []dsModels.DiscoveredDevice)
+		ds.deviceCh = make(chan []dsModels.DiscoveredDevice, 1)
 		go ds.processAsyncFilterAndAdd(ctx, wg)
 	}
 

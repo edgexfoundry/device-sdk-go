@@ -31,7 +31,7 @@ func DiscoveryWrapper(discovery dsModels.ProtocolDiscovery, lc logger.LoggingCli
 	locker.busy = true
 	locker.mux.Unlock()
 
-	lc.Info(fmt.Sprintf("device discovery triggered"))
+	lc.Debug(fmt.Sprintf("protocol discovery triggered"))
 	discovery.Discover()
 
 	// ReleaseLock

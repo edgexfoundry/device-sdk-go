@@ -34,7 +34,6 @@ import (
 func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
-		close(s.asyncCh)
 		wg.Done()
 	}()
 
@@ -113,7 +112,6 @@ func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan 
 func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
-		close(s.deviceCh)
 		wg.Done()
 	}()
 	for {
