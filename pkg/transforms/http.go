@@ -46,6 +46,8 @@ func NewHTTPSender(url string, mimeType string, persistOnError bool) HTTPSender 
 		PersistOnError: persistOnError,
 	}
 }
+
+// NewHTTPSenderWithSecretHeader creates, initializes and returns a new instance of HTTPSender configured to use a secret header
 func NewHTTPSenderWithSecretHeader(url string, mimeType string, persistOnError bool, httpHeaderSecretName string, secretPath string) HTTPSender {
 	return HTTPSender{
 		URL:              url,
@@ -60,6 +62,17 @@ func NewHTTPSenderWithSecretHeader(url string, mimeType string, persistOnError b
 // If no previous function exists, then the event that triggered the pipeline will be used.
 // An empty string for the mimetype will default to application/json.
 func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	return sender.httpSend(edgexcontext, params, http.MethodPost)
+}
+
+// HTTPPut will send data from the previous function to the specified Endpoint via http PUT.
+// If no previous function exists, then the event that triggered the pipeline will be used.
+// An empty string for the mimetype will default to application/json.
+func (sender HTTPSender) HTTPPut(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	return sender.httpSend(edgexcontext, params, http.MethodPut)
+}
+
+func (sender HTTPSender) httpSend(edgexcontext *appcontext.Context, params []interface{}, method string) (bool, interface{}) {
 	if len(params) < 1 {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
@@ -80,7 +93,7 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 	}
 
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPost, sender.URL, bytes.NewReader(exportData))
+	req, err := http.NewRequest(method, sender.URL, bytes.NewReader(exportData))
 	if err != nil {
 		return false, err
 	}
@@ -119,8 +132,8 @@ func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...in
 	}
 
 	return true, bodyBytes
-
 }
+
 func (sender HTTPSender) determineIfUsingSecrets() (bool, error) {
 	//check if one field but not others are provided for secrets
 	if sender.SecretPath != "" && sender.SecretHeaderName == "" {

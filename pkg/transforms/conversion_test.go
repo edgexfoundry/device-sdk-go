@@ -41,7 +41,7 @@ const (
 )
 
 func init() {
-	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc := logger.NewMockClient()
 	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
 	mockSP := newMockSecretProvider(lc, nil)
 

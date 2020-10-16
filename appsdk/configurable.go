@@ -226,12 +226,12 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPost(parameters map[string]string
 
 	url, ok := parameters[Url]
 	if !ok {
-		dynamic.Sdk.LoggingClient.Error("Could not find " + Url)
+		dynamic.Sdk.LoggingClient.Error("HTTPPost Could not find " + Url)
 		return nil
 	}
 	mimeType, ok := parameters[MimeType]
 	if !ok {
-		dynamic.Sdk.LoggingClient.Error("Could not find " + MimeType)
+		dynamic.Sdk.LoggingClient.Error("HTTPPost Could not find " + MimeType)
 		return nil
 	}
 
@@ -241,7 +241,7 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPost(parameters map[string]string
 	if ok {
 		persistOnError, err = strconv.ParseBool(value)
 		if err != nil {
-			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("HTTPPost Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
 			return nil
 		}
 	}
@@ -257,7 +257,7 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPost(parameters map[string]string
 	} else {
 		transform = transforms.NewHTTPSender(url, mimeType, persistOnError)
 	}
-	dynamic.Sdk.LoggingClient.Debug("HTTP Post Parameters", Url, transform.URL, MimeType, transform.MimeType)
+	dynamic.Sdk.LoggingClient.Debug("HTTPPost Parameters", Url, transform.URL, MimeType, transform.MimeType)
 	return transform.HTTPPost
 }
 
@@ -275,6 +275,66 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPostJSON(parameters map[string]st
 func (dynamic AppFunctionsSDKConfigurable) HTTPPostXML(parameters map[string]string) appcontext.AppFunction {
 	parameters[MimeType] = "application/xml"
 	return dynamic.HTTPPost(parameters)
+}
+
+// HTTPPut will send data from the previous function to the specified Endpoint via http PUT. If no previous function exists,
+// then the event that triggered the pipeline will be used. Passing an empty string to the mimetype
+// method will default to application/json.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) HTTPPut(parameters map[string]string) appcontext.AppFunction {
+	var err error
+
+	url, ok := parameters[Url]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("HTTPPut Could not find " + Url)
+		return nil
+	}
+	mimeType, ok := parameters[MimeType]
+	if !ok {
+		dynamic.Sdk.LoggingClient.Error("HTTPPut Could not find " + MimeType)
+		return nil
+	}
+
+	// PersistOnError is optional and is false by default.
+	persistOnError := false
+	value, ok := parameters[PersistOnError]
+	if ok {
+		persistOnError, err = strconv.ParseBool(value)
+		if err != nil {
+			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("HTTPPut Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
+			return nil
+		}
+	}
+
+	url = strings.TrimSpace(url)
+	mimeType = strings.TrimSpace(mimeType)
+
+	secretHeaderName := parameters[SecretHeaderName]
+	secretPath := parameters[SecretPath]
+	var transform transforms.HTTPSender
+	if secretHeaderName != "" && secretPath != "" {
+		transform = transforms.NewHTTPSenderWithSecretHeader(url, mimeType, persistOnError, secretHeaderName, secretPath)
+	} else {
+		transform = transforms.NewHTTPSender(url, mimeType, persistOnError)
+	}
+	dynamic.Sdk.LoggingClient.Debug("HTTPPut Parameters", Url, transform.URL, MimeType, transform.MimeType)
+	return transform.HTTPPut
+}
+
+// HTTPPutJSON sends data from the previous function to the specified Endpoint via http PUT with a mime type of application/json.
+// If no previous function exists, then the event that triggered the pipeline will be used.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) HTTPPutJSON(parameters map[string]string) appcontext.AppFunction {
+	parameters[MimeType] = "application/json"
+	return dynamic.HTTPPut(parameters)
+}
+
+// HTTPPutXML sends data from the previous function to the specified Endpoint via http PUT with a mime type of application/xml.
+// If no previous function exists, then the event that triggered the pipeline will be used.
+// This function is a configuration function and returns a function pointer.
+func (dynamic AppFunctionsSDKConfigurable) HTTPPutXML(parameters map[string]string) appcontext.AppFunction {
+	parameters[MimeType] = "application/xml"
+	return dynamic.HTTPPut(parameters)
 }
 
 // MQTTSend sends data from the previous function to the specified MQTT broker.

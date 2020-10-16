@@ -43,16 +43,18 @@ var logClient logger.LoggingClient
 var config *common.ConfigurationStruct
 
 func TestMain(m *testing.M) {
-	logClient = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	logClient = logger.NewMockClient()
 	config = &common.ConfigurationStruct{}
 	m.Run()
 }
 
-func TestHTTPPost(t *testing.T) {
-
+func TestHTTPPostPut(t *testing.T) {
 	context.CorrelationID = "123"
 
+	var methodUsed string
+
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		methodUsed = r.Method
 
 		if r.URL.EscapedPath() == badPath {
 			w.WriteHeader(http.StatusNotFound)
@@ -84,31 +86,44 @@ func TestHTTPPost(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		Name          string
-		Path          string
-		PersistOnFail bool
-		RetryDataSet  bool
+		Name           string
+		Path           string
+		PersistOnFail  bool
+		RetryDataSet   bool
+		ExpectedMethod string
 	}{
-		{"Successful post", path, true, false},
-		{"Failed Post no persist", badPath, false, false},
-		{"Failed Post with persist", badPath, true, true},
+		{"Successful POST", path, true, false, http.MethodPost},
+		{"Failed POST no persist", badPath, false, false, http.MethodPost},
+		{"Failed POST with persist", badPath, true, true, http.MethodPost},
+		{"Successful PUT", path, false, false, http.MethodPut},
+		{"Failed PUT no persist", badPath, false, false, http.MethodPut},
+		{"Failed PUT with persist", badPath, true, true, http.MethodPut},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			context.RetryData = nil
+			methodUsed = ""
 			sender := NewHTTPSender(`http://`+url.Host+test.Path, "", test.PersistOnFail)
 
-			sender.HTTPPost(context, msgStr)
+			if test.ExpectedMethod == http.MethodPost {
+				sender.HTTPPost(context, msgStr)
+			} else {
+				sender.HTTPPut(context, msgStr)
+			}
 
 			assert.Equal(t, test.RetryDataSet, context.RetryData != nil)
+			assert.Equal(t, test.ExpectedMethod, methodUsed)
 		})
 	}
 }
 
-func TestHTTPPostWithSecrets(t *testing.T) {
+func TestHTTPPostPutWithSecrets(t *testing.T) {
+	var methodUsed string
 
 	expectedValue := "value"
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		methodUsed = r.Method
 
 		if r.URL.EscapedPath() == badPath {
 			w.WriteHeader(http.StatusNotFound)
@@ -138,31 +153,44 @@ func TestHTTPPostWithSecrets(t *testing.T) {
 		SecretPath           string
 		ExpectToContinue     bool
 		ExpectedErrorMessage string
+		ExpectedMethod       string
 	}{
-		{"unsuccessful post w/o secret header name", path, "", "/path", false, "SecretPath was specified but no header name was provided"},
-		{"unsuccessful post w/o secret path name", path, "Secret-Header-Name", "", false, "HTTP Header Secret Name was provided but no SecretPath was provided"},
-		{"successful post with secrets", path, "Secret-Header-Name", "/path", true, ""},
-		{"successful post without secrets", path, "", "", true, ""},
-		{"unsuccessful post with secrets - retrieval fails", path, "Secret-Header-Name-2", "/path", false, "FAKE NOT FOUND ERROR"},
+		{"unsuccessful POST w/o secret header name", path, "", "/path", false, "SecretPath was specified but no header name was provided", ""},
+		{"unsuccessful POST w/o secret path name", path, "Secret-Header-Name", "", false, "HTTP Header Secret Name was provided but no SecretPath was provided", ""},
+		{"successful POST with secrets", path, "Secret-Header-Name", "/path", true, "", http.MethodPost},
+		{"successful POST without secrets", path, "", "", true, "", http.MethodPost},
+		{"unsuccessful POST with secrets - retrieval fails", path, "Secret-Header-Name-2", "/path", false, "FAKE NOT FOUND ERROR", ""},
+		{"unsuccessful PUT w/o secret header name", path, "", "/path", false, "SecretPath was specified but no header name was provided", ""},
+		{"unsuccessful PUT w/o secret path name", path, "Secret-Header-Name", "", false, "HTTP Header Secret Name was provided but no SecretPath was provided", ""},
+		{"successful PUT with secrets", path, "Secret-Header-Name", "/path", true, "", http.MethodPut},
+		{"successful PUT without secrets", path, "", "", true, "", http.MethodPut},
+		{"unsuccessful PUT with secrets - retrieval fails", path, "Secret-Header-Name-2", "/path", false, "FAKE NOT FOUND ERROR", ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			var sender HTTPSender
+			methodUsed = ""
+			sender := NewHTTPSenderWithSecretHeader(`http://`+url.Host+test.Path, "", false, test.SecretHeaderName, test.SecretPath)
 
-			sender = NewHTTPSenderWithSecretHeader(`http://`+url.Host+test.Path, "", false, test.SecretHeaderName, test.SecretPath)
+			var continuePipeline bool
+			var err interface{}
 
-			continuePipeline, err := sender.HTTPPost(context, msgStr)
+			if test.ExpectedMethod == http.MethodPost {
+				continuePipeline, err = sender.HTTPPost(context, msgStr)
+			} else {
+				continuePipeline, err = sender.HTTPPut(context, msgStr)
+			}
+
 			assert.Equal(t, test.ExpectToContinue, continuePipeline)
 			if !test.ExpectToContinue {
 				require.EqualError(t, err.(error), test.ExpectedErrorMessage)
 			}
+			assert.Equal(t, test.ExpectedMethod, methodUsed)
 		})
 	}
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
-
 	sender := NewHTTPSender("", "", false)
 	continuePipeline, result := sender.HTTPPost(context)
 
@@ -171,12 +199,32 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 	assert.Equal(t, "No Data Received", result.(error).Error())
 }
 
-func TestHTTPPostInvalidParameter(t *testing.T) {
+func TestHTTPPutNoParameterPassed(t *testing.T) {
+	sender := NewHTTPSender("", "", false)
+	continuePipeline, result := sender.HTTPPut(context)
 
+	assert.False(t, continuePipeline, "Pipeline should stop")
+	assert.Error(t, result.(error), "Result should be an error")
+	assert.Equal(t, "No Data Received", result.(error).Error())
+}
+
+func TestHTTPPostInvalidParameter(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
 	// Channels are not marshalable to JSON and generate an error
 	data := make(chan int)
 	continuePipeline, result := sender.HTTPPost(context, data)
+
+	assert.False(t, continuePipeline, "Pipeline should stop")
+	assert.Error(t, result.(error), "Result should be an error")
+	assert.Equal(t, "marshaling input data to JSON failed, "+
+		"passed in data must be of type []byte, string, or support marshaling to JSON", result.(error).Error())
+}
+
+func TestHTTPPutInvalidParameter(t *testing.T) {
+	sender := NewHTTPSender("", "", false)
+	// Channels are not marshalable to JSON and generate an error
+	data := make(chan int)
+	continuePipeline, result := sender.HTTPPut(context, data)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
