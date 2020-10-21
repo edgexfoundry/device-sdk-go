@@ -42,7 +42,7 @@ var lc logger.LoggingClient
 
 func init() {
 	eventClient = coredata.NewEventClient(localURL.New("http://test" + clients.ApiEventRoute))
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc = logger.NewMockClient()
 }
 func TestMarkAsPushedNoClient(t *testing.T) {
 	ctx := Context{

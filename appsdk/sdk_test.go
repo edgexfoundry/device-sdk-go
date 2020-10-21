@@ -41,7 +41,7 @@ var lc logger.LoggingClient
 
 func TestMain(m *testing.M) {
 	// No remote and no file results in STDOUT logging only
-	lc = logger.NewClient("app_functions_sdk_go", false, "", "DEBUG")
+	lc = logger.NewMockClient()
 	m.Run()
 }
 

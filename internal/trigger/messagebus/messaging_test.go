@@ -39,7 +39,7 @@ import (
 var logClient logger.LoggingClient
 
 func init() {
-	logClient = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	logClient = logger.NewMockClient()
 }
 
 func TestInitialize(t *testing.T) {

@@ -51,7 +51,7 @@ var allTagsAdded = map[string]string{
 
 func TestTags_AddTags(t *testing.T) {
 	appContext := appcontext.Context{
-		LoggingClient: logger.NewClientStdOut("Unit Test", false, "DEBUG"),
+		LoggingClient: logger.NewMockClient(),
 	}
 
 	tests := []struct {

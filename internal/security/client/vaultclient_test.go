@@ -52,7 +52,7 @@ func TestGetVaultClient(t *testing.T) {
 	portNum, _ := strconv.Atoi(port)
 
 	bkgCtx := context.Background()
-	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc := logger.NewMockClient()
 
 	testSecretStoreInfo := config.SecretStoreInfo{
 		Host:       host,

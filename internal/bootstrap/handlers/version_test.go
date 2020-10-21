@@ -26,10 +26,10 @@ import (
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/stretchr/testify/assert"
 
@@ -54,12 +54,12 @@ func TestValidateVersionMatch(t *testing.T) {
 		Clients: clients,
 	}
 
-	logger := logging.FactoryToStdout("clients-test")
+	lc := logger.NewMockClient()
 	var registryClient registry.Client = nil
 
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return logger
+			return lc
 		},
 		bootstrapContainer.RegistryClientInterfaceName: func(get di.Get) interface{} {
 			return registryClient

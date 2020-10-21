@@ -41,7 +41,7 @@ import (
 
 func TestNewSecretProvider(t *testing.T) {
 	config := &common.ConfigurationStruct{}
-	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc := logger.NewMockClient()
 
 	secretProvider := NewSecretProvider(lc, config)
 	assert.NotNil(t, secretProvider, "secretProvider from NewSecretProvider should not be nil")
@@ -64,7 +64,7 @@ func TestInitializeClientFromSecretProvider(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
 
-	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc := logger.NewMockClient()
 
 	testSecretStoreInfo := config.SecretStoreInfo{
 		Host:                    host,
@@ -230,7 +230,7 @@ func TestConfigAdditonalRetryAttempts(t *testing.T) {
 
 	defer cancelFunc()
 
-	lc := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc := logger.NewMockClient()
 
 	origEnv := os.Getenv(EnvSecretStore)
 

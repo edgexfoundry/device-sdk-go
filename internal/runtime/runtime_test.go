@@ -43,7 +43,7 @@ const (
 )
 
 func init() {
-	lc = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	lc = logger.NewMockClient()
 }
 
 func TestProcessMessageNoTransforms(t *testing.T) {

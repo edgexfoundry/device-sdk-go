@@ -39,7 +39,7 @@ var logClient logger.LoggingClient
 var config *common.ConfigurationStruct
 
 func TestMain(m *testing.M) {
-	logClient = logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	logClient = logger.NewMockClient()
 	config = &common.ConfigurationStruct{}
 	m.Run()
 }

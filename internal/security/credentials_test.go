@@ -231,7 +231,7 @@ func tearDownGetInsecureSecrets(t *testing.T, origEnv string) {
 }
 
 func newMockSecretProvider(configuration *common.ConfigurationStruct) *SecretProviderImpl {
-	logClient := logger.NewClient("app_functions_sdk_go", false, "./test.log", "DEBUG")
+	logClient := logger.NewMockClient()
 	mockSP := NewSecretProvider(logClient, configuration)
 	mockSP.SharedSecretClient = &mockSecretClient{}
 	mockSP.ExclusiveSecretClient = &mockSecretClient{}
