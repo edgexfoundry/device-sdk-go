@@ -24,6 +24,7 @@ import (
 
 // OutputData houses transform for outputting data to configured trigger response, i.e. message bus
 type OutputData struct {
+	ResponseContentType string
 }
 
 // NewOutputData creates, initializes and returns a new instance of OutputData
@@ -46,6 +47,11 @@ func (f OutputData) SetOutputData(edgexcontext *appcontext.Context, params ...in
 	if err != nil {
 		return false, err
 	}
+
+	if len(f.ResponseContentType) > 0 {
+		edgexcontext.ResponseContentType = f.ResponseContentType
+	}
+
 	// By setting this the data will be posted back to to configured trigger response, i.e. message bus
 	edgexcontext.OutputData = data
 

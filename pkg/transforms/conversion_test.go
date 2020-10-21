@@ -63,6 +63,7 @@ func TestTransformToXML(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
+	assert.Equal(t, clients.ContentTypeXML, context.ResponseContentType)
 	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToXMLNoParameters(t *testing.T) {
@@ -122,6 +123,7 @@ func TestTransformToJSON(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
+	assert.Equal(t, clients.ContentTypeJSON, context.ResponseContentType)
 	assert.Equal(t, expectedResult, result.(string))
 }
 func TestTransformToJSONNoEvent(t *testing.T) {

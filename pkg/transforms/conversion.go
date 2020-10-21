@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
@@ -46,6 +47,7 @@ func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...i
 		if err != nil {
 			return false, fmt.Errorf("unable to marshal Event to XML: %s", err.Error())
 		}
+		edgexcontext.ResponseContentType = clients.ContentTypeXML
 		return true, xml
 	}
 	return false, errors.New("Unexpected type received")
@@ -64,6 +66,7 @@ func (f Conversion) TransformToJSON(edgexcontext *appcontext.Context, params ...
 			// LoggingClient.Error(fmt.Sprintf("Error parsing JSON. Error: %s", err.Error()))
 			return false, errors.New("Error marshalling JSON")
 		}
+		edgexcontext.ResponseContentType = clients.ContentTypeJSON
 		// should we return a byte[] or string?
 		// return b
 		return true, string(b)

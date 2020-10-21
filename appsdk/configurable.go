@@ -28,31 +28,32 @@ import (
 )
 
 const (
-	ValueDescriptors = "valuedescriptors"
-	DeviceNames      = "devicenames"
-	FilterOut        = "filterout"
-	Key              = "key"
-	InitVector       = "initvector"
-	Url              = "url"
-	MimeType         = "mimetype"
-	PersistOnError   = "persistonerror"
-	Cert             = "cert"
-	SkipVerify       = "skipverify"
-	Qos              = "qos"
-	Retain           = "retain"
-	AutoReconnect    = "autoreconnect"
-	DeviceName       = "devicename"
-	ReadingName      = "readingname"
-	Rule             = "rule"
-	BatchThreshold   = "batchthreshold"
-	TimeInterval     = "timeinterval"
-	SecretHeaderName = "secretheadername"
-	SecretPath       = "secretpath"
-	BrokerAddress    = "brokeraddress"
-	ClientID         = "clientid"
-	Topic            = "topic"
-	AuthMode         = "authmode"
-	Tags             = "tags"
+	ValueDescriptors    = "valuedescriptors"
+	DeviceNames         = "devicenames"
+	FilterOut           = "filterout"
+	Key                 = "key"
+	InitVector          = "initvector"
+	Url                 = "url"
+	MimeType            = "mimetype"
+	PersistOnError      = "persistonerror"
+	Cert                = "cert"
+	SkipVerify          = "skipverify"
+	Qos                 = "qos"
+	Retain              = "retain"
+	AutoReconnect       = "autoreconnect"
+	DeviceName          = "devicename"
+	ReadingName         = "readingname"
+	Rule                = "rule"
+	BatchThreshold      = "batchthreshold"
+	TimeInterval        = "timeinterval"
+	SecretHeaderName    = "secretheadername"
+	SecretPath          = "secretpath"
+	BrokerAddress       = "brokeraddress"
+	ClientID            = "clientid"
+	Topic               = "topic"
+	AuthMode            = "authmode"
+	Tags                = "tags"
+	ResponseContentType = "responsecontenttype"
 )
 
 // AppFunctionsSDKConfigurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -418,8 +419,14 @@ func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string
 // SetOutputData sets the output data to that passed in from the previous function.
 // It will return an error and stop the pipeline if data passed in is not of type []byte, string or json.Mashaler
 // This function is a configuration function and returns a function pointer.
-func (dynamic AppFunctionsSDKConfigurable) SetOutputData() appcontext.AppFunction {
+func (dynamic AppFunctionsSDKConfigurable) SetOutputData(parameters map[string]string) appcontext.AppFunction {
 	transform := transforms.OutputData{}
+
+	value, ok := parameters[ResponseContentType]
+	if ok && len(value) > 0 {
+		transform.ResponseContentType = value
+	}
+
 	return transform.SetOutputData
 }
 

@@ -179,10 +179,32 @@ func TestConfigurableMQTTSend(t *testing.T) {
 }
 
 func TestConfigurableSetOutputData(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{}
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
 
-	trx := configurable.SetOutputData()
-	assert.NotNil(t, trx, "return result from SetOutputData should not be nil")
+	tests := []struct {
+		name      string
+		params    map[string]string
+		expectNil bool
+	}{
+		{"Non Existent Parameter", map[string]string{}, false},
+		{"Valid Parameter With Value", map[string]string{ResponseContentType: "application/json"}, false},
+		{"Valid Parameter Without Value", map[string]string{ResponseContentType: ""}, false},
+		{"Unknown Parameter", map[string]string{"Unknown": "scary/text"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			trx := configurable.SetOutputData(tt.params)
+			if tt.expectNil {
+				assert.Nil(t, trx, "return result from SetOutputData should be nil")
+			} else {
+				assert.NotNil(t, trx, "return result from SetOutputData should not be nil")
+			}
+		})
+	}
 }
 
 func TestConfigurableMarkAsPushed(t *testing.T) {

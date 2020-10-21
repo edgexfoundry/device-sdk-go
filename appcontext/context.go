@@ -63,6 +63,8 @@ type Context struct {
 	RetryData []byte
 	// SecretProvider exposes the support for getting and storing secrets
 	SecretProvider security.SecretProvider
+	// ResponseContentType is used for holding custom response type for HTTP trigger
+	ResponseContentType string
 }
 
 // Complete is optional and provides a way to return the specified data.

@@ -104,6 +104,9 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if len(edgexContext.ResponseContentType) > 0 {
+		writer.Header().Set(clients.ContentType, edgexContext.ResponseContentType)
+	}
 	writer.Write(edgexContext.OutputData)
 
 	if edgexContext.OutputData != nil {
