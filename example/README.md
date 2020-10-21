@@ -26,7 +26,8 @@ A Provision Watcher contains the following fields:
 `Profile`: The name of a DeviceProfile which should be assigned to new devices which meet the given criteria  
 `AdminState`: The initial Administrative State for new devices which meet the given criteria  
  
-A candidate new device passes a ProvisionWatcher if all of the Identifiers match, and none of the BlockingIdentifiers.
+A candidate new device passes a ProvisionWatcher if all of the Identifiers match, and none of the Blocking Identifiers match.
+For devices with multiple `Device.Protocol`s, each `Device.Protocol` is considered separately. A match on any of the protocols results in the device being added.
 
 Finally, A boolean configuration value `Device/Discovery/Enabled` defaults to false. If it is set true, and the DS implementation supports discovery, discovery is enabled.
 Dynamic Device Discovery is triggered either by internal timer(see `Device/Discovery/Interval` in [configuration.toml](cmd/device-simple/res/configuration.toml)) or by a call to the device service's `/discovery` REST endpoint.
