@@ -26,64 +26,71 @@ type Manager interface {
 }
 
 type manager struct {
-	execsMap map[string][]Executor
-	ctx      context.Context
-	wg       *sync.WaitGroup
+	executorMap map[string][]Executor
+	ctx         context.Context
+	wg          *sync.WaitGroup
+	mutex       sync.Mutex
 }
 
 var (
 	createOnce sync.Once
 	m          *manager
-	mutex      sync.Mutex
 )
 
 // NewManager initiates the AutoEvent manager once
 func NewManager(ctx context.Context, wg *sync.WaitGroup) {
-	m = &manager{execsMap: make(map[string][]Executor), ctx: ctx, wg: wg}
+	m = &manager{
+		ctx:         ctx,
+		wg:          wg,
+		executorMap: make(map[string][]Executor)}
 }
 
 func (m *manager) StartAutoEvents(dic *di.Container) bool {
-	mutex.Lock()
-	defer mutex.Unlock()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	createOnce.Do(func() {
 		for _, d := range cache.Devices().All() {
-			execs := triggerExecutors(d.Name, d.AutoEvents, m.ctx, m.wg, dic)
-			m.execsMap[d.Name] = execs
+			if _, ok := m.executorMap[d.Name]; !ok {
+				executors := m.triggerExecutors(d.Name, d.AutoEvents, dic)
+				m.executorMap[d.Name] = executors
+			}
 		}
 	})
 
 	return true
 }
 
+// StopAutoEvents stops all the AutoEvents of the Device Service
 func (m *manager) StopAutoEvents() {
-	mutex.Lock()
-	for k, v := range m.execsMap {
-		for _, e := range v {
-			e.Stop()
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	for deviceName, executors := range m.executorMap {
+		for _, executor := range executors {
+			executor.Stop()
 		}
-		delete(m.execsMap, k)
+		delete(m.executorMap, deviceName)
 	}
-	mutex.Unlock()
 }
 
-func triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, ctx context.Context, wg *sync.WaitGroup, dic *di.Container) []Executor {
-	var execs []Executor
+func (m *manager) triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, dic *di.Container) []Executor {
+	var executors []Executor
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
 	for _, autoEvent := range autoEvents {
-		exec, err := NewExecutor(deviceName, autoEvent)
+		executor, err := NewExecutor(deviceName, autoEvent)
 		if err != nil {
 			lc.Error(fmt.Sprintf("AutoEvent for resource %s cannot be created, %v", autoEvent.Resource, err))
 			// skip this AutoEvent if it causes error during creation
 			continue
 		}
-		execs = append(execs, exec)
-		go exec.Run(ctx, wg, dic)
+		executors = append(executors, executor)
+		go executor.Run(m.ctx, m.wg, dic)
 	}
-	return execs
+	return executors
 }
 
-// RestartForDevice stops all the AutoEvents of the specific Device
+// RestartForDevice restarts all the AutoEvents of the specific Device
 func (m *manager) RestartForDevice(deviceName string, dic *di.Container) {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
@@ -93,22 +100,23 @@ func (m *manager) RestartForDevice(deviceName string, dic *di.Container) {
 		lc.Error(fmt.Sprintf("there is no Device %s in cache to start AutoEvent", deviceName))
 	}
 
-	mutex.Lock()
-	defer mutex.Unlock()
-	execs := triggerExecutors(deviceName, d.AutoEvents, m.ctx, m.wg, dic)
-	m.execsMap[deviceName] = execs
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	executors := m.triggerExecutors(deviceName, d.AutoEvents, dic)
+	m.executorMap[deviceName] = executors
 }
 
 // StopForDevice stops all the AutoEvents of the specific Device
 func (m *manager) StopForDevice(deviceName string) {
-	mutex.Lock()
-	defer mutex.Unlock()
-	execs, ok := m.execsMap[deviceName]
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	executors, ok := m.executorMap[deviceName]
 	if ok {
-		for _, e := range execs {
-			e.Stop()
+		for _, executor := range executors {
+			executor.Stop()
 		}
-		delete(m.execsMap, deviceName)
+		delete(m.executorMap, deviceName)
 	}
 }
 
