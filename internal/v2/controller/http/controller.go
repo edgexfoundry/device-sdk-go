@@ -131,7 +131,7 @@ func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.R
 		return
 	}
 
-	response := common.NewBaseResponseNoMessage(secretRequest.RequestId, http.StatusCreated)
+	response := common.NewBaseResponse(secretRequest.RequestId, "", http.StatusCreated)
 	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusCreated)
 }
 
