@@ -94,7 +94,7 @@ func SendEvent(event *dsModels.Event, lc logger.LoggingClient, ec coredata.Event
 	if errPost != nil {
 		lc.Error("SendEvent Failed to push event", "device", event.Device, "response", responseBody, "error", errPost)
 	} else {
-		lc.Info("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation)
+		lc.Debug("SendEvent: Pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation)
 		lc.Trace("SendEvent: Pushed this event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, correlation, "event", event)
 	}
 }

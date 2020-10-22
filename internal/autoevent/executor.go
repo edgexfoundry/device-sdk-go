@@ -79,7 +79,7 @@ func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Containe
 				}
 				go common.SendEvent(event, lc, container.CoredataEventClientFrom(dic.Get))
 			} else {
-				lc.Info(fmt.Sprintf("AutoEvent - no event generated when reading resource %s", e.autoEvent.Resource))
+				lc.Debug(fmt.Sprintf("AutoEvent - no event generated when reading resource %s", e.autoEvent.Resource))
 			}
 		}
 	}
