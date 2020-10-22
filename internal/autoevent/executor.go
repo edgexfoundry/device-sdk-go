@@ -23,22 +23,17 @@ import (
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
-type Executor interface {
-	Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Container)
-	Stop()
-}
-
-type executor struct {
+type Executor struct {
 	deviceName   string
 	autoEvent    contract.AutoEvent
 	lastReadings map[string]interface{}
 	duration     time.Duration
 	stop         bool
-	rwmutex      sync.RWMutex
+	rwMutex      *sync.RWMutex
 }
 
 // Run triggers this Executor executes the handler for the resource periodically
-func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Container) {
+func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Container) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -85,7 +80,7 @@ func (e *executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Containe
 	}
 }
 
-func readResource(e *executor, dic *di.Container) (*dsModels.Event, common.AppError) {
+func readResource(e *Executor, dic *di.Container) (*dsModels.Event, common.AppError) {
 	vars := make(map[string]string, 2)
 	vars[common.NameVar] = e.deviceName
 	vars[common.CommandVar] = e.autoEvent.Resource
@@ -94,10 +89,10 @@ func readResource(e *executor, dic *di.Container) (*dsModels.Event, common.AppEr
 	return evt, appErr
 }
 
-func compareReadings(e *executor, readings []contract.Reading, hasBinary bool, lc logger.LoggingClient) bool {
+func compareReadings(e *Executor, readings []contract.Reading, hasBinary bool, lc logger.LoggingClient) bool {
 	var identical bool = true
-	e.rwmutex.RLock()
-	defer e.rwmutex.RUnlock()
+	e.rwMutex.RLock()
+	defer e.rwMutex.RUnlock()
 	for _, r := range readings {
 		switch e.lastReadings[r.Name].(type) {
 		case uint64:
@@ -128,7 +123,7 @@ func compareReadings(e *executor, readings []contract.Reading, hasBinary bool, l
 }
 
 // Stop marks this Executor stopped
-func (e *executor) Stop() {
+func (e *Executor) Stop() {
 	e.stop = true
 }
 
@@ -137,13 +132,14 @@ func NewExecutor(deviceName string, ae contract.AutoEvent) (Executor, error) {
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Frequency)
 	if err != nil {
-		return nil, err
+		return Executor{}, err
 	}
 
-	return &executor{
+	return Executor{
 		deviceName:   deviceName,
 		autoEvent:    ae,
 		lastReadings: make(map[string]interface{}),
 		duration:     duration,
-		stop:         false}, nil
+		stop:         false,
+		rwMutex:      &sync.RWMutex{}}, nil
 }
