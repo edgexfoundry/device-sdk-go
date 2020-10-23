@@ -4,7 +4,6 @@ titleAndCommits: true
 types:
     - feat
     - fix
-    - improvement
     - docs
     - style
     - refactor
@@ -12,14 +11,20 @@ types:
     - test
     - build
     - ci
-    - chore
     - revert
 scopes:
     - transforms
-    - secrets
+    - security
     - store-forward
     - configuration
+    - config
     - sdk
     - triggers
     - context
     - deps
+    - bootstrap
+    - runtime
+    - v2
+    - util
+    - webserver
+    
