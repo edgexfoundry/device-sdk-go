@@ -25,6 +25,7 @@ import (
 
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -82,6 +83,7 @@ func TestAES(t *testing.T) {
 	decphrd := aesDecrypt(cphrd.([]byte), aesData)
 
 	assert.Equal(t, string(plainString), string(decphrd))
+	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
 }
 
 func TestAESNoData(t *testing.T) {

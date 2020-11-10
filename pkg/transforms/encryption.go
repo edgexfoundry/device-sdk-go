@@ -27,6 +27,7 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 )
 
 type Encryption struct {
@@ -83,6 +84,9 @@ func (aesData Encryption) EncryptWithAES(edgexcontext *appcontext.Context, param
 	ecb.CryptBlocks(crypted, content)
 
 	encodedData := []byte(base64.StdEncoding.EncodeToString(crypted))
+
+	// Set response "content-type" header to "text/plain"
+	edgexcontext.ResponseContentType = clients.ContentTypeText
 
 	return true, encodedData
 }

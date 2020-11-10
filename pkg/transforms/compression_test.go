@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -58,6 +59,7 @@ func TestGzip(t *testing.T) {
 	continuePipeline2, result2 := comp.CompressWithGZIP(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
 	assert.Equal(t, result.([]byte), result2.([]byte))
+	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
 }
 
 func TestZlib(t *testing.T) {
@@ -83,6 +85,7 @@ func TestZlib(t *testing.T) {
 	continuePipeline2, result2 := comp.CompressWithZLIB(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
 	assert.Equal(t, result.([]byte), result2.([]byte))
+	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
 }
 
 var result []byte
