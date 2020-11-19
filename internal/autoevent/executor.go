@@ -46,6 +46,11 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Containe
 			if e.stop {
 				return
 			}
+			ds := container.DeviceServiceFrom(dic.Get)
+			if ds.AdminState == contract.Locked {
+				lc.Info("AutoEvent - stopped for locked device service")
+				return
+			}
 
 			lc.Debug(fmt.Sprintf("AutoEvent - executing %v", e.autoEvent))
 			evt, appErr := readResource(e, dic)
