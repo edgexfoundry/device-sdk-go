@@ -93,10 +93,6 @@ func (c *RestController) transformFunc(w http.ResponseWriter, req *http.Request)
 }
 
 func (c *RestController) callbackFunc(w http.ResponseWriter, req *http.Request) {
-	if c.checkServiceLocked(w, req, container.DeviceServiceFrom(c.dic.Get).AdminState) {
-		return
-	}
-
 	defer req.Body.Close()
 	dec := json.NewDecoder(req.Body)
 	cbAlert := contract.CallbackAlert{}
