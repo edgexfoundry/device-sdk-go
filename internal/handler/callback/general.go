@@ -27,6 +27,8 @@ func CallbackHandler(cbAlert contract.CallbackAlert, method string, dic *di.Cont
 
 	if cbAlert.ActionType == contract.DEVICE {
 		return handleDevice(method, cbAlert.Id, dic)
+	} else if cbAlert.ActionType == contract.SERVICE {
+		return handleService(method, cbAlert.Id, dic)
 	} else if cbAlert.ActionType == contract.PROFILE {
 		return handleProfile(method, cbAlert.Id, dic)
 	} else if cbAlert.ActionType == contract.PROVISIONWATCHER {
