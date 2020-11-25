@@ -38,7 +38,7 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 
 func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
 	ds.UpdateFromContainer(b.router, dic)
-	autoevent.NewManager(ctx, wg)
+	autoevent.NewManager(ctx, wg, ds.config.Service.AsyncBufferSize)
 
 	err := ds.selfRegister()
 	if err != nil {

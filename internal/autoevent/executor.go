@@ -77,7 +77,12 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Containe
 				if event.Origin == 0 {
 					event.Origin = common.GetUniqueOrigin()
 				}
-				go common.SendEvent(event, lc, container.CoredataEventClientFrom(dic.Get))
+
+				go func() {
+					m.autoeventBuffer <- true
+					common.SendEvent(event, lc, container.CoredataEventClientFrom(dic.Get))
+					<-m.autoeventBuffer
+				}()
 			} else {
 				lc.Debug(fmt.Sprintf("AutoEvent - no event generated when reading resource %s", e.autoEvent.Resource))
 			}

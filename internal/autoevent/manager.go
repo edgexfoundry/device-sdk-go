@@ -30,6 +30,7 @@ type manager struct {
 	ctx         context.Context
 	wg          *sync.WaitGroup
 	mutex       sync.Mutex
+	autoeventBuffer chan bool
 }
 
 var (
@@ -38,11 +39,12 @@ var (
 )
 
 // NewManager initiates the AutoEvent manager once
-func NewManager(ctx context.Context, wg *sync.WaitGroup) {
+func NewManager(ctx context.Context, wg *sync.WaitGroup, bufferSize int) {
 	m = &manager{
 		ctx:         ctx,
 		wg:          wg,
-		executorMap: make(map[string][]*Executor)}
+		executorMap: make(map[string][]*Executor),
+		autoeventBuffer: make(chan bool, bufferSize)}
 }
 
 func (m *manager) StartAutoEvents(dic *di.Container) bool {
