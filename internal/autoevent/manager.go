@@ -26,10 +26,10 @@ type Manager interface {
 }
 
 type manager struct {
-	executorMap map[string][]*Executor
-	ctx         context.Context
-	wg          *sync.WaitGroup
-	mutex       sync.Mutex
+	executorMap     map[string][]*Executor
+	ctx             context.Context
+	wg              *sync.WaitGroup
+	mutex           sync.Mutex
 	autoeventBuffer chan bool
 }
 
@@ -41,9 +41,9 @@ var (
 // NewManager initiates the AutoEvent manager once
 func NewManager(ctx context.Context, wg *sync.WaitGroup, bufferSize int) {
 	m = &manager{
-		ctx:         ctx,
-		wg:          wg,
-		executorMap: make(map[string][]*Executor),
+		ctx:             ctx,
+		wg:              wg,
+		executorMap:     make(map[string][]*Executor),
 		autoeventBuffer: make(chan bool, bufferSize)}
 }
 

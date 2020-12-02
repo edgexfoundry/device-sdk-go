@@ -78,6 +78,10 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, dic *di.Containe
 					event.Origin = common.GetUniqueOrigin()
 				}
 
+				// After the auto event executes a read command, it will create a goroutine to send out events.
+				// When the concurrent auto event amount becomes large, core-data might be hard to handle so many HTTP requests at the same time.
+				// The device service will get some network errors like EOF or Connection reset by peer.
+				// By adding a buffer here, the user can use the Service.AsyncBufferSize configuration to control the goroutine for sending events.
 				go func() {
 					m.autoeventBuffer <- true
 					common.SendEvent(event, lc, container.CoredataEventClientFrom(dic.Get))
