@@ -45,8 +45,6 @@ type WritableInfo struct {
 type ConfigurationStruct struct {
 	// Writable
 	Writable WritableInfo
-	// Logging
-	Logging bootstrapConfig.LoggingInfo
 	// Registry
 	Registry bootstrapConfig.RegistryInfo
 	// Service
@@ -189,7 +187,6 @@ func (c *ConfigurationStruct) GetBootstrap() bootstrapConfig.BootstrapConfigurat
 		Clients:     c.Clients,
 		Service:     c.transformToBootstrapServiceInfo(),
 		Registry:    c.Registry,
-		Logging:     c.Logging,
 		SecretStore: c.SecretStore,
 	}
 }
