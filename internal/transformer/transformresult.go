@@ -22,7 +22,6 @@ import (
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/operating"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -31,11 +30,20 @@ const (
 	defaultOffset string = "0.0"
 	defaultMask   string = "0"
 	defaultShift  string = "0"
+
+	Overflow = "overflow"
+	NaN      = "NaN"
 )
 
 func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue, lc logger.LoggingClient) error {
 	if cv.Type == dsModels.String || cv.Type == dsModels.Bool || cv.Type == dsModels.Binary {
 		return nil // do nothing for String, Bool and Binary
+	}
+	res, err := isNaN(cv)
+	if err != nil {
+		return err
+	} else if res {
+		return fmt.Errorf("NaN error for device resource '%s', error: %w", cv.DeviceResourceName, NaNError{})
 	}
 
 	value, err := commandValueForTransform(cv)
@@ -52,37 +60,29 @@ func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue, l
 	if pv.Shift != "" && pv.Shift != defaultShift &&
 		(cv.Type == dsModels.Uint8 || cv.Type == dsModels.Uint16 || cv.Type == dsModels.Uint32 || cv.Type == dsModels.Uint64) {
 		newValue, err = transformReadShift(newValue, pv.Shift, lc)
-		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
-		} else if err != nil {
-			return err
+		if err != nil {
+			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
 		}
 	}
 
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformReadBase(newValue, pv.Base, lc)
-		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
-		} else if err != nil {
-			return err
+		if err != nil {
+			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
 		}
 	}
 
 	if pv.Scale != "" && pv.Scale != defaultScale {
 		newValue, err = transformReadScale(newValue, pv.Scale, lc)
-		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource '%v' ", cv.DeviceResourceName))
-		} else if err != nil {
-			return err
+		if err != nil {
+			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
 		}
 	}
 
 	if pv.Offset != "" && pv.Offset != defaultOffset {
 		newValue, err = transformReadOffset(newValue, pv.Offset, lc)
-		if overflowError, ok := err.(OverflowError); ok {
-			return errors.Wrap(overflowError, fmt.Sprintf("Overflow failed for device resource: %v", cv.DeviceResourceName))
-		} else if err != nil {
-			return err
+		if err != nil {
+			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
 		}
 	}
 
