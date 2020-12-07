@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright 2020 Intel Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,14 +18,11 @@ package store
 import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/mongo"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/redis"
 )
 
 func NewStoreClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 	switch config.Type {
-	case db.MongoDB:
-		return mongo.NewClient(config)
 	case db.RedisDB:
 		return redis.NewClient(config)
 	default:
