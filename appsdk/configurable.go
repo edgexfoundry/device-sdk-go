@@ -24,7 +24,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
 const (
@@ -336,84 +335,6 @@ func (dynamic AppFunctionsSDKConfigurable) HTTPPutJSON(parameters map[string]str
 func (dynamic AppFunctionsSDKConfigurable) HTTPPutXML(parameters map[string]string) appcontext.AppFunction {
 	parameters[MimeType] = "application/xml"
 	return dynamic.HTTPPut(parameters)
-}
-
-// MQTTSend sends data from the previous function to the specified MQTT broker.
-// If no previous function exists, then the event that triggered the pipeline will be used.
-// This function is a configuration function and returns a function pointer.
-func (dynamic AppFunctionsSDKConfigurable) MQTTSend(parameters map[string]string, addr models.Addressable) appcontext.AppFunction {
-	var err error
-	qos := 0
-	retain := false
-	autoReconnect := false
-	// optional string params
-	cert := parameters[Cert]
-	key := parameters[Key]
-	skipVerify := parameters[SkipVerify]
-
-	qosVal, ok := parameters[Qos]
-	if ok {
-		qos, err = strconv.Atoi(qosVal)
-		if err != nil {
-			dynamic.Sdk.LoggingClient.Error("Unable to parse " + Qos + " value")
-			return nil
-		}
-	}
-	retainVal, ok := parameters[Retain]
-	if ok {
-		retain, err = strconv.ParseBool(retainVal)
-		if err != nil {
-			dynamic.Sdk.LoggingClient.Error("Unable to parse " + Retain + " value")
-			return nil
-		}
-	}
-	autoreconnectVal, ok := parameters[AutoReconnect]
-	if ok {
-		autoReconnect, err = strconv.ParseBool(autoreconnectVal)
-		if err != nil {
-			dynamic.Sdk.LoggingClient.Error("Unable to parse " + AutoReconnect + " value")
-			return nil
-		}
-	}
-	dynamic.Sdk.LoggingClient.Debug("MQTT Send Parameters", "Address", addr, Qos, qosVal, Retain, retainVal, AutoReconnect, autoreconnectVal, Cert, cert, Key, key)
-
-	var pair *transforms.KeyCertPair
-
-	if len(cert) > 0 && len(key) > 0 {
-		pair = &transforms.KeyCertPair{
-			CertFile: cert,
-			KeyFile:  key,
-		}
-	}
-
-	// PersistOnError os optional and is false by default.
-	persistOnError := false
-	value, ok := parameters[PersistOnError]
-	if ok {
-		persistOnError, err = strconv.ParseBool(value)
-		if err != nil {
-			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", value, PersistOnError), "error", err)
-			return nil
-		}
-	}
-
-	mqttConfig := transforms.MqttConfig{}
-	mqttConfig.Qos = byte(qos)
-	mqttConfig.Retain = retain
-	mqttConfig.AutoReconnect = autoReconnect
-
-	if skipVerify != "" {
-		skipCertVerify, err := strconv.ParseBool(skipVerify)
-		if err != nil {
-			dynamic.Sdk.LoggingClient.Error(fmt.Sprintf("Could not parse '%s' to a bool for '%s' parameter", skipVerify, SkipVerify), "error", err)
-			return nil
-		}
-
-		mqttConfig.SkipCertVerify = skipCertVerify
-	}
-
-	sender := transforms.NewMQTTSender(dynamic.Sdk.LoggingClient, addr, pair, mqttConfig, persistOnError)
-	return sender.MQTTSend
 }
 
 // SetOutputData sets the output data to that passed in from the previous function.

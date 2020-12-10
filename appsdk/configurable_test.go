@@ -18,7 +18,6 @@ package appsdk
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -164,20 +163,6 @@ func TestConfigurableHTTPPostXML(t *testing.T) {
 	assert.NotNil(t, trx, "return result from HTTPPostXML should not be nil")
 }
 
-func TestConfigurableMQTTSend(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{
-		Sdk: &AppFunctionsSDK{
-			LoggingClient: lc,
-		},
-	}
-
-	params := make(map[string]string)
-	addr := models.Addressable{}
-	params[PersistOnError] = "true"
-	trx := configurable.MQTTSend(params, addr)
-	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
-}
-
 func TestConfigurableSetOutputData(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
@@ -224,7 +209,7 @@ func TestBatchByCount(t *testing.T) {
 	params := make(map[string]string)
 	params[BatchThreshold] = "30"
 	trx := configurable.BatchByCount(params)
-	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+	assert.NotNil(t, trx, "return result from BatchByCount should not be nil")
 }
 func TestBatchByTime(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
@@ -236,7 +221,7 @@ func TestBatchByTime(t *testing.T) {
 	params := make(map[string]string)
 	params[TimeInterval] = "10"
 	trx := configurable.BatchByTime(params)
-	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+	assert.NotNil(t, trx, "return result from BatchByTime should not be nil")
 }
 func TestBatchByTimeAndCount(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
@@ -250,7 +235,7 @@ func TestBatchByTimeAndCount(t *testing.T) {
 	params[TimeInterval] = "10"
 
 	trx := configurable.BatchByTimeAndCount(params)
-	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+	assert.NotNil(t, trx, "return result from BatchByTimeAndCount should not be nil")
 }
 
 func TestJSONLogic(t *testing.T) {
@@ -286,7 +271,7 @@ func TestConfigurableMQTTSecretSend(t *testing.T) {
 	params[AuthMode] = "none"
 
 	trx := configurable.MQTTSecretSend(params)
-	assert.NotNil(t, trx, "return result from MQTTSend should not be nil")
+	assert.NotNil(t, trx, "return result from MQTTSecretSend should not be nil")
 }
 
 func TestAppFunctionsSDKConfigurable_AddTags(t *testing.T) {

@@ -21,7 +21,6 @@ import (
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
@@ -127,8 +126,7 @@ type PipelineInfo struct {
 
 type PipelineFunction struct {
 	// Name	string
-	Parameters  map[string]string
-	Addressable models.Addressable
+	Parameters map[string]string
 }
 
 type StoreAndForwardInfo struct {

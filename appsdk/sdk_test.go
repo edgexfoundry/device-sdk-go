@@ -18,16 +18,14 @@ package appsdk
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
@@ -35,6 +33,7 @@ import (
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 var lc logger.LoggingClient
@@ -265,37 +264,6 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 	require.Error(t, err, "expected error")
 	assert.Equal(t, "function Bogus is not a built in SDK function", err.Error())
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
-}
-
-func TestLoadConfigurablePipelineAddressableConfig(t *testing.T) {
-	functionName := "MQTTSend"
-	functions := make(map[string]common.PipelineFunction)
-	functions[functionName] = common.PipelineFunction{
-		Parameters: map[string]string{"qos": "0", "autoreconnect": "false"},
-		Addressable: models.Addressable{
-			Address:   "localhost",
-			Port:      1883,
-			Protocol:  "tcp",
-			Publisher: "MyApp",
-			Topic:     "sampleTopic",
-		},
-	}
-
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		config: &common.ConfigurationStruct{
-			Writable: common.WritableInfo{
-				Pipeline: common.PipelineInfo{
-					ExecutionOrder: functionName,
-					Functions:      functions,
-				},
-			},
-		},
-	}
-
-	appFunctions, err := sdk.LoadConfigurablePipeline()
-	require.NoError(t, err)
-	assert.NotNil(t, appFunctions, "expected app functions list to be set")
 }
 
 func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {

@@ -20,8 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-messaging/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 	nethttp "net/http"
 	"net/url"
 	"os"
@@ -32,9 +30,11 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/edgexfoundry/go-mod-messaging/messaging"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/gorilla/mux"
 
@@ -269,9 +269,6 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 			switch parameter {
 			case reflect.TypeOf(map[string]string{}):
 				inputParameters[index] = reflect.ValueOf(configuration.Parameters)
-
-			case reflect.TypeOf(models.Addressable{}):
-				inputParameters[index] = reflect.ValueOf(configuration.Addressable)
 
 			default:
 				return nil, fmt.Errorf(
