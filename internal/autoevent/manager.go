@@ -26,7 +26,7 @@ type Manager interface {
 }
 
 type manager struct {
-	executorMap map[string][]Executor
+	executorMap map[string][]*Executor
 	ctx         context.Context
 	wg          *sync.WaitGroup
 	mutex       sync.Mutex
@@ -42,7 +42,7 @@ func NewManager(ctx context.Context, wg *sync.WaitGroup) {
 	m = &manager{
 		ctx:         ctx,
 		wg:          wg,
-		executorMap: make(map[string][]Executor)}
+		executorMap: make(map[string][]*Executor)}
 }
 
 func (m *manager) StartAutoEvents(dic *di.Container) bool {
@@ -73,8 +73,8 @@ func (m *manager) StopAutoEvents() {
 	}
 }
 
-func (m *manager) triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, dic *di.Container) []Executor {
-	var executors []Executor
+func (m *manager) triggerExecutors(deviceName string, autoEvents []contract.AutoEvent, dic *di.Container) []*Executor {
+	var executors []*Executor
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
 	for _, autoEvent := range autoEvents {

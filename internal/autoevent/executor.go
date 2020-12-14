@@ -133,14 +133,14 @@ func (e *Executor) Stop() {
 }
 
 // NewExecutor creates an Executor for an AutoEvent
-func NewExecutor(deviceName string, ae contract.AutoEvent) (Executor, error) {
+func NewExecutor(deviceName string, ae contract.AutoEvent) (*Executor, error) {
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Frequency)
 	if err != nil {
-		return Executor{}, err
+		return nil, err
 	}
 
-	return Executor{
+	return &Executor{
 		deviceName:   deviceName,
 		autoEvent:    ae,
 		lastReadings: make(map[string]interface{}),
