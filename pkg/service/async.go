@@ -9,6 +9,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"sync"
@@ -74,7 +75,14 @@ func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan 
 			err := transformer.TransformReadResult(cv, dr.Properties.Value, s.LoggingClient)
 			if err != nil {
 				s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
-				cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
+
+				if errors.As(err, &transformer.OverflowError{}) {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.Overflow)
+				} else if errors.As(err, &transformer.NaNError{}) {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.NaN)
+				} else {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
+				}
 			}
 		}
 

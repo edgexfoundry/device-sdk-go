@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -24,6 +25,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/mock"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -46,6 +49,7 @@ var (
 	ds                                                                            []contract.Device
 	pc                                                                            cache.ProfileCache
 	deviceIntegerGenerator                                                        contract.Device
+	deviceFloatGenerator                                                          contract.Device
 	operationSetBool                                                              contract.ResourceOperation
 	operationSetInt8, operationSetInt16, operationSetInt32, operationSetInt64     contract.ResourceOperation
 	operationSetUint8, operationSetUint16, operationSetUint32, operationSetUint64 contract.ResourceOperation
@@ -107,6 +111,7 @@ func init() {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
 	ds, _ = dc.DevicesForServiceByName(ctx, "device-sdk-test")
 	deviceIntegerGenerator = ds[1]
+	deviceFloatGenerator = ds[3]
 }
 
 func TestParseWriteParamsWrongParamName(t *testing.T) {
@@ -490,6 +495,26 @@ func TestCommandHandler(t *testing.T) {
 				t.Errorf("%s expectErr:%v no error thrown", tt.testName, tt.expectErr)
 				return
 			}
+		})
+	}
+}
+
+func TestExecReadCmd_NaN(t *testing.T) {
+	tests := []struct {
+		testName    string
+		device      *contract.Device
+		cmd         string
+		queryParams string
+		expectErr   bool
+	}{
+		{"Float32 NaN", &deviceFloatGenerator, mock.ResourceObjectNaNFloat32, "", false},
+		{"Float64 NaN", &deviceFloatGenerator, mock.ResourceObjectNaNFloat64, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			v, err := execReadCmd(tt.device, tt.cmd, tt.queryParams, driver, lc, dc, configuration)
+			require.Nil(t, err)
+			assert.Equal(t, transformer.NaN, v.Readings[0].Value)
 		})
 	}
 }

@@ -75,6 +75,40 @@
           "defaultValue": "random float64 value"
         }
       }
+    },
+    {
+      "description": "Generate NaN float32 value",
+      "name": "NaN_Float32",
+      "properties": {
+        "value": {
+          "type": "Float32",
+          "readWrite": "R",
+          "defaultValue": "0",
+          "floatEncoding": "eNotation"
+        },
+        "units": {
+          "type": "String",
+          "readWrite": "R",
+          "defaultValue": "NaN float32 value"
+        }
+      }
+    },
+    {
+      "description": "Generate NaN float64 value",
+      "name": "NaN_Float64",
+      "properties": {
+        "value": {
+          "type": "Float64",
+          "readWrite": "R",
+          "defaultValue": "0",
+          "floatEncoding": "eNotation"
+        },
+        "units": {
+          "type": "String",
+          "readWrite": "R",
+          "defaultValue": "NaN float64 value"
+        }
+      }
     }
   ],
   "deviceCommands": [
@@ -117,6 +151,24 @@
           "operation": "set",
           "deviceResource": "EnableRandomization_Float64",
           "parameter": "false"
+        }
+      ]
+    },
+    {
+      "name": "NaN_Float32",
+      "get": [
+        {
+          "operation": "get",
+          "deviceResource": "NaN_Float32"
+        }
+      ]
+    },
+    {
+      "name": "NaN_Float64",
+      "get": [
+        {
+          "operation": "get",
+          "deviceResource": "NaN_Float64"
         }
       ]
     }

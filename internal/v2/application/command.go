@@ -419,7 +419,14 @@ func (c *CommandProcessor) commandValuesToEvent(cvs []*dsModels.CommandValue, cm
 			err = transformer.TransformReadResult(cv, dr.Properties.Value, lc)
 			if err != nil {
 				lc.Error(fmt.Sprintf("failed to transform CommandValue (%s): %v", cv.String(), err), sdkCommon.CorrelationHeader, c.correlationID)
-				transformsOK = false
+
+				if errors.As(err, &transformer.OverflowError{}) {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.Overflow)
+				} else if errors.As(err, &transformer.NaNError{}) {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.NaN)
+				} else {
+					transformsOK = false
+				}
 			}
 		}
 

@@ -38,4 +38,6 @@ const (
 	ResourceObjectFloat32     = "RandomValue_Float32"
 	ResourceObjectFloat64     = "RandomValue_Float64"
 	ResourceObjectRandFloat32 = "randfloat32"
+	ResourceObjectNaNFloat32  = "NaN_Float32"
+	ResourceObjectNaNFloat64  = "NaN_Float64"
 )

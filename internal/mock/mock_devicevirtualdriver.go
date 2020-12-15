@@ -8,6 +8,7 @@ package mock
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
@@ -56,9 +57,14 @@ func (DriverMock) HandleReadCommands(deviceName string, protocols map[string]con
 				err = fmt.Errorf("error occurred in HandleReadCommands")
 			}
 		case "Random-Float-Generator01":
-			if req.DeviceResourceName == "RandomValue_Float32" {
+			switch req.DeviceResourceName {
+			case ResourceObjectFloat32:
 				v, _ = dsModels.NewFloat32Value(req.DeviceResourceName, now, float32(123))
-			} else {
+			case ResourceObjectNaNFloat32:
+				v, _ = dsModels.NewFloat32Value(req.DeviceResourceName, now, float32(math.NaN()))
+			case ResourceObjectNaNFloat64:
+				v, _ = dsModels.NewFloat64Value(req.DeviceResourceName, now, math.NaN())
+			default:
 				err = fmt.Errorf("error occurred in HandleReadCommands")
 			}
 		}

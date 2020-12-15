@@ -7,8 +7,8 @@
 package transformer
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"math"
 	"testing"
 
@@ -64,7 +64,7 @@ func TestTransformReadResult_base_unt8_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -110,7 +110,7 @@ func TestTransformReadResult_scale_unt8_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -156,7 +156,7 @@ func TestTransformReadResult_offset_unt8_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -202,7 +202,7 @@ func TestTransformReadResult_base_uint16_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -248,7 +248,7 @@ func TestTransformReadResult_scale_uint16_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -294,7 +294,7 @@ func TestTransformReadResult_offset_uint16_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -340,7 +340,7 @@ func TestTransformReadResult_base_uint32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -386,7 +386,7 @@ func TestTransformReadResult_scale_uint32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -432,7 +432,7 @@ func TestTransformReadResult_offset_uint32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -559,7 +559,7 @@ func TestTransformReadResult_base_int8_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -605,7 +605,7 @@ func TestTransformReadResult_scale_int8_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -651,7 +651,7 @@ func TestTransformReadResult_offset_int8_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -697,7 +697,7 @@ func TestTransformReadResult_base_int16_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -743,7 +743,7 @@ func TestTransformReadResult_scale_int16_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -789,7 +789,7 @@ func TestTransformReadResult_offset_int16_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -835,7 +835,7 @@ func TestTransformReadResult_base_int32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -881,7 +881,7 @@ func TestTransformReadResult_scale_int32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -927,7 +927,7 @@ func TestTransformReadResult_offset_int32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -1054,7 +1054,7 @@ func TestTransformReadResult_base_float32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with base '%v' should be overflow", val, base)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -1100,7 +1100,7 @@ func TestTransformReadResult_scale_float32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with scale '%v' should be overflow", val, scale)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -1146,7 +1146,7 @@ func TestTransformReadResult_offset_float32_overflow(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Unexpect test result, transform reading '%v' with offset '%v' should be overflow", val, offset)
 	}
-	if err, ok := errors.Cause(err).(OverflowError); !ok {
+	if !errors.As(err, &OverflowError{}) {
 		t.Fatalf("Unexpect test result, error should be OverflowError, %v", err)
 	}
 }
@@ -1583,7 +1583,7 @@ func TestTransformReadResult_shift_should_be_valid(t *testing.T) {
 
 	err = TransformReadResult(cv, pv, lc)
 
-	if err == nil || err.Error() != "invalid shift value, the shift -+4 should be parsed to float64 for checking the sign of the number. strconv.ParseFloat: parsing \"-+4\": invalid syntax" {
-		t.Fatalf("Unexpected test result, transform function should throw the correct error. %v", err)
+	if err == nil {
+		t.Fatalf("Unexpected test result, transform function should throw the error.")
 	}
 }

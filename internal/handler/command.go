@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -181,7 +182,13 @@ func cvsToEvent(
 			err = transformer.TransformReadResult(cv, dr.Properties.Value, lc)
 			if err != nil {
 				lc.Error(fmt.Sprintf("Handler - execReadCmd: CommandValue (%s) transformed failed: %v", cv.String(), err))
-				transformsOK = false
+				if errors.As(err, &transformer.OverflowError{}) {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.Overflow)
+				} else if errors.As(err, &transformer.NaNError{}) {
+					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.NaN)
+				} else {
+					transformsOK = false
+				}
 			}
 		}
 
