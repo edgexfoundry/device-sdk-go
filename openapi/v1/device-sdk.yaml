@@ -529,12 +529,6 @@ components:
             Port: 48080
             Protocol: http
             Timeout: 50000
-          Logging:
-            Name: edgex-support-logging
-            Host: localhost
-            Port: 48061
-            Protocol: http
-            Timeout: 0
           Metadata:
             Name: edgex-core-metadata
             Host: localhost
@@ -550,9 +544,6 @@ components:
           RemoveCmd: ''
           RemoveCmdArgs: ''
           ProfilesDir: ./res/example
-        Logging:
-          EnableRemote: false
-          File: ./device-mqtt.log
         Watchers: null
         DeviceList:
           - Name: MQ_DEVICE
