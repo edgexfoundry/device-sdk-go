@@ -4,10 +4,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 #
-ARG BASE=golang:1.15-alpine
+ARG BASE=golang:1.15-alpine3.12
 FROM ${BASE}
 
-COPY --from=docker:latest /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker:20.10.0 /usr/local/bin/docker /usr/local/bin/docker
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
       copyright='Copyright (c) 2019: Intel'
