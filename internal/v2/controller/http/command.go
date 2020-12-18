@@ -15,6 +15,7 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/v2/application"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/gorilla/mux"
 )
 
@@ -40,7 +41,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 		body, reserved, err = filterQueryParams(request.URL.RawQuery)
 	}
 	if err != nil {
-		c.sendEdgexError(writer, request, err, sdkCommon.APIV2NameCommandRoute)
+		c.sendEdgexError(writer, request, err, v2.ApiNameCommandRoute)
 		return
 	}
 
@@ -51,14 +52,14 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	isRead := request.Method == http.MethodGet
 	event, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, body, c.dic)
 	if edgexErr != nil {
-		c.sendEdgexError(writer, request, edgexErr, sdkCommon.APIV2NameCommandRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiNameCommandRoute)
 		return
 	}
 
 	// return event in http response if specified (default yes)
 	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == QueryParameterValueYes {
 		// TODO: the usage of CBOR encoding for binary reading is under discussion
-		c.sendResponse(writer, request, sdkCommon.APIV2NameCommandRoute, event, http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiNameCommandRoute, event, http.StatusOK)
 	}
 }
 
