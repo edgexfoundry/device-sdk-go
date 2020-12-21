@@ -22,9 +22,8 @@ import (
 	"errors"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 )
 
 type mqttSecrets struct {
@@ -50,14 +49,14 @@ const (
 
 type MqttFactory struct {
 	logger         logger.LoggingClient
-	secretProvider security.SecretProvider
+	secretProvider interfaces.SecretProvider
 	authMode       string
 	secretPath     string
 	opts           *mqtt.ClientOptions
 	skipCertVerify bool
 }
 
-func NewMqttFactory(lc logger.LoggingClient, sp security.SecretProvider, mode string, path string, skipVerify bool) MqttFactory {
+func NewMqttFactory(lc logger.LoggingClient, sp interfaces.SecretProvider, mode string, path string, skipVerify bool) MqttFactory {
 	return MqttFactory{
 		logger:         lc,
 		secretProvider: sp,

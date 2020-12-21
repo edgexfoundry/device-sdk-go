@@ -17,8 +17,10 @@
 package transforms
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
 	"github.com/stretchr/testify/require"
 
@@ -43,7 +45,9 @@ const (
 func init() {
 	lc := logger.NewMockClient()
 	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
-	mockSP := newMockSecretProvider(lc, nil)
+	mockSP := &mocks.SecretProvider{}
+	mockSP.On("GetSecrets", "/path", "Secret-Header-Name").Return(map[string]string{"Secret-Header-Name": "value"}, nil)
+	mockSP.On("GetSecrets", "/path", "Secret-Header-Name-2").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
 
 	context = &appcontext.Context{
 		LoggingClient:  lc,
@@ -51,6 +55,7 @@ func init() {
 		SecretProvider: mockSP,
 	}
 }
+
 func TestTransformToXML(t *testing.T) {
 	// Event from device 1
 	eventIn := models.Event{

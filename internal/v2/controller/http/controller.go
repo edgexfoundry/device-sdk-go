@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/errors"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/v2/dtos/requests"
 )
@@ -39,7 +39,7 @@ import (
 // V2HttpController controller for V2 REST APIs
 type V2HttpController struct {
 	router         *mux.Router
-	secretProvider security.SecretProvider
+	secretProvider interfaces.SecretProvider
 	lc             logger.LoggingClient
 	config         *sdkCommon.ConfigurationStruct
 }
@@ -49,7 +49,7 @@ func NewV2HttpController(
 	router *mux.Router,
 	lc logger.LoggingClient,
 	config *sdkCommon.ConfigurationStruct,
-	secretProvider security.SecretProvider) *V2HttpController {
+	secretProvider interfaces.SecretProvider) *V2HttpController {
 	return &V2HttpController{
 		router:         router,
 		secretProvider: secretProvider,
@@ -187,9 +187,9 @@ func (v2c *V2HttpController) prepareSecrets(request requests.SecretsRequest) (st
 	path := strings.TrimSpace(request.Path)
 
 	// add '/' in the full URL path if it's not already at the end of the base path or sub path
-	if !strings.HasSuffix(v2c.config.SecretStoreExclusive.Path, "/") && !strings.HasPrefix(path, "/") {
+	if !strings.HasSuffix(v2c.config.SecretStore.Path, "/") && !strings.HasPrefix(path, "/") {
 		path = "/" + path
-	} else if strings.HasSuffix(v2c.config.SecretStoreExclusive.Path, "/") && strings.HasPrefix(path, "/") {
+	} else if strings.HasSuffix(v2c.config.SecretStore.Path, "/") && strings.HasPrefix(path, "/") {
 		// remove extra '/' in the full URL path because secret store's (Vault) APIs don't handle extra '/'.
 		path = path[1:]
 	}

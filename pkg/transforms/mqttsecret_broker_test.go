@@ -1,5 +1,4 @@
 // +build brokerRunning
-
 //
 // Copyright (c) 2020 Intel Corporation
 //
@@ -24,9 +23,10 @@ package transforms
 
 import (
 	"testing"
+	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
 )
 
 func TestMQTTSendWithData(t *testing.T) {
@@ -35,8 +35,8 @@ func TestMQTTSendWithData(t *testing.T) {
 		SecretPath: "/mqtt",
 	}
 	sender.client = MQTT.NewClient(sender.opts)
-	mockSecretProvider := security.NewSecretProvider(nil, nil)
-	mockSecretProvider.ExclusiveSecretClient = &mockMQTTSecretClient{}
+	mockSecretProvider := &mocks.SecretProvider{}
+	mockSecretProvider.On("SecretsLastUpdated").Return(time.Now())
 	context.SecretProvider = mockSecretProvider
 	sender.MQTTSend(context, "sendme")
 	// require.True(t, continuePipeline)

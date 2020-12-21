@@ -25,15 +25,15 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/fxamacker/cbor/v2"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
+	dbInterfaces "github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	"github.com/fxamacker/cbor/v2"
 )
 
 const unmarshalErrorMessage = "Unable to unmarshal message payload as %s"
@@ -45,7 +45,7 @@ type GolangRuntime struct {
 	transforms     []appcontext.AppFunction
 	isBusyCopying  sync.Mutex
 	storeForward   storeForwardInfo
-	secretProvider security.SecretProvider
+	secretProvider interfaces.SecretProvider
 }
 
 type MessageError struct {
@@ -139,7 +139,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 }
 
 // Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
-func (gr *GolangRuntime) Initialize(storeClient interfaces.StoreClient, secretProvider security.SecretProvider) {
+func (gr *GolangRuntime) Initialize(storeClient dbInterfaces.StoreClient, secretProvider interfaces.SecretProvider) {
 	gr.storeForward.storeClient = storeClient
 	gr.storeForward.runtime = gr
 	gr.secretProvider = secretProvider

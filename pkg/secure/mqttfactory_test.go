@@ -24,11 +24,10 @@ import (
 	"testing"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 )
 
 const testCACert = `-----BEGIN CERTIFICATE-----
@@ -159,8 +158,14 @@ func TestValidateSecrets(t *testing.T) {
 
 func TestGetSecrets(t *testing.T) {
 	// setup mock secret client
-	mockSecretProvider := security.NewSecretProvider(nil, nil)
-	mockSecretProvider.ExclusiveSecretClient = &mockMQTTSecretClient{}
+	expectedMqttSecrets := map[string]string{
+		"username": "TEST_USER",
+		"password": "TEST_PASS",
+	}
+	mockSecretProvider := &mocks.SecretProvider{}
+	mockSecretProvider.On("GetSecrets", "").Return(nil)
+	mockSecretProvider.On("GetSecrets", "/notfound").Return(nil, errors.New("Not Found"))
+	mockSecretProvider.On("GetSecrets", "/mqtt").Return(expectedMqttSecrets, nil)
 
 	target := NewMqttFactory(logger.NewMockClient(), mockSecretProvider, "", "", false)
 	tests := []struct {
@@ -312,21 +317,4 @@ func TestConfigureMQTTClientForAuthWithNone(t *testing.T) {
 	err := target.configureMQTTClientForAuth(mqttSecrets{})
 
 	require.NoError(t, err)
-}
-
-type mockMQTTSecretClient struct {
-}
-
-// GetSecrets mock implementation of GetSecrets
-func (s *mockMQTTSecretClient) GetSecrets(path string, _ ...string) (map[string]string, error) {
-	if path == "/notfound" {
-		return nil, errors.New("")
-	}
-	fakeDb := map[string]string{MQTTSecretUsername: "TEST_USER", MQTTSecretPassword: "TEST_PASS"}
-	return fakeDb, nil
-}
-
-// StoreSecrets mock implementation of StoreSecrets
-func (s *mockMQTTSecretClient) StoreSecrets(_ string, _ map[string]string) error {
-	return nil
 }

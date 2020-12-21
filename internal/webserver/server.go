@@ -25,9 +25,9 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 	v2 "github.com/edgexfoundry/app-functions-sdk-go/internal/v2/controller/http"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -40,7 +40,7 @@ type WebServer struct {
 	Config           *common.ConfigurationStruct
 	LoggingClient    logger.LoggingClient
 	router           *mux.Router
-	secretProvider   security.SecretProvider
+	secretProvider   interfaces.SecretProvider
 	v2HttpController *v2.V2HttpController
 }
 
@@ -51,7 +51,7 @@ type Version struct {
 }
 
 // NewWebserver returns a new instance of *WebServer
-func NewWebServer(config *common.ConfigurationStruct, secretProvider security.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
+func NewWebServer(config *common.ConfigurationStruct, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
 	ws := &WebServer{
 		Config:           config,
 		LoggingClient:    lc,
@@ -247,9 +247,9 @@ func (webserver *WebServer) secretHandler(writer http.ResponseWriter, req *http.
 
 	secretData.Path = strings.TrimSpace(secretData.Path)
 	// add '/' in the full URL path if it's not already at the end of the basepath or subpath
-	if !strings.HasSuffix(webserver.Config.SecretStoreExclusive.Path, "/") && !strings.HasPrefix(secretData.Path, "/") {
+	if !strings.HasSuffix(webserver.Config.SecretStore.Path, "/") && !strings.HasPrefix(secretData.Path, "/") {
 		secretData.Path = "/" + secretData.Path
-	} else if strings.HasSuffix(webserver.Config.SecretStoreExclusive.Path, "/") && strings.HasPrefix(secretData.Path, "/") {
+	} else if strings.HasSuffix(webserver.Config.SecretStore.Path, "/") && strings.HasPrefix(secretData.Path, "/") {
 		// remove extra '/' in the full URL path because secret store's (Vault) APIs don't handle extra '/'.
 		secretData.Path = secretData.Path[1:]
 	}

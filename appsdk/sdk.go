@@ -30,29 +30,12 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-messaging/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-registry/registry"
-	"github.com/gorilla/mux"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
-	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/handlers"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
@@ -60,6 +43,22 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/mqtt"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
+	bootstrapHandlers "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers"
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-messaging/messaging"
+	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	"github.com/edgexfoundry/go-mod-registry/registry"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -95,12 +94,12 @@ const SDKKey key = 0
 // provide the desired transforms for your pipeline by calling .SetFunctionsPipeline(). Lastly, call .MakeItRun() to start listening for events based on
 // your configured trigger.
 type AppFunctionsSDK struct {
-	// ServiceKey is the application services's key used for Configuration and Registration when the Registry is enabled
+	// ServiceKey is the application services' key used for Configuration and Registration when the Registry is enabled
 	ServiceKey string
 	// LoggingClient is the EdgeX logger client used to log messages
 	LoggingClient logger.LoggingClient
 	// TargetType is the expected type of the incoming data. Must be set to a pointer to an instance of the type.
-	// Defaults to &models.Event{} if nil. The income data is unmarshaled (JSON or CBOR) in to the type,
+	// Defaults to &models.Event{} if nil. The income data is un-marshaled (JSON or CBOR) in to the type,
 	// except when &[]byte{} is specified. In this case the []byte data is pass to the first function in the Pipeline.
 	TargetType interface{}
 	// EdgexClients allows access to the EdgeX clients such as the CommandClient.
@@ -118,7 +117,7 @@ type AppFunctionsSDK struct {
 	webserver                 *webserver.WebServer
 	config                    *common.ConfigurationStruct
 	storeClient               interfaces.StoreClient
-	secretProvider            security.SecretProvider
+	secretProvider            bootstrapInterfaces.SecretProvider
 	storeForwardWg            *sync.WaitGroup
 	storeForwardCancelCtx     context.CancelFunc
 	appWg                     *sync.WaitGroup
@@ -149,7 +148,7 @@ func (sdk *AppFunctionsSDK) AddBackgroundPublisher(capacity int) BackgroundPubli
 	return pub
 }
 
-// MakeItRun will initialize and start the trigger as specifed in the
+// MakeItRun will initialize and start the trigger as specified in the
 // configuration. It will also configure the webserver and start listening on
 // the specified port.
 func (sdk *AppFunctionsSDK) MakeItRun() error {
@@ -290,7 +289,7 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 	return pipeline, nil
 }
 
-// SetFunctionsPipeline allows you to define each fgitunction to execute and the order in which each function
+// SetFunctionsPipeline allows you to define each function to execute and the order in which each function
 // will be called as each event comes in.
 func (sdk *AppFunctionsSDK) SetFunctionsPipeline(transforms ...appcontext.AppFunction) error {
 	if len(transforms) == 0 {
@@ -307,7 +306,7 @@ func (sdk *AppFunctionsSDK) SetFunctionsPipeline(transforms ...appcontext.AppFun
 	return nil
 }
 
-// ApplicationSettings returns the values specifed in the custom configuration section.
+// ApplicationSettings returns the values specified in the custom configuration section.
 func (sdk *AppFunctionsSDK) ApplicationSettings() map[string]string {
 	return sdk.config.ApplicationSettings
 }
@@ -387,7 +386,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 		startupTimer,
 		dic,
 		[]bootstrapInterfaces.BootstrapHandler{
-			handlers.NewSecrets().BootstrapHandler,
+			bootstrapHandlers.SecureProviderBootstrapHandler,
 			handlers.NewDatabase().BootstrapHandler,
 			handlers.NewClients().BootstrapHandler,
 			handlers.NewTelemetry().BootstrapHandler,
@@ -403,7 +402,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	}
 
 	// Bootstrapping is complete, so now need to retrieve the needed objects from the containers.
-	sdk.secretProvider = container.SecretProviderFrom(dic.Get)
+	sdk.secretProvider = bootstrapContainer.SecretProviderFrom(dic.Get)
 	sdk.storeClient = container.StoreClientFrom(dic.Get)
 	sdk.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	sdk.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
@@ -418,11 +417,12 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	bindingType := strings.ToUpper(sdk.config.Binding.Type)
 	if (bindingType == bindingTypeMessageBus || bindingType == bindingTypeEdgeXMessageBus) &&
 		sdk.config.MessageBus.Type == messaging.RedisStreams {
-		credentials, err := sdk.secretProvider.GetDatabaseCredentials(sdk.config.Database)
+
+		credentials, err := sdk.secretProvider.GetSecrets(sdk.config.Database.Type)
 		if err != nil {
 			return fmt.Errorf("unable to set RedisStreams password from DB credentials")
 		}
-		sdk.config.MessageBus.Optional[OptionalPasswordKey] = credentials.Password
+		sdk.config.MessageBus.Optional[OptionalPasswordKey] = credentials[secret.PasswordKey]
 	}
 
 	// We do special processing when the writeable section of the configuration changes, so have

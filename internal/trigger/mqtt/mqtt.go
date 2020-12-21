@@ -26,6 +26,7 @@ import (
 
 	pahoMqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 	"github.com/google/uuid"
@@ -33,7 +34,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/secure"
 )
 
@@ -43,14 +43,14 @@ type Trigger struct {
 	mqttClient     pahoMqtt.Client
 	runtime        *runtime.GolangRuntime
 	edgeXClients   common.EdgeXClients
-	secretProvider security.SecretProvider
+	secretProvider interfaces.SecretProvider
 }
 
 func NewTrigger(
 	configuration *common.ConfigurationStruct,
 	runtime *runtime.GolangRuntime,
 	clients common.EdgeXClients,
-	secretProvider security.SecretProvider) *Trigger {
+	secretProvider interfaces.SecretProvider) *Trigger {
 	return &Trigger{
 		configuration:  configuration,
 		runtime:        runtime,

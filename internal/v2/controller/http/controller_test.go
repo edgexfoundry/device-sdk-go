@@ -18,6 +18,7 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
@@ -38,7 +41,6 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/v2/dtos/requests"
 )
 
@@ -172,14 +174,14 @@ func TestConfigRequest(t *testing.T) {
 
 func TestSecretsRequest(t *testing.T) {
 	expectedRequestId := "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc"
-	config := &sdkCommon.ConfigurationStruct{
-		SecretStoreExclusive: bootstrapConfig.SecretStoreInfo{
-			Path: "TBD",
-		},
-	}
+	config := &sdkCommon.ConfigurationStruct{}
+
 	lc := logger.NewMockClient()
 
-	mockProvider := security.NewSecretProviderMock(config)
+	mockProvider := &mocks.SecretProvider{}
+	mockProvider.On("StoreSecrets", "/mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
+	mockProvider.On("StoreSecrets", "/no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
+
 	target := NewV2HttpController(nil, lc, config, mockProvider)
 	assert.NotNil(t, target)
 
@@ -210,6 +212,8 @@ func TestSecretsRequest(t *testing.T) {
 	missingSecretValue.Secrets = []requests.SecretsKeyValue{
 		{Key: "username", Value: ""},
 	}
+	noSecretStore := validRequest
+	noSecretStore.Path = "no"
 
 	tests := []struct {
 		Name               string
@@ -229,12 +233,12 @@ func TestSecretsRequest(t *testing.T) {
 		{"Invalid - no secrets", noSecrets, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - missing secret key", missingSecretKey, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - missing secret value", missingSecretValue, "", "", "true", true, http.StatusBadRequest},
-		{"Invalid - No Secret Store", validRequest, "", "", "false", true, http.StatusInternalServerError},
+		{"Invalid - No Secret Store", noSecretStore, "", "", "false", true, http.StatusInternalServerError},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
-			_ = os.Setenv(security.EnvSecretStore, testCase.SecretStoreEnabled)
+			_ = os.Setenv(secret.EnvSecretStore, testCase.SecretStoreEnabled)
 
 			jsonData, err := json.Marshal(testCase.Request)
 			require.NoError(t, err)
@@ -244,8 +248,6 @@ func TestSecretsRequest(t *testing.T) {
 			req, err := http.NewRequest(http.MethodPost, internal.ApiV2SecretsRoute, reader)
 			require.NoError(t, err)
 			req.Header.Set(internal.CorrelationHeaderKey, expectedCorrelationId)
-
-			config.SecretStoreExclusive.Path = testCase.SecretsPath
 
 			recorder := httptest.NewRecorder()
 			handler := http.HandlerFunc(target.Secrets)

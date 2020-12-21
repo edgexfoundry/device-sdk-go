@@ -28,12 +28,10 @@ var (
 )
 
 type DatabaseInfo struct {
-	Type     string
-	Host     string
-	Port     int
-	Timeout  string
-	Username string
-	Password string
+	Type    string
+	Host    string
+	Port    int
+	Timeout string
 
 	// Redis specific configuration items
 	MaxIdle   int

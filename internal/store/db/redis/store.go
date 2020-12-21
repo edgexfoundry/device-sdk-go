@@ -25,6 +25,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/redis/models"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -200,7 +201,7 @@ func (c Client) Disconnect() error {
 }
 
 // NewClient provides a factory for building a StoreClient
-func NewClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
+func NewClient(config db.DatabaseInfo, credentials bootstrapConfig.Credentials) (interfaces.StoreClient, error) {
 	var retErr error
 	once.Do(func() {
 		connectionString := fmt.Sprintf("%s:%d", config.Host, config.Port)
@@ -211,7 +212,7 @@ func NewClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
 		}
 
 		opts := []redis.DialOption{
-			redis.DialPassword(config.Password),
+			redis.DialPassword(credentials.Password),
 			redis.DialConnectTimeout(connectTimeout),
 		}
 

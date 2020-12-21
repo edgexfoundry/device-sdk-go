@@ -24,6 +24,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/gorilla/mux"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
 )
 
@@ -47,7 +47,8 @@ func TestMain(m *testing.M) {
 func TestAddRoute(t *testing.T) {
 	routePath := "/testRoute"
 	testHandler := func(_ http.ResponseWriter, _ *http.Request) {}
-	sp := security.NewSecretProvider(logClient, config)
+	sp := &mocks.SecretProvider{}
+
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	err := webserver.AddRoute(routePath, testHandler)
 	assert.NoError(t, err, "Not expecting an error")
@@ -59,7 +60,7 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestEncode(t *testing.T) {
-	sp := security.NewSecretProvider(logClient, config)
+	sp := &mocks.SecretProvider{}
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	writer := httptest.NewRecorder()
 	var junkData interface{}
@@ -72,7 +73,7 @@ func TestEncode(t *testing.T) {
 
 func TestConfigureAndPingRoute(t *testing.T) {
 
-	sp := security.NewSecretProvider(logClient, config)
+	sp := &mocks.SecretProvider{}
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
@@ -87,7 +88,7 @@ func TestConfigureAndPingRoute(t *testing.T) {
 
 func TestConfigureAndVersionRoute(t *testing.T) {
 
-	sp := security.NewSecretProvider(logClient, config)
+	sp := &mocks.SecretProvider{}
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
@@ -101,7 +102,7 @@ func TestConfigureAndVersionRoute(t *testing.T) {
 }
 func TestConfigureAndConfigRoute(t *testing.T) {
 
-	sp := security.NewSecretProvider(logClient, config)
+	sp := &mocks.SecretProvider{}
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
@@ -109,14 +110,14 @@ func TestConfigureAndConfigRoute(t *testing.T) {
 	rr := httptest.NewRecorder()
 	webserver.router.ServeHTTP(rr, req)
 
-	expected := `{"Writable":{"LogLevel":"","Pipeline":{"ExecutionOrder":"","UseTargetTypeOfByteArray":false,"Functions":null},"StoreAndForward":{"Enabled":false,"RetryInterval":"","MaxRetryCount":0},"InsecureSecrets":null},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":"","CheckInterval":"","Host":"","HTTPSCert":"","HTTPSKey":"","ServerBindAddr":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":""},"MessageBus":{"PublishHost":{"Host":"","Port":0,"Protocol":""},"SubscribeHost":{"Host":"","Port":0,"Protocol":""},"Type":"","Optional":null},"MqttBroker":{"Url":"","ClientId":"","ConnectTimeout":"","AutoReconnect":false,"KeepAlive":0,"QoS":0,"Retain":false,"SkipCertVerify":false,"SecretPath":"","AuthMode":""},"Binding":{"Type":"","SubscribeTopic":"","PublishTopic":""},"ApplicationSettings":null,"Clients":null,"Database":{"Type":"","Host":"","Port":0,"Timeout":"","Username":"","Password":"","MaxIdle":0,"BatchSize":0},"SecretStore":{"Host":"","Port":0,"Path":"","Protocol":"","Namespace":"","RootCaCertPath":"","ServerName":"","Authentication":{"AuthType":"","AuthToken":""},"AdditionalRetryAttempts":0,"RetryWaitPeriod":"","TokenFile":""},"SecretStoreExclusive":{"Host":"","Port":0,"Path":"","Protocol":"","Namespace":"","RootCaCertPath":"","ServerName":"","Authentication":{"AuthType":"","AuthToken":""},"AdditionalRetryAttempts":0,"RetryWaitPeriod":"","TokenFile":""}}` + "\n"
+	expected := `{"Writable":{"LogLevel":"","Pipeline":{"ExecutionOrder":"","UseTargetTypeOfByteArray":false,"Functions":null},"StoreAndForward":{"Enabled":false,"RetryInterval":"","MaxRetryCount":0},"InsecureSecrets":null},"Registry":{"Host":"","Port":0,"Type":""},"Service":{"BootTimeout":"","CheckInterval":"","Host":"","HTTPSCert":"","HTTPSKey":"","ServerBindAddr":"","Port":0,"Protocol":"","StartupMsg":"","ReadMaxLimit":0,"Timeout":""},"MessageBus":{"PublishHost":{"Host":"","Port":0,"Protocol":""},"SubscribeHost":{"Host":"","Port":0,"Protocol":""},"Type":"","Optional":null},"MqttBroker":{"Url":"","ClientId":"","ConnectTimeout":"","AutoReconnect":false,"KeepAlive":0,"QoS":0,"Retain":false,"SkipCertVerify":false,"SecretPath":"","AuthMode":""},"Binding":{"Type":"","SubscribeTopic":"","PublishTopic":""},"ApplicationSettings":null,"Clients":null,"Database":{"Type":"","Host":"","Port":0,"Timeout":"","MaxIdle":0,"BatchSize":0},"SecretStore":{"Host":"","Port":0,"Path":"","Protocol":"","Namespace":"","RootCaCertPath":"","ServerName":"","Authentication":{"AuthType":"","AuthToken":""},"AdditionalRetryAttempts":0,"RetryWaitPeriod":"","TokenFile":""}}` + "\n"
 
 	body := rr.Body.String()
 	assert.Equal(t, expected, body)
 }
 
 func TestConfigureAndMetricsRoute(t *testing.T) {
-	sp := security.NewSecretProviderMock(config)
+	sp := &mocks.SecretProvider{}
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 
@@ -138,7 +139,7 @@ func TestConfigureAndMetricsRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	sp := security.NewSecretProviderMock(config)
+	sp := &mocks.SecretProvider{}
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 
 	handlerFunctionNotCalled := true
@@ -161,8 +162,9 @@ func TestSetupTriggerRoute(t *testing.T) {
 }
 
 func TestPostSecretRoute(t *testing.T) {
-
-	sp := security.NewSecretProviderMock(config)
+	sp := &mocks.SecretProvider{}
+	sp.On("StoreSecrets", "/MyPath", map[string]string{"MySecretKey": "MySecretValue"}).Return(nil)
+	sp.On("StoreSecrets", "/MyPath", map[string]string{"MySecretKey1": "MySecretValue1", "MySecretKey2": "MySecretValue2"}).Return(nil)
 	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
 	webserver.ConfigureStandardRoutes()
 

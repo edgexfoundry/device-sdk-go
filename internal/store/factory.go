@@ -19,12 +19,13 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/redis"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 )
 
-func NewStoreClient(config db.DatabaseInfo) (interfaces.StoreClient, error) {
+func NewStoreClient(config db.DatabaseInfo, credentials bootstrapConfig.Credentials) (interfaces.StoreClient, error) {
 	switch config.Type {
 	case db.RedisDB:
-		return redis.NewClient(config)
+		return redis.NewClient(config, credentials)
 	default:
 		return nil, db.ErrUnsupportedDatabase
 	}

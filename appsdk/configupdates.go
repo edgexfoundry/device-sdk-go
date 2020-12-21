@@ -18,7 +18,6 @@ package appsdk
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
@@ -64,17 +63,6 @@ func (processor *ConfigUpdateProcessor) WaitForConfigUpdates(configUpdated confi
 
 				// Note: Updates occur one setting at a time so only have to look for single changes
 				switch {
-				case previousWriteable.LogLevel != currentWritable.LogLevel:
-					_ = sdk.LoggingClient.SetLogLevel(currentWritable.LogLevel)
-					sdk.LoggingClient.Info(fmt.Sprintf("Logging level changed to %s", currentWritable.LogLevel))
-
-				// InsecureSecrets (map) will be nil if not in the original TOML used to seed the Config Provider,
-				// so ignore it if this is the case.
-				case currentWritable.InsecureSecrets != nil &&
-					!reflect.DeepEqual(previousWriteable.InsecureSecrets, currentWritable.InsecureSecrets):
-					sdk.secretProvider.InsecureSecretsUpdated()
-					sdk.LoggingClient.Info("Insecure Secrets have been updated")
-
 				case previousWriteable.StoreAndForward.MaxRetryCount != currentWritable.StoreAndForward.MaxRetryCount:
 					if currentWritable.StoreAndForward.MaxRetryCount < 0 {
 						sdk.LoggingClient.Warn(

@@ -36,7 +36,7 @@ type WritableInfo struct {
 	LogLevel        string
 	Pipeline        PipelineInfo
 	StoreAndForward StoreAndForwardInfo
-	InsecureSecrets InsecureSecrets
+	InsecureSecrets bootstrapConfig.InsecureSecrets
 }
 
 // ConfigurationStruct
@@ -62,8 +62,6 @@ type ConfigurationStruct struct {
 	Database db.DatabaseInfo
 	// SecretStore
 	SecretStore bootstrapConfig.SecretStoreInfo
-	// SecretStoreExclusive
-	SecretStoreExclusive bootstrapConfig.SecretStoreInfo
 }
 
 // ServiceInfo is used to hold and configure various settings related to the hosting of this service
@@ -141,15 +139,6 @@ type Credentials struct {
 	Password string
 }
 
-// InsecureSecrets is used to hold the secrets stored in the configuration
-type InsecureSecrets map[string]InsecureSecretsInfo
-
-// InsecureSecretsInfo encapsulates info used to retrieve insecure secrets
-type InsecureSecretsInfo struct {
-	Path    string
-	Secrets map[string]string
-}
-
 // UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is
 // then used to overwrite the service's existing configuration struct.
 func (c *ConfigurationStruct) UpdateFromRaw(rawConfig interface{}) bool {
@@ -197,6 +186,11 @@ func (c *ConfigurationStruct) GetLogLevel() string {
 // GetRegistryInfo returns the RegistryInfo section from the configuration
 func (c *ConfigurationStruct) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 	return c.Registry
+}
+
+// GetInsecureSecrets returns the service's InsecureSecrets.
+func (c *ConfigurationStruct) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
+	return c.Writable.InsecureSecrets
 }
 
 // transformToBootstrapServiceInfo transforms the SDK's ServiceInfo to the bootstrap's version of ServiceInfo

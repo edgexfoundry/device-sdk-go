@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
@@ -62,7 +62,7 @@ type Context struct {
 	// RetryData holds the data to be stored for later retry when the pipeline function returns an error
 	RetryData []byte
 	// SecretProvider exposes the support for getting and storing secrets
-	SecretProvider security.SecretProvider
+	SecretProvider interfaces.SecretProvider
 	// ResponseContentType is used for holding custom response type for HTTP trigger
 	ResponseContentType string
 }

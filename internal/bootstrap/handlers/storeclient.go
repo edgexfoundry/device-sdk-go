@@ -21,13 +21,15 @@ import (
 	"sync"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/security"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
 )
@@ -61,7 +63,7 @@ func (_ *Database) BootstrapHandler(
 	}
 
 	logger := bootstrapContainer.LoggingClientFrom(dic.Get)
-	secretProvider := container.SecretProviderFrom(dic.Get)
+	secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
 
 	storeClient, err := InitializeStoreClient(secretProvider, config, startupTimer, logger)
 	if err != nil {
@@ -81,23 +83,25 @@ func (_ *Database) BootstrapHandler(
 // InitializeStoreClient initializes the database client for Store and Forward. This is not a receiver function so that
 // it can be called directly when configuration has changed and store and forward has been enabled for the first time
 func InitializeStoreClient(
-	secretProvider security.SecretProvider,
+	secretProvider bootstrapInterfaces.SecretProvider,
 	config *common.ConfigurationStruct,
 	startupTimer startup.Timer,
 	logger logger.LoggingClient) (interfaces.StoreClient, error) {
 	var err error
 
-	credentials, err := secretProvider.GetDatabaseCredentials(config.Database)
+	secrets, err := secretProvider.GetSecrets(config.Database.Type)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get Database Credentials for Store and Forward: %s", err.Error())
 	}
 
-	config.Database.Username = credentials.Username
-	config.Database.Password = credentials.Password
+	credentials := bootstrapConfig.Credentials{
+		Username: secrets[secret.UsernameKey],
+		Password: secrets[secret.PasswordKey],
+	}
 
 	var storeClient interfaces.StoreClient
 	for startupTimer.HasNotElapsed() {
-		if storeClient, err = store.NewStoreClient(config.Database); err != nil {
+		if storeClient, err = store.NewStoreClient(config.Database, credentials); err != nil {
 			logger.Warn("unable to initialize Database for Store and Forward: %s", err.Error())
 			startupTimer.SleepForInterval()
 			continue
