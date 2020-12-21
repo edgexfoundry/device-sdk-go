@@ -1,10 +1,53 @@
                          EdgeX Foundry Go Device SDK
-                                 Version 1.2.3
+                                 Version 1.4.0
                                  Release Notes
 
 INTRODUCTION
 ============
-This document contains the release notes for the 1.2.3 version of EdgeX Foundry Go Device SDK.
+This document contains the release notes for the 1.4.0 version of EdgeX Foundry Go Device SDK.
+
+Changes for 1.4.0 "Hanoi":
+o PR#652:  feat: add v1 deviceService callback handler
+o PR#678:  ci: add semantic.yml for commit linting, update PR template to latest
+o PR#687:  fix: use pointer on Executor to correctly update it
+o PR#686:  feat: Make the numeric value type allows overflow and NaN
+o PR#661:  feat: autoevent adds buffer for sending event to coredata
+o PR#650:  feat(sdk): Implement Device AutoEvents SDK APIs
+o PR#702:  feat: update DS in metadata to reflect config change
+
+Changes for 1.3.0 "Hanoi":
+============
+o PR#559:  Change document path from api/oas3.0/ to openapi/
+o PR#562:  fix: allow startup duration/interval to be overridden via env vars
+o PR#565:  fix: pass ctx into client initialization function
+o PR#563:  fix: update CommandExists to only check Device Commands
+o PR#567:  refactor service and clients package
+o PR#568:  refactor handler/controller and their dependencied packages
+o PR#575:  refactor: update dockerfile to appropriately use ENTRYPOINT and CMD
+o PR#576:  docs: addition of version and LTS refs to README per arch's meeting
+o PR#579:  build: add dependabot.yml
+o PR#588:  build: upgrade to use Go 1.15
+o PR#570:  Update Makefile and clean attribution file
+o PR#553:  fix: Create a buffer to handle the AsyncValues
+o PR#592:  fix: fix device autodiscovery behavior
+o PR#594:  Update V2 swagger file to consist with edgex-go
+o PR#593:  fix: fix autoevent panic during callback
+o PR#571:  Remove globalvars and refactor remaining packages
+o PR#602:  feat: implement Device SDK v2 common API
+o PR#612:  refactor: Simplify controller signatures
+o PR#595:  Update V2 Swagger file callback API status code
+o PR#617:  Add Publish Swagger Parameters to Jenkinsfile
+o PR#615:  fix: improve device discovery flow and whitelist logic
+o PR#603:  feat: implement v2 discovery API
+o PR#624:  refactor(sdk): release lock after discovery complete
+o PR#622:  feat(sdk): expose RegistryClient
+o PR#625:  feat(sdk): prepare v2 cache for v2 callback api
+o PR#619:  feat: implement v2 command API
+o PR#605:  feat: implement v2 callback api
+o PR#628:  feat(sdk): start auto-discovery upon service startup
+o PR#641:  refactor: update LogLevel for pushing event to coredata
+o PR#635:  fix(sdk): prevent creating duplicate autoevent executor
+o PR#637:  test/docs(sdk): update README and add unit tests
 
 Changes for 1.2.3 "Geneva":
 ============
