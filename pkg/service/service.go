@@ -136,101 +136,102 @@ func (s *DeviceService) Stop(force bool) {
 
 // selfRegister register device service itself onto metadata.
 func (s *DeviceService) selfRegister() error {
-	s.LoggingClient.Debug("Trying to find Device Service: " + s.ServiceName)
-
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	ds, err := s.edgexClients.DeviceServiceClient.DeviceServiceForName(ctx, s.ServiceName)
-
+	addr, err := s.createAndUpdateAddressable()
 	if err != nil {
-		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
-			s.LoggingClient.Info(fmt.Sprintf("Device Service %s doesn't exist, creating a new one", s.ServiceName))
-			ds, err = s.createNewDeviceService()
-		} else {
-			s.LoggingClient.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
-			return err
-		}
-	} else {
-		s.LoggingClient.Info(fmt.Sprintf("Device Service %s exists", ds.Name))
+		s.LoggingClient.Error(fmt.Sprintf("createAndUpdateAddressable failed: %v", err))
+		return err
 	}
 
-	s.LoggingClient.Debug(fmt.Sprintf("Device Service in Core MetaData: %s", s.ServiceName))
-	s.deviceService = ds
-
-	return nil
-}
-
-func (s *DeviceService) createNewDeviceService() (contract.DeviceService, error) {
-	addr, err := s.makeNewAddressable()
-	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("makeNewAddressable failed: %v", err))
-		return contract.DeviceService{}, err
-	}
-
-	millis := time.Now().UnixNano() / int64(time.Millisecond)
-	ds := contract.DeviceService{
+	newDeviceService := contract.DeviceService{
 		Name:           s.ServiceName,
 		Labels:         s.config.Service.Labels,
 		OperatingState: contract.Enabled,
 		Addressable:    *addr,
 		AdminState:     contract.Unlocked,
 	}
-	ds.Origin = millis
+	newDeviceService.Origin = time.Now().UnixNano() / int64(time.Millisecond)
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := s.edgexClients.DeviceServiceClient.Add(ctx, &ds)
+	s.LoggingClient.Debug("Trying to find DeviceService: " + s.ServiceName)
+	ds, err := s.edgexClients.DeviceServiceClient.DeviceServiceForName(ctx, s.ServiceName)
 	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("Add Deviceservice: %s; failed: %v", s.ServiceName, err))
-		return contract.DeviceService{}, err
-	}
-	if err = common.VerifyIdFormat(id, "Device Service"); err != nil {
-		return contract.DeviceService{}, err
+		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
+			s.LoggingClient.Info(fmt.Sprintf("DeviceService %s doesn't exist, creating a new one", s.ServiceName))
+			id, err := s.edgexClients.DeviceServiceClient.Add(ctx, &newDeviceService)
+			if err != nil {
+				s.LoggingClient.Error(fmt.Sprintf("Failed to add Deviceservice %s: %v", s.ServiceName, err))
+				return err
+			}
+			if err = common.VerifyIdFormat(id, "Device Service"); err != nil {
+				return err
+			}
+			// NOTE - this differs from Addressable and Device Resources,
+			// neither of which require the '.Service'prefix
+			newDeviceService.Id = id
+			s.LoggingClient.Debug("New DeviceService Id: " + newDeviceService.Id)
+		} else {
+			s.LoggingClient.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
+			return err
+		}
+	} else {
+		s.LoggingClient.Info(fmt.Sprintf("DeviceService %s exists, updating it", ds.Name))
+		err = s.edgexClients.DeviceServiceClient.Update(ctx, newDeviceService)
+		if err != nil {
+			s.LoggingClient.Error(fmt.Sprintf("Failed to update DeviceService %s: %v", newDeviceService.Name, err))
+			// use the existed one to at least make sure config is in sync with metadata.
+			newDeviceService = ds
+		}
+		newDeviceService.Id = ds.Id
 	}
 
-	// NOTE - this differs from Addressable and Device Resources,
-	// neither of which require the '.Service'prefix
-	ds.Id = id
-	s.LoggingClient.Debug("New device service Id: " + ds.Id)
-
-	return ds, nil
+	s.deviceService = newDeviceService
+	return nil
 }
 
-func (s *DeviceService) makeNewAddressable() (*contract.Addressable, error) {
-	// check whether there has been an existing addressable
+// TODO: Addressable will be removed in v2.
+func (s *DeviceService) createAndUpdateAddressable() (*contract.Addressable, error) {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	newAddr := contract.Addressable{
+		Timestamps: contract.Timestamps{
+			Origin: time.Now().UnixNano() / int64(time.Millisecond),
+		},
+		Name:       s.ServiceName,
+		HTTPMethod: http.MethodPost,
+		Protocol:   common.HttpProto,
+		Address:    s.config.Service.Host,
+		Port:       s.config.Service.Port,
+		Path:       common.APICallbackRoute,
+	}
+
 	addr, err := s.edgexClients.AddressableClient.AddressableForName(ctx, s.ServiceName)
 	if err != nil {
 		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
 			s.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", s.ServiceName))
-			millis := time.Now().UnixNano() / int64(time.Millisecond)
-			addr = contract.Addressable{
-				Timestamps: contract.Timestamps{
-					Origin: millis,
-				},
-				Name:       s.ServiceName,
-				HTTPMethod: http.MethodPost,
-				Protocol:   common.HttpProto,
-				Address:    s.config.Service.Host,
-				Port:       s.config.Service.Port,
-				Path:       common.APICallbackRoute,
-			}
-			id, err := s.edgexClients.AddressableClient.Add(ctx, &addr)
+			id, err := s.edgexClients.AddressableClient.Add(ctx, &newAddr)
 			if err != nil {
-				s.LoggingClient.Error(fmt.Sprintf("Add addressable failed %s, error: %v", addr.Name, err))
+				s.LoggingClient.Error(fmt.Sprintf("Failed to add Addressable %s: %v", newAddr.Name, err))
 				return nil, err
 			}
 			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
 				return nil, err
 			}
-			addr.Id = id
+			newAddr.Id = id
 		} else {
 			s.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
 			return nil, err
 		}
 	} else {
-		s.LoggingClient.Info(fmt.Sprintf("Addressable %s exists", s.ServiceName))
+		s.LoggingClient.Info(fmt.Sprintf("Addressable %s exists, updating it", s.ServiceName))
+		err = s.edgexClients.AddressableClient.Update(ctx, newAddr)
+		if err != nil {
+			s.LoggingClient.Error(fmt.Sprintf("Failed to update Addressable %s: %v", s.ServiceName, err))
+			// use the existed one to at least make sure config is in sync with metadata.
+			newAddr = addr
+		}
+		newAddr.Id = addr.Id
 	}
 
-	return &addr, nil
+	return &newAddr, nil
 }
 
 // RunningService returns the Service instance which is running
