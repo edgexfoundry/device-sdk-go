@@ -31,6 +31,7 @@ type manager struct {
 	wg              *sync.WaitGroup
 	mutex           sync.Mutex
 	autoeventBuffer chan bool
+	dic             *di.Container
 }
 
 var (
@@ -39,12 +40,13 @@ var (
 )
 
 // NewManager initiates the AutoEvent manager once
-func NewManager(ctx context.Context, wg *sync.WaitGroup, bufferSize int) {
+func NewManager(ctx context.Context, wg *sync.WaitGroup, bufferSize int, dic *di.Container) {
 	m = &manager{
 		ctx:             ctx,
 		wg:              wg,
 		executorMap:     make(map[string][]*Executor),
-		autoeventBuffer: make(chan bool, bufferSize)}
+		autoeventBuffer: make(chan bool, bufferSize),
+		dic:             dic}
 }
 
 func (m *manager) StartAutoEvents(dic *di.Container) bool {
@@ -94,7 +96,11 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []contract.Auto
 
 // RestartForDevice restarts all the AutoEvents of the specific Device
 func (m *manager) RestartForDevice(deviceName string, dic *di.Container) {
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	dc := dic
+	if dc == nil {
+		dc = m.dic
+	}
+	lc := bootstrapContainer.LoggingClientFrom(dc.Get)
 
 	m.StopForDevice(deviceName)
 	d, ok := cache.Devices().ForName(deviceName)
@@ -104,7 +110,7 @@ func (m *manager) RestartForDevice(deviceName string, dic *di.Container) {
 
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	executors := m.triggerExecutors(deviceName, d.AutoEvents, dic)
+	executors := m.triggerExecutors(deviceName, d.AutoEvents, dc)
 	m.executorMap[deviceName] = executors
 }
 
