@@ -16,8 +16,6 @@ type ConfigurationStruct struct {
 	Writable WritableInfo
 	// Clients is a map of services used by a DS.
 	Clients map[string]bootstrapConfig.ClientInfo
-	// Logging contains logging-specific configuration settings.
-	Logging bootstrapConfig.LoggingInfo
 	// Registry contains registry-specific settings.
 	Registry bootstrapConfig.RegistryInfo
 	// Service contains DeviceService-specific settings.
@@ -69,7 +67,6 @@ func (c *ConfigurationStruct) GetBootstrap() bootstrapConfig.BootstrapConfigurat
 		Clients:  c.Clients,
 		Service:  c.Service.GetBootstrapServiceInfo(),
 		Registry: c.Registry,
-		Logging:  c.Logging,
 	}
 }
 

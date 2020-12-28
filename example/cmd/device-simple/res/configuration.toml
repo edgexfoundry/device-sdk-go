@@ -30,11 +30,6 @@ Type = 'consul'
   Host = 'localhost'
   Port = 48081
 
-  [Clients.Logging]
-  Protocol = 'http'
-  Host = 'localhost'
-  Port = 48061
-
 [Device]
   DataTransform = true
   InitCmd = ''
@@ -48,11 +43,6 @@ Type = 'consul'
   [Device.Discovery]
     Enabled = false
     Interval = '30s'
-
-# Remote and file logging disabled so only stdout logging is used
-[Logging]
-EnableRemote = false
-File = ''
 
 # Pre-define Devices
 [[DeviceList]]
