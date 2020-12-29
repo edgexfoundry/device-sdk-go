@@ -23,12 +23,14 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/internal/transformer"
 	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 )
 
@@ -491,28 +493,28 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 
 	origin := time.Now().UnixNano()
 	switch strings.ToLower(dr.Properties.Value.Type) {
-	case strings.ToLower(dtos.ValueTypeString):
+	case strings.ToLower(v2.ValueTypeString):
 		result = dsModels.NewStringValue(dr.Name, origin, v)
-	case strings.ToLower(dtos.ValueTypeBool):
+	case strings.ToLower(v2.ValueTypeBool):
 		value, err := strconv.ParseBool(v)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewBoolValue(dr.Name, origin, value)
-	case strings.ToLower(dtos.ValueTypeBoolArray):
+	case strings.ToLower(v2.ValueTypeBoolArray):
 		var arr []bool
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewBoolArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeUint8):
+	case strings.ToLower(v2.ValueTypeUint8):
 		n, err := strconv.ParseUint(v, 10, 8)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint8Value(dr.Name, origin, uint8(n))
-	case strings.ToLower(dtos.ValueTypeUint8Array):
+	case strings.ToLower(v2.ValueTypeUint8Array):
 		var arr []uint8
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -523,13 +525,13 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, uint8(n))
 		}
 		result, err = dsModels.NewUint8ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeUint16):
+	case strings.ToLower(v2.ValueTypeUint16):
 		n, err := strconv.ParseUint(v, 10, 16)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint16Value(dr.Name, origin, uint16(n))
-	case strings.ToLower(dtos.ValueTypeUint16Array):
+	case strings.ToLower(v2.ValueTypeUint16Array):
 		var arr []uint16
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -540,13 +542,13 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, uint16(n))
 		}
 		result, err = dsModels.NewUint16ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeUint32):
+	case strings.ToLower(v2.ValueTypeUint32):
 		n, err := strconv.ParseUint(v, 10, 32)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint32Value(dr.Name, origin, uint32(n))
-	case strings.ToLower(dtos.ValueTypeUint32Array):
+	case strings.ToLower(v2.ValueTypeUint32Array):
 		var arr []uint32
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -557,13 +559,13 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, uint32(n))
 		}
 		result, err = dsModels.NewUint32ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeUint64):
+	case strings.ToLower(v2.ValueTypeUint64):
 		n, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewUint64Value(dr.Name, origin, n)
-	case strings.ToLower(dtos.ValueTypeUint64Array):
+	case strings.ToLower(v2.ValueTypeUint64Array):
 		var arr []uint64
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -574,59 +576,59 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 			arr = append(arr, n)
 		}
 		result, err = dsModels.NewUint64ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeInt8):
+	case strings.ToLower(v2.ValueTypeInt8):
 		n, err := strconv.ParseInt(v, 10, 8)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt8Value(dr.Name, origin, int8(n))
-	case strings.ToLower(dtos.ValueTypeInt8Array):
+	case strings.ToLower(v2.ValueTypeInt8Array):
 		var arr []int8
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt8ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeInt16):
+	case strings.ToLower(v2.ValueTypeInt16):
 		n, err := strconv.ParseInt(v, 10, 16)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt16Value(dr.Name, origin, int16(n))
-	case strings.ToLower(dtos.ValueTypeInt16Array):
+	case strings.ToLower(v2.ValueTypeInt16Array):
 		var arr []int16
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt16ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeInt32):
+	case strings.ToLower(v2.ValueTypeInt32):
 		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt32Value(dr.Name, origin, int32(n))
-	case strings.ToLower(dtos.ValueTypeInt32Array):
+	case strings.ToLower(v2.ValueTypeInt32Array):
 		var arr []int32
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt32ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeInt64):
+	case strings.ToLower(v2.ValueTypeInt64):
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt64Value(dr.Name, origin, n)
-	case strings.ToLower(dtos.ValueTypeInt64Array):
+	case strings.ToLower(v2.ValueTypeInt64Array):
 		var arr []int64
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewInt64ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeFloat32):
+	case strings.ToLower(v2.ValueTypeFloat32):
 		n, e := strconv.ParseFloat(v, 32)
 		if e == nil {
 			result, err = dsModels.NewFloat32Value(dr.Name, origin, float32(n))
@@ -651,14 +653,14 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 				result, err = dsModels.NewFloat32Value(dr.Name, origin, val)
 			}
 		}
-	case strings.ToLower(dtos.ValueTypeFloat32Array):
+	case strings.ToLower(v2.ValueTypeFloat32Array):
 		var arr []float32
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			return result, err
 		}
 		result, err = dsModels.NewFloat32ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(dtos.ValueTypeFloat64):
+	case strings.ToLower(v2.ValueTypeFloat64):
 		var val float64
 		val, err = strconv.ParseFloat(v, 64)
 		if err == nil {
@@ -682,7 +684,7 @@ func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string)
 				result, err = dsModels.NewFloat64Value(dr.Name, origin, val)
 			}
 		}
-	case strings.ToLower(dtos.ValueTypeFloat64Array):
+	case strings.ToLower(v2.ValueTypeFloat64Array):
 		var arr []float64
 		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
@@ -717,13 +719,10 @@ func commandValueToReading(cv *dsModels.CommandValue, deviceName string, mediaTy
 		encoding = dsModels.DefaultFloatEncoding
 	}
 
-	reading := &dtos.BaseReading{Name: cv.DeviceResourceName, DeviceName: deviceName, ValueType: cv.ValueTypeToString()}
+	reading := &dtos.BaseReading{ResourceName: cv.DeviceResourceName, DeviceName: deviceName, ValueType: cv.ValueTypeToString()}
 	if cv.Type == dsModels.Binary {
 		reading.BinaryValue = cv.BinValue
 		reading.MediaType = mediaType
-	} else if cv.Type == dsModels.Float32 || cv.Type == dsModels.Float64 {
-		reading.Value = cv.ValueToString(encoding)
-		reading.FloatEncoding = encoding
 	} else {
 		reading.Value = cv.ValueToString(encoding)
 	}
@@ -745,7 +744,7 @@ func SendEvent(event *dtos.Event, correlationID string, lc logger.LoggingClient,
 	//ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeJSON)
 	//responseBody, err := ec.Add(ctx, event)
 	//if err != nil {
-	//	lc.Error("SendEvent: failed to push event to coredata", "device", event.DeviceName, "response", responseBody, "error", err)
+	//	lc.Error("SendEvent: failed to push event to core data", "device", event.DeviceName, "response", responseBody, "error", err)
 	//} else {
 	//	lc.Info("SendEvent: pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, id)
 	//}

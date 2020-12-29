@@ -69,7 +69,7 @@ func init() {
 	pwc = &mock.ProvisionWatcherClientMock{}
 	dc = &mock.DeviceClientMock{}
 	ec = &mock.EventClientMock{}
-	lc = logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc = logger.NewMockClient()
 	driver = &mock.DriverMock{}
 	deviceInfo := common.DeviceInfo{DataTransform: true, MaxCmdOps: 128}
 	configuration = &common.ConfigurationStruct{Device: deviceInfo}

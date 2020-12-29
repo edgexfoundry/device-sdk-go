@@ -47,7 +47,7 @@ func TestCallback(t *testing.T) {
 		{"Invalid id", http.MethodPut, `{"id":"","type":"DEVICE"}`, http.StatusBadRequest},
 	}
 
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	deviceClient := &mock.DeviceClientMock{}
 	ds := contract.DeviceService{}
 	dic := di.NewContainer(di.ServiceConstructorMap{
@@ -85,7 +85,7 @@ func TestCallback(t *testing.T) {
 
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	ds := contract.DeviceService{
 		AdminState: contract.Locked,
 	}
@@ -122,7 +122,7 @@ func TestCommandServiceLocked(t *testing.T) {
 // TestCommandNoDevice tests the command REST call when the given deviceId doesn't
 // specify an existing device.
 func TestCommandNoDevice(t *testing.T) {
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	ds := contract.DeviceService{}
 	dc := &mock.DeviceClientMock{}
 	vdc := &mock.ValueDescriptorMock{}
