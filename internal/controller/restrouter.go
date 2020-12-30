@@ -79,6 +79,8 @@ func (c *RestController) InitV2RestRoutes() {
 	c.addReservedRoute(contractsV2.ApiConfigRoute, c.v2HttpController.Config).Methods(http.MethodGet)
 	c.addReservedRoute(contractsV2.ApiMetricsRoute, c.v2HttpController.Metrics).Methods(http.MethodGet)
 
+	c.addReservedRoute(sdkCommon.APIV2SecretsRoute, c.v2HttpController.Secrets).Methods(http.MethodPost)
+
 	c.addReservedRoute(sdkCommon.APIV2DiscoveryRoute, c.v2HttpController.Discovery).Methods(http.MethodPost)
 
 	c.addReservedRoute(sdkCommon.APIV2IdCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)

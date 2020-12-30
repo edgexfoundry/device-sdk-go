@@ -481,6 +481,39 @@ components:
             value:
               description: "A string representation of the reading's value"
               type: string
+    SecretsRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequest'
+      description: Defines the secret data to be stored
+      type: object
+      properties:
+        path:
+          description: Specifies the type or location in the secret to store
+          type: string
+          example: "mqtt-incoming"
+        secrets:
+          description: A list of the key/value pairs of secrets to store
+          type: array
+          items:
+            $ref: '#/components/schemas/SecretsKeyValue'
+      required:
+        - path
+        - secrets
+    SecretsKeyValue:
+      description: Defines the key/value pair of the secret
+      type: object
+      properties:
+        key:
+          description: The key to identify the secret
+          type: string
+          example: "username"
+        value:
+          description: The value of the secret
+          type: string
+          example: "mqtt-user"
+      required:
+        - key
+        - value
     SettingRequest:
       description: "Defines new values to be written to device resources, as part of an actuation (put) command to a device"
       additionalProperties:
@@ -1186,6 +1219,48 @@ paths:
             schema:
               $ref: '#/components/schemas/SettingRequest'
         required: true
+
+  /secrets:
+    parameters:
+      - $ref: '#/components/parameters/correlatedRequestHeader'
+    post:
+      summary: Stores secret(s) to the secure Secret Store
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/SecretsRequest'
+        required: true
+      responses:
+        '201':
+          description: "Created"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '400':
+          description: "Invalid request."
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: "An unexpected error happened on the server."
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
   /discovery:
     post:

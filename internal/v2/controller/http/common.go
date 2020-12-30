@@ -7,7 +7,12 @@
 package http
 
 import (
+	"encoding/json"
 	"net/http"
+	"strings"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-core-contracts/errors"
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/container"
@@ -54,4 +59,52 @@ func (c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.Req
 
 	response := common.NewMetricsResponse(metrics)
 	c.sendResponse(writer, request, contractsV2.ApiMetricsRoute, response, http.StatusOK)
+}
+
+// Secrets handles the request to add Device Service exclusive secrets to the Secret Store
+// It returns a response as specified by the V2 API swagger in openapi/v2
+func (c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.Request) {
+	defer func() {
+		_ = request.Body.Close()
+	}()
+
+	provider := bootstrapContainer.SecretProviderFrom(c.dic.Get)
+	secretRequest := common.SecretsRequest{}
+	err := json.NewDecoder(request.Body).Decode(&secretRequest)
+	if err != nil {
+		edgexError := errors.NewCommonEdgeX(errors.KindContractInvalid, "JSON decode failed", err)
+		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretsRoute)
+		return
+	}
+
+	path, secrets := c.prepareSecrets(secretRequest)
+
+	if err := provider.StoreSecrets(path, secrets); err != nil {
+		edgexError := errors.NewCommonEdgeX(errors.KindServerError, "Storing secrets failed", err)
+		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretsRoute)
+		return
+	}
+
+	response := common.NewBaseResponse(secretRequest.RequestId, "", http.StatusCreated)
+	c.sendResponse(writer, request, sdkCommon.APIV2SecretsRoute, response, http.StatusCreated)
+}
+
+func (c *V2HttpController) prepareSecrets(request common.SecretsRequest) (string, map[string]string) {
+	var secretsKV = make(map[string]string)
+	for _, secret := range request.Secrets {
+		secretsKV[secret.Key] = secret.Value
+	}
+
+	path := strings.TrimSpace(request.Path)
+	config := container.ConfigurationFrom(c.dic.Get)
+
+	// add '/' in the full URL path if it's not already at the end of the base path or sub path
+	if !strings.HasSuffix(config.SecretStore.Path, "/") && !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	} else if strings.HasSuffix(config.SecretStore.Path, "/") && strings.HasPrefix(path, "/") {
+		// remove extra '/' in the full URL path because secret store's (Vault) APIs don't handle extra '/'.
+		path = path[1:]
+	}
+
+	return path, secretsKV
 }
