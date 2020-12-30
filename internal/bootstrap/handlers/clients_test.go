@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/logging"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 
 func TestClientsBootstrapHandler(t *testing.T) {
@@ -39,12 +39,12 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Service: common.ServiceInfo{},
 	}
 
-	logger := logging.FactoryToStdout("clients-test")
+	lc := logger.NewMockClient()
 	var registryClient registry.Client = nil
 
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return logger
+			return lc
 		},
 		bootstrapContainer.RegistryClientInterfaceName: func(get di.Get) interface{} {
 			return registryClient

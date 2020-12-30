@@ -53,11 +53,14 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/registry"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/models"
+
 	"github.com/gorilla/mux"
 )
 
@@ -347,7 +350,7 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 	sdkFlags.Parse(os.Args[1:])
 
 	// Temporarily setup logging to STDOUT so the client can be used before bootstrapping is completed
-	sdk.LoggingClient = logger.NewClientStdOut(sdk.ServiceKey, false, "INFO")
+	sdk.LoggingClient = logger.NewClient(sdk.ServiceKey, models.InfoLog)
 
 	sdk.setServiceKey(sdkFlags.Profile())
 

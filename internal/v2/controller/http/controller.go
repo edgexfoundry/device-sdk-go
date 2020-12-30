@@ -22,18 +22,19 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/errors"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
-	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/v2/dtos/requests"
+	"github.com/gorilla/mux"
 )
 
 // V2HttpController controller for V2 REST APIs
@@ -117,7 +118,7 @@ func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.R
 		_ = request.Body.Close()
 	}()
 
-	secretRequest := requests.SecretsRequest{}
+	secretRequest := common.SecretsRequest{}
 	err := json.NewDecoder(request.Body).Decode(&secretRequest)
 	if err != nil {
 		v2c.sendError(writer, request, errors.KindContractInvalid, "JSON decode failed", err, "")
@@ -178,7 +179,7 @@ func (v2c *V2HttpController) sendResponse(
 	}
 }
 
-func (v2c *V2HttpController) prepareSecrets(request requests.SecretsRequest) (string, map[string]string) {
+func (v2c *V2HttpController) prepareSecrets(request common.SecretsRequest) (string, map[string]string) {
 	var secretsKV = make(map[string]string)
 	for _, secret := range request.Secrets {
 		secretsKV[secret.Key] = secret.Value

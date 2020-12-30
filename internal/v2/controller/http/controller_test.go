@@ -27,21 +27,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/internal"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/v2/dtos/requests"
 )
 
 var expectedCorrelationId = uuid.New().String()
@@ -185,10 +186,10 @@ func TestSecretsRequest(t *testing.T) {
 	target := NewV2HttpController(nil, lc, config, mockProvider)
 	assert.NotNil(t, target)
 
-	validRequest := requests.SecretsRequest{
+	validRequest := common.SecretsRequest{
 		BaseRequest: common.BaseRequest{RequestId: expectedRequestId},
 		Path:        "mqtt",
-		Secrets: []requests.SecretsKeyValue{
+		Secrets: []common.SecretsKeyValue{
 			{Key: "username", Value: "username"},
 			{Key: "password", Value: "password"},
 		},
@@ -203,13 +204,13 @@ func TestSecretsRequest(t *testing.T) {
 	badRequestId := validRequest
 	badRequestId.RequestId = "bad requestId"
 	noSecrets := validRequest
-	noSecrets.Secrets = []requests.SecretsKeyValue{}
+	noSecrets.Secrets = []common.SecretsKeyValue{}
 	missingSecretKey := validRequest
-	missingSecretKey.Secrets = []requests.SecretsKeyValue{
+	missingSecretKey.Secrets = []common.SecretsKeyValue{
 		{Key: "", Value: "username"},
 	}
 	missingSecretValue := validRequest
-	missingSecretValue.Secrets = []requests.SecretsKeyValue{
+	missingSecretValue.Secrets = []common.SecretsKeyValue{
 		{Key: "username", Value: ""},
 	}
 	noSecretStore := validRequest
@@ -217,7 +218,7 @@ func TestSecretsRequest(t *testing.T) {
 
 	tests := []struct {
 		Name               string
-		Request            requests.SecretsRequest
+		Request            common.SecretsRequest
 		ExpectedRequestId  string
 		SecretsPath        string
 		SecretStoreEnabled string
@@ -259,7 +260,7 @@ func TestSecretsRequest(t *testing.T) {
 
 			assert.Equal(t, testCase.ExpectedStatusCode, recorder.Result().StatusCode, "HTTP status code not as expected")
 			assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
-			assert.Equal(t, testCase.ExpectedStatusCode, int(actualResponse.StatusCode), "BaseResponse status code not as expected")
+			assert.Equal(t, testCase.ExpectedStatusCode, actualResponse.StatusCode, "BaseResponse status code not as expected")
 
 			if testCase.ErrorExpected {
 				assert.NotEmpty(t, actualResponse.Message, "Message is empty")
