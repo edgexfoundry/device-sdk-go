@@ -302,10 +302,10 @@ components:
       description: "Notification that a new provision watcher associated with this device service has been created."
       type: object
       properties:
-        watcher:
+        provisionWatcher:
           $ref: '#/components/schemas/ProvisionWatcher'
       required:
-        - watcher
+        - provisionWatcher
     NewEventResponse:
       description: "A discrete event containing one or more readings"
       properties:
@@ -420,27 +420,37 @@ components:
         modified:
           type: integer
           description: "A Unix timestamp indicating when the object was last modified"
+        labels:
+          type: array
+          description: "Labels applied to the provision watcher to help with searching"
+          items:
+            type: string
         identifiers:
           type: object
           additionalProperties:
             type: string
           description: "Properties of a new device which must match in order for this provision watcher to match the new device"
-        blockingidentifiers:
+        blockingIdentifiers:
           type: object
           additionalProperties:
             type: array
             items:
               type: string
           description: "Properties of a new device which must not match in order for this provision watcher to match the new device"
-        service:
+        serviceName:
           type: string
           description: "The device service to which to associate devices which match this watcher"
-        profile:
+        profileName:
           type: string
           description: "The device profile to which to associate devices which match this watcher"
         adminState:
           type: string
           description: "The initial administrative state to apply to devices which match this watcher"
+        autoEvents:
+          type: array
+          description: "Autoevents that allow device service to automatically start generating data from new devices"
+          items:
+            $ref: '#/components/schemas/AutoEvent'
     ResourceOperation:
       description: "Defines an operation of which a device is capable."
       type: object
@@ -547,10 +557,10 @@ components:
       description: "Notification that an existing provision watcher associated with this device service has been updated."
       type: object
       properties:
-        watcher:
+        provisionWatcher:
           $ref: '#/components/schemas/ProvisionWatcher'
       required:
-        - watcher
+        - provisionWatcher
     VersionResponse:
       description: "A response returned from the /version endpoint whose purpose is to report out the latest version supported by the service."
       allOf:
