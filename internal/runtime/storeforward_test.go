@@ -147,11 +147,9 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 
 			object := contracts.NewStoredObject(serviceKey, payload, 1, runtime.storeForward.calculatePipelineHash())
 			object.CorrelationID = "CorrelationID"
-			object.EventID = "CorrelationID"
-			object.EventChecksum = "CorrelationID"
 			object.RetryCount = test.RetryCount
 
-			mockStoreObject(object)
+			_, _ = mockStoreObject(object)
 
 			// Target of this test
 			runtime.storeForward.retryStoredData(serviceKey, &config, common.EdgeXClients{LoggingClient: lc})
@@ -161,8 +159,6 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 				assert.Equal(t, test.ExpectedRetryCount, objects[0].RetryCount)
 				assert.Equal(t, serviceKey, objects[0].AppServiceKey, "AppServiceKey not as expected")
 				assert.Equal(t, object.CorrelationID, objects[0].CorrelationID, "CorrelationID not as expected")
-				assert.Equal(t, object.EventID, objects[0].EventID, "EventID not as expected")
-				assert.Equal(t, object.EventChecksum, objects[0].EventChecksum, "EventChecksum not as expected")
 			}
 		})
 	}

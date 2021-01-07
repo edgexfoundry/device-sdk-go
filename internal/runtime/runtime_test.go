@@ -254,7 +254,6 @@ func TestProcessMessageJSON(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		require.Equal(t, expectedEventID, edgexcontext.EventID, "Context doesn't contain expected EventID")
 		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
 
 		if result, ok := params[0].(*models.Event); ok {
@@ -305,7 +304,6 @@ func TestProcessMessageCBOR(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		require.Equal(t, expectedChecksum, edgexcontext.EventChecksum, "Context doesn't contain expected EventChecksum")
 		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
 
 		if result, ok := params[0].(*models.Event); ok {
@@ -415,8 +413,6 @@ func TestExecutePipelinePersist(t *testing.T) {
 		Configuration: &config,
 		LoggingClient: lc,
 		CorrelationID: "CorrelationID",
-		EventChecksum: "EventChecksum",
-		EventID:       "EventID",
 	}
 
 	transformPassthru := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -439,6 +435,4 @@ func TestExecutePipelinePersist(t *testing.T) {
 	require.Equal(t, expectedItemCount, len(storedObjects), "unexpected item count")
 	assert.Equal(t, serviceKey, storedObjects[0].AppServiceKey, "AppServiceKey not as expected")
 	assert.Equal(t, ctx.CorrelationID, storedObjects[0].CorrelationID, "CorrelationID not as expected")
-	assert.Equal(t, ctx.EventID, storedObjects[0].EventID, "EventID not as expected")
-	assert.Equal(t, ctx.EventChecksum, storedObjects[0].EventChecksum, "EventChecksum not as expected")
 }

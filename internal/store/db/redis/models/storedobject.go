@@ -17,6 +17,7 @@ package models
 
 import (
 	"encoding/json"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
 )
 
@@ -42,12 +43,6 @@ type StoredObject struct {
 
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
 	CorrelationID string `json:"correlationID"`
-
-	// EventID is used to identify an EdgeX event from the core services and mark it as pushed.
-	EventID string `json:"eventID"`
-
-	// EventChecksum is used to identify CBOR encoded data from the core services and mark it as pushed.
-	EventChecksum string `json:"eventChecksum"`
 }
 
 // ToContract builds a contract out of the supplied model.
@@ -60,8 +55,6 @@ func (o StoredObject) ToContract() contracts.StoredObject {
 		PipelinePosition: o.PipelinePosition,
 		Version:          o.Version,
 		CorrelationID:    o.CorrelationID,
-		EventID:          o.EventID,
-		EventChecksum:    o.EventChecksum,
 	}
 }
 
@@ -74,8 +67,6 @@ func (o *StoredObject) FromContract(c contracts.StoredObject) {
 	o.PipelinePosition = c.PipelinePosition
 	o.Version = c.Version
 	o.CorrelationID = c.CorrelationID
-	o.EventID = c.EventID
-	o.EventChecksum = c.EventChecksum
 }
 
 // MarshalJSON returns the object as a JSON encoded byte array.
@@ -108,12 +99,6 @@ func (o StoredObject) MarshalJSON() ([]byte, error) {
 	}
 	if o.CorrelationID != "" {
 		test.CorrelationID = &o.CorrelationID
-	}
-	if o.EventID != "" {
-		test.EventID = &o.EventID
-	}
-	if o.EventChecksum != "" {
-		test.EventChecksum = &o.EventChecksum
 	}
 
 	return json.Marshal(test)
@@ -150,12 +135,6 @@ func (o *StoredObject) UnmarshalJSON(data []byte) error {
 	}
 	if alias.CorrelationID != nil {
 		o.CorrelationID = *alias.CorrelationID
-	}
-	if alias.EventID != nil {
-		o.EventID = *alias.EventID
-	}
-	if alias.EventChecksum != nil {
-		o.EventChecksum = *alias.EventChecksum
 	}
 
 	o.Payload = alias.Payload

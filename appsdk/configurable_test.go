@@ -192,13 +192,6 @@ func TestConfigurableSetOutputData(t *testing.T) {
 	}
 }
 
-func TestConfigurableMarkAsPushed(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{}
-
-	trx := configurable.MarkAsPushed()
-	assert.NotNil(t, trx, "return result from MarkAsPushed should not be nil")
-}
-
 func TestBatchByCount(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{

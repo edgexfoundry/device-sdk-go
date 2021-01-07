@@ -33,16 +33,6 @@ func NewCoreData() *CoreData {
 	return coredata
 }
 
-// MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
-// This function will not stop the pipeline if an error is returned from core data, however the error is logged.
-func (cdc *CoreData) MarkAsPushed(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	err := edgexcontext.MarkAsPushed()
-	if err != nil {
-		edgexcontext.LoggingClient.Error(err.Error())
-	}
-	return true, params[0]
-}
-
 // PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
 func (cdc *CoreData) PushToCoreData(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {

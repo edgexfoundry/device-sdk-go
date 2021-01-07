@@ -107,8 +107,6 @@ func (sf *storeForwardInfo) storeForLaterRetry(payload []byte,
 
 	item := contracts.NewStoredObject(sf.runtime.ServiceKey, payload, pipelinePosition, sf.pipelineHash)
 	item.CorrelationID = edgexcontext.CorrelationID
-	item.EventID = edgexcontext.EventID
-	item.EventChecksum = edgexcontext.EventChecksum
 
 	edgexcontext.LoggingClient.Trace("Storing data for later retry",
 		clients.CorrelationHeader, edgexcontext.CorrelationID)
@@ -224,8 +222,6 @@ func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject, con
 	edgeXClients common.EdgeXClients) bool {
 	edgexContext := &appcontext.Context{
 		CorrelationID:         item.CorrelationID,
-		EventChecksum:         item.EventChecksum,
-		EventID:               item.EventID,
 		Configuration:         config,
 		LoggingClient:         edgeXClients.LoggingClient,
 		EventClient:           edgeXClients.EventClient,

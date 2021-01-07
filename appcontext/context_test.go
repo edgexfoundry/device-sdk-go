@@ -44,54 +44,6 @@ func init() {
 	eventClient = coredata.NewEventClient(localURL.New("http://test" + clients.ApiEventRoute))
 	lc = logger.NewMockClient()
 }
-func TestMarkAsPushedNoClient(t *testing.T) {
-	ctx := Context{
-		LoggingClient: lc,
-	}
-	err := ctx.MarkAsPushed()
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "'CoreData' is missing from Clients")
-}
-
-func TestMarkAsPushedNoEventIdOrChecksum(t *testing.T) {
-	eventClient = coredata.NewEventClient(localURL.New("http://test" + clients.ApiEventRoute))
-	ctx := Context{
-		LoggingClient: lc,
-		EventClient:   eventClient,
-	}
-	err := ctx.MarkAsPushed()
-	assert.NotNil(t, err)
-	assert.Equal(t, "No EventID or EventChecksum Provided", err.Error())
-}
-
-func TestMarkAsPushedNoChecksum(t *testing.T) {
-	testChecksum := "checksumValue"
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-
-		if r.Method != http.MethodPut {
-			t.Errorf("expected http method is PUT, active http method is : %s", r.Method)
-		}
-		url := clients.ApiEventRoute + "/checksum/" + testChecksum
-		if r.URL.EscapedPath() != url {
-			t.Errorf("expected uri path is %s, actual uri path is %s", url, r.URL.EscapedPath())
-		}
-	}))
-
-	defer ts.Close()
-	eventClient = coredata.NewEventClient(localURL.New(ts.URL + clients.ApiEventRoute))
-
-	ctx := Context{
-		EventChecksum: testChecksum,
-		CorrelationID: "correlationId",
-		EventClient:   eventClient,
-		LoggingClient: lc,
-	}
-	err := ctx.MarkAsPushed()
-	assert.Nil(t, err)
-
-}
 
 func TestPushToCore(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -134,36 +86,6 @@ func TestPushToCore(t *testing.T) {
 	assert.Equal(t, newEvent.Device, result.Device)
 	assert.Equal(t, newEvent.Readings[0].Name, result.Readings[0].Name)
 	assert.Equal(t, newEvent.Readings[0].Value, result.Readings[0].Value)
-}
-
-func TestMarkAsPushedEventId(t *testing.T) {
-	testID := "eventId"
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-
-		if r.Method != http.MethodPut {
-			t.Errorf("expected http method is PUT, active http method is : %s", r.Method)
-		}
-		url := clients.ApiEventRoute + "/id/" + testID
-		if r.URL.EscapedPath() != url {
-			t.Errorf("expected uri path is %s, actual uri path is %s", url, r.URL.EscapedPath())
-		}
-	}))
-
-	defer ts.Close()
-	eventClient = coredata.NewEventClient(localURL.New(ts.URL + clients.ApiEventRoute))
-
-	ctx := Context{
-		EventID:       testID,
-		CorrelationID: "correlationId",
-		EventClient:   eventClient,
-		LoggingClient: lc,
-	}
-
-	err := ctx.MarkAsPushed()
-
-	assert.Nil(t, err)
 }
 
 func TestSetRetryData(t *testing.T) {

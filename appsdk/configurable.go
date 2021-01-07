@@ -151,13 +151,6 @@ func (dynamic AppFunctionsSDKConfigurable) TransformToJSON() appcontext.AppFunct
 	return transform.TransformToJSON
 }
 
-// MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
-// This function is a configuration function and returns a function pointer.
-func (dynamic AppFunctionsSDKConfigurable) MarkAsPushed() appcontext.AppFunction {
-	transform := transforms.CoreData{}
-	return transform.MarkAsPushed
-}
-
 // PushToCore pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
 // This function is a configuration function and returns a function pointer.

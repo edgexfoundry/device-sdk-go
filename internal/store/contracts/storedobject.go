@@ -43,12 +43,6 @@ type StoredObject struct {
 
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
 	CorrelationID string
-
-	// EventID is used to identify an EdgeX event from the core services and mark it as pushed.
-	EventID string
-
-	// EventChecksum is used to identify CBOR encoded data from the core services and mark it as pushed.
-	EventChecksum string
 }
 
 // NewStoredObject creates a new instance of StoredObject and is the preferred way to create one.

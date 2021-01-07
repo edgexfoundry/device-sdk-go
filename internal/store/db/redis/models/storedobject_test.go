@@ -31,8 +31,6 @@ const (
 	TestPipelinePosition = 1337
 	TestVersion          = "your"
 	TestCorrelationID    = "test"
-	TestEventID          = "probably"
-	TestEventChecksum    = "failed :("
 )
 
 var TestContractValid = contracts.StoredObject{
@@ -43,8 +41,6 @@ var TestContractValid = contracts.StoredObject{
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 var TestModelValid = StoredObject{
@@ -55,8 +51,6 @@ var TestModelValid = StoredObject{
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 var TestModelEmpty = StoredObject{}
@@ -121,7 +115,7 @@ func TestStoredObject_MarshalJSON(t *testing.T) {
 			"Successful marshalling",
 			TestModelValid,
 			false,
-			`{"id":"fb49a277-9edf-4489-a89c-235b365107f7","appServiceKey":"apps","payload":"YnJhbmRvbiB3cm90ZSB0aGlz","retryCount":2,"pipelinePosition":1337,"version":"your","correlationID":"test","eventID":"probably","eventChecksum":"failed :("}`,
+			`{"id":"fb49a277-9edf-4489-a89c-235b365107f7","appServiceKey":"apps","payload":"YnJhbmRvbiB3cm90ZSB0aGlz","retryCount":2,"pipelinePosition":1337,"version":"your","correlationID":"test"}`,
 		},
 		{
 			"Successful, empty",

@@ -82,7 +82,6 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	default:
 		switch envelope.ContentType {
 		case clients.ContentTypeJSON:
-
 			if err := json.Unmarshal([]byte(envelope.Payload), target); err != nil {
 				message := fmt.Sprintf(unmarshalErrorMessage, "JSON")
 				edgexcontext.LoggingClient.Error(
@@ -90,12 +89,6 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 					clients.CorrelationHeader, envelope.CorrelationID)
 				err = fmt.Errorf("%s : %s", message, err.Error())
 				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
-			}
-
-			event, ok := target.(*models.Event)
-			if ok {
-				// Needed for Marking event as handled
-				edgexcontext.EventID = event.ID
 			}
 
 		case clients.ContentTypeCBOR:
@@ -108,9 +101,6 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 				err = fmt.Errorf("%s : %s", message, err.Error())
 				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 			}
-
-			// Needed for Marking event as handled
-			edgexcontext.EventChecksum = envelope.Checksum
 
 		default:
 			message := "content type for input data not supported"
@@ -135,7 +125,6 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	gr.isBusyCopying.Unlock()
 
 	return gr.ExecutePipeline(target, contentType, edgexcontext, transforms, 0, false)
-
 }
 
 // Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled

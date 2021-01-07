@@ -21,15 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMarkAsPushed(t *testing.T) {
-	coreData := NewCoreData()
-
-	continuePipeline, result := coreData.MarkAsPushed(context, "something")
-
-	assert.NotNil(t, result)
-	assert.Equal(t, "something", result)
-	assert.True(t, continuePipeline)
-}
 func TestPushToCore_ShouldFailPipelineOnError(t *testing.T) {
 	coreData := NewCoreData()
 	coreData.DeviceName = "my-device"

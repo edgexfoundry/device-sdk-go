@@ -18,7 +18,6 @@ package appcontext
 
 import (
 	syscontext "context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -39,10 +38,6 @@ type AppFunction = func(edgexcontext *Context, params ...interface{}) (bool, int
 
 // Context ...
 type Context struct {
-	// ID of the EdgeX Event -- will be filled for a received JSON Event
-	EventID string
-	// Checksum of the EdgeX Event -- will be filled for a received CBOR Event
-	EventChecksum string
 	// This is the ID used to track the EdgeX event through entire EdgeX framework.
 	CorrelationID string
 	// OutputData is used for specifying the data that is to be outputted. Leverage the .Complete() function to set.
@@ -73,22 +68,6 @@ type Context struct {
 // message bus publish topic and host in the configuration.
 func (context *Context) Complete(output []byte) {
 	context.OutputData = output
-}
-
-// MarkAsPushed will make a request to CoreData to mark the event that triggered the pipeline as pushed.
-func (context *Context) MarkAsPushed() error {
-	context.LoggingClient.Debug("Marking event as pushed")
-	if context.EventClient == nil {
-		return fmt.Errorf("unable to Mark As Pushed: '%s' is missing from Clients configuration", common.CoreDataClientName)
-	}
-
-	if context.EventID != "" {
-		return context.EventClient.MarkPushed(syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID), context.EventID)
-	} else if context.EventChecksum != "" {
-		return context.EventClient.MarkPushedByChecksum(syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, context.CorrelationID), context.EventChecksum)
-	} else {
-		return errors.New("No EventID or EventChecksum Provided")
-	}
 }
 
 // SetRetryData sets the RetryData to the specified payload to be stored for later retry
