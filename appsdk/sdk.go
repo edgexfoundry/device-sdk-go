@@ -37,10 +37,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/mqtt"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 
@@ -129,6 +125,7 @@ type AppFunctionsSDK struct {
 	deferredFunctions         []bootstrap.Deferred
 	serviceKeyOverride        string
 	backgroundChannel         <-chan types.MessageEnvelope
+	customTriggerFactories    map[string]func(sdk *AppFunctionsSDK) (Trigger, error)
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -456,32 +453,6 @@ func (sdk *AppFunctionsSDK) GetSecrets(path string, keys ...string) (map[string]
 // secrets map specifies the "key": "value" pairs of secrets to store
 func (sdk *AppFunctionsSDK) StoreSecrets(path string, secrets map[string]string) error {
 	return sdk.secretProvider.StoreSecrets(path, secrets)
-}
-
-// setupTrigger configures the appropriate trigger as specified by configuration.
-func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStruct, runtime *runtime.GolangRuntime) trigger.Trigger {
-	var t trigger.Trigger
-	// Need to make dynamic, search for the binding that is input
-
-	switch strings.ToUpper(configuration.Binding.Type) {
-	case bindingTypeHTTP:
-		sdk.LoggingClient.Info("HTTP trigger selected")
-		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.EdgexClients}
-
-	case bindingTypeMessageBus,
-		bindingTypeEdgeXMessageBus: // Allows for more explicit name now that we have plain MQTT option also
-		sdk.LoggingClient.Info("EdgeX MessageBus trigger selected")
-		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.EdgexClients}
-
-	case bindingTypeMQTT:
-		sdk.LoggingClient.Info("External MQTT trigger selected")
-		t = mqtt.NewTrigger(configuration, runtime, sdk.EdgexClients, sdk.secretProvider)
-
-	default:
-		sdk.LoggingClient.Error(fmt.Sprintf("Invalid Trigger type of '%s' specified", configuration.Binding.Type))
-	}
-
-	return t
 }
 
 func (sdk *AppFunctionsSDK) addContext(next func(nethttp.ResponseWriter, *nethttp.Request)) func(nethttp.ResponseWriter, *nethttp.Request) {
