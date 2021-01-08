@@ -16,5 +16,5 @@ import (
 
 func Bootstrap(serviceName string, serviceVersion string, driver interface{}) {
 	ctx, cancel := context.WithCancel(context.Background())
-	service.Main(serviceName, serviceVersion, driver, ctx, cancel, mux.NewRouter(), nil)
+	service.Main(serviceName, serviceVersion, driver, ctx, cancel, mux.NewRouter())
 }
