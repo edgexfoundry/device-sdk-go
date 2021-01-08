@@ -77,7 +77,7 @@ type DeviceInfo struct {
 	RemoveCmd string
 	// RemoveCmdArgs specify arguments to be used when building the RemoveCmd.
 	RemoveCmdArgs string
-	// ProfilesDir specifies a directory which contains device profile
+	// ProfilesDir specifies a directory which contains device profiles
 	// files which should be imported on startup.
 	ProfilesDir string
 	// UpdateLastConnected specifies whether to update device's LastConnected
