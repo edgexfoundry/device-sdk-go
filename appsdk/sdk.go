@@ -126,6 +126,7 @@ type AppFunctionsSDK struct {
 	serviceKeyOverride        string
 	backgroundChannel         <-chan types.MessageEnvelope
 	customTriggerFactories    map[string]func(sdk *AppFunctionsSDK) (Trigger, error)
+	stop                      context.CancelFunc
 }
 
 // AddRoute allows you to leverage the existing webserver to add routes.
@@ -148,10 +149,23 @@ func (sdk *AppFunctionsSDK) AddBackgroundPublisher(capacity int) BackgroundPubli
 	return pub
 }
 
+// MakeItStop will force the service loop to exit in the same fashion as SIGINT/SIGTERM received from the OS
+func (sdk *AppFunctionsSDK) MakeItStop() {
+	if sdk.stop != nil {
+		sdk.stop()
+	} else {
+		sdk.LoggingClient.Warn("MakeItStop called but no stop handler set on SDK - is the service running?")
+	}
+}
+
 // MakeItRun will initialize and start the trigger as specified in the
 // configuration. It will also configure the webserver and start listening on
 // the specified port.
 func (sdk *AppFunctionsSDK) MakeItRun() error {
+	runCtx, stop := context.WithCancel(context.Background())
+
+	sdk.stop = stop
+
 	httpErrors := make(chan error)
 	defer close(httpErrors)
 
@@ -199,7 +213,12 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	case signalReceived := <-signals:
 		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
+
+	case <-runCtx.Done():
+		sdk.LoggingClient.Info("Terminating: sdk.MakeItStop called")
 	}
+
+	sdk.stop = nil
 
 	if sdk.config.Writable.StoreAndForward.Enabled {
 		sdk.storeForwardCancelCtx()

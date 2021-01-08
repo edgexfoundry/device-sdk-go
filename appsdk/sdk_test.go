@@ -462,3 +462,20 @@ func TestSetServiceKey(t *testing.T) {
 		})
 	}
 }
+
+func TestMakeItStop(t *testing.T) {
+	stopCalled := false
+
+	sdk := AppFunctionsSDK{
+		stop: func() {
+			stopCalled = true
+		},
+		LoggingClient: logger.NewMockClient(),
+	}
+
+	sdk.MakeItStop()
+	require.True(t, stopCalled, "Cancel function set at sdk.stop should be called if set")
+
+	sdk.stop = nil
+	sdk.MakeItStop() //should avoid nil pointer
+}
