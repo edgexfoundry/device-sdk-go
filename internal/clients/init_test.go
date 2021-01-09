@@ -24,7 +24,7 @@ func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 		},
 	}
 	config := &common.ConfigurationStruct{Clients: clientConfig}
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 
 	err := checkServiceAvailableByPing(common.ClientData, config, lc)
 	if err, ok := err.(net.Error); ok && !err.Timeout() {

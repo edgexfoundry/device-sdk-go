@@ -21,7 +21,7 @@ import (
 
 func TestInitCache(t *testing.T) {
 	serviceName := "init-cache-test"
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	vdc := &mock.ValueDescriptorMock{}
 	dc := &mock.DeviceClientMock{}
 	pwc := &mock.ProvisionWatcherClientMock{}

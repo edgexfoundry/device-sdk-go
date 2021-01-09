@@ -42,7 +42,7 @@ func TestAddRoute(t *testing.T) {
 		{"Reserved Route", common.APIVersionRoute, true},
 	}
 
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc
@@ -89,7 +89,7 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestInitRestRoutes(t *testing.T) {
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc

@@ -20,7 +20,7 @@ import (
 var lc logger.LoggingClient
 
 func init() {
-	lc = logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc = logger.NewMockClient()
 }
 
 func TestTransformReadResult_base_unt8(t *testing.T) {

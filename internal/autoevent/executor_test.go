@@ -20,7 +20,7 @@ func TestCompareReadings(t *testing.T) {
 	readings[2] = contract.Reading{Name: "Pressure", Value: "3"}
 	readings[3] = contract.Reading{Name: "Image", BinaryValue: []byte("This is a image")}
 
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	autoEvent := contract.AutoEvent{Frequency: "500ms"}
 	e, err := NewExecutor("hasBinaryTrue", autoEvent)
 	if err != nil {

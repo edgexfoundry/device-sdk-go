@@ -107,7 +107,7 @@ func TestFilterQueryParams(t *testing.T) {
 			fmt.Sprintf("%sname", SDKReservedPrefix), false},
 	}
 
-	lc := logger.NewClientStdOut("device-sdk-test", false, "DEBUG")
+	lc := logger.NewMockClient()
 	for _, tt := range tests {
 		actual := FilterQueryParams(tt.query, lc)
 		if _, ok := actual[tt.key]; ok != tt.expected {

@@ -18,6 +18,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+
 	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
@@ -47,6 +49,7 @@ type DeviceService struct {
 	ServiceName    string
 	LoggingClient  logger.LoggingClient
 	RegistryClient registry.Client
+	SecretProvider interfaces.SecretProvider
 	edgexClients   clients.EdgeXClients
 	controller     *controller.RestController
 	config         *common.ConfigurationStruct
@@ -90,6 +93,7 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
+	s.SecretProvider = bootstrapContainer.SecretProviderFrom(dic.Get)
 	s.edgexClients.GeneralClient = container.GeneralClientFrom(dic.Get)
 	s.edgexClients.DeviceClient = container.MetadataDeviceClientFrom(dic.Get)
 	s.edgexClients.DeviceServiceClient = container.MetadataDeviceServiceClientFrom(dic.Get)

@@ -16,7 +16,8 @@ import (
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
 type WritableInfo struct {
 	// Level is the logging level of writing log message
-	LogLevel string
+	LogLevel        string
+	InsecureSecrets bootstrapConfig.InsecureSecrets
 }
 
 // ServiceInfo is a struct which contains service related configuration
@@ -57,7 +58,7 @@ type ServiceInfo struct {
 // DeviceInfo is a struct which contains device specific configuration settings.
 type DeviceInfo struct {
 	// DataTransform specifies whether or not the DS perform transformations
-	// specified by valuedescriptor on a actuation or query command.
+	// specified by value descriptor on a actuation or query command.
 	DataTransform bool
 	// InitCmd specifies a device resource command which is automatically
 	// generated whenever a new device is added to the DS.
@@ -68,7 +69,7 @@ type DeviceInfo struct {
 	// can be sent to a Driver in a single command.
 	MaxCmdOps int
 	// MaxCmdValueLen is the maximum string length of a command parameter or
-	// result (including the valuedescriptor name) that can be returned
+	// result (including the value descriptor name) that can be returned
 	// by a Driver.
 	MaxCmdValueLen int
 	// InitCmd specifies a device resource command which is automatically
@@ -76,7 +77,7 @@ type DeviceInfo struct {
 	RemoveCmd string
 	// RemoveCmdArgs specify arguments to be used when building the RemoveCmd.
 	RemoveCmdArgs string
-	// ProfilesDir specifies a directory which contains deviceprofile
+	// ProfilesDir specifies a directory which contains device profiles
 	// files which should be imported on startup.
 	ProfilesDir string
 	// UpdateLastConnected specifies whether to update device's LastConnected
