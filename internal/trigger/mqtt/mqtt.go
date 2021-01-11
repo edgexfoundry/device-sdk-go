@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/pkg/secure"
+	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
 )
 
 // Trigger implements Trigger to support Triggers
@@ -64,7 +66,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	// Convenience short cuts
 	logger := trigger.edgeXClients.LoggingClient
 	brokerConfig := trigger.configuration.MqttBroker
-	topic := trigger.configuration.Binding.SubscribeTopic
+	topics := trigger.configuration.Binding.SubscribeTopics
 
 	logger.Info("Initializing MQTT Trigger")
 
@@ -72,8 +74,8 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 		return nil, errors.New("background publishing not supported for services using MQTT trigger")
 	}
 
-	if len(topic) == 0 {
-		return nil, fmt.Errorf("missing SubscribeTopic for MQTT Trigger. Must be present in [Binding] section.")
+	if len(strings.TrimSpace(topics)) == 0 {
+		return nil, fmt.Errorf("missing SubscribeTopics for MQTT Trigger. Must be present in [Binding] section.")
 	}
 
 	brokerUrl, err := url.Parse(brokerConfig.Url)
@@ -129,17 +131,19 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 	// Convenience short cuts
 	logger := trigger.edgeXClients.LoggingClient
-	topic := trigger.configuration.Binding.SubscribeTopic
+	topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(trigger.configuration.Binding.SubscribeTopics, util.SplitComma))
 	qos := trigger.configuration.MqttBroker.QoS
 
-	if token := mqttClient.Subscribe(topic, qos, trigger.messageHandler); token.Wait() && token.Error() != nil {
-		mqttClient.Disconnect(0)
-		logger.Error(fmt.Sprintf("could not subscribe to topic '%s' for MQTT trigger: %s",
-			topic, token.Error().Error()))
-		return
+	for _, topic := range topics {
+		if token := mqttClient.Subscribe(topic, qos, trigger.messageHandler); token.Wait() && token.Error() != nil {
+			mqttClient.Disconnect(0)
+			logger.Error(fmt.Sprintf("could not subscribe to topic '%s' for MQTT trigger: %s",
+				topic, token.Error().Error()))
+			return
+		}
 	}
 
-	logger.Info(fmt.Sprintf("Subscribed to topic '%s' for MQTT trigger", topic))
+	logger.Infof("Subscribed to topic(s) '%s' for MQTT trigger", trigger.configuration.Binding.SubscribeTopics)
 }
 
 func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.Message) {
@@ -167,8 +171,8 @@ func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.
 		NotificationsClient:   trigger.edgeXClients.NotificationsClient,
 	}
 
-	logger.Trace("Received message from MQTT Trigger", clients.CorrelationHeader, correlationID)
-	logger.Debug(fmt.Sprintf("Received message from MQTT Trigger with %d bytes", len(data)), clients.ContentType, contentType)
+	logger.Debugf("Received message from MQTT Trigger with %d bytes from topic '%s'. Content-Type=%s", len(data), message.Topic(), contentType)
+	logger.Tracef("%s=%s", clients.CorrelationHeader, correlationID)
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: correlationID,

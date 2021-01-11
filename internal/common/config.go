@@ -86,9 +86,9 @@ type BindingInfo struct {
 	// example: messagebus
 	// required: true
 	// enum: messagebus (edgex-messagebus), http, external-mqtt
-	Type           string
-	SubscribeTopic string
-	PublishTopic   string
+	Type            string
+	SubscribeTopics string // Comma separated list of topics.
+	PublishTopic    string
 }
 
 // MqttBrokerConfig contains the MQTT broker configuration for MQTT Trigger

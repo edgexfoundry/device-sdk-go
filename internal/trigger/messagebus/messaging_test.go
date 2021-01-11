@@ -23,17 +23,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 	"github.com/edgexfoundry/go-mod-messaging/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var logClient logger.LoggingClient
@@ -46,9 +47,9 @@ func TestInitialize(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Binding: common.BindingInfo{
-			Type:           "meSsaGebus",
-			PublishTopic:   "publish",
-			SubscribeTopic: "events",
+			Type:            "meSsaGebus",
+			PublishTopic:    "publish",
+			SubscribeTopics: "events",
 		},
 		MessageBus: types.MessageBusConfig{
 			Type: "zero",
@@ -65,10 +66,10 @@ func TestInitialize(t *testing.T) {
 		},
 	}
 
-	runtime := &runtime.GolangRuntime{}
+	goRuntime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
-	trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	assert.NotNil(t, trigger.client, "Expected client to be set")
 	assert.Equal(t, 1, len(trigger.topics))
 	assert.Equal(t, "events", trigger.topics[0].Topic)
@@ -79,9 +80,9 @@ func TestInitializeBadConfiguration(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Binding: common.BindingInfo{
-			Type:           "meSsaGebus",
-			PublishTopic:   "publish",
-			SubscribeTopic: "events",
+			Type:            "meSsaGebus",
+			PublishTopic:    "publish",
+			SubscribeTopics: "events",
 		},
 		MessageBus: types.MessageBusConfig{
 			Type: "aaaa", //as type is not "zero", should return an error on client initialization
@@ -98,9 +99,9 @@ func TestInitializeBadConfiguration(t *testing.T) {
 		},
 	}
 
-	runtime := &runtime.GolangRuntime{}
+	goRuntime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	assert.Error(t, err)
 }
@@ -109,9 +110,9 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Binding: common.BindingInfo{
-			Type:           "meSsaGebus",
-			PublishTopic:   "",
-			SubscribeTopic: "",
+			Type:            "meSsaGebus",
+			PublishTopic:    "",
+			SubscribeTopics: "",
 		},
 		MessageBus: types.MessageBusConfig{
 			Type: "zero",
@@ -132,7 +133,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 	var expectedEvent models.Event
-	json.Unmarshal([]byte(expectedPayload), &expectedEvent)
+	_ = json.Unmarshal(expectedPayload, &expectedEvent)
 
 	transformWasCalled := common.AtomicBool{}
 
@@ -142,11 +143,11 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 		return false, nil
 	}
 
-	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
-	trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	goRuntime := &runtime.GolangRuntime{}
+	goRuntime.Initialize(nil, nil)
+	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
@@ -178,9 +179,9 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Binding: common.BindingInfo{
-			Type:           "meSsaGebus",
-			PublishTopic:   "PublishTopic",
-			SubscribeTopic: "SubscribeTopic",
+			Type:            "meSsaGebus",
+			PublishTopic:    "PublishTopic",
+			SubscribeTopics: "SubscribeTopic",
 		},
 		MessageBus: types.MessageBusConfig{
 			Type: "zero",
@@ -201,7 +202,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 	var expectedEvent models.Event
-	json.Unmarshal([]byte(expectedPayload), &expectedEvent)
+	_ = json.Unmarshal(expectedPayload, &expectedEvent)
 
 	transformWasCalled := common.AtomicBool{}
 
@@ -213,10 +214,10 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	}
 
-	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	goRuntime := &runtime.GolangRuntime{}
+	goRuntime.Initialize(nil, nil)
+	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -237,9 +238,9 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
-	testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
-
-	trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
+	require.NoError(t, err)
+	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
@@ -273,9 +274,9 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Binding: common.BindingInfo{
-			Type:           "meSsaGebus",
-			PublishTopic:   "PublishTopic",
-			SubscribeTopic: "SubscribeTopic",
+			Type:            "meSsaGebus",
+			PublishTopic:    "PublishTopic",
+			SubscribeTopics: "SubscribeTopic",
 		},
 		MessageBus: types.MessageBusConfig{
 			Type: "zero",
@@ -296,9 +297,9 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 
-	runtime := &runtime.GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	trigger := Trigger{Configuration: &config, Runtime: runtime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	goRuntime := &runtime.GolangRuntime{}
+	goRuntime.Initialize(nil, nil)
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -319,11 +320,12 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
-	testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
+	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
+	require.NoError(t, err)
 
 	background := make(chan types.MessageEnvelope)
 
-	trigger.Initialize(&sync.WaitGroup{}, context.Background(), background)
+	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), background)
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
@@ -344,5 +346,85 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 			receiveMessage = false
 			assert.Equal(t, expectedPayload, msgs.Payload)
 		}
+	}
+}
+
+func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
+	config := common.ConfigurationStruct{
+		Binding: common.BindingInfo{
+			Type:            "edgeX-meSsaGebus",
+			PublishTopic:    "",
+			SubscribeTopics: "t1,t2",
+		},
+		MessageBus: types.MessageBusConfig{
+			Type: "zero",
+			PublishHost: types.HostInfo{
+				Host:     "*",
+				Port:     5592,
+				Protocol: "tcp",
+			},
+			SubscribeHost: types.HostInfo{
+				Host:     "localhost",
+				Port:     5594,
+				Protocol: "tcp",
+			},
+		},
+	}
+
+	expectedCorrelationID := "123"
+	expectedPayload := []byte(`{"id":"TBD","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
+	var expectedEvent models.Event
+	_ = json.Unmarshal(expectedPayload, &expectedEvent)
+
+	done := make(chan bool)
+	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		require.Equal(t, expectedEvent, params[0])
+		done <- true
+		return false, nil
+	}
+
+	goRuntime := &runtime.GolangRuntime{}
+	goRuntime.Initialize(nil, nil)
+	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
+
+	message := types.MessageEnvelope{
+		CorrelationID: expectedCorrelationID,
+		Payload:       expectedPayload,
+		ContentType:   clients.ContentTypeJSON,
+	}
+
+	testClientConfig := types.MessageBusConfig{
+		PublishHost: types.HostInfo{
+			Host:     "*",
+			Port:     5594,
+			Protocol: "tcp",
+		},
+		Type: "zero",
+	}
+
+	testClient, err := messaging.NewMessageClient(testClientConfig)
+	require.NoError(t, err, "Unable to create to publisher")
+
+	err = testClient.Publish(message, "t1") //transform1 should be called after this executes
+	require.NoError(t, err, "Failed to publish message")
+
+	select {
+	case <-done:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
+
+	err = testClient.Publish(message, "t2") //transform1 should be called after this executes
+	require.NoError(t, err, "Failed to publish message")
+
+	select {
+	case <-done:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
 	}
 }

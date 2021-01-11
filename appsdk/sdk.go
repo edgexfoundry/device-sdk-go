@@ -208,11 +208,11 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	select {
 	case httpError := <-sdk.httpErrors:
-		sdk.LoggingClient.Info("Terminating: ", httpError.Error())
+		sdk.LoggingClient.Info("Http error received: ", httpError.Error())
 		err = httpError
 
 	case signalReceived := <-signals:
-		sdk.LoggingClient.Info("Terminating: " + signalReceived.String())
+		sdk.LoggingClient.Info("Terminating signal received: " + signalReceived.String())
 
 	case <-runCtx.Done():
 		sdk.LoggingClient.Info("Terminating: sdk.MakeItStop called")
@@ -227,7 +227,6 @@ func (sdk *AppFunctionsSDK) MakeItRun() error {
 
 	sdk.appCancelCtx() // Cancel all long running go funcs
 	sdk.appWg.Wait()
-
 	// Call all the deferred funcs that need to happen when exiting.
 	// These are things like un-register from the Registry, disconnect from the Message Bus, etc
 	for _, deferredFunc := range sdk.deferredFunctions {
