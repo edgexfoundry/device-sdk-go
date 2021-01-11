@@ -27,7 +27,7 @@ import (
 
 var instanceName string
 
-func Main(serviceName string, serviceVersion string, proto interface{}, ctx context.Context, cancel context.CancelFunc, router *mux.Router, _ chan<- bool) {
+func Main(serviceName string, serviceVersion string, proto interface{}, ctx context.Context, cancel context.CancelFunc, router *mux.Router) {
 	startupTimer := startup.NewStartUpTimer(serviceName)
 
 	additionalUsage :=
@@ -38,7 +38,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	sdkFlags.FlagSet.StringVar(&instanceName, "i", "", "")
 	sdkFlags.Parse(os.Args[1:])
 
-	serviceName = setServiceName(serviceName, sdkFlags.Profile())
+	serviceName = setServiceName(serviceName)
 	ds = &DeviceService{}
 	ds.Initialize(serviceName, serviceVersion, proto)
 
@@ -71,7 +71,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	ds.Stop(false)
 }
 
-func setServiceName(name string, _ string) string {
+func setServiceName(name string) string {
 	envValue := os.Getenv(common.EnvInstanceName)
 	if len(envValue) > 0 {
 		instanceName = envValue
