@@ -77,10 +77,10 @@ func (c *V2HttpController) Secret(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	path, secrets := c.prepareSecret(secretRequest)
+	path, secret := c.prepareSecret(secretRequest)
 
-	if err := provider.StoreSecrets(path, secrets); err != nil {
-		edgexError := errors.NewCommonEdgeX(errors.KindServerError, "Storing secrets failed", err)
+	if err := provider.StoreSecrets(path, secret); err != nil {
+		edgexError := errors.NewCommonEdgeX(errors.KindServerError, "Storing secret failed", err)
 		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretRoute)
 		return
 	}
@@ -90,9 +90,9 @@ func (c *V2HttpController) Secret(writer http.ResponseWriter, request *http.Requ
 }
 
 func (c *V2HttpController) prepareSecret(request common.SecretRequest) (string, map[string]string) {
-	var secretsKV = make(map[string]string)
+	var secretKVs = make(map[string]string)
 	for _, secret := range request.SecretData {
-		secretsKV[secret.Key] = secret.Value
+		secretKVs[secret.Key] = secret.Value
 	}
 
 	path := strings.TrimSpace(request.Path)
@@ -106,5 +106,5 @@ func (c *V2HttpController) prepareSecret(request common.SecretRequest) (string, 
 		path = path[1:]
 	}
 
-	return path, secretsKV
+	return path, secretKVs
 }

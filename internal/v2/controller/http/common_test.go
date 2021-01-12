@@ -163,7 +163,7 @@ func TestConfigRequest(t *testing.T) {
 	assert.Equal(t, expectedConfig, actualConfig)
 }
 
-func TestSecretsRequest(t *testing.T) {
+func TestSecretRequest(t *testing.T) {
 	expectedRequestId := "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc"
 	config := &sdkCommon.ConfigurationStruct{}
 
@@ -203,8 +203,8 @@ func TestSecretsRequest(t *testing.T) {
 	validNoRequestId.RequestId = ""
 	badRequestId := validRequest
 	badRequestId.RequestId = "bad requestId"
-	noSecrets := validRequest
-	noSecrets.SecretData = []common.SecretDataKeyValue{}
+	noSecret := validRequest
+	noSecret.SecretData = []common.SecretDataKeyValue{}
 	missingSecretKey := validRequest
 	missingSecretKey.SecretData = []common.SecretDataKeyValue{
 		{Key: "", Value: "username"},
@@ -220,18 +220,18 @@ func TestSecretsRequest(t *testing.T) {
 		Name               string
 		Request            common.SecretRequest
 		ExpectedRequestId  string
-		SecretsPath        string
+		SecretPath         string
 		SecretStoreEnabled string
 		ErrorExpected      bool
 		ExpectedStatusCode int
 	}{
-		{"Valid - sub-path no trailing slash, SecretsPath has trailing slash", validRequest, expectedRequestId, "my-secrets/", "true", false, http.StatusCreated},
-		{"Valid - sub-path only with trailing slash", validPathWithSlash, expectedRequestId, "my-secrets", "true", false, http.StatusCreated},
-		{"Valid - both trailing slashes", validPathWithSlash, expectedRequestId, "my-secrets/", "true", false, http.StatusCreated},
+		{"Valid - sub-path no trailing slash, SecretPath has trailing slash", validRequest, expectedRequestId, "my-secret/", "true", false, http.StatusCreated},
+		{"Valid - sub-path only with trailing slash", validPathWithSlash, expectedRequestId, "my-secret", "true", false, http.StatusCreated},
+		{"Valid - both trailing slashes", validPathWithSlash, expectedRequestId, "my-secret/", "true", false, http.StatusCreated},
 		{"Valid - no requestId", validNoRequestId, "", "", "true", false, http.StatusCreated},
 		{"Invalid - no path", NoPath, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - bad requestId", badRequestId, "", "", "true", true, http.StatusBadRequest},
-		{"Invalid - no secrets", noSecrets, "", "", "true", true, http.StatusBadRequest},
+		{"Invalid - no secret", noSecret, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - missing secret key", missingSecretKey, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - missing secret value", missingSecretValue, "", "", "true", true, http.StatusBadRequest},
 		{"Invalid - No Secret Store", noSecretStore, "", "", "false", true, http.StatusInternalServerError},
