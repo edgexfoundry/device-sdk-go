@@ -186,10 +186,10 @@ func TestSecretsRequest(t *testing.T) {
 	target := NewV2HttpController(dic)
 	assert.NotNil(t, target)
 
-	validRequest := common.SecretsRequest{
+	validRequest := common.SecretRequest{
 		BaseRequest: common.BaseRequest{RequestId: expectedRequestId},
 		Path:        "mqtt",
-		Secrets: []common.SecretsKeyValue{
+		SecretData: []common.SecretDataKeyValue{
 			{Key: "username", Value: "username"},
 			{Key: "password", Value: "password"},
 		},
@@ -204,13 +204,13 @@ func TestSecretsRequest(t *testing.T) {
 	badRequestId := validRequest
 	badRequestId.RequestId = "bad requestId"
 	noSecrets := validRequest
-	noSecrets.Secrets = []common.SecretsKeyValue{}
+	noSecrets.SecretData = []common.SecretDataKeyValue{}
 	missingSecretKey := validRequest
-	missingSecretKey.Secrets = []common.SecretsKeyValue{
+	missingSecretKey.SecretData = []common.SecretDataKeyValue{
 		{Key: "", Value: "username"},
 	}
 	missingSecretValue := validRequest
-	missingSecretValue.Secrets = []common.SecretsKeyValue{
+	missingSecretValue.SecretData = []common.SecretDataKeyValue{
 		{Key: "username", Value: ""},
 	}
 	noSecretStore := validRequest
@@ -218,7 +218,7 @@ func TestSecretsRequest(t *testing.T) {
 
 	tests := []struct {
 		Name               string
-		Request            common.SecretsRequest
+		Request            common.SecretRequest
 		ExpectedRequestId  string
 		SecretsPath        string
 		SecretStoreEnabled string
@@ -246,12 +246,12 @@ func TestSecretsRequest(t *testing.T) {
 
 			reader := strings.NewReader(string(jsonData))
 
-			req, err := http.NewRequest(http.MethodPost, sdkCommon.APIV2SecretsRoute, reader)
+			req, err := http.NewRequest(http.MethodPost, sdkCommon.APIV2SecretRoute, reader)
 			require.NoError(t, err)
 			req.Header.Set(clients.CorrelationHeader, expectedCorrelationId)
 
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(target.Secrets)
+			handler := http.HandlerFunc(target.Secret)
 			handler.ServeHTTP(recorder, req)
 
 			actualResponse := common.BaseResponse{}

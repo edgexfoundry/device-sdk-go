@@ -61,37 +61,37 @@ func (c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.Req
 	c.sendResponse(writer, request, contractsV2.ApiMetricsRoute, response, http.StatusOK)
 }
 
-// Secrets handles the request to add Device Service exclusive secrets to the Secret Store
+// Secret handles the request to add Device Service exclusive secret to the Secret Store
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.Request) {
+func (c *V2HttpController) Secret(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = request.Body.Close()
 	}()
 
 	provider := bootstrapContainer.SecretProviderFrom(c.dic.Get)
-	secretRequest := common.SecretsRequest{}
+	secretRequest := common.SecretRequest{}
 	err := json.NewDecoder(request.Body).Decode(&secretRequest)
 	if err != nil {
 		edgexError := errors.NewCommonEdgeX(errors.KindContractInvalid, "JSON decode failed", err)
-		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretsRoute)
+		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretRoute)
 		return
 	}
 
-	path, secrets := c.prepareSecrets(secretRequest)
+	path, secrets := c.prepareSecret(secretRequest)
 
 	if err := provider.StoreSecrets(path, secrets); err != nil {
 		edgexError := errors.NewCommonEdgeX(errors.KindServerError, "Storing secrets failed", err)
-		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretsRoute)
+		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretRoute)
 		return
 	}
 
 	response := common.NewBaseResponse(secretRequest.RequestId, "", http.StatusCreated)
-	c.sendResponse(writer, request, sdkCommon.APIV2SecretsRoute, response, http.StatusCreated)
+	c.sendResponse(writer, request, sdkCommon.APIV2SecretRoute, response, http.StatusCreated)
 }
 
-func (c *V2HttpController) prepareSecrets(request common.SecretsRequest) (string, map[string]string) {
+func (c *V2HttpController) prepareSecret(request common.SecretRequest) (string, map[string]string) {
 	var secretsKV = make(map[string]string)
-	for _, secret := range request.Secrets {
+	for _, secret := range request.SecretData {
 		secretsKV[secret.Key] = secret.Value
 	}
 

@@ -47,7 +47,7 @@ const (
 	APIV2DiscoveryRoute         = v2.ApiBase + "/discovery"
 	APIV2IdCommandRoute         = v2.ApiBase + "/device/{id}/{command}"
 	APIV2NameCommandRoute       = v2.ApiBase + "/device/name/{name}/{command}"
-	APIV2SecretsRoute           = v2.ApiBase + "/secrets"
+	APIV2SecretRoute            = v2.ApiBase + "/secret"
 
 	IdVar        string = "id"
 	NameVar      string = "name"

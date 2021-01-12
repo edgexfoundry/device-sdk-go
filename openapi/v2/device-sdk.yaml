@@ -481,26 +481,26 @@ components:
             value:
               description: "A string representation of the reading's value"
               type: string
-    SecretsRequest:
+    SecretRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
       description: Defines the secret data to be stored
       type: object
       properties:
         path:
-          description: Specifies the type or location in the secret to store
+          description: Specifies the location within the secret to store
           type: string
-          example: "mqtt-incoming"
-        secrets:
-          description: A list of the key/value pairs of secrets to store
+          example: "credentials"
+        secretData:
+          description: A list of the key/value pairs of secret data to store
           type: array
           items:
-            $ref: '#/components/schemas/SecretsKeyValue'
+            $ref: '#/components/schemas/SecretDataKeyValue'
       required:
         - path
-        - secrets
-    SecretsKeyValue:
-      description: Defines the key/value pair of the secret
+        - secretData
+    SecretDataKeyValue:
+      description: Defines a key/value pair of the secret data
       type: object
       properties:
         key:
@@ -1220,17 +1220,17 @@ paths:
               $ref: '#/components/schemas/SettingRequest'
         required: true
 
-  /secrets:
+  /secret:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'
     post:
-      summary: Stores secret(s) to the secure Secret Store
+      summary: Stores a secret to the secure Secret Store
       requestBody:
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/SecretsRequest'
+                - $ref: '#/components/schemas/SecretRequest'
         required: true
       responses:
         '201':
