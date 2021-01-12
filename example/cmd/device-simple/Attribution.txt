@@ -131,3 +131,6 @@ https://github.com/go-playground/validator/blob/master/LICENSE
 
 leodido/go-urn (MIT) https://github.com/leodido/go-urn
 https://github.com/leodido/go-urn/blob/master/LICENSE
+
+stretchr/objx (MIT) https://github.com/stretchr/objx
+https://github.com/stretchr/objx/blob/master/LICENSE
