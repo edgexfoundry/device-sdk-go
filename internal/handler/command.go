@@ -140,8 +140,11 @@ func execReadDeviceResource(
 	req.DeviceResourceName = dr.Name
 	req.Attributes = dr.Attributes
 	if queryParams != "" {
-		if len(req.Attributes) <= 0 {
-			req.Attributes = make(map[string]string)
+		req.Attributes = make(map[string]string)
+		if len(dr.Attributes) > 0 {
+			for k, v := range dr.Attributes {
+				req.Attributes[k] = v
+			}
 		}
 		m := common.FilterQueryParams(queryParams, lc)
 		req.Attributes[common.URLRawQuery] = m.Encode()
@@ -290,8 +293,11 @@ func execReadCmd(
 		reqs[i].DeviceResourceName = dr.Name
 		reqs[i].Attributes = dr.Attributes
 		if queryParams != "" {
-			if len(reqs[i].Attributes) <= 0 {
-				reqs[i].Attributes = make(map[string]string)
+			reqs[i].Attributes = make(map[string]string)
+			if len(dr.Attributes) > 0 {
+				for k, v := range dr.Attributes {
+					reqs[i].Attributes[k] = v
+				}
 			}
 			m := common.FilterQueryParams(queryParams, lc)
 			reqs[i].Attributes[common.URLRawQuery] = m.Encode()
