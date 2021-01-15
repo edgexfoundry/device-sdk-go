@@ -10,7 +10,7 @@ package callback
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"

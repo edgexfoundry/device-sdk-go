@@ -9,8 +9,8 @@ package service
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 

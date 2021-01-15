@@ -9,7 +9,7 @@ package transformer
 import (
 	"math"
 
-	dsModels "github.com/edgexfoundry/device-sdk-go/pkg/models"
+	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 // NaNError is used to throw the NaN error for the floating-point value

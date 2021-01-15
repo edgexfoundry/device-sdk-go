@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"net/http"
 
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"

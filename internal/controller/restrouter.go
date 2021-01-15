@@ -14,9 +14,9 @@ import (
 	"fmt"
 	"net/http"
 
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/controller/correlation"
-	v2 "github.com/edgexfoundry/device-sdk-go/internal/v2/controller/http"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller/correlation"
+	v2 "github.com/edgexfoundry/device-sdk-go/v2/internal/v2/controller/http"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"

@@ -14,7 +14,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )
 
