@@ -81,16 +81,16 @@ func (c *RestController) InitV2RestRoutes() {
 
 	c.addReservedRoute(sdkCommon.APIV2SecretRoute, c.v2HttpController.Secret).Methods(http.MethodPost)
 
-	c.addReservedRoute(sdkCommon.APIV2DiscoveryRoute, c.v2HttpController.Discovery).Methods(http.MethodPost)
+	c.addReservedRoute(contractsV2.ApiDiscoveryRoute, c.v2HttpController.Discovery).Methods(http.MethodPost)
 
-	c.addReservedRoute(sdkCommon.APIV2IdCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
-	c.addReservedRoute(sdkCommon.APIV2NameCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiIdCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiNameCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
 
-	c.addReservedRoute(sdkCommon.APIV2DeviceCallbackRoute, c.v2HttpController.AddDevice).Methods(http.MethodPost)
-	c.addReservedRoute(sdkCommon.APIV2DeviceCallbackRoute, c.v2HttpController.UpdateDevice).Methods(http.MethodPut)
-	c.addReservedRoute(sdkCommon.APIV2DeviceCallbackIdRoute, c.v2HttpController.DeleteDevice).Methods(http.MethodDelete)
-	c.addReservedRoute(sdkCommon.APIV2ProfileCallbackRoute, c.v2HttpController.AddUpdateProfile).Methods(http.MethodPut, http.MethodPost)
-	c.addReservedRoute(sdkCommon.APIV2ProfileCallbackIdRoute, c.v2HttpController.DeleteProfile).Methods(http.MethodDelete)
+	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.AddDevice).Methods(http.MethodPost)
+	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.UpdateDevice).Methods(http.MethodPut)
+	c.addReservedRoute(contractsV2.ApiDeviceCallbackIdRoute, c.v2HttpController.DeleteDevice).Methods(http.MethodDelete)
+	c.addReservedRoute(contractsV2.ApiProfileCallbackRoute, c.v2HttpController.AddUpdateProfile).Methods(http.MethodPut, http.MethodPost)
+	c.addReservedRoute(contractsV2.ApiProfileCallbackIdRoute, c.v2HttpController.DeleteProfile).Methods(http.MethodDelete)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {

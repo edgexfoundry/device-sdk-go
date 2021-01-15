@@ -592,11 +592,15 @@ paths:
     post:
       description: "This call is used by core-metadata to inform the device service of the creation of a new Device"
       responses:
-        '204':
-          description: Indicating success of the operation and no content returned.
+        '200':
+          description: "Callback successful"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '400':
           description: Invalid callback request.
           headers:
@@ -624,11 +628,15 @@ paths:
     put:
       description: "This call is used by core-metadata to inform the device service that a Device's characteristics have been updated"
       responses:
-        '204':
-          description: Indicating success of the operation and no content returned.
+        '200':
+          description: "Callback successful"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '400':
           description: Invalid callback request.
           headers:
@@ -676,11 +684,15 @@ paths:
     delete:
       description: "This call is used by core-metadata to inform the device service that a Device has been deleted"
       responses:
-        '204':
-          description: Indicating success of the operation and no content returned.
+        '200':
+          description: "Callback successful"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '404':
           description: No device exists for the ID provided.
           headers:
@@ -706,11 +718,15 @@ paths:
     post:
       description: "This call is used by core-metadata to inform the device service of the creation of a new Device Profile"
       responses:
-        '204':
-          description: Indicating success of the operation and no content returned.
+        '200':
+          description: "Callback successful"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '400':
           description: Invalid callback request.
           headers:
@@ -738,11 +754,15 @@ paths:
     put:
       description: "This call is used by core-metadata to inform the device service that a Device Profile has been updated"
       responses:
-        '204':
-          description: Indicating success of the operation and no content returned.
+        '200':
+          description: "Callback successful"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '400':
           description: Invalid callback request.
           headers:
@@ -790,11 +810,15 @@ paths:
     delete:
       description: "This call is used by core-metadata to inform the device service that a Device Profile has been deleted"
       responses:
-        '204':
-          description: Indicating success of the operation and no content returned.
+        '200':
+          description: "Callback successful"
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '404':
           description: No device profile exists for the ID provided.
           headers:

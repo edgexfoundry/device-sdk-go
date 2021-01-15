@@ -13,6 +13,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/internal/v2/application"
 	"github.com/edgexfoundry/go-mod-core-contracts/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/gorilla/mux"
 )
@@ -23,9 +25,10 @@ func (c *V2HttpController) DeleteDevice(writer http.ResponseWriter, request *htt
 
 	err := application.DeleteDevice(id, c.dic)
 	if err == nil {
-		c.sendResponse(writer, request, common.APIV2DeviceCallbackIdRoute, nil, http.StatusOK)
+		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiDeviceCallbackIdRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, err, common.APIV2DeviceCallbackIdRoute)
+		c.sendEdgexError(writer, request, err, v2.ApiDeviceCallbackIdRoute)
 	}
 }
 
@@ -37,15 +40,16 @@ func (c *V2HttpController) AddDevice(writer http.ResponseWriter, request *http.R
 	err := json.NewDecoder(request.Body).Decode(&addDeviceRequest)
 	if err != nil {
 		edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to decode JSON", err)
-		c.sendEdgexError(writer, request, edgexErr, common.APIV2DeviceCallbackRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceCallbackRoute)
 		return
 	}
 
 	edgexErr := application.AddDevice(addDeviceRequest, c.dic)
 	if edgexErr == nil {
-		c.sendResponse(writer, request, common.APIV2DeviceCallbackRoute, nil, http.StatusOK)
+		res := commonDTO.NewBaseResponse(addDeviceRequest.RequestId, "", http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiDeviceCallbackRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, edgexErr, common.APIV2DeviceCallbackRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceCallbackRoute)
 	}
 }
 
@@ -57,15 +61,16 @@ func (c *V2HttpController) UpdateDevice(writer http.ResponseWriter, request *htt
 	err := json.NewDecoder(request.Body).Decode(&updateDeviceRequest)
 	if err != nil {
 		edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to decode JSON", err)
-		c.sendEdgexError(writer, request, edgexErr, common.APIV2DeviceCallbackRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceCallbackRoute)
 		return
 	}
 
 	edgexErr := application.UpdateDevice(updateDeviceRequest, c.dic)
 	if edgexErr == nil {
-		c.sendResponse(writer, request, common.APIV2DeviceCallbackRoute, nil, http.StatusOK)
+		res := commonDTO.NewBaseResponse(updateDeviceRequest.RequestId, "", http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiDeviceCallbackRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, edgexErr, common.APIV2DeviceCallbackRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceCallbackRoute)
 	}
 }
 
@@ -75,9 +80,10 @@ func (c *V2HttpController) DeleteProfile(writer http.ResponseWriter, request *ht
 
 	err := application.DeleteProfile(id, c.dic)
 	if err == nil {
-		c.sendResponse(writer, request, common.APIV2ProfileCallbackIdRoute, nil, http.StatusOK)
+		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiProfileCallbackIdRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, err, common.APIV2ProfileCallbackIdRoute)
+		c.sendEdgexError(writer, request, err, v2.ApiProfileCallbackIdRoute)
 	}
 }
 
@@ -90,7 +96,7 @@ func (c *V2HttpController) AddUpdateProfile(writer http.ResponseWriter, request 
 	err := json.NewDecoder(request.Body).Decode(&profileRequest)
 	if err != nil {
 		edgexErr = errors.NewCommonEdgeX(errors.KindServerError, "failed to decode JSON", err)
-		c.sendEdgexError(writer, request, edgexErr, common.APIV2ProfileCallbackRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiProfileCallbackRoute)
 		return
 	}
 
@@ -102,8 +108,9 @@ func (c *V2HttpController) AddUpdateProfile(writer http.ResponseWriter, request 
 	}
 
 	if edgexErr == nil {
-		c.sendResponse(writer, request, common.APIV2ProfileCallbackRoute, nil, http.StatusOK)
+		res := commonDTO.NewBaseResponse(profileRequest.RequestId, "", http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiProfileCallbackRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, edgexErr, common.APIV2ProfileCallbackRoute)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiProfileCallbackRoute)
 	}
 }
