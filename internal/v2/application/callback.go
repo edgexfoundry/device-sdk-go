@@ -9,9 +9,9 @@ package application
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/v2/cache"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"

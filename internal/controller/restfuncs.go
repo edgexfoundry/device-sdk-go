@@ -14,11 +14,11 @@ import (
 	"net/http"
 	"runtime"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/autodiscovery"
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler"
-	"github.com/edgexfoundry/device-sdk-go/internal/handler/callback"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/handler"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/handler/callback"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"

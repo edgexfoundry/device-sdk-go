@@ -7,7 +7,7 @@
 package container
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
 )

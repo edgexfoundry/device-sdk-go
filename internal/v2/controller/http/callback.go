@@ -10,8 +10,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/edgexfoundry/device-sdk-go/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/internal/v2/application"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 	"github.com/edgexfoundry/go-mod-core-contracts/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"

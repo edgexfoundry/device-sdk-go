@@ -6,7 +6,7 @@
 
 package handler
 
-import "github.com/edgexfoundry/device-sdk-go/internal/common"
+import "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 
 func VersionHandler() string {
 	return common.ServiceVersion
