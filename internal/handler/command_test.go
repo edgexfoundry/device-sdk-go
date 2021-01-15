@@ -403,7 +403,7 @@ func TestExecWriteCmd(t *testing.T) {
 					configuration.Device.MaxCmdOps = 128
 				}()
 			}
-			appErr := execWriteCmd(tt.device, tt.cmd, tt.params, driver, lc, configuration)
+			appErr := execWriteCmd(tt.device, tt.cmd, "", tt.params, driver, lc, configuration)
 			if !tt.expectErr && appErr != nil {
 				t.Errorf("%s expectErr:%v error:%v", tt.testName, tt.expectErr, appErr.Error())
 				return

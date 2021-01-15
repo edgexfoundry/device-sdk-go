@@ -95,7 +95,7 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 				container.ConfigurationFrom(dic.Get))
 		} else {
 			appErr = execWriteDeviceResource(
-				&d, &dr, body,
+				&d, &dr, queryParams, body,
 				container.ProtocolDriverFrom(dic.Get),
 				lc,
 				container.ConfigurationFrom(dic.Get))
@@ -110,7 +110,7 @@ func CommandHandler(vars map[string]string, body string, method string, queryPar
 				container.ConfigurationFrom(dic.Get))
 		} else {
 			appErr = execWriteCmd(
-				&d, cmd, body,
+				&d, cmd, queryParams, body,
 				container.ProtocolDriverFrom(dic.Get),
 				lc,
 				container.ConfigurationFrom(dic.Get))
@@ -317,6 +317,7 @@ func execReadCmd(
 func execWriteDeviceResource(
 	device *contract.Device,
 	dr *contract.DeviceResource,
+	queryParams string,
 	params string,
 	driver dsModels.ProtocolDriver,
 	lc logger.LoggingClient,
@@ -348,6 +349,16 @@ func execWriteDeviceResource(
 	lc.Debug(fmt.Sprintf("Handler - execWriteDeviceResource: putting deviceResource: %s", dr.Name))
 	reqs[0].DeviceResourceName = cv.DeviceResourceName
 	reqs[0].Attributes = dr.Attributes
+	if queryParams != "" {
+		reqs[0].Attributes = make(map[string]string)
+		if len(dr.Attributes) > 0 {
+			for k, v := range dr.Attributes {
+				reqs[0].Attributes[k] = v
+			}
+		}
+		m := common.FilterQueryParams(queryParams, lc)
+		reqs[0].Attributes[common.URLRawQuery] = m.Encode()
+	}
 	reqs[0].Type = cv.Type
 
 	if configuration.Device.DataTransform {
@@ -371,6 +382,7 @@ func execWriteDeviceResource(
 func execWriteCmd(
 	device *contract.Device,
 	cmd string,
+	queryParams string,
 	params string,
 	driver dsModels.ProtocolDriver,
 	lc logger.LoggingClient,
@@ -415,6 +427,16 @@ func execWriteCmd(
 
 		reqs[i].DeviceResourceName = cv.DeviceResourceName
 		reqs[i].Attributes = dr.Attributes
+		if queryParams != "" {
+			reqs[i].Attributes = make(map[string]string)
+			if len(dr.Attributes) > 0 {
+				for k, v := range dr.Attributes {
+					reqs[i].Attributes[k] = v
+				}
+			}
+			m := common.FilterQueryParams(queryParams, lc)
+			reqs[i].Attributes[common.URLRawQuery] = m.Encode()
+		}
 		reqs[i].Type = cv.Type
 
 		if configuration.Device.DataTransform {
@@ -767,7 +789,7 @@ func CommandAllHandler(cmd string, body string, method string, queryParams strin
 					container.ConfigurationFrom(dic.Get))
 			} else {
 				appErr = execWriteCmd(
-					device, cmd, body,
+					device, cmd, queryParams, body,
 					container.ProtocolDriverFrom(dic.Get),
 					lc,
 					container.ConfigurationFrom(dic.Get))
