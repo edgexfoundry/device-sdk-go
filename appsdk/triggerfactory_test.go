@@ -18,18 +18,21 @@ package appsdk
 
 import (
 	"context"
+	"strings"
+	"sync"
+	"testing"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/mqtt"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"strings"
-	"sync"
-	"testing"
 )
 
 func TestRegisterCustomTriggerFactory_HTTP(t *testing.T) {

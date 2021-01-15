@@ -19,14 +19,16 @@ package appsdk
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/mqtt"
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
-	"strings"
+
+	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
 
 func (sdk *AppFunctionsSDK) defaultTriggerMessageProcessor(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) error {

@@ -21,7 +21,7 @@ import (
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
 
-	"github.com/edgexfoundry/go-mod-messaging/pkg/types"
+	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
 )

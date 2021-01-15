@@ -406,7 +406,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/go-mod-messaging/pkg/types"
+      "x-go-package": "github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
     },
     "LoggingInfo": {
       "description": "LoggingInfo is used to indicate whether remote logging should be used or not. If not, File designates the location of the log file to output logs to",
@@ -443,7 +443,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/go-mod-messaging/pkg/types"
+      "x-go-package": "github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
     },
     "PipelineFunction": {
       "type": "object",

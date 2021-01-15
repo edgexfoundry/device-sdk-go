@@ -16,7 +16,7 @@
 
 package appsdk
 
-import "github.com/edgexfoundry/go-mod-messaging/pkg/types"
+import "github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 // BackgroundPublisher provides an interface to send messages from background processes
 // through the service's configured MessageBus output
