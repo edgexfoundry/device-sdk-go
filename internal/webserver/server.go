@@ -23,10 +23,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
-	v2 "github.com/edgexfoundry/app-functions-sdk-go/internal/v2/controller/http"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
+	v2 "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/v2/controller/http"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"

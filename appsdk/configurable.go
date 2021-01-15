@@ -21,9 +21,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
 
 const (

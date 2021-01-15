@@ -19,7 +19,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
 )
 
 var TestUUIDValid = "fb49a277-9edf-4489-a89c-235b365107f7"

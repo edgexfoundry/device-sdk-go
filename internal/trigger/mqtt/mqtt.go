@@ -32,11 +32,11 @@ import (
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/google/uuid"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/secure"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/secure"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
 
 // Trigger implements Trigger to support Triggers

@@ -247,7 +247,7 @@
           "example": "messagebus"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "ClientInfo": {
       "type": "object",
@@ -267,7 +267,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "ConfigurationStruct": {
       "description": "ConfigurationStruct",
@@ -309,7 +309,7 @@
           "$ref": "#/definitions/WritableInfo"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "DatabaseInfo": {
       "type": "object",
@@ -343,7 +343,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
     },
     "Event": {
       "description": "Event represents a single measurable event read from a device",
@@ -419,7 +419,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "MessageBusConfig": {
       "description": "MessageBusConfig defines the messaging information need to connect to the message bus\nin a publish-subscribe pattern",
@@ -459,7 +459,7 @@
           }
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "PipelineInfo": {
       "type": "object",
@@ -477,7 +477,7 @@
           "type": "boolean"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "Reading": {
       "type": "object",
@@ -544,7 +544,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "ServiceInfo": {
       "description": "ServiceInfo is used to hold and configure various settings related to the hosting of this service",
@@ -580,7 +580,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "StoreAndForwardInfo": {
       "type": "object",
@@ -596,7 +596,7 @@
           "type": "string"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "SystemUsage": {
       "description": "SystemUsage",
@@ -610,7 +610,7 @@
           "$ref": "#/definitions/memoryUsage"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
     },
     "Version": {
       "type": "object",
@@ -624,7 +624,7 @@
           "x-go-name": "Version"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
     },
     "WritableInfo": {
       "type": "object",
@@ -652,7 +652,7 @@
           "$ref": "#/definitions/StoreAndForwardInfo"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
     },
     "memoryUsage": {
       "type": "object",
@@ -682,7 +682,7 @@
           "format": "uint64"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
+      "x-go-package": "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
     }
   }
 }

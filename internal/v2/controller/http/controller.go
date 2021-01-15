@@ -22,9 +22,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/telemetry"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
 

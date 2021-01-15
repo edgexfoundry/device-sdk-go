@@ -33,8 +33,8 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/registry"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 )
 
 func TestValidateVersionMatch(t *testing.T) {

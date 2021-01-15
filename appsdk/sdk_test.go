@@ -27,12 +27,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/webserver"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 )
 

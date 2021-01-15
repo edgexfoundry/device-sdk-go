@@ -22,7 +22,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/models"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 )
 
 // Tags contains the list of Tag key/values

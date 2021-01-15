@@ -26,12 +26,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db/interfaces/mocks"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/transforms"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces/mocks"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 )
 
 func TestProcessRetryItems(t *testing.T) {

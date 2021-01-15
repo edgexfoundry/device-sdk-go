@@ -23,7 +23,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/db"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 )
 
 // WritableInfo is used to hold configuration information that is considered "live" or can be changed on the fly without a restart of the service.

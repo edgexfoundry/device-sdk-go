@@ -18,7 +18,7 @@ package models
 import (
 	"encoding/json"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/store/contracts"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
 )
 
 // StoredObject is the atomic and most abstract description of what is collected by the export store system.

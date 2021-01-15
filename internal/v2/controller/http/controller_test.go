@@ -27,8 +27,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal"
-	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"

@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/http"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/messagebus"
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/trigger/mqtt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/mqtt"
 
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )

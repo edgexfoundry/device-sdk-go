@@ -24,7 +24,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/internal/bootstrap/handlers"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/handlers"
 )
 
 // ConfigUpdateProcessor contains the data need to process configuration updates

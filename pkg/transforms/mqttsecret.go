@@ -26,9 +26,9 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/secure"
-	"github.com/edgexfoundry/app-functions-sdk-go/pkg/util"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/secure"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
 
 // MQTTSecretSender ...
