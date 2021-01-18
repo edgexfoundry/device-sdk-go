@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -51,9 +51,7 @@ func UpdateProfile(profileRequest requests.DeviceProfileRequest, lc logger.Loggi
 	return nil
 }
 
-func DeleteProfile(id string, dic *di.Container) errors.EdgeX {
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-
+func DeleteProfile(id string, lc logger.LoggingClient) errors.EdgeX {
 	err := cache.Profiles().RemoveById(id)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to remove profile with given id %s", id)
@@ -175,6 +173,60 @@ func DeleteDevice(id string, dic *di.Container) errors.EdgeX {
 		}
 	}
 
+	return nil
+}
+
+func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcherRequest, lc logger.LoggingClient) errors.EdgeX {
+	provisionWatcher := dtos.ToProvisionWatcherModel(addProvisionWatcherRequest.ProvisionWatcher)
+
+	edgexErr := cache.ProvisionWatchers().Add(provisionWatcher)
+	if edgexErr != nil {
+		errMsg := fmt.Sprintf("failed to add provision watcher %s", provisionWatcher.Name)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
+	}
+
+	lc.Debugf("provision watcher %s added", provisionWatcher.Name)
+	return nil
+}
+
+func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest, lc logger.LoggingClient) errors.EdgeX {
+	var ok bool
+	var provisionWatcher models.ProvisionWatcher
+
+	if updateProvisionWatcherRequest.ProvisionWatcher.Name != nil {
+		provisionWatcher, ok = cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
+		if !ok {
+			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.Name)
+			return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
+		}
+	} else {
+		provisionWatcher, ok = cache.ProvisionWatchers().ForId(*updateProvisionWatcherRequest.ProvisionWatcher.Id)
+		if !ok {
+			errMsg := fmt.Sprintf("failed to find provision watcher with given id %s", *updateProvisionWatcherRequest.ProvisionWatcher.Id)
+			return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
+		}
+	}
+
+	requests.ReplaceProvisionWatcherModelFieldsWithDTO(&provisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
+
+	edgexErr := cache.ProvisionWatchers().Update(provisionWatcher)
+	if edgexErr != nil {
+		errMsg := fmt.Sprintf("failed to update provision watcher %s", provisionWatcher.Name)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
+	}
+
+	lc.Debugf("provision watcher %s updated", provisionWatcher.Name)
+	return nil
+}
+
+func DeleteProvisionWatcher(id string, lc logger.LoggingClient) errors.EdgeX {
+	err := cache.ProvisionWatchers().RemoveById(id)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to remove provision watcher with given id %s", id)
+		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, err)
+	}
+
+	lc.Debugf("removed provision watcher with given id %s", id)
 	return nil
 }
 
