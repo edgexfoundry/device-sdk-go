@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2020 IOTech Ltd
+// Copyright (C) 2019-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -15,6 +15,7 @@ import (
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 )
 
 var lc logger.LoggingClient
@@ -45,8 +46,8 @@ func TestTransformReadResult_base_unt8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	if cv.Type != v2.ValueTypeUint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint8)
 	}
 }
 
@@ -91,8 +92,8 @@ func TestTransformReadResult_scale_unt8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v", result, expected)
 	}
-	if cv.Type != dsModels.Uint8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	if cv.Type != v2.ValueTypeUint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint8)
 	}
 }
 
@@ -137,8 +138,8 @@ func TestTransformReadResult_offset_unt8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	if cv.Type != v2.ValueTypeUint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint8)
 	}
 }
 
@@ -183,8 +184,8 @@ func TestTransformReadResult_base_unt16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	if cv.Type != v2.ValueTypeUint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint16)
 	}
 }
 
@@ -229,8 +230,8 @@ func TestTransformReadResult_scale_uint16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	if cv.Type != v2.ValueTypeUint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint16)
 	}
 }
 
@@ -275,8 +276,8 @@ func TestTransformReadResult_offset_uint16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	if cv.Type != v2.ValueTypeUint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint16)
 	}
 }
 
@@ -321,8 +322,8 @@ func TestTransformReadResult_base_uint32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	if cv.Type != v2.ValueTypeUint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint32)
 	}
 }
 
@@ -367,8 +368,8 @@ func TestTransformReadResult_scale_uint32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	if cv.Type != v2.ValueTypeUint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint32)
 	}
 }
 
@@ -413,8 +414,8 @@ func TestTransformReadResult_offset_uint32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	if cv.Type != v2.ValueTypeUint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint32)
 	}
 }
 
@@ -459,8 +460,8 @@ func TestTransformReadResult_base_uint64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	if cv.Type != v2.ValueTypeUint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint64)
 	}
 }
 
@@ -486,8 +487,8 @@ func TestTransformReadResult_scale_uint64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	if cv.Type != v2.ValueTypeUint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint64)
 	}
 }
 
@@ -513,8 +514,8 @@ func TestTransformReadResult_offset_uint64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	if cv.Type != v2.ValueTypeUint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint64)
 	}
 }
 
@@ -540,8 +541,8 @@ func TestTransformReadResult_base_int8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int8)
+	if cv.Type != v2.ValueTypeInt8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt8)
 	}
 }
 
@@ -586,8 +587,8 @@ func TestTransformReadResult_scale_int8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v", result, expected)
 	}
-	if cv.Type != dsModels.Int8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int8)
+	if cv.Type != v2.ValueTypeInt8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt8)
 	}
 }
 
@@ -632,8 +633,8 @@ func TestTransformReadResult_offset_int8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int8)
+	if cv.Type != v2.ValueTypeInt8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt8)
 	}
 }
 
@@ -678,8 +679,8 @@ func TestTransformReadResult_base_int16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int16)
+	if cv.Type != v2.ValueTypeInt16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt16)
 	}
 }
 
@@ -724,8 +725,8 @@ func TestTransformReadResult_scale_int16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int16)
+	if cv.Type != v2.ValueTypeInt16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt16)
 	}
 }
 
@@ -770,8 +771,8 @@ func TestTransformReadResult_offset_int16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int16)
+	if cv.Type != v2.ValueTypeInt16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt16)
 	}
 }
 
@@ -816,8 +817,8 @@ func TestTransformReadResult_base_int32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int32)
+	if cv.Type != v2.ValueTypeInt32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt32)
 	}
 }
 
@@ -862,8 +863,8 @@ func TestTransformReadResult_scale_int32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int32)
+	if cv.Type != v2.ValueTypeInt32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt32)
 	}
 }
 
@@ -908,8 +909,8 @@ func TestTransformReadResult_offset_int32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int32)
+	if cv.Type != v2.ValueTypeInt32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt32)
 	}
 }
 
@@ -954,8 +955,8 @@ func TestTransformReadResult_base_int64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int64)
+	if cv.Type != v2.ValueTypeInt64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt64)
 	}
 }
 
@@ -981,8 +982,8 @@ func TestTransformReadResult_scale_int64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int64)
+	if cv.Type != v2.ValueTypeInt64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt64)
 	}
 }
 
@@ -1008,8 +1009,8 @@ func TestTransformReadResult_offset_int64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Int64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Int64)
+	if cv.Type != v2.ValueTypeInt64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeInt64)
 	}
 }
 
@@ -1035,8 +1036,8 @@ func TestTransformReadResult_base_float32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Float32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float32)
+	if cv.Type != v2.ValueTypeFloat32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeFloat32)
 	}
 }
 
@@ -1081,8 +1082,8 @@ func TestTransformReadResult_scale_float32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Float32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float32)
+	if cv.Type != v2.ValueTypeFloat32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeFloat32)
 	}
 }
 
@@ -1127,8 +1128,8 @@ func TestTransformReadResult_offset_float32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Float32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float32)
+	if cv.Type != v2.ValueTypeFloat32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeFloat32)
 	}
 }
 
@@ -1173,8 +1174,8 @@ func TestTransformReadResult_base_float64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Float64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float64)
+	if cv.Type != v2.ValueTypeFloat64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeFloat64)
 	}
 }
 
@@ -1200,8 +1201,8 @@ func TestTransformReadResult_scale_float64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Float32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float32)
+	if cv.Type != v2.ValueTypeFloat32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeFloat32)
 	}
 }
 
@@ -1227,8 +1228,8 @@ func TestTransformReadResult_offset_float64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Float64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Float64)
+	if cv.Type != v2.ValueTypeFloat64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeFloat64)
 	}
 }
 
@@ -1254,8 +1255,8 @@ func TestTransformReadResult_mask_uint8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	if cv.Type != v2.ValueTypeUint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint8)
 	}
 }
 
@@ -1281,8 +1282,8 @@ func TestTransformReadResult_mask_uint16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	if cv.Type != v2.ValueTypeUint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint16)
 	}
 }
 
@@ -1308,8 +1309,8 @@ func TestTransformReadResult_mask_uint32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	if cv.Type != v2.ValueTypeUint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint32)
 	}
 }
 
@@ -1335,8 +1336,8 @@ func TestTransformReadResult_mask_uint64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	if cv.Type != v2.ValueTypeUint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint64)
 	}
 }
 
@@ -1378,8 +1379,8 @@ func TestTransformReadResult_shift_uint8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	if cv.Type != v2.ValueTypeUint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint8)
 	}
 }
 
@@ -1405,8 +1406,8 @@ func TestTransformReadResult_signedShift_uint8(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint8 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint8)
+	if cv.Type != v2.ValueTypeUint8 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint8)
 	}
 }
 
@@ -1432,8 +1433,8 @@ func TestTransformReadResult_shift_uint16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	if cv.Type != v2.ValueTypeUint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint16)
 	}
 }
 
@@ -1459,8 +1460,8 @@ func TestTransformReadResult_signedShift_uint16(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint16 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint16)
+	if cv.Type != v2.ValueTypeUint16 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint16)
 	}
 }
 
@@ -1486,8 +1487,8 @@ func TestTransformReadResult_shift_uint32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	if cv.Type != v2.ValueTypeUint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint32)
 	}
 }
 
@@ -1513,8 +1514,8 @@ func TestTransformReadResult_signedShift_uint32(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint32 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint32)
+	if cv.Type != v2.ValueTypeUint32 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint32)
 	}
 }
 
@@ -1540,8 +1541,8 @@ func TestTransformReadResult_shift_uint64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	if cv.Type != v2.ValueTypeUint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint64)
 	}
 }
 
@@ -1567,8 +1568,8 @@ func TestTransformReadResult_signedShift_uint64(t *testing.T) {
 	if result != expected {
 		t.Fatalf("Unexpect test result, result '%v' should be '%v'", result, expected)
 	}
-	if cv.Type != dsModels.Uint64 {
-		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, dsModels.Uint64)
+	if cv.Type != v2.ValueTypeUint64 {
+		t.Fatalf("Unexpect test result, value type '%v' should be '%v'", cv.Type, v2.ValueTypeUint64)
 	}
 }
 
