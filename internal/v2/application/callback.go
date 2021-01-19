@@ -22,18 +22,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
-func AddProfile(profileRequest requests.DeviceProfileRequest, lc logger.LoggingClient) errors.EdgeX {
-	err := cache.Profiles().Add(dtos.ToDeviceProfileModel(profileRequest.Profile))
-
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to add profile %s", profileRequest.Profile.Name)
-		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-	}
-
-	lc.Debug(fmt.Sprintf("profile %s added", profileRequest.Profile.Name))
-	return nil
-}
-
 func UpdateProfile(profileRequest requests.DeviceProfileRequest, lc logger.LoggingClient) errors.EdgeX {
 	_, ok := cache.Profiles().ForName(profileRequest.Profile.Name)
 	if !ok {
@@ -48,17 +36,6 @@ func UpdateProfile(profileRequest requests.DeviceProfileRequest, lc logger.Loggi
 	}
 
 	lc.Debug(fmt.Sprintf("profile %s updated", profileRequest.Profile.Name))
-	return nil
-}
-
-func DeleteProfile(id string, lc logger.LoggingClient) errors.EdgeX {
-	err := cache.Profiles().RemoveById(id)
-	if err != nil {
-		errMsg := fmt.Sprintf("failed to remove profile with given id %s", id)
-		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, err)
-	}
-
-	lc.Info(fmt.Sprintf("Removed profile with given id %s", id))
 	return nil
 }
 
@@ -132,30 +109,30 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 	return nil
 }
 
-func DeleteDevice(id string, dic *di.Container) errors.EdgeX {
+func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	// check the device exist and stop its autoevents
-	device, ok := cache.Devices().ForId(id)
+	device, ok := cache.Devices().ForName(name)
 	if ok {
-		lc.Debug(fmt.Sprintf("Handler - stopping AutoEvents for device %s", device.Name))
+		lc.Debugf("Handler - stopping AutoEvents for device %s", device.Name)
 		autoevent.GetManager().StopForDevice(device.Name)
 	} else {
-		errMsg := fmt.Sprintf("failed to find device with given id %s", id)
+		errMsg := fmt.Sprintf("failed to find device %s", name)
 		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
 	}
 
 	// remove the device in cache
-	edgexErr := cache.Devices().RemoveById(id)
+	edgexErr := cache.Devices().RemoveByName(name)
 	if edgexErr != nil {
 		errMsg := fmt.Sprintf("failed to remove device %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
 	}
-	lc.Info(fmt.Sprintf("Removed device: %s", device.Name))
+	lc.Debugf("Removed device: %s", device.Name)
 
 	driver := container.ProtocolDriverFrom(dic.Get)
 	err := driver.RemoveDevice(device.Name, transformDeviceProtocols(device.Protocols))
 	if err == nil {
-		lc.Debug(fmt.Sprintf("Invoked driver.RemoveDevice callback for %s", device.Name))
+		lc.Debugf("Invoked driver.RemoveDevice callback for %s", device.Name)
 	} else {
 		errMsg := fmt.Sprintf("driver.RemoveDevice callback failed for %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -190,21 +167,10 @@ func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcher
 }
 
 func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest, lc logger.LoggingClient) errors.EdgeX {
-	var ok bool
-	var provisionWatcher models.ProvisionWatcher
-
-	if updateProvisionWatcherRequest.ProvisionWatcher.Name != nil {
-		provisionWatcher, ok = cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
-		if !ok {
-			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.Name)
-			return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
-		}
-	} else {
-		provisionWatcher, ok = cache.ProvisionWatchers().ForId(*updateProvisionWatcherRequest.ProvisionWatcher.Id)
-		if !ok {
-			errMsg := fmt.Sprintf("failed to find provision watcher with given id %s", *updateProvisionWatcherRequest.ProvisionWatcher.Id)
-			return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
-		}
+	provisionWatcher, ok := cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
+	if !ok {
+		errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.Name)
+		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
 	}
 
 	requests.ReplaceProvisionWatcherModelFieldsWithDTO(&provisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
@@ -219,14 +185,14 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 	return nil
 }
 
-func DeleteProvisionWatcher(id string, lc logger.LoggingClient) errors.EdgeX {
-	err := cache.ProvisionWatchers().RemoveById(id)
+func DeleteProvisionWatcher(name string, lc logger.LoggingClient) errors.EdgeX {
+	err := cache.ProvisionWatchers().RemoveByName(name)
 	if err != nil {
-		errMsg := fmt.Sprintf("failed to remove provision watcher with given id %s", id)
+		errMsg := fmt.Sprintf("failed to remove provision watcher %s", name)
 		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, err)
 	}
 
-	lc.Debugf("removed provision watcher with given id %s", id)
+	lc.Debugf("removed provision watcher %s", name)
 	return nil
 }
 

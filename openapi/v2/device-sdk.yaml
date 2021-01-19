@@ -681,16 +681,15 @@ paths:
               $ref: '#/components/schemas/UpdateDeviceRequest'
         required: true
 
-  /callback/device/id/{id}:
+  /callback/device/name/{name}:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'
-      - name: id
+      - name: name
         in: path
         required: true
         schema:
           type: string
-          format: uuid
-        description: "An ID of datatype string, by default a GUID."
+        description: "The unique name of a device"
     delete:
       description: "This call is used by core-metadata to inform the device service that a Device has been deleted"
       responses:
@@ -725,42 +724,6 @@ paths:
   /callback/profile:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'
-    post:
-      description: "This call is used by core-metadata to inform the device service of the creation of a new Device Profile"
-      responses:
-        '200':
-          description: "Callback successful"
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '400':
-          description: Invalid callback request.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewProfileRequest'
-        required: true
     put:
       description: "This call is used by core-metadata to inform the device service that a Device Profile has been updated"
       responses:
@@ -806,47 +769,6 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateProfileRequest'
         required: true
-
-  /callback/profile/id/{id}:
-    parameters:
-      - $ref: '#/components/parameters/correlatedRequestHeader'
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-        description: "An ID of datatype string, by default a GUID."
-    delete:
-      description: "This call is used by core-metadata to inform the device service that a Device Profile has been deleted"
-      responses:
-        '200':
-          description: "Callback successful"
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '404':
-          description: No device profile exists for the ID provided.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
   /callback/watcher:
     parameters:
@@ -925,16 +847,15 @@ paths:
               $ref: '#/components/schemas/UpdateProvisionWatcherRequest'
         required: true
 
-  /callback/watcher/id/{id}:
+  /callback/watcher/name/{name}:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'
-      - name: id
+      - name: name
         in: path
         required: true
         schema:
           type: string
-          format: uuid
-        description: "An ID of datatype string, by default a GUID."
+        description: "The unique name of a provision watcher"
     delete:
       description: "This call is used by core-metadata to inform the device service that a Provision Watcher has been deleted"
       responses:
@@ -1067,152 +988,6 @@ paths:
               $ref: '#/components/headers/correlatedResponseHeader'
         '404':
           description: If no device exists for the name provided or the command is unknown.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '405':
-          description: If the requested command exists but not for PUT, or the resource is marked as read-only.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '423':
-          description: If the device or service is locked (admin state) or disabled (operating state).
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: The device driver is unable to process the request.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SettingRequest'
-        required: true
-
-  /device/{id}/{command}:
-    get:
-      description: Request the device/sensor by its id to return the current (or in some cases new) event/reading values for the command or device resource specified. The device service may have cached the latest event/reading for the sensor(s) or it may immediate request new event/reading values depending on the implementation and the device(s)/sensor(s) capability.
-      parameters:
-        - $ref: '#/components/parameters/correlatedRequestHeader'
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          example: b4081782-a611-4180-848a-cf8235e6351d
-        - in: path
-          name: command
-          required: true
-          schema:
-            type: string
-          example: allValues
-        - in: query
-          name: ds-postevent
-          schema:
-            type: string
-            enum:
-              - yes
-              - no
-            default: no
-          example: yes
-        - in: query
-          name: ds-returnevent
-          schema:
-            type: string
-            enum:
-              - yes
-              - no
-            default: yes
-          example: no
-      responses:
-        '200':
-          description: String as returned by the device/sensor through the device service.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            'application/json':
-              schema:
-                $ref: '#/components/schemas/NewEventResponse'
-        '404':
-          description: If no device exists by the id provided or the command is unknown.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '405':
-          description: If the requested command exists but not for GET, or the resource is marked as write-only.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '423':
-          description: If the device or service is locked (admin state) or disabled (operating state).
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: The device driver is unable to process the request, or too many values were returned.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    put:
-      description: Request the actuator by its id to trigger a action or set a current value for the command or device resource specified.
-      parameters:
-        - $ref: '#/components/parameters/correlatedRequestHeader'
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-          example: b4081782-a611-4180-848a-cf8235e6351d
-        - in: path
-          name: command
-          required: true
-          schema:
-            type: string
-          example: allValues
-      responses:
-        '200':
-          description: The PUT command was successful.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-        '404':
-          description: If no device exists for the ID provided or the command is unknown.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'

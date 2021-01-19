@@ -21,14 +21,14 @@ import (
 
 func (c *V2HttpController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	id := vars[common.IdVar]
+	name := vars[common.NameVar]
 
-	err := application.DeleteDevice(id, c.dic)
+	err := application.DeleteDevice(name, c.dic)
 	if err == nil {
 		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
-		c.sendResponse(writer, request, v2.ApiDeviceCallbackIdRoute, res, http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiDeviceCallbackNameRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, err, v2.ApiDeviceCallbackIdRoute)
+		c.sendEdgexError(writer, request, err, v2.ApiDeviceCallbackNameRoute)
 	}
 }
 
@@ -74,20 +74,7 @@ func (c *V2HttpController) UpdateDevice(writer http.ResponseWriter, request *htt
 	}
 }
 
-func (c *V2HttpController) DeleteProfile(writer http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	id := vars[common.IdVar]
-
-	err := application.DeleteProfile(id, c.lc)
-	if err == nil {
-		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
-		c.sendResponse(writer, request, v2.ApiProfileCallbackIdRoute, res, http.StatusOK)
-	} else {
-		c.sendEdgexError(writer, request, err, v2.ApiProfileCallbackIdRoute)
-	}
-}
-
-func (c *V2HttpController) AddUpdateProfile(writer http.ResponseWriter, request *http.Request) {
+func (c *V2HttpController) UpdateProfile(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var edgexErr errors.EdgeX
@@ -100,13 +87,7 @@ func (c *V2HttpController) AddUpdateProfile(writer http.ResponseWriter, request 
 		return
 	}
 
-	switch request.Method {
-	case http.MethodPost:
-		edgexErr = application.AddProfile(profileRequest, c.lc)
-	case http.MethodPut:
-		edgexErr = application.UpdateProfile(profileRequest, c.lc)
-	}
-
+	edgexErr = application.UpdateProfile(profileRequest, c.lc)
 	if edgexErr == nil {
 		res := commonDTO.NewBaseResponse(profileRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiProfileCallbackRoute, res, http.StatusOK)
@@ -117,14 +98,14 @@ func (c *V2HttpController) AddUpdateProfile(writer http.ResponseWriter, request 
 
 func (c *V2HttpController) DeleteProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	id := vars[common.IdVar]
+	name := vars[common.NameVar]
 
-	err := application.DeleteProvisionWatcher(id, c.lc)
+	err := application.DeleteProvisionWatcher(name, c.lc)
 	if err == nil {
 		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
-		c.sendResponse(writer, request, v2.ApiWatcherCallbackIdRoute, res, http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiWatcherCallbackNameRoute, res, http.StatusOK)
 	} else {
-		c.sendEdgexError(writer, request, err, v2.ApiWatcherCallbackIdRoute)
+		c.sendEdgexError(writer, request, err, v2.ApiWatcherCallbackNameRoute)
 	}
 }
 
