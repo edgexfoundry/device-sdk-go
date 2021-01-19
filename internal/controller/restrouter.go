@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -87,9 +87,11 @@ func (c *RestController) InitV2RestRoutes() {
 
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.AddDevice).Methods(http.MethodPost)
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.UpdateDevice).Methods(http.MethodPut)
-	c.addReservedRoute(contractsV2.ApiDeviceCallbackIdRoute, c.v2HttpController.DeleteDevice).Methods(http.MethodDelete)
-	c.addReservedRoute(contractsV2.ApiProfileCallbackRoute, c.v2HttpController.AddUpdateProfile).Methods(http.MethodPut, http.MethodPost)
-	c.addReservedRoute(contractsV2.ApiProfileCallbackIdRoute, c.v2HttpController.DeleteProfile).Methods(http.MethodDelete)
+	c.addReservedRoute(contractsV2.ApiDeviceCallbackNameRoute, c.v2HttpController.DeleteDevice).Methods(http.MethodDelete)
+	c.addReservedRoute(contractsV2.ApiProfileCallbackRoute, c.v2HttpController.UpdateProfile).Methods(http.MethodPut)
+	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.AddProvisionWatcher).Methods(http.MethodPost)
+	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.UpdateProvisionWatcher).Methods(http.MethodPut)
+	c.addReservedRoute(contractsV2.ApiProvisionWatcherByNameRoute, c.v2HttpController.DeleteProvisionWatcher).Methods(http.MethodDelete)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
