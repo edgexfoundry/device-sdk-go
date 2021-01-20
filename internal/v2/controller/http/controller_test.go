@@ -76,13 +76,13 @@ func TestConfigureStandardRoutes(t *testing.T) {
 	assert.Contains(t, paths, contractsV2.ApiConfigRoute)
 	assert.Contains(t, paths, contractsV2.ApiMetricsRoute)
 	assert.Contains(t, paths, contractsV2.ApiVersionRoute)
-	assert.Contains(t, paths, internal.ApiV2SecretsRoute)
+	assert.Contains(t, paths, internal.ApiV2AddSecretRoute)
 
 	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiPingRoute])
 	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiConfigRoute])
 	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiMetricsRoute])
 	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiVersionRoute])
-	assert.Equal(t, http.MethodPost, paths[internal.ApiV2SecretsRoute])
+	assert.Equal(t, http.MethodPost, paths[internal.ApiV2AddSecretRoute])
 }
 
 func TestPingRequest(t *testing.T) {
@@ -173,7 +173,7 @@ func TestConfigRequest(t *testing.T) {
 	assert.Equal(t, expectedConfig, actualConfig)
 }
 
-func TestSecretsRequest(t *testing.T) {
+func TestAddSecretRequest(t *testing.T) {
 	expectedRequestId := "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc"
 	config := &sdkCommon.ConfigurationStruct{}
 
@@ -186,10 +186,10 @@ func TestSecretsRequest(t *testing.T) {
 	target := NewV2HttpController(nil, lc, config, mockProvider)
 	assert.NotNil(t, target)
 
-	validRequest := common.SecretsRequest{
+	validRequest := common.SecretRequest{
 		BaseRequest: common.BaseRequest{RequestId: expectedRequestId},
 		Path:        "mqtt",
-		Secrets: []common.SecretsKeyValue{
+		SecretData: []common.SecretDataKeyValue{
 			{Key: "username", Value: "username"},
 			{Key: "password", Value: "password"},
 		},
@@ -204,13 +204,13 @@ func TestSecretsRequest(t *testing.T) {
 	badRequestId := validRequest
 	badRequestId.RequestId = "bad requestId"
 	noSecrets := validRequest
-	noSecrets.Secrets = []common.SecretsKeyValue{}
+	noSecrets.SecretData = []common.SecretDataKeyValue{}
 	missingSecretKey := validRequest
-	missingSecretKey.Secrets = []common.SecretsKeyValue{
+	missingSecretKey.SecretData = []common.SecretDataKeyValue{
 		{Key: "", Value: "username"},
 	}
 	missingSecretValue := validRequest
-	missingSecretValue.Secrets = []common.SecretsKeyValue{
+	missingSecretValue.SecretData = []common.SecretDataKeyValue{
 		{Key: "username", Value: ""},
 	}
 	noSecretStore := validRequest
@@ -218,7 +218,7 @@ func TestSecretsRequest(t *testing.T) {
 
 	tests := []struct {
 		Name               string
-		Request            common.SecretsRequest
+		Request            common.SecretRequest
 		ExpectedRequestId  string
 		SecretsPath        string
 		SecretStoreEnabled string
@@ -246,12 +246,12 @@ func TestSecretsRequest(t *testing.T) {
 
 			reader := strings.NewReader(string(jsonData))
 
-			req, err := http.NewRequest(http.MethodPost, internal.ApiV2SecretsRoute, reader)
+			req, err := http.NewRequest(http.MethodPost, internal.ApiV2AddSecretRoute, reader)
 			require.NoError(t, err)
 			req.Header.Set(internal.CorrelationHeaderKey, expectedCorrelationId)
 
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(target.Secrets)
+			handler := http.HandlerFunc(target.AddSecret)
 			handler.ServeHTTP(recorder, req)
 
 			actualResponse := common.BaseResponse{}

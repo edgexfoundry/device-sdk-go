@@ -26,10 +26,10 @@ const (
 	DatabaseName         = "application-service"
 	CorrelationHeaderKey = "X-Correlation-ID"
 
-	ApiTriggerRoute   = clients.ApiBase + "/trigger"
-	ApiV2TriggerRoute = v2.ApiBase + "/trigger"
-	ApiSecretsRoute   = clients.ApiBase + "/secrets"
-	ApiV2SecretsRoute = v2.ApiBase + "/secrets"
+	ApiTriggerRoute     = clients.ApiBase + "/trigger"
+	ApiV2TriggerRoute   = v2.ApiBase + "/trigger"
+	ApiSecretsRoute     = clients.ApiBase + "/secrets"
+	ApiV2AddSecretRoute = v2.ApiBase + "/secret"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build

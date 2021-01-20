@@ -93,33 +93,33 @@ components:
         timestamp:
           description: "Outputs the current server timestamp in Unix Time format"
           type: string
-    SecretsRequest:
+    SecretRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
       description: Defines the secret data to be stored
       type: object
       properties:
         path:
-          description: Specifies the type or location of the secrets to store
+          description: Specifies the type or location of the secret to store
           type: string
-        secrets:
-          description: A list of the key/value pairs of secrets to store
+        secretData:
+          description: A list of the key/value pairs of secret data to store
           type: array
           items:
-            $ref: '#/components/schemas/SecretsKeyValue'
+            $ref: '#/components/schemas/SecretDataKeyValue'
       required:
         - path
         - secrets
-    SecretsKeyValue:
-      description: Defines the key/value pair of the secret
+    SecretDataKeyValue:
+      description: Defines a key/value pair of secret data
       type: object
       properties:
         key: 
-          description: The key to identify the secret
+          description: The key to identify the secret data
           type: string
           example: "appsecret"
         value:
-          description: The value of the secret
+          description: The value of the secret data
           type: string
           example: "appsecret-value"
       required:
@@ -233,17 +233,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /secrets:
+  /secret:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'
     post:
-      summary: Stores secret(s) to the secret client
+      summary: Stores a secret to the service's Secret Store
       requestBody:
         content:
           application/json:
             schema:
               allOf:
-                - $ref: '#/components/schemas/SecretsRequest'
+                - $ref: '#/components/schemas/SecretRequest'
         required: true
       responses:
         '201':

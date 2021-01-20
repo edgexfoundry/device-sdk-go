@@ -66,7 +66,7 @@ func (v2c *V2HttpController) ConfigureStandardRoutes() {
 	v2c.router.HandleFunc(contractsV2.ApiVersionRoute, v2c.Version).Methods(http.MethodGet)
 	v2c.router.HandleFunc(contractsV2.ApiMetricsRoute, v2c.Metrics).Methods(http.MethodGet)
 	v2c.router.HandleFunc(contractsV2.ApiConfigRoute, v2c.Config).Methods(http.MethodGet)
-	v2c.router.HandleFunc(internal.ApiV2SecretsRoute, v2c.Secrets).Methods(http.MethodPost)
+	v2c.router.HandleFunc(internal.ApiV2AddSecretRoute, v2c.AddSecret).Methods(http.MethodPost)
 
 	/// V2 Trigger is not considered a standard route. Trigger route (when configured) is setup by the HTTP Trigger
 	//  in internal/trigger/http/rest.go
@@ -111,29 +111,29 @@ func (v2c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.R
 	v2c.sendResponse(writer, request, contractsV2.ApiMetricsRoute, response, http.StatusOK)
 }
 
-// Secrets handles the request to add App Service exclusive secrets to the Secret Store
+// AddSecret handles the request to add App Service exclusive secret to the Secret Store
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2HttpController) Secrets(writer http.ResponseWriter, request *http.Request) {
+func (v2c *V2HttpController) AddSecret(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = request.Body.Close()
 	}()
 
-	secretRequest := common.SecretsRequest{}
+	secretRequest := common.SecretRequest{}
 	err := json.NewDecoder(request.Body).Decode(&secretRequest)
 	if err != nil {
 		v2c.sendError(writer, request, errors.KindContractInvalid, "JSON decode failed", err, "")
 		return
 	}
 
-	path, secrets := v2c.prepareSecrets(secretRequest)
+	path, secret := v2c.prepareSecret(secretRequest)
 
-	if err := v2c.secretProvider.StoreSecrets(path, secrets); err != nil {
-		v2c.sendError(writer, request, errors.KindServerError, "Storing secrets failed", err, secretRequest.RequestId)
+	if err := v2c.secretProvider.StoreSecrets(path, secret); err != nil {
+		v2c.sendError(writer, request, errors.KindServerError, "Storing secret failed", err, secretRequest.RequestId)
 		return
 	}
 
 	response := common.NewBaseResponse(secretRequest.RequestId, "", http.StatusCreated)
-	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, http.StatusCreated)
+	v2c.sendResponse(writer, request, internal.ApiV2AddSecretRoute, response, http.StatusCreated)
 }
 
 func (v2c *V2HttpController) sendError(
@@ -147,7 +147,7 @@ func (v2c *V2HttpController) sendError(
 	v2c.lc.Error(edgexErr.Error())
 	v2c.lc.Debug(edgexErr.DebugMessages())
 	response := common.NewBaseResponse(requestID, edgexErr.Message(), edgexErr.Code())
-	v2c.sendResponse(writer, request, internal.ApiV2SecretsRoute, response, edgexErr.Code())
+	v2c.sendResponse(writer, request, internal.ApiV2AddSecretRoute, response, edgexErr.Code())
 }
 
 // sendResponse puts together the response packet for the V2 API
@@ -179,9 +179,9 @@ func (v2c *V2HttpController) sendResponse(
 	}
 }
 
-func (v2c *V2HttpController) prepareSecrets(request common.SecretsRequest) (string, map[string]string) {
+func (v2c *V2HttpController) prepareSecret(request common.SecretRequest) (string, map[string]string) {
 	var secretsKV = make(map[string]string)
-	for _, secret := range request.Secrets {
+	for _, secret := range request.SecretData {
 		secretsKV[secret.Key] = secret.Value
 	}
 
