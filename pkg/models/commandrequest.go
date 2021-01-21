@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2019 IOTech Ltd
+// Copyright (C) 2019-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -14,5 +14,5 @@ type CommandRequest struct {
 	// Attributes is a key/value map to represent the attributes of the Device Resource
 	Attributes map[string]string
 	// Type is the data type of the Device Resource
-	Type ValueType
+	Type string
 }

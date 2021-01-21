@@ -18,14 +18,13 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/mock"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-
 	"github.com/stretchr/testify/require"
 )
 
@@ -170,62 +169,62 @@ func TestCreateCommandValueForParam(t *testing.T) {
 		valueType   string
 		op          *contract.ResourceOperation
 		v           string
-		parseCheck  dsModels.ValueType
+		parseCheck  string
 		expectErr   bool
 	}{
-		{"DeviceResourceNotFound", mock.ProfileBool, typeBool, &contract.ResourceOperation{}, "", dsModels.Bool, true},
-		{"BoolTruePass", mock.ProfileBool, typeBool, &operationSetBool, "true", dsModels.Bool, false},
-		{"BoolFalsePass", mock.ProfileBool, typeBool, &operationSetBool, "false", dsModels.Bool, false},
-		{"BoolTrueFail", mock.ProfileBool, typeBool, &operationSetBool, "error", dsModels.Bool, true},
-		{"Int8Pass", mock.ProfileInt, typeInt8, &operationSetInt8, "12", dsModels.Int8, false},
-		{"Int8NegativePass", mock.ProfileInt, typeInt8, &operationSetInt8, "-12", dsModels.Int8, false},
-		{"Int8WordFail", mock.ProfileInt, typeInt8, &operationSetInt8, "hello", dsModels.Int8, true},
-		{"Int8OverflowFail", mock.ProfileInt, typeInt8, &operationSetInt8, "9999999999", dsModels.Int8, true},
-		{"Int16Pass", mock.ProfileInt, typeInt16, &operationSetInt16, "12", dsModels.Int16, false},
-		{"Int16NegativePass", mock.ProfileInt, typeInt16, &operationSetInt16, "-12", dsModels.Int16, false},
-		{"Int16WordFail", mock.ProfileInt, typeInt16, &operationSetInt16, "hello", dsModels.Int16, true},
-		{"Int16OverflowFail", mock.ProfileInt, typeInt16, &operationSetInt16, "9999999999", dsModels.Int16, true},
-		{"Int32Pass", mock.ProfileInt, typeInt32, &operationSetInt32, "12", dsModels.Int32, false},
-		{"Int32NegativePass", mock.ProfileInt, typeInt32, &operationSetInt32, "-12", dsModels.Int32, false},
-		{"Int32WordFail", mock.ProfileInt, typeInt32, &operationSetInt32, "hello", dsModels.Int32, true},
-		{"Int32OverflowFail", mock.ProfileInt, typeInt32, &operationSetInt32, "9999999999", dsModels.Int32, true},
-		{"Int64Pass", mock.ProfileInt, typeInt64, &operationSetInt64, "12", dsModels.Int64, false},
-		{"Int64NegativePass", mock.ProfileInt, typeInt64, &operationSetInt64, "-12", dsModels.Int64, false},
-		{"Int64WordFail", mock.ProfileInt, typeInt64, &operationSetInt64, "hello", dsModels.Int64, true},
-		{"Int64OverflowFail", mock.ProfileInt, typeInt64, &operationSetInt64, "99999999999999999999", dsModels.Int64, true},
-		{"Uint8Pass", mock.ProfileUint, typeUint8, &operationSetUint8, "12", dsModels.Uint8, false},
-		{"Uint8NegativeFail", mock.ProfileUint, typeUint8, &operationSetUint8, "-12", dsModels.Uint8, true},
-		{"Uint8WordFail", mock.ProfileUint, typeUint8, &operationSetUint8, "hello", dsModels.Uint8, true},
-		{"Uint8OverflowFail", mock.ProfileUint, typeUint8, &operationSetUint8, "9999999999", dsModels.Uint8, true},
-		{"Uint16Pass", mock.ProfileUint, typeUint16, &operationSetUint16, "12", dsModels.Uint16, false},
-		{"Uint16NegativeFail", mock.ProfileUint, typeUint16, &operationSetUint16, "-12", dsModels.Uint16, true},
-		{"Uint16WordFail", mock.ProfileUint, typeUint16, &operationSetUint16, "hello", dsModels.Uint16, true},
-		{"Uint16OverflowFail", mock.ProfileUint, typeUint16, &operationSetUint16, "9999999999", dsModels.Uint16, true},
-		{"Uint32Pass", mock.ProfileUint, typeUint32, &operationSetUint32, "12", dsModels.Uint32, false},
-		{"Uint32NegativeFail", mock.ProfileUint, typeUint32, &operationSetUint32, "-12", dsModels.Uint32, true},
-		{"Uint32WordFail", mock.ProfileUint, typeUint32, &operationSetUint32, "hello", dsModels.Uint32, true},
-		{"Uint32OverflowFail", mock.ProfileUint, typeUint32, &operationSetUint32, "9999999999", dsModels.Uint32, true},
-		{"Uint64Pass", mock.ProfileUint, typeUint64, &operationSetUint64, "12", dsModels.Uint64, false},
-		{"Uint64NegativeFail", mock.ProfileUint, typeUint64, &operationSetUint64, "-12", dsModels.Uint64, true},
-		{"Uint64WordFail", mock.ProfileUint, typeUint64, &operationSetUint64, "hello", dsModels.Uint64, true},
-		{"Uint64OverflowFail", mock.ProfileUint, typeUint64, &operationSetUint64, "99999999999999999999", dsModels.Uint64, true},
-		{"Float32Pass", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "12.000", dsModels.Float32, false},
-		{"Float32PassWithBase64String", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "QUAAAA==", dsModels.Float32, false},
-		{"Float32PassWithENotation", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "0.123123e-05", dsModels.Float32, false},
-		{"Float32PassNegativePass", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "-12.000", dsModels.Float32, false},
-		{"Float32PassNegativePassWithBase64String", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "wUAAAA==", dsModels.Float32, false},
-		{"Float32PassNegativePassWithENotation", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "-0.123123e-05", dsModels.Float32, false},
-		{"Float32PassWordFail", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "hello", dsModels.Float32, true},
-		{"Float32PassOverflowFail", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "440282346638528859811704183484516925440.0000000000000000", dsModels.Float32, true},
-		{"Float32PassOverflowFailWithBase64String", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "f+////////8=", dsModels.Float32, true},
-		{"Float32PassOverflowFailWithENotation", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "12.000e+38", dsModels.Float32, true},
-		{"Float64Pass", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "12.000", dsModels.Float64, false},
-		{"Float64PassWithBase64String", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "QCgAAAAAAAA=", dsModels.Float64, false},
-		{"Float64PassWithENotation", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "0.12345e-16", dsModels.Float64, false},
-		{"Float64PassNegativePass", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "-12.000", dsModels.Float64, false},
-		{"Float64PassNegativePassWithBase64String", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "wCgAAAAAAAA=", dsModels.Float64, false},
-		{"Float64PassNegativePassWithENotation", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "-0.12345e-16", dsModels.Float64, false},
-		{"Float64PassWordFail", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "hello", dsModels.Float64, true},
+		{"DeviceResourceNotFound", mock.ProfileBool, typeBool, &contract.ResourceOperation{}, "", v2.ValueTypeBool, true},
+		{"BoolTruePass", mock.ProfileBool, typeBool, &operationSetBool, "true", v2.ValueTypeBool, false},
+		{"BoolFalsePass", mock.ProfileBool, typeBool, &operationSetBool, "false", v2.ValueTypeBool, false},
+		{"BoolTrueFail", mock.ProfileBool, typeBool, &operationSetBool, "error", v2.ValueTypeBool, true},
+		{"Int8Pass", mock.ProfileInt, typeInt8, &operationSetInt8, "12", v2.ValueTypeInt8, false},
+		{"Int8NegativePass", mock.ProfileInt, typeInt8, &operationSetInt8, "-12", v2.ValueTypeInt8, false},
+		{"Int8WordFail", mock.ProfileInt, typeInt8, &operationSetInt8, "hello", v2.ValueTypeInt8, true},
+		{"Int8OverflowFail", mock.ProfileInt, typeInt8, &operationSetInt8, "9999999999", v2.ValueTypeInt8, true},
+		{"Int16Pass", mock.ProfileInt, typeInt16, &operationSetInt16, "12", v2.ValueTypeInt16, false},
+		{"Int16NegativePass", mock.ProfileInt, typeInt16, &operationSetInt16, "-12", v2.ValueTypeInt16, false},
+		{"Int16WordFail", mock.ProfileInt, typeInt16, &operationSetInt16, "hello", v2.ValueTypeInt16, true},
+		{"Int16OverflowFail", mock.ProfileInt, typeInt16, &operationSetInt16, "9999999999", v2.ValueTypeInt16, true},
+		{"Int32Pass", mock.ProfileInt, typeInt32, &operationSetInt32, "12", v2.ValueTypeInt32, false},
+		{"Int32NegativePass", mock.ProfileInt, typeInt32, &operationSetInt32, "-12", v2.ValueTypeInt32, false},
+		{"Int32WordFail", mock.ProfileInt, typeInt32, &operationSetInt32, "hello", v2.ValueTypeInt32, true},
+		{"Int32OverflowFail", mock.ProfileInt, typeInt32, &operationSetInt32, "9999999999", v2.ValueTypeInt32, true},
+		{"Int64Pass", mock.ProfileInt, typeInt64, &operationSetInt64, "12", v2.ValueTypeInt64, false},
+		{"Int64NegativePass", mock.ProfileInt, typeInt64, &operationSetInt64, "-12", v2.ValueTypeInt64, false},
+		{"Int64WordFail", mock.ProfileInt, typeInt64, &operationSetInt64, "hello", v2.ValueTypeInt64, true},
+		{"Int64OverflowFail", mock.ProfileInt, typeInt64, &operationSetInt64, "99999999999999999999", v2.ValueTypeInt64, true},
+		{"Uint8Pass", mock.ProfileUint, typeUint8, &operationSetUint8, "12", v2.ValueTypeUint8, false},
+		{"Uint8NegativeFail", mock.ProfileUint, typeUint8, &operationSetUint8, "-12", v2.ValueTypeUint8, true},
+		{"Uint8WordFail", mock.ProfileUint, typeUint8, &operationSetUint8, "hello", v2.ValueTypeUint8, true},
+		{"Uint8OverflowFail", mock.ProfileUint, typeUint8, &operationSetUint8, "9999999999", v2.ValueTypeUint8, true},
+		{"Uint16Pass", mock.ProfileUint, typeUint16, &operationSetUint16, "12", v2.ValueTypeUint16, false},
+		{"Uint16NegativeFail", mock.ProfileUint, typeUint16, &operationSetUint16, "-12", v2.ValueTypeUint16, true},
+		{"Uint16WordFail", mock.ProfileUint, typeUint16, &operationSetUint16, "hello", v2.ValueTypeUint16, true},
+		{"Uint16OverflowFail", mock.ProfileUint, typeUint16, &operationSetUint16, "9999999999", v2.ValueTypeUint16, true},
+		{"Uint32Pass", mock.ProfileUint, typeUint32, &operationSetUint32, "12", v2.ValueTypeUint32, false},
+		{"Uint32NegativeFail", mock.ProfileUint, typeUint32, &operationSetUint32, "-12", v2.ValueTypeUint32, true},
+		{"Uint32WordFail", mock.ProfileUint, typeUint32, &operationSetUint32, "hello", v2.ValueTypeUint32, true},
+		{"Uint32OverflowFail", mock.ProfileUint, typeUint32, &operationSetUint32, "9999999999", v2.ValueTypeUint32, true},
+		{"Uint64Pass", mock.ProfileUint, typeUint64, &operationSetUint64, "12", v2.ValueTypeUint64, false},
+		{"Uint64NegativeFail", mock.ProfileUint, typeUint64, &operationSetUint64, "-12", v2.ValueTypeUint64, true},
+		{"Uint64WordFail", mock.ProfileUint, typeUint64, &operationSetUint64, "hello", v2.ValueTypeUint64, true},
+		{"Uint64OverflowFail", mock.ProfileUint, typeUint64, &operationSetUint64, "99999999999999999999", v2.ValueTypeUint64, true},
+		{"Float32Pass", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "12.000", v2.ValueTypeFloat32, false},
+		{"Float32PassWithBase64String", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "QUAAAA==", v2.ValueTypeFloat32, false},
+		{"Float32PassWithENotation", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "0.123123e-05", v2.ValueTypeFloat32, false},
+		{"Float32PassNegativePass", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "-12.000", v2.ValueTypeFloat32, false},
+		{"Float32PassNegativePassWithBase64String", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "wUAAAA==", v2.ValueTypeFloat32, false},
+		{"Float32PassNegativePassWithENotation", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "-0.123123e-05", v2.ValueTypeFloat32, false},
+		{"Float32PassWordFail", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "hello", v2.ValueTypeFloat32, true},
+		{"Float32PassOverflowFail", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "440282346638528859811704183484516925440.0000000000000000", v2.ValueTypeFloat32, true},
+		{"Float32PassOverflowFailWithBase64String", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "f+////////8=", v2.ValueTypeFloat32, true},
+		{"Float32PassOverflowFailWithENotation", mock.ProfileFloat, typeFloat32, &operationSetFloat32, "12.000e+38", v2.ValueTypeFloat32, true},
+		{"Float64Pass", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "12.000", v2.ValueTypeFloat64, false},
+		{"Float64PassWithBase64String", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "QCgAAAAAAAA=", v2.ValueTypeFloat64, false},
+		{"Float64PassWithENotation", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "0.12345e-16", v2.ValueTypeFloat64, false},
+		{"Float64PassNegativePass", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "-12.000", v2.ValueTypeFloat64, false},
+		{"Float64PassNegativePassWithBase64String", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "wCgAAAAAAAA=", v2.ValueTypeFloat64, false},
+		{"Float64PassNegativePassWithENotation", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "-0.12345e-16", v2.ValueTypeFloat64, false},
+		{"Float64PassWordFail", mock.ProfileFloat, typeFloat64, &operationSetFloat64, "hello", v2.ValueTypeFloat64, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
@@ -239,32 +238,32 @@ func TestCreateCommandValueForParam(t *testing.T) {
 				return
 			}
 			if cv != nil {
-				var check dsModels.ValueType
+				var check string
 				switch strings.ToLower(tt.valueType) {
 				case "bool":
-					check = dsModels.Bool
+					check = v2.ValueTypeBool
 				case "string":
-					check = dsModels.String
+					check = v2.ValueTypeString
 				case "uint8":
-					check = dsModels.Uint8
+					check = v2.ValueTypeUint8
 				case "uint16":
-					check = dsModels.Uint16
+					check = v2.ValueTypeUint16
 				case "uint32":
-					check = dsModels.Uint32
+					check = v2.ValueTypeUint32
 				case "uint64":
-					check = dsModels.Uint64
+					check = v2.ValueTypeUint64
 				case "int8":
-					check = dsModels.Int8
+					check = v2.ValueTypeInt8
 				case "int16":
-					check = dsModels.Int16
+					check = v2.ValueTypeInt16
 				case "int32":
-					check = dsModels.Int32
+					check = v2.ValueTypeInt32
 				case "int64":
-					check = dsModels.Int64
+					check = v2.ValueTypeInt64
 				case "float32":
-					check = dsModels.Float32
+					check = v2.ValueTypeFloat32
 				case "float64":
-					check = dsModels.Float64
+					check = v2.ValueTypeFloat64
 				}
 				if cv.Type != check {
 					t.Errorf("%s incorrect parsing. valueType: %s result: %v", tt.testName, tt.valueType, cv.Type)

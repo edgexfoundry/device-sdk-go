@@ -154,7 +154,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res responses.EventResponse, e 
 		}
 		req.Attributes[sdkCommon.URLRawQuery] = c.params
 	}
-	req.Type = dsModels.ParseValueType(c.deviceResource.Properties.Value.Type)
+	req.Type = c.deviceResource.Properties.Value.Type
 	reqs = append(reqs, req)
 
 	// execute protocol-specific read operation
@@ -218,7 +218,7 @@ func (c *CommandProcessor) ReadCommand() (res responses.EventResponse, e edgexEr
 			}
 			reqs[i].Attributes[sdkCommon.URLRawQuery] = c.params
 		}
-		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
+		reqs[i].Type = dr.Properties.Value.Type
 	}
 
 	// execute protocol-specific read operation
@@ -455,7 +455,7 @@ func (c *CommandProcessor) commandValuesToEvent(cvs []*dsModels.CommandValue, cm
 		reading := commandValueToReading(cv, c.device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
 		readings = append(readings, reading)
 
-		if cv.Type == dsModels.Binary {
+		if cv.Type == v2.ValueTypeBinary {
 			lc.Debug(fmt.Sprintf("device: %s DeviceResource: %v reading: binary value", c.device.Name, cv.DeviceResourceName), sdkCommon.CorrelationHeader, c.correlationID)
 		} else {
 			lc.Debug(fmt.Sprintf("device: %s DeviceResource: %v reading: %v", c.device.Name, cv.DeviceResourceName, reading), sdkCommon.CorrelationHeader, c.correlationID)
@@ -718,8 +718,8 @@ func commandValueToReading(cv *dsModels.CommandValue, deviceName string, mediaTy
 		encoding = dsModels.DefaultFloatEncoding
 	}
 
-	reading := dtos.BaseReading{ResourceName: cv.DeviceResourceName, DeviceName: deviceName, ValueType: cv.ValueTypeToString()}
-	if cv.Type == dsModels.Binary {
+	reading := dtos.BaseReading{ResourceName: cv.DeviceResourceName, DeviceName: deviceName, ValueType: cv.Type}
+	if cv.Type == v2.ValueTypeBinary {
 		reading.BinaryValue = cv.BinValue
 		reading.MediaType = mediaType
 	} else {

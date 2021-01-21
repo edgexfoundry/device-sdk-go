@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -18,13 +18,14 @@ import (
 	"time"
 
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/fxamacker/cbor/v2"
 )
 
 // Test NewCommandValue function
 func TestNewCommandValue(t *testing.T) {
 	// Test Bool
-	cv, err := NewCommandValue("resource", 0, true, Bool)
+	cv, err := NewCommandValue("resource", 0, true, v2.ValueTypeBool)
 	test, err2 := NewBoolValue("resource", 0, true)
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -37,7 +38,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test int8
-	cv, err = NewCommandValue("resource", 0, int8(5), Int8)
+	cv, err = NewCommandValue("resource", 0, int8(5), v2.ValueTypeInt8)
 	test, err2 = NewInt8Value("resource", 0, int8(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -50,7 +51,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test int16
-	cv, err = NewCommandValue("resource", 0, int16(5), Int16)
+	cv, err = NewCommandValue("resource", 0, int16(5), v2.ValueTypeInt16)
 	test, err2 = NewInt16Value("resource", 0, int16(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -63,7 +64,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test int32
-	cv, err = NewCommandValue("resource", 0, int32(5), Int32)
+	cv, err = NewCommandValue("resource", 0, int32(5), v2.ValueTypeInt32)
 	test, err2 = NewInt32Value("resource", 0, int32(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -76,7 +77,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test int64
-	cv, err = NewCommandValue("resource", 0, int64(5), Int64)
+	cv, err = NewCommandValue("resource", 0, int64(5), v2.ValueTypeInt64)
 	test, err2 = NewInt64Value("resource", 0, int64(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -89,7 +90,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test uint8
-	cv, err = NewCommandValue("resource", 0, uint8(5), Uint8)
+	cv, err = NewCommandValue("resource", 0, uint8(5), v2.ValueTypeUint8)
 	test, err2 = NewUint8Value("resource", 0, uint8(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -102,7 +103,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test uint16
-	cv, err = NewCommandValue("resource", 0, uint16(5), Uint16)
+	cv, err = NewCommandValue("resource", 0, uint16(5), v2.ValueTypeUint16)
 	test, err2 = NewUint16Value("resource", 0, uint16(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -115,7 +116,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test uint32
-	cv, err = NewCommandValue("resource", 0, uint32(5), Uint32)
+	cv, err = NewCommandValue("resource", 0, uint32(5), v2.ValueTypeUint32)
 	test, err2 = NewUint32Value("resource", 0, uint32(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -128,7 +129,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test uint64
-	cv, err = NewCommandValue("resource", 0, uint64(5), Uint64)
+	cv, err = NewCommandValue("resource", 0, uint64(5), v2.ValueTypeUint64)
 	test, err2 = NewUint64Value("resource", 0, uint64(5))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -141,7 +142,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test float32
-	cv, err = NewCommandValue("resource", 0, float32(5.8), Float32)
+	cv, err = NewCommandValue("resource", 0, float32(5.8), v2.ValueTypeFloat32)
 	test, err2 = NewFloat32Value("resource", 0, float32(5.8))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -154,7 +155,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test float64
-	cv, err = NewCommandValue("resource", 0, float64(5.8), Float64)
+	cv, err = NewCommandValue("resource", 0, float64(5.8), v2.ValueTypeFloat64)
 	test, err2 = NewFloat64Value("resource", 0, float64(5.8))
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -167,7 +168,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test string
-	cv, err = NewCommandValue("resource", 0, "test value", String)
+	cv, err = NewCommandValue("resource", 0, "test value", v2.ValueTypeString)
 	test = NewStringValue("resource", 0, "test value")
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -180,7 +181,7 @@ func TestNewCommandValue(t *testing.T) {
 	}
 
 	// Test binary
-	cv, err = NewCommandValue("resource", 0, []byte{1, 2, 3, 5, 8, 13}, Binary)
+	cv, err = NewCommandValue("resource", 0, []byte{1, 2, 3, 5, 8, 13}, v2.ValueTypeBinary)
 	test, err2 = NewBinaryValue("resource", 0, []byte{1, 2, 3, 5, 8, 13})
 	if err != nil || err2 != nil {
 		t.Errorf("Error creating command value")
@@ -198,7 +199,7 @@ func TestNewCommandValue(t *testing.T) {
 func TestNewBoolValue(t *testing.T) {
 	var value bool
 	cv, _ := NewBoolValue("resource", 0, value)
-	if cv.Type != Bool {
+	if cv.Type != v2.ValueTypeBool {
 		t.Errorf("NewBoolValue: invalid Type: %v", cv.Type)
 	}
 	if value == true {
@@ -217,7 +218,7 @@ func TestNewBoolValue(t *testing.T) {
 
 	value = true
 	cv, _ = NewBoolValue("resource", 0, value)
-	if cv.Type != Bool {
+	if cv.Type != v2.ValueTypeBool {
 		t.Errorf("NewBoolValue: invalid Type: %v #2", cv.Type)
 	}
 	if value == false {
@@ -239,7 +240,7 @@ func TestNewBoolValue(t *testing.T) {
 func TestNewBoolArrayValue(t *testing.T) {
 	var value = make([]bool, 1)
 	cv, _ := NewBoolArrayValue("resource", 0, value)
-	if cv.Type != BoolArray {
+	if cv.Type != v2.ValueTypeBoolArray {
 		t.Errorf("NewBoolArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[false]" {
@@ -258,7 +259,7 @@ func TestNewBoolArrayValue(t *testing.T) {
 func TestNewStringValue(t *testing.T) {
 	var value string
 	cv := NewStringValue("resource", 0, value)
-	if cv.Type != String {
+	if cv.Type != v2.ValueTypeString {
 		t.Errorf("NewStringValue: invalid Type: %v", cv.Type)
 	}
 	v, err := cv.StringValue()
@@ -271,7 +272,7 @@ func TestNewStringValue(t *testing.T) {
 
 	value = "this is a real string"
 	cv = NewStringValue("resource", 0, value)
-	if cv.Type != String {
+	if cv.Type != v2.ValueTypeString {
 		t.Errorf("NewStringValue: invalid Type: %v #2", cv.Type)
 	}
 	if value != cv.stringValue {
@@ -293,7 +294,7 @@ func TestNewStringValue(t *testing.T) {
 func TestNewUint8Value(t *testing.T) {
 	var value uint8
 	cv, _ := NewUint8Value("resource", 0, value)
-	if cv.Type != Uint8 {
+	if cv.Type != v2.ValueTypeUint8 {
 		t.Errorf("NewUint8Value: invalid Type: %v", cv.Type)
 	}
 	var res uint8
@@ -312,7 +313,7 @@ func TestNewUint8Value(t *testing.T) {
 
 	value = 42
 	cv, _ = NewUint8Value("resource", 0, value)
-	if cv.Type != Uint8 {
+	if cv.Type != v2.ValueTypeUint8 {
 		t.Errorf("NewUint8Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -337,7 +338,7 @@ func TestNewUint8Value(t *testing.T) {
 func TestNewUint8ArrayValue(t *testing.T) {
 	var value = make([]uint8, 1)
 	cv, _ := NewUint8ArrayValue("resource", 0, value)
-	if cv.Type != Uint8Array {
+	if cv.Type != v2.ValueTypeUint8Array {
 		t.Errorf("NewUint8ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -356,7 +357,7 @@ func TestNewUint8ArrayValue(t *testing.T) {
 func TestNewUint16Value(t *testing.T) {
 	var value uint16
 	cv, _ := NewUint16Value("resource", 0, value)
-	if cv.Type != Uint16 {
+	if cv.Type != v2.ValueTypeUint16 {
 		t.Errorf("NewUint16Value: invalid Type: %v", cv.Type)
 	}
 	var res uint16
@@ -375,7 +376,7 @@ func TestNewUint16Value(t *testing.T) {
 
 	value = 65535
 	cv, _ = NewUint16Value("resource", 0, value)
-	if cv.Type != Uint16 {
+	if cv.Type != v2.ValueTypeUint16 {
 		t.Errorf("NewUint16Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -400,7 +401,7 @@ func TestNewUint16Value(t *testing.T) {
 func TestNewUint16ArrayValue(t *testing.T) {
 	var value = make([]uint16, 1)
 	cv, _ := NewUint16ArrayValue("resource", 0, value)
-	if cv.Type != Uint16Array {
+	if cv.Type != v2.ValueTypeUint16Array {
 		t.Errorf("NewUint16ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -419,7 +420,7 @@ func TestNewUint16ArrayValue(t *testing.T) {
 func TestNewUint32Value(t *testing.T) {
 	var value uint32
 	cv, _ := NewUint32Value("resource", 0, value)
-	if cv.Type != Uint32 {
+	if cv.Type != v2.ValueTypeUint32 {
 		t.Errorf("NewUint32Value: invalid Type: %v", cv.Type)
 	}
 	var res uint32
@@ -438,7 +439,7 @@ func TestNewUint32Value(t *testing.T) {
 
 	value = 4294967295
 	cv, _ = NewUint32Value("resource", 0, value)
-	if cv.Type != Uint32 {
+	if cv.Type != v2.ValueTypeUint32 {
 		t.Errorf("NewUint32Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -464,7 +465,7 @@ func TestNewUint32Value(t *testing.T) {
 func TestNewUint32ArrayValue(t *testing.T) {
 	var value = make([]uint32, 1)
 	cv, _ := NewUint32ArrayValue("resource", 0, value)
-	if cv.Type != Uint32Array {
+	if cv.Type != v2.ValueTypeUint32Array {
 		t.Errorf("NewUint32ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -484,7 +485,7 @@ func TestNewUint64Value(t *testing.T) {
 	var value uint64
 	var origin int64 = 42
 	cv, _ := NewUint64Value("resource", origin, value)
-	if cv.Type != Uint64 {
+	if cv.Type != v2.ValueTypeUint64 {
 		t.Errorf("NewUint64Value: invalid Type: %v", cv.Type)
 	}
 	if cv.Origin != origin {
@@ -506,7 +507,7 @@ func TestNewUint64Value(t *testing.T) {
 
 	value = 18446744073709551615
 	cv, _ = NewUint64Value("resource", 0, value)
-	if cv.Type != Uint64 {
+	if cv.Type != v2.ValueTypeUint64 {
 		t.Errorf("NewUint64Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -531,7 +532,7 @@ func TestNewUint64Value(t *testing.T) {
 func TestNewUint64ArrayValue(t *testing.T) {
 	var value = make([]uint64, 1)
 	cv, _ := NewUint64ArrayValue("resource", 0, value)
-	if cv.Type != Uint64Array {
+	if cv.Type != v2.ValueTypeUint64Array {
 		t.Errorf("NewUint64ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -550,7 +551,7 @@ func TestNewUint64ArrayValue(t *testing.T) {
 func TestNewInt8Value(t *testing.T) {
 	var value int8 = -128
 	cv, _ := NewInt8Value("resource", 0, value)
-	if cv.Type != Int8 {
+	if cv.Type != v2.ValueTypeInt8 {
 		t.Errorf("NewInt8Value: invalid Type: %v", cv.Type)
 	}
 	var res int8
@@ -573,7 +574,7 @@ func TestNewInt8Value(t *testing.T) {
 
 	value = 127
 	cv, _ = NewInt8Value("resource", 0, value)
-	if cv.Type != Int8 {
+	if cv.Type != v2.ValueTypeInt8 {
 		t.Errorf("NewInt8Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -598,7 +599,7 @@ func TestNewInt8Value(t *testing.T) {
 func TestNewInt8ArrayValue(t *testing.T) {
 	var value = make([]int8, 1)
 	cv, _ := NewInt8ArrayValue("resource", 0, value)
-	if cv.Type != Int8Array {
+	if cv.Type != v2.ValueTypeInt8Array {
 		t.Errorf("NewInt8ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -617,7 +618,7 @@ func TestNewInt8ArrayValue(t *testing.T) {
 func TestNewInt16Value(t *testing.T) {
 	var value int16 = -32768
 	cv, _ := NewInt16Value("resource", 0, value)
-	if cv.Type != Int16 {
+	if cv.Type != v2.ValueTypeInt16 {
 		t.Errorf("NewInt16Value: invalid Type: %v", cv.Type)
 	}
 	var res int16
@@ -639,7 +640,7 @@ func TestNewInt16Value(t *testing.T) {
 
 	value = 32767
 	cv, _ = NewInt16Value("resource", 0, value)
-	if cv.Type != Int16 {
+	if cv.Type != v2.ValueTypeInt16 {
 		t.Errorf("NewInt16Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -664,7 +665,7 @@ func TestNewInt16Value(t *testing.T) {
 func TestNewInt16ArrayValue(t *testing.T) {
 	var value = make([]int16, 1)
 	cv, _ := NewInt16ArrayValue("resource", 0, value)
-	if cv.Type != Int16Array {
+	if cv.Type != v2.ValueTypeInt16Array {
 		t.Errorf("NewInt16ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -683,7 +684,7 @@ func TestNewInt16ArrayValue(t *testing.T) {
 func TestNewInt32Value(t *testing.T) {
 	var value int32 = -2147483648
 	cv, _ := NewInt32Value("resource", 0, value)
-	if cv.Type != Int32 {
+	if cv.Type != v2.ValueTypeInt32 {
 		t.Errorf("NewInt32Value: invalid Type: %v", cv.Type)
 	}
 	var res int32
@@ -705,7 +706,7 @@ func TestNewInt32Value(t *testing.T) {
 
 	value = 2147483647
 	cv, _ = NewInt32Value("resource", 0, value)
-	if cv.Type != Int32 {
+	if cv.Type != v2.ValueTypeInt32 {
 		t.Errorf("NewInt32Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -730,7 +731,7 @@ func TestNewInt32Value(t *testing.T) {
 func TestNewInt32ArrayValue(t *testing.T) {
 	var value = make([]int32, 1)
 	cv, _ := NewInt32ArrayValue("resource", 0, value)
-	if cv.Type != Int32Array {
+	if cv.Type != v2.ValueTypeInt32Array {
 		t.Errorf("NewInt32ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -750,7 +751,7 @@ func TestNewInt64Value(t *testing.T) {
 	var value int64 = -9223372036854775808
 	var origin int64 = 42
 	cv, _ := NewInt64Value("resource", origin, value)
-	if cv.Type != Int64 {
+	if cv.Type != v2.ValueTypeInt64 {
 		t.Errorf("NewInt64Value: invalid Type: %v", cv.Type)
 	}
 	if cv.Origin != origin {
@@ -775,7 +776,7 @@ func TestNewInt64Value(t *testing.T) {
 
 	value = 9223372036854775807
 	cv, _ = NewInt64Value("resource", 0, value)
-	if cv.Type != Int64 {
+	if cv.Type != v2.ValueTypeInt64 {
 		t.Errorf("NewInt64Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -800,7 +801,7 @@ func TestNewInt64Value(t *testing.T) {
 func TestNewInt64ArrayValue(t *testing.T) {
 	var value = make([]int64, 1)
 	cv, _ := NewInt64ArrayValue("resource", 0, value)
-	if cv.Type != Int64Array {
+	if cv.Type != v2.ValueTypeInt64Array {
 		t.Errorf("NewInt64ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -820,7 +821,7 @@ func TestNewFloat32Value(t *testing.T) {
 	var value float32 = math.SmallestNonzeroFloat32
 	var origin int64 = time.Now().UnixNano()
 	cv, _ := NewFloat32Value("resource", origin, value)
-	if cv.Type != Float32 {
+	if cv.Type != v2.ValueTypeFloat32 {
 		t.Errorf("NewFloat32Value: invalid Type: %v", cv.Type)
 	}
 	if cv.Origin != origin {
@@ -845,7 +846,7 @@ func TestNewFloat32Value(t *testing.T) {
 
 	value = math.MaxFloat32
 	cv, _ = NewFloat32Value("resource", 0, value)
-	if cv.Type != Float32 {
+	if cv.Type != v2.ValueTypeFloat32 {
 		t.Errorf("NewFloat32Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -870,7 +871,7 @@ func TestNewFloat32Value(t *testing.T) {
 func TestNewFloat32ArrayValue(t *testing.T) {
 	var value = make([]float32, 1)
 	cv, _ := NewFloat32ArrayValue("resource", 0, value)
-	if cv.Type != Float32Array {
+	if cv.Type != v2.ValueTypeFloat32Array {
 		t.Errorf("NewFloat32ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -890,7 +891,7 @@ func TestNewFloat64Value(t *testing.T) {
 	var value float64 = math.SmallestNonzeroFloat64
 	var origin int64 = time.Now().UnixNano()
 	cv, _ := NewFloat64Value("resource", origin, value)
-	if cv.Type != Float64 {
+	if cv.Type != v2.ValueTypeFloat64 {
 		t.Errorf("NewFloat64Value: invalid Type: %v", cv.Type)
 	}
 	if cv.Origin != origin {
@@ -915,7 +916,7 @@ func TestNewFloat64Value(t *testing.T) {
 
 	value = math.MaxFloat64
 	cv, _ = NewFloat64Value("resource", 0, value)
-	if cv.Type != Float64 {
+	if cv.Type != v2.ValueTypeFloat64 {
 		t.Errorf("NewFloat64Value: invalid Type: %v #3", cv.Type)
 	}
 	buf = bytes.NewReader(cv.NumericValue)
@@ -940,7 +941,7 @@ func TestNewFloat64Value(t *testing.T) {
 func TestNewFloat64ArrayValue(t *testing.T) {
 	var value = make([]float64, 1)
 	cv, _ := NewFloat64ArrayValue("resource", 0, value)
-	if cv.Type != Float64Array {
+	if cv.Type != v2.ValueTypeFloat64Array {
 		t.Errorf("NewFloat64ArrayValue: invalid Type: %v", cv.Type)
 	}
 	if cv.ValueToString() != "[0]" {
@@ -994,7 +995,7 @@ func TestNewBinaryValue(t *testing.T) {
 		t.Errorf("NewBinaryValue: Error invoking NewBinaryValue [%v]", errAssign)
 	}
 	// Confirm CommandValue particulars
-	if cv.Type != Binary {
+	if cv.Type != v2.ValueTypeBinary {
 		t.Errorf("Expected Binary type! invalid Type: %v", cv.Type)
 	}
 	if cv.Origin != origin {

@@ -30,6 +30,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 )
 
 // Note, every HTTP request to ServeHTTP is made in a separate goroutine, which
@@ -146,7 +147,7 @@ func execReadDeviceResource(
 		m := common.FilterQueryParams(queryParams, lc)
 		req.Attributes[common.URLRawQuery] = m.Encode()
 	}
-	req.Type = dsModels.ParseValueType(dr.Properties.Value.Type)
+	req.Type = dr.Properties.Value.Type
 	reqs = append(reqs, req)
 
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
@@ -221,7 +222,7 @@ func cvsToEvent(
 		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
 		readings = append(readings, *reading)
 
-		if cv.Type == dsModels.Binary {
+		if cv.Type == v2.ValueTypeBinary {
 			lc.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: binary value", device.Name, cv.DeviceResourceName))
 		} else {
 			lc.Debug(fmt.Sprintf("Handler - execReadCmd: device: %s DeviceResource: %v reading: %v", device.Name, cv.DeviceResourceName, reading))
@@ -296,7 +297,7 @@ func execReadCmd(
 			m := common.FilterQueryParams(queryParams, lc)
 			reqs[i].Attributes[common.URLRawQuery] = m.Encode()
 		}
-		reqs[i].Type = dsModels.ParseValueType(dr.Properties.Value.Type)
+		reqs[i].Type = dr.Properties.Value.Type
 	}
 
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)

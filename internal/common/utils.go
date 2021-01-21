@@ -22,6 +22,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
 	"github.com/google/uuid"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
@@ -48,11 +49,11 @@ func CommandValueToReading(cv *dsModels.CommandValue, devName string, mediaType 
 		encoding = dsModels.DefaultFloatEncoding
 	}
 
-	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName, ValueType: cv.ValueTypeToString()}
-	if cv.Type == dsModels.Binary {
+	reading := &contract.Reading{Name: cv.DeviceResourceName, Device: devName, ValueType: cv.Type}
+	if cv.Type == v2.ValueTypeBool {
 		reading.BinaryValue = cv.BinValue
 		reading.MediaType = mediaType
-	} else if cv.Type == dsModels.Float32 || cv.Type == dsModels.Float64 {
+	} else if cv.Type == v2.ValueTypeFloat32 || cv.Type == v2.ValueTypeFloat64 {
 		reading.Value = cv.ValueToString(encoding)
 		reading.FloatEncoding = encoding
 	} else {
