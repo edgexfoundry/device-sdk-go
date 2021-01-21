@@ -19,7 +19,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/redis"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 )
 
 func NewStoreClient(config db.DatabaseInfo, credentials bootstrapConfig.Credentials) (interfaces.StoreClient, error) {

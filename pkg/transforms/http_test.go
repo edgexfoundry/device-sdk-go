@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"

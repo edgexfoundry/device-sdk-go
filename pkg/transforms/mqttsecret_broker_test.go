@@ -26,7 +26,7 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 )
 
 func TestMQTTSendWithData(t *testing.T) {

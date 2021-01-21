@@ -21,11 +21,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	localURL "github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	localURL "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

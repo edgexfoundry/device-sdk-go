@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 // Conversion houses various built in conversion transforms (XML, JSON, CSV)

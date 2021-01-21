@@ -222,7 +222,7 @@
           "x-go-name": "User"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/go-mod-core-contracts/models"
+      "x-go-package": "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
     },
     "BindingInfo": {
       "description": "BindingInfo contains Metadata associated with each binding",
@@ -385,7 +385,7 @@
           "x-go-name": "Readings"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/go-mod-core-contracts/models"
+      "x-go-package": "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
     },
     "HostInfo": {
       "description": "\u003cProtocol\u003e://\u003cHost\u003e:\u003cPort\u003e",
@@ -527,7 +527,7 @@
           "x-go-name": "Value"
         }
       },
-      "x-go-package": "github.com/edgexfoundry/go-mod-core-contracts/models"
+      "x-go-package": "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
     },
     "RegistryInfo": {
       "type": "object",

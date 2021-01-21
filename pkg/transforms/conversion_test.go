@@ -20,16 +20,16 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/urlclient/local"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 )

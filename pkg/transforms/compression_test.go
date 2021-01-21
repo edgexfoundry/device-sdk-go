@@ -25,7 +25,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"

@@ -23,8 +23,8 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
 

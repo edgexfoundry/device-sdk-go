@@ -19,9 +19,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
 )

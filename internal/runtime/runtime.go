@@ -29,9 +29,9 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	dbInterfaces "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/fxamacker/cbor/v2"
 )

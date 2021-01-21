@@ -33,7 +33,7 @@ import (
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 var lc logger.LoggingClient

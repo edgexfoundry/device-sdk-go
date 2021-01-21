@@ -28,7 +28,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 )
 
 const (

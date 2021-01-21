@@ -22,10 +22,10 @@ import (
 	"strings"
 	"sync"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"

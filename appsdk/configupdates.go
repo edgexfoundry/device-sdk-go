@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/handlers"
 )

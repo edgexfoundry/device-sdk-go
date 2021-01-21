@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 )

@@ -30,14 +30,14 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/secret"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"

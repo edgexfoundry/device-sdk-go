@@ -27,10 +27,10 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
 	v2 "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/v2/controller/http"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/gorilla/mux"
 )

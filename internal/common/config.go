@@ -19,7 +19,7 @@ package common
 import (
 	"time"
 
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 

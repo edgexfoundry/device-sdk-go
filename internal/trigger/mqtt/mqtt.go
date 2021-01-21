@@ -26,9 +26,9 @@ import (
 	"time"
 
 	pahoMqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/google/uuid"
 

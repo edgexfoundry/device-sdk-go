@@ -16,11 +16,11 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/command"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/notifications"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 )
 
 // ValueDescriptorClientName contains the name of the ValueDescriptorClient's implementation in the DIC.

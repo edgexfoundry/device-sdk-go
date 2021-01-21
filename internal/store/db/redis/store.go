@@ -25,7 +25,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/redis/models"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/gomodule/redigo/redis"
 )
