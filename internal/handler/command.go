@@ -302,7 +302,7 @@ func execReadCmd(
 
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
-		msg := fmt.Sprintf("Handler - execReadCmd: error for Device: %s cmd: %s, %v", device.Name, cmd, err)
+                msg := fmt.Sprintf("Read Error - %v; Device Name: %s; CMD: %s", err, device.Name, cmd)
 		return nil, common.NewServerError(msg, err)
 	}
 
@@ -424,7 +424,7 @@ func execWriteCmd(
 
 	err = driver.HandleWriteCommands(device.Name, device.Protocols, reqs, cvs)
 	if err != nil {
-		msg := fmt.Sprintf("Handler - execWriteCmd: error for Device: %s cmd: %s, %v", device.Name, cmd, err)
+                msg := fmt.Sprintf("Write Error - %v; Device Name: %s; CMD: %s", err, device.Name, cmd)
 		return common.NewServerError(msg, err)
 	}
 
