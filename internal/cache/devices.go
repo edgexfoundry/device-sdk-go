@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"sync"
 
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 var (

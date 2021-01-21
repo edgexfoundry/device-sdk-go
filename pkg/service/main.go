@@ -15,12 +15,12 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/flags"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/handlers"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/gorilla/mux"
 )

@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/google/uuid"
 )
 

@@ -22,13 +22,13 @@ import (
 	"net/http"
 	"testing"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 func TestAddRoute(t *testing.T) {

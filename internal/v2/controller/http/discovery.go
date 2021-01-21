@@ -11,9 +11,9 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/errors"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2"
+	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 )
 
 func (c *V2HttpController) Discovery(writer http.ResponseWriter, request *http.Request) {

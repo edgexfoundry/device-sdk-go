@@ -18,11 +18,11 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller/correlation"
 	v2 "github.com/edgexfoundry/device-sdk-go/v2/internal/v2/controller/http"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 
 	"github.com/gorilla/mux"
 )
@@ -83,7 +83,7 @@ func (c *RestController) InitV2RestRoutes() {
 
 	c.addReservedRoute(contractsV2.ApiDiscoveryRoute, c.v2HttpController.Discovery).Methods(http.MethodPost)
 
-	c.addReservedRoute(contractsV2.ApiNameCommandRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
+	c.addReservedRoute(contractsV2.ApiDeviceNameCommandNameRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
 
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.AddDevice).Methods(http.MethodPost)
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.UpdateDevice).Methods(http.MethodPut)

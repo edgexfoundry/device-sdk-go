@@ -12,9 +12,9 @@ import (
 	"strconv"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 )
 
 func TransformWriteParameter(cv *dsModels.CommandValue, pv contract.PropertyValue, lc logger.LoggingClient) error {

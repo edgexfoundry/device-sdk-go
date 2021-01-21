@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/google/uuid"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"

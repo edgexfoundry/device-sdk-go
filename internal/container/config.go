@@ -8,7 +8,7 @@ package container
 
 import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 )
 
 // ConfigurationName contains the name of device service's ConfigurationStruct implementation in the DIC.

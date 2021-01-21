@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/fxamacker/cbor/v2"
 )
 

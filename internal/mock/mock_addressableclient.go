@@ -10,8 +10,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/types"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/types"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 type AddressableClientMock struct {

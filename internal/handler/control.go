@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 func TransformHandler(requestMap map[string]string, lc logger.LoggingClient) (map[string]string, common.AppError) {
