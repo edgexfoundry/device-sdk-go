@@ -162,7 +162,7 @@ func TestCommandNoDevice(t *testing.T) {
 	}
 
 	body := strings.TrimSpace(rr.Body.String())
-	expected := "Device: " + badDeviceId + " not found; GET " + clients.ApiDeviceRoute + "/" + badDeviceId + "/" + testCmd
+	expected := "Device: " + badDeviceId + " not found; GET"
 
 	if body != expected {
 		t.Errorf("No Device: handler returned wrong body:\nexpected: %s\ngot:      %s", expected, body)
