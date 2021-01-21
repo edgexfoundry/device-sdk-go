@@ -126,7 +126,7 @@ func (c *RestController) commandFunc(w http.ResponseWriter, req *http.Request) {
 	event, appErr := handler.CommandHandler(vars, body, req.Method, req.URL.RawQuery, c.dic)
 
 	if appErr != nil {
-                http.Error(w, fmt.Sprintf("%s", appErr.Message()), appErr.Code())
+		http.Error(w, fmt.Sprintf("%s", appErr.Message()), appErr.Code())
 	} else if event != nil {
 		ec := container.CoredataEventClientFrom(c.dic.Get)
 		if event.HasBinaryValue() {
