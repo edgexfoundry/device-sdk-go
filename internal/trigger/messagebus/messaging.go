@@ -170,10 +170,21 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 	}
 
 	if edgexContext.OutputData != nil {
+		var contentType string
+
+		if edgexContext.ResponseContentType != "" {
+			contentType = edgexContext.ResponseContentType
+		} else {
+			contentType = clients.ContentTypeJSON
+			if edgexContext.OutputData[0] != byte('{') {
+				// If not JSON then assume it is CBOR
+				contentType = clients.ContentTypeCBOR
+			}
+		}
 		outputEnvelope := types.MessageEnvelope{
 			CorrelationID: edgexContext.CorrelationID,
 			Payload:       edgexContext.OutputData,
-			ContentType:   clients.ContentTypeJSON,
+			ContentType:   contentType,
 		}
 		err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Binding.PublishTopic)
 		if err != nil {
