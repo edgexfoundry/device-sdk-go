@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2019 Intel Corporation
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
@@ -38,8 +38,8 @@ func TestAddRoute(t *testing.T) {
 		Route         string
 		ErrorExpected bool
 	}{
-		{"Success", "/api/v1/test", false},
-		{"Reserved Route", common.APIVersionRoute, true},
+		{"Success", "/api/v2/test", false},
+		{"Reserved Route", v2.ApiVersionRoute, true},
 	}
 
 	lc := logger.NewMockClient()

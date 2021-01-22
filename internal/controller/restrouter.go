@@ -47,23 +47,6 @@ func NewRestController(r *mux.Router, dic *di.Container) *RestController {
 }
 
 func (c *RestController) InitRestRoutes() {
-	// Status
-	c.addReservedRoute(sdkCommon.APIPingRoute, c.statusFunc).Methods(http.MethodGet)
-	// Version
-	c.addReservedRoute(sdkCommon.APIVersionRoute, c.versionFunc).Methods(http.MethodGet)
-	// Command
-	c.addReservedRoute(sdkCommon.APIAllCommandRoute, c.commandAllFunc).Methods(http.MethodGet, http.MethodPut)
-	c.addReservedRoute(sdkCommon.APIIdCommandRoute, c.commandFunc).Methods(http.MethodGet, http.MethodPut)
-	c.addReservedRoute(sdkCommon.APINameCommandRoute, c.commandFunc).Methods(http.MethodGet, http.MethodPut)
-	// Callback
-	c.addReservedRoute(sdkCommon.APICallbackRoute, c.callbackFunc)
-	// Discovery and Transform
-	c.addReservedRoute(sdkCommon.APIDiscoveryRoute, c.discoveryFunc).Methods(http.MethodPost)
-	c.addReservedRoute(sdkCommon.APITransformRoute, c.transformFunc).Methods(http.MethodGet)
-	// Metric and Config
-	c.addReservedRoute(sdkCommon.APIMetricsRoute, c.metricsFunc).Methods(http.MethodGet)
-	c.addReservedRoute(sdkCommon.APIConfigRoute, c.configFunc).Methods(http.MethodGet)
-
 	c.InitV2RestRoutes()
 
 	c.router.Use(correlation.ManageHeader)
