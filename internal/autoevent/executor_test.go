@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2020 IOTech Ltd
+// Copyright (C) 2019-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,69 +9,45 @@ package autoevent
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCompareReadings(t *testing.T) {
-	readings := make([]contract.Reading, 4)
-	readings[0] = contract.Reading{Name: "Temperature", Value: "10"}
-	readings[1] = contract.Reading{Name: "Humidity", Value: "50"}
-	readings[2] = contract.Reading{Name: "Pressure", Value: "3"}
-	readings[3] = contract.Reading{Name: "Image", BinaryValue: []byte("This is a image")}
+	autoEvent := models.AutoEvent{Resource: "resource", OnChange: true, Frequency: "500ms"}
+	e, err := NewExecutor("device-test", autoEvent)
+	require.NoError(t, err)
 
-	lc := logger.NewMockClient()
-	autoEvent := contract.AutoEvent{Frequency: "500ms"}
-	e, err := NewExecutor("hasBinaryTrue", autoEvent)
-	if err != nil {
-		t.Errorf("Autoevent executor creation failed: %v", err)
-	}
-	resultFalse := compareReadings(e, readings, true, lc)
-	if resultFalse {
-		t.Error("compare readings with cache failed, the result should be false in the first place")
-	}
+	firstNonBinaryReading := dtos.BaseReading{}
+	firstNonBinaryReading.Value = "1"
+	nonBinaryReadingValueChanged := firstNonBinaryReading
+	nonBinaryReadingValueChanged.Value = "2"
+	nonBinaryReadingValueUnchanged := nonBinaryReadingValueChanged
+	firstBinaryReading := dtos.BaseReading{}
+	firstBinaryReading.BinaryValue = []byte{1, 2, 3}
+	binaryReadingValueChanged := firstBinaryReading
+	binaryReadingValueChanged.BinaryValue = []byte{4, 5, 6}
+	binaryReadingValueUnchanged := binaryReadingValueChanged
 
-	readings[1] = contract.Reading{Name: "Humidity", Value: "51"}
-	resultFalse = compareReadings(e, readings, true, lc)
-	if resultFalse {
-		t.Error("compare readings with cache failed, the result should be false")
-	}
-
-	readings[3] = contract.Reading{Name: "Image", BinaryValue: []byte("This is not a image")}
-	resultFalse = compareReadings(e, readings, true, lc)
-	if resultFalse {
-		t.Error("compare readings with cache failed, the result should be false")
-	}
-
-	resultTrue := compareReadings(e, readings, true, lc)
-	if !resultTrue {
-		t.Error("compare readings with cache failed, the result should be true with unchanged readings")
+	tests := []struct {
+		name     string
+		reading  dtos.BaseReading
+		expected bool
+	}{
+		{"false - lastReading is nil", firstNonBinaryReading, false},
+		{"false - reading value changed", nonBinaryReadingValueChanged, false},
+		{"true - reading value unchanged", nonBinaryReadingValueUnchanged, true},
+		{"false - lastReading is not binary", firstBinaryReading, false},
+		{"false - binary value changed", binaryReadingValueChanged, false},
+		{"true - binary value unchanged", binaryReadingValueUnchanged, true},
 	}
 
-	e, err = NewExecutor("hasBinaryFalse", autoEvent)
-	if err != nil {
-		t.Errorf("Autoevent executor creation failed: %v", err)
-	}
-	// This scenario should not happen in real case
-	resultFalse = compareReadings(e, readings, false, lc)
-	if resultFalse {
-		t.Error("compare readings with cache failed, the result should be false in the first place")
-	}
-
-	readings[0] = contract.Reading{Name: "Temperature", Value: "20"}
-	resultFalse = compareReadings(e, readings, false, lc)
-	if resultFalse {
-		t.Error("compare readings with cache failed, the result should be false")
-	}
-
-	readings[3] = contract.Reading{Name: "Image", BinaryValue: []byte("This is a image")}
-	resultTrue = compareReadings(e, readings, false, lc)
-	if !resultTrue {
-		t.Error("compare readings with cache failed, the result should always be true in such scenario")
-	}
-
-	resultTrue = compareReadings(e, readings, false, lc)
-	if !resultTrue {
-		t.Error("compare readings with cache failed, the result should be true with unchanged readings")
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			res := e.compareReadings(testCase.reading)
+			assert.Equal(t, testCase.expected, res, "compareReading result not as expected")
+		})
 	}
 }

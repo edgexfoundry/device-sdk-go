@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -63,6 +64,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			handlers.SecureProviderBootstrapHandler,
 			httpServer.BootstrapHandler,
 			clients.NewClients().BootstrapHandler,
+			autoevent.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
 			handlers.NewStartMessage(serviceName, serviceVersion).BootstrapHandler,

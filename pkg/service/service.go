@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -20,7 +20,6 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -51,6 +50,7 @@ type DeviceService struct {
 	RegistryClient registry.Client
 	SecretProvider interfaces.SecretProvider
 	edgexClients   clients.EdgeXClients
+	manager        dsModels.Manager
 	controller     *controller.RestController
 	config         *common.ConfigurationStruct
 	deviceService  contract.DeviceService
@@ -104,6 +104,7 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.edgexClients.ValueDescriptorClient = container.CoredataValueDescriptorClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
 	s.controller = controller.NewRestController(r, dic)
+	s.manager = container.ManagerFrom(dic.Get)
 }
 
 // Name returns the name of this Device Service
@@ -135,7 +136,7 @@ func (s *DeviceService) Stop(force bool) {
 	if s.initialized {
 		_ = s.driver.Stop(false)
 	}
-	autoevent.GetManager().StopAutoEvents()
+	s.manager.StopAutoEvents()
 }
 
 // selfRegister register device service itself onto metadata.

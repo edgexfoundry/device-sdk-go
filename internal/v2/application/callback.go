@@ -9,9 +9,6 @@ package application
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -20,6 +17,9 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
 
 func UpdateProfile(profileRequest requests.DeviceProfileRequest, lc logger.LoggingClient) errors.EdgeX {
@@ -67,7 +67,7 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 	}
 
 	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
-	autoevent.GetManager().RestartForDevice(device.Name, dic)
+	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
 
@@ -105,7 +105,7 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 	}
 
 	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
-	autoevent.GetManager().RestartForDevice(device.Name, dic)
+	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
 
@@ -115,7 +115,7 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	device, ok := cache.Devices().ForName(name)
 	if ok {
 		lc.Debugf("Handler - stopping AutoEvents for device %s", device.Name)
-		autoevent.GetManager().StopForDevice(device.Name)
+		container.ManagerFrom(dic.Get).StopForDevice(device.Name)
 	} else {
 		errMsg := fmt.Sprintf("failed to find device %s", name)
 		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
