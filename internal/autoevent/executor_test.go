@@ -20,28 +20,44 @@ func TestCompareReadings(t *testing.T) {
 	e, err := NewExecutor("device-test", autoEvent)
 	require.NoError(t, err)
 
-	firstNonBinaryReading := dtos.BaseReading{}
-	firstNonBinaryReading.Value = "1"
-	nonBinaryReadingValueChanged := firstNonBinaryReading
-	nonBinaryReadingValueChanged.Value = "2"
-	nonBinaryReadingValueUnchanged := nonBinaryReadingValueChanged
-	firstBinaryReading := dtos.BaseReading{}
-	firstBinaryReading.BinaryValue = []byte{1, 2, 3}
-	binaryReadingValueChanged := firstBinaryReading
-	binaryReadingValueChanged.BinaryValue = []byte{4, 5, 6}
-	binaryReadingValueUnchanged := binaryReadingValueChanged
+	testReadings := []dtos.BaseReading{{ResourceName: "r1"}, {ResourceName: "r2"}}
+	testReadings[0].Value = "1"
+	testReadings[1].Value = "2"
+
+	firstReadings := testReadings
+
+	readingsValueChanged := make([]dtos.BaseReading, len(firstReadings))
+	copy(readingsValueChanged, firstReadings)
+	readingsValueChanged[1].Value = "3"
+
+	readingsResourceChanged := make([]dtos.BaseReading, len(readingsValueChanged))
+	copy(readingsResourceChanged, readingsValueChanged)
+	readingsResourceChanged[0].ResourceName = "c1"
+
+	readingsValueUnchanged := readingsResourceChanged
+
+	readingsLengthChanged := append(readingsValueUnchanged, dtos.BaseReading{})
+	readingsLengthChanged[2].ResourceName = "b1"
+	readingsLengthChanged[2].BinaryValue = []byte{1, 2, 3}
+
+	readingsBinaryValueChanged := make([]dtos.BaseReading, len(readingsLengthChanged))
+	copy(readingsBinaryValueChanged, readingsLengthChanged)
+	readingsBinaryValueChanged[2].BinaryValue = []byte{4, 5, 6}
+
+	readingBinaryValueUnchanged := readingsBinaryValueChanged
 
 	tests := []struct {
 		name     string
-		reading  dtos.BaseReading
+		reading  []dtos.BaseReading
 		expected bool
 	}{
-		{"false - lastReading is nil", firstNonBinaryReading, false},
-		{"false - reading value changed", nonBinaryReadingValueChanged, false},
-		{"true - reading value unchanged", nonBinaryReadingValueUnchanged, true},
-		{"false - lastReading is not binary", firstBinaryReading, false},
-		{"false - binary value changed", binaryReadingValueChanged, false},
-		{"true - binary value unchanged", binaryReadingValueUnchanged, true},
+		{"false - lastReadings are nil", firstReadings, false},
+		{"false - reading's value changed", readingsValueChanged, false},
+		{"false - reading's resource name changed", readingsResourceChanged, false},
+		{"true - readings unchanged", readingsValueUnchanged, true},
+		{"false - readings length changed", readingsLengthChanged, false},
+		{"false - reading's binary value changed", readingsBinaryValueChanged, false},
+		{"true - readings unchanged", readingBinaryValueUnchanged, true},
 	}
 
 	for _, testCase := range tests {

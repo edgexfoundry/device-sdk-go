@@ -27,7 +27,7 @@ type Executor struct {
 	deviceName   string
 	resource     string
 	onChange     bool
-	lastReadings dtos.BaseReading
+	lastReadings map[string]dtos.BaseReading
 	duration     time.Duration
 	stop         bool
 	rwMutex      *sync.RWMutex
@@ -62,7 +62,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 
 			if evt != nil {
 				if e.onChange {
-					if e.compareReadings(evt.Readings[0]) {
+					if e.compareReadings(evt.Readings) {
 						lc.Debugf("AutoEvent - readings are the same as previous one %v", e.lastReadings)
 						continue
 					}
@@ -96,23 +96,42 @@ func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors
 	return &res.Event, nil
 }
 
-func (e *Executor) compareReadings(reading dtos.BaseReading) bool {
+func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 	e.rwMutex.RLock()
 	defer e.rwMutex.RUnlock()
 
-	if reading.Value != "" {
-		if reading.Value != e.lastReadings.Value {
-			e.lastReadings = reading
-			return false
+	if len(e.lastReadings) != len(readings) {
+		e.lastReadings = make(map[string]dtos.BaseReading)
+		for _, r := range readings {
+			e.lastReadings[r.ResourceName] = r
 		}
-		return true
-	} else {
-		if bytes.Compare(e.lastReadings.BinaryValue, reading.BinaryValue) != 0 {
-			e.lastReadings = reading
-			return false
-		}
-		return true
+		return false
 	}
+
+	var res = true
+	for _, reading := range readings {
+		if lastReading, ok := e.lastReadings[reading.ResourceName]; ok {
+			if reading.Value != "" {
+				if reading.Value != lastReading.Value {
+					e.lastReadings[reading.ResourceName] = reading
+					res = false
+				}
+			} else {
+				if bytes.Compare(lastReading.BinaryValue, reading.BinaryValue) != 0 {
+					e.lastReadings[reading.ResourceName] = reading
+					res = false
+				}
+			}
+		} else {
+			e.lastReadings = make(map[string]dtos.BaseReading)
+			for _, r := range readings {
+				e.lastReadings[r.ResourceName] = r
+			}
+			return false
+		}
+	}
+
+	return res
 }
 
 // Stop marks this Executor stopped
