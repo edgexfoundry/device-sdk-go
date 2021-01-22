@@ -9,7 +9,7 @@ package cache
 import (
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 )
 
 var (

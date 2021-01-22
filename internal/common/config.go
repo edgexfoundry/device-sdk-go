@@ -7,7 +7,7 @@
 package common
 
 import (
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 )
 
 // ConfigurationStruct contains the configuration properties for the device service.

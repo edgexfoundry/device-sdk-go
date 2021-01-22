@@ -7,10 +7,10 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/general"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/metadata"
 )
 
 var GeneralClientName = di.TypeInstanceToName((*general.GeneralClient)(nil))

@@ -11,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/stretchr/testify/assert"
 )

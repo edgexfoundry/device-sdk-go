@@ -19,8 +19,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/provision"
 	v2cache "github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-bootstrap/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/di"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/gorilla/mux"
 )
 

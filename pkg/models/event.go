@@ -7,7 +7,7 @@
 package models
 
 import (
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 // Event is a wrapper of contract.Event to provide more Binary related operation in Device Service.

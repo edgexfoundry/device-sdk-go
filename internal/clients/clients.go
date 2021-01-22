@@ -7,9 +7,9 @@
 package clients
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/general"
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/metadata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/general"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/metadata"
 )
 
 type EdgeXClients struct {

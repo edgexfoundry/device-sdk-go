@@ -9,8 +9,8 @@
 package common
 
 import (
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/config"
-	dsModels "github.com/edgexfoundry/go-mod-core-contracts/models"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	dsModels "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .

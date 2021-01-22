@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 func checkTransformedValueInRange(origin interface{}, transformed float64, lc logger.LoggingClient) bool {

@@ -14,9 +14,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	contract "github.com/edgexfoundry/go-mod-core-contracts/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/admin"
-	"github.com/edgexfoundry/go-mod-core-contracts/requests/states/operating"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/requests/states/admin"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/requests/states/operating"
 )
 
 const (

@@ -7,7 +7,7 @@
 
 package models
 
-import contract "github.com/edgexfoundry/go-mod-core-contracts/models"
+import contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 // ProtocolDiscovery is a low-level device-specific interface implemented
 // by device services that support dynamic device discovery.
