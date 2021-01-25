@@ -30,13 +30,24 @@ import (
 	dbInterfaces "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+
 	"github.com/fxamacker/cbor/v2"
 )
 
-const unmarshalErrorMessage = "Unable to unmarshal message payload as %s"
+const (
+	// TODO: Remove once completely switched over to V2 API DTOs
+	ApiV1 = "v1"
+	ApiV2 = "v2"
+)
 
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
@@ -55,59 +66,68 @@ type MessageError struct {
 
 // ProcessMessage sends the contents of the message thru the functions pipeline
 func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) *MessageError {
+	var err error
+	lc := edgexcontext.LoggingClient
+	lc.Debug("Processing message: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
 
-	edgexcontext.LoggingClient.Debug("Processing message: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
-
+	// Default expected Target Type for the function pipeline is a V2 Event DTO
 	if gr.TargetType == nil {
-		gr.TargetType = &models.Event{}
+		gr.TargetType = &dtos.Event{}
 	}
 
 	if reflect.TypeOf(gr.TargetType).Kind() != reflect.Ptr {
 		err := fmt.Errorf("TargetType must be a pointer, not a value of the target type.")
-		edgexcontext.LoggingClient.Error(err.Error())
+		logError(lc, err, envelope.CorrelationID)
 		return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
 	}
 
 	// Must make a copy of the type so that data isn't retained between calls.
 	target := reflect.New(reflect.ValueOf(gr.TargetType).Elem().Type()).Interface()
 
-	// Only set when the data is binary so function receiving it knows how to deal with it.
-	var contentType string
-
 	switch target.(type) {
 	case *[]byte:
+		lc.Debug("Pipeline is expecting raw byte data")
 		target = &envelope.Payload
-		contentType = envelope.ContentType
 
-	default:
-		switch envelope.ContentType {
-		case clients.ContentTypeJSON:
-			if err := json.Unmarshal([]byte(envelope.Payload), target); err != nil {
-				message := fmt.Sprintf(unmarshalErrorMessage, "JSON")
-				edgexcontext.LoggingClient.Error(
-					message, "error", err.Error(),
-					clients.CorrelationHeader, envelope.CorrelationID)
-				err = fmt.Errorf("%s : %s", message, err.Error())
-				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
-			}
+	case *dtos.Event:
+		lc.Debug("Pipeline is expecting an Event")
 
-		case clients.ContentTypeCBOR:
-			err := cbor.Unmarshal([]byte(envelope.Payload), target)
-			if err != nil {
-				message := fmt.Sprintf(unmarshalErrorMessage, "CBOR")
-				edgexcontext.LoggingClient.Error(
-					message, "error", err.Error(),
-					clients.CorrelationHeader, envelope.CorrelationID)
-				err = fmt.Errorf("%s : %s", message, err.Error())
-				return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
-			}
+		var apiVersion string
+
+		// TODO: remove once fully switched over to V2 Event DTO
+		apiVersion, err = gr.getApiVersion(envelope)
+		if err != nil {
+			err = fmt.Errorf("unable to determine API Version for Event object received: %s", err.Error())
+			logError(lc, err, envelope.CorrelationID)
+			return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
+		}
+
+		// TODO: remove once fully switched over to V2 Event DTO and simply call unmarshalEventDTO.
+		switch apiVersion {
+		case ApiV1:
+			target, err = gr.unmarshalV1EventToV2Event(envelope, lc)
+
+		case ApiV2:
+			target, err = gr.unmarshalEventDTO(envelope, lc)
 
 		default:
-			message := "content type for input data not supported"
-			edgexcontext.LoggingClient.Error(message,
-				clients.ContentType, envelope.ContentType,
-				clients.CorrelationHeader, envelope.CorrelationID)
-			err := fmt.Errorf("'%s' %s", envelope.ContentType, message)
+			err = fmt.Errorf("unsupported API Version '%s' detected", apiVersion)
+		}
+
+		if err != nil {
+			err = fmt.Errorf("unable to process Event object received: %s", err.Error())
+			logError(lc, err, envelope.CorrelationID)
+			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
+		}
+
+	default:
+		customTypeName := di.TypeInstanceToName(target)
+		lc.Debugf("Pipeline is expecting a custom type of %s", customTypeName)
+
+		// Expecting a custom type so just unmarshal into the target type.
+		if err := gr.unmarshalPayload(envelope, target); err != nil {
+			err = fmt.Errorf("unable to process custom object received of type '%s': %s", customTypeName, err.Error())
+			logError(lc, err, envelope.CorrelationID)
 			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 		}
 	}
@@ -124,7 +144,11 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
 
-	return gr.ExecutePipeline(target, contentType, edgexcontext, transforms, 0, false)
+	return gr.ExecutePipeline(target, envelope.ContentType, edgexcontext, transforms, 0, false)
+}
+
+func logError(lc logger.LoggingClient, err error, correlationID string) {
+	lc.Errorf("%s. %s=%s", err.Error(), clients.CorrelationHeader, correlationID)
 }
 
 // Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
@@ -193,4 +217,118 @@ func (gr *GolangRuntime) StartStoreAndForward(
 	edgeXClients common.EdgeXClients) {
 
 	gr.storeForward.startStoreAndForwardRetryLoop(appWg, appCtx, enabledWg, enabledCtx, serviceKey, config, edgeXClients)
+}
+
+func (gr *GolangRuntime) getApiVersion(envelope types.MessageEnvelope) (string, error) {
+
+	// Use minimal struct with just the Event API version to find the version
+	type apiVersion struct {
+		Event struct {
+			commonDTO.Versionable
+		}
+	}
+
+	version := apiVersion{}
+
+	if err := gr.unmarshalPayload(envelope, &version); err != nil {
+		return "", err
+	}
+
+	// If ApiVersion not set then we have to assume it is a V1 Event
+	if len(version.Event.ApiVersion) == 0 {
+		return ApiV1, nil
+	}
+
+	return version.Event.ApiVersion, nil
+}
+
+// TODO: Remove when completely switched to V2 Event DTO
+func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelope, lc logger.LoggingClient) (*dtos.Event, error) {
+	lc.Debug("Payload Does Not contain a V2 DTO, attempting to unmarshal to V1 Event model and then convert to V2 Event DTO")
+
+	var err error
+	v1Event := models.Event{}
+
+	lc.Debugf("Unmarshaling V1 Event from content type '%s'", envelope.ContentType)
+
+	err = gr.unmarshalPayload(envelope, &v1Event)
+
+	if err != nil {
+		return nil, err
+	}
+
+	v2Event := dtos.Event{
+		Versionable: commonDTO.NewVersionable(),
+		Id:          v1Event.ID,
+		DeviceName:  v1Event.Device,
+		ProfileName: "Unknown",
+		Created:     v1Event.Created,
+		Origin:      v1Event.Origin,
+		Tags:        v1Event.Tags,
+	}
+
+	for _, v1Reading := range v1Event.Readings {
+		v2Reading := dtos.BaseReading{
+			Versionable:  commonDTO.NewVersionable(),
+			Id:           v1Reading.Id,
+			Created:      v1Reading.Created,
+			Origin:       v1Reading.Origin,
+			DeviceName:   v1Reading.Device,
+			ResourceName: v1Reading.Name,
+			ProfileName:  "Unknown",
+			ValueType:    v1Reading.ValueType,
+		}
+
+		if v1Reading.ValueType == v2.ValueTypeBinary {
+			v2Reading.BinaryValue = v1Reading.BinaryValue
+		} else {
+			v2Reading.Value = v1Reading.Value
+		}
+
+		v2Event.Readings = append(v2Event.Readings, v2Reading)
+	}
+
+	lc.Debug("Using Event DTO created from V1 Event Model")
+
+	return &v2Event, nil
+}
+
+func (gr *GolangRuntime) unmarshalEventDTO(envelope types.MessageEnvelope, lc logger.LoggingClient) (*dtos.Event, error) {
+	lc.Debug("Payload contains a V2 DTO, processing as an AddEventRequest DTO")
+
+	// Event DTO is received wrapped in a AddEventRequest DTO
+	// AddEventRequest DTO is validated as part of the JSON unmarshalling
+	addEventRequest := &requests.AddEventRequest{}
+
+	lc.Debugf("Unmarshaling AddEventRequest DTO from content type '%s'", envelope.ContentType)
+
+	if err := gr.unmarshalPayload(envelope, &addEventRequest); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal AddEventRequest from content type '%s': %s", envelope.ContentType, err.Error())
+	}
+
+	if err := addEventRequest.Validate(); err != nil {
+		return nil, fmt.Errorf("validation failed on AddEventRequest: %s", err.Error())
+	}
+
+	lc.Debug("Using Event DTO from AddEventRequest DTO")
+
+	// Content of target must be a pointer
+	return &addEventRequest.Event, nil
+}
+
+func (gr *GolangRuntime) unmarshalPayload(envelope types.MessageEnvelope, target interface{}) error {
+	var err error
+
+	switch envelope.ContentType {
+	case clients.ContentTypeJSON:
+		err = json.Unmarshal(envelope.Payload, target)
+
+	case clients.ContentTypeCBOR:
+		err = cbor.Unmarshal(envelope.Payload, target)
+
+	default:
+		err = fmt.Errorf("unsupported content-type '%s' recieved", envelope.ContentType)
+	}
+
+	return err
 }

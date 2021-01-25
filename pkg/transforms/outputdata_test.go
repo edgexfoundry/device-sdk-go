@@ -20,11 +20,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSetOutputDataString(t *testing.T) {
@@ -56,8 +55,8 @@ func TestSetOutputDataBytes(t *testing.T) {
 func TestSetOutputDataEvent(t *testing.T) {
 	target := NewOutputData()
 
-	eventIn := models.Event{
-		Device: devID1,
+	eventIn := dtos.Event{
+		DeviceName: devID1,
 	}
 
 	expected, _ := json.Marshal(eventIn)

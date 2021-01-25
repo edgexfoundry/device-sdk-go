@@ -19,13 +19,13 @@ package transforms
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var tagsToAdd = map[string]string{
@@ -34,7 +34,7 @@ var tagsToAdd = map[string]string{
 	"Longitude": "-95.377603",
 }
 
-var eventWithExistingTags = models.Event{
+var eventWithExistingTags = dtos.Event{
 	Tags: map[string]string{
 		"Tag1": "Value1",
 		"Tag2": "Value2",
@@ -62,7 +62,7 @@ func TestTags_AddTags(t *testing.T) {
 		ErrorExpected bool
 		ErrorContains string
 	}{
-		{"Happy path - no existing Event tags", models.Event{}, tagsToAdd, tagsToAdd, false, ""},
+		{"Happy path - no existing Event tags", dtos.Event{}, tagsToAdd, tagsToAdd, false, ""},
 		{"Happy path - Event has existing tags", eventWithExistingTags, tagsToAdd, allTagsAdded, false, ""},
 		{"Happy path - No tags added", eventWithExistingTags, map[string]string{}, eventWithExistingTags.Tags, false, ""},
 		{"Error - No data", nil, nil, nil, true, "no Event Received"},
@@ -91,7 +91,7 @@ func TestTags_AddTags(t *testing.T) {
 			}
 
 			assert.True(t, continuePipeline)
-			actual, ok := result.(models.Event)
+			actual, ok := result.(dtos.Event)
 			require.True(t, ok, "Result not an Event")
 			assert.Equal(t, testCase.Expected, actual.Tags)
 		})

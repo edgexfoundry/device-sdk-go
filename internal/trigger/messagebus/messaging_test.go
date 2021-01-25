@@ -19,7 +19,6 @@ package messagebus
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/uuid"
 	"sync"
 	"testing"
 	"time"
@@ -30,15 +29,47 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var logClient logger.LoggingClient
+
+var expectedEvent = dtos.Event{
+	Versionable: commonDTO.NewVersionable(),
+	Id:          "7a1707f0-166f-4c4b-bc9d-1d54c74e0137",
+	DeviceName:  "LivingRoomThermostat",
+	ProfileName: "thermostat",
+	Created:     1485364897029,
+	Origin:      1471806386919,
+	Readings: []dtos.BaseReading{
+		{
+			Versionable:   commonDTO.NewVersionable(),
+			Id:            "7a1707f0-166f-4c4b-bc9d-1d54c74e0145",
+			Created:       1485364896983,
+			Origin:        1471806386919,
+			DeviceName:    "LivingRoomThermostat",
+			ResourceName:  "temperature",
+			ProfileName:   "thermostat",
+			ValueType:     v2.ValueTypeInt64,
+			SimpleReading: dtos.SimpleReading{Value: "38"},
+		},
+	},
+	Tags: nil,
+}
+
+var addEventRequest = requests.AddEventRequest{
+	BaseRequest: commonDTO.BaseRequest{},
+	Event:       expectedEvent,
+}
 
 func init() {
 	logClient = logger.NewMockClient()
@@ -132,10 +163,6 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	expectedCorrelationID := "123"
 
-	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
-	var expectedEvent models.Event
-	_ = json.Unmarshal(expectedPayload, &expectedEvent)
-
 	transformWasCalled := common.AtomicBool{}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -150,9 +177,12 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
 	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 
+	payload, err := json.Marshal(addEventRequest)
+	require.NoError(t, err)
+
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       expectedPayload,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 
@@ -203,10 +233,6 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	expectedCorrelationID := "123"
 
-	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
-	var expectedEvent models.Event
-	_ = json.Unmarshal(expectedPayload, &expectedEvent)
-
 	transformWasCalled := common.AtomicBool{}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -244,11 +270,15 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
 	require.NoError(t, err)
-	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
+
+	payload, err := json.Marshal(addEventRequest)
+	require.NoError(t, err)
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       expectedPayload,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 
@@ -299,10 +329,6 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 
 	expectedCorrelationID := "123"
 
-	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
-	var expectedEvent models.Event
-	_ = json.Unmarshal(expectedPayload, &expectedEvent)
-
 	transformWasCalled := common.AtomicBool{}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -339,11 +365,15 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
 	require.NoError(t, err)
-	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
+
+	payload, err := json.Marshal(addEventRequest)
+	require.NoError(t, err)
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       expectedPayload,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 
@@ -394,10 +424,6 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 
 	expectedCorrelationID := "123"
 
-	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
-	var expectedEvent models.Event
-	_ = json.Unmarshal(expectedPayload, &expectedEvent)
-
 	transformWasCalled := common.AtomicBool{}
 
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -435,9 +461,11 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	require.NoError(t, err)
 	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 
+	payload, _ := json.Marshal(addEventRequest)
+
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       expectedPayload,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 
@@ -565,9 +593,6 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	}
 
 	expectedCorrelationID := "123"
-	expectedPayload := []byte(`{"id":"TBD","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
-	var expectedEvent models.Event
-	_ = json.Unmarshal(expectedPayload, &expectedEvent)
 
 	done := make(chan bool)
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
@@ -583,9 +608,11 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
+	payload, _ := json.Marshal(addEventRequest)
+
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       expectedPayload,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 
@@ -608,7 +635,7 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	case <-done:
 		// do nothing, just need to fall out.
 	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
+		require.Fail(t, "Transform never called for t1")
 	}
 
 	err = testClient.Publish(message, "t2") //transform1 should be called after this executes
@@ -618,6 +645,6 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	case <-done:
 		// do nothing, just need to fall out.
 	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
+		require.Fail(t, "Transform never called t2")
 	}
 }

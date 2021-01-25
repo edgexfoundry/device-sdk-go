@@ -17,12 +17,13 @@
 package appcontext
 
 import (
-	syscontext "context"
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
@@ -30,6 +31,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+
 	"github.com/google/uuid"
 )
 
@@ -50,7 +55,7 @@ type Context struct {
 	EventClient coredata.EventClient
 	// ValueDescriptorClient exposes Core Data's ValueDescriptor API
 	ValueDescriptorClient coredata.ValueDescriptorClient
-	// CommandClient exposes Core Commands's Command API
+	// CommandClient exposes Core Commands' Command API
 	CommandClient command.CommandClient
 	// NotificationsClient exposes Support Notification's Notifications API
 	NotificationsClient notifications.NotificationsClient
@@ -64,23 +69,23 @@ type Context struct {
 
 // Complete is optional and provides a way to return the specified data.
 // In the case of an HTTP Trigger, the data will be returned as the http response.
-// In the case of the message bus trigger, the data will be placed on the specifed
+// In the case of the message bus trigger, the data will be placed on the specified
 // message bus publish topic and host in the configuration.
-func (context *Context) Complete(output []byte) {
-	context.OutputData = output
+func (appContext *Context) Complete(output []byte) {
+	appContext.OutputData = output
 }
 
 // SetRetryData sets the RetryData to the specified payload to be stored for later retry
 // when the pipeline function returns an error.
-func (context *Context) SetRetryData(payload []byte) {
-	context.RetryData = payload
+func (appContext *Context) SetRetryData(payload []byte) {
+	appContext.RetryData = payload
 }
 
 // PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
-func (context *Context) PushToCoreData(deviceName string, readingName string, value interface{}) (*models.Event, error) {
-	context.LoggingClient.Debug("Pushing to CoreData")
-	if context.EventClient == nil {
+func (appContext *Context) PushToCoreData(deviceName string, readingName string, value interface{}) (*dtos.Event, error) {
+	appContext.LoggingClient.Debug("Pushing to CoreData")
+	if appContext.EventClient == nil {
 		return nil, fmt.Errorf("unable to Push To CoreData: '%s' is missing from Clients configuration", common.CoreDataClientName)
 	}
 
@@ -89,36 +94,64 @@ func (context *Context) PushToCoreData(deviceName string, readingName string, va
 	if err != nil {
 		return nil, err
 	}
-	newReading := models.Reading{
-		Value:  string(val),
-		Origin: now,
-		Device: deviceName,
-		Name:   readingName,
+
+	// Temporary use V1 Reading until V2 EventClient is available
+	// TODO: Change to use dtos.Reading
+	v1Reading := models.Reading{
+		Value:     string(val),
+		ValueType: v2.ValueTypeString,
+		Origin:    now,
+		Device:    deviceName,
+		Name:      readingName,
 	}
 
 	readings := make([]models.Reading, 0, 1)
-	readings = append(readings, newReading)
+	readings = append(readings, v1Reading)
 
-	newEdgeXEvent := &models.Event{
+	// Temporary use V1 Event until V2 EventClient is available
+	// TODO: Change to use dtos.Event
+	v1Event := &models.Event{
 		Device:   deviceName,
 		Origin:   now,
 		Readings: readings,
 	}
 
 	correlation := uuid.New().String()
-	ctx := syscontext.WithValue(syscontext.Background(), clients.CorrelationHeader, correlation)
-	result, err := context.EventClient.Add(ctx, newEdgeXEvent)
+	ctx := context.WithValue(context.Background(), clients.CorrelationHeader, correlation)
+	result, err := appContext.EventClient.Add(ctx, v1Event) // TODO: Update to use V2 EventClient
 	if err != nil {
 		return nil, err
 	}
-	newEdgeXEvent.ID = result
-	return newEdgeXEvent, nil
+	v1Event.ID = result
+
+	// TODO: Remove once V2 EventClient is available
+	v2Reading := dtos.BaseReading{
+		Versionable:   commonDTO.NewVersionable(),
+		Id:            v1Reading.Id,
+		Created:       v1Reading.Created,
+		Origin:        v1Reading.Origin,
+		DeviceName:    v1Reading.Device,
+		ResourceName:  v1Reading.Name,
+		ProfileName:   "",
+		ValueType:     v1Reading.ValueType,
+		SimpleReading: dtos.SimpleReading{Value: v1Reading.Value},
+	}
+
+	// TODO: Remove once V2 EventClient is available
+	v2Event := dtos.Event{
+		Versionable: commonDTO.NewVersionable(),
+		Id:          result,
+		DeviceName:  v1Event.Device,
+		Origin:      v1Event.Origin,
+		Readings:    []dtos.BaseReading{v2Reading},
+	}
+	return &v2Event, nil
 }
 
 // GetSecrets retrieves secrets from a secret store.
 // path specifies the type or location of the secrets to retrieve.
 // keys specifies the secrets which to retrieve. If no keys are provided then all the keys associated with the
 // specified path will be returned.
-func (context *Context) GetSecrets(path string, keys ...string) (map[string]string, error) {
-	return context.SecretProvider.GetSecrets(path, keys...)
+func (appContext *Context) GetSecrets(path string, keys ...string) (map[string]string, error) {
+	return appContext.SecretProvider.GetSecrets(path, keys...)
 }

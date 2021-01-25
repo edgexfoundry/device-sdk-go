@@ -18,10 +18,10 @@ package transforms
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 )
 
 // Filter houses various the parameters for which filter transforms filter on
@@ -48,7 +48,7 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 	}
 
 	deviceIDs := f.FilterValues
-	event, ok := params[0].(models.Event)
+	event, ok := params[0].(dtos.Event)
 	if !ok {
 		return false, errors.New("type received is not an Event")
 	}
@@ -59,18 +59,18 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 	}
 
 	for _, devID := range deviceIDs {
-		if event.Device == devID {
+		if event.DeviceName == devID {
 			if f.FilterOut {
-				edgexcontext.LoggingClient.Trace(fmt.Sprintf("Event not accepted: %s", event.Device))
+				edgexcontext.LoggingClient.Tracef("Event not accepted: %s", event.DeviceName)
 				return false, nil
 			} else {
-				edgexcontext.LoggingClient.Trace(fmt.Sprintf("Event accepted: %s", event.Device))
+				edgexcontext.LoggingClient.Tracef("Event accepted: %s", event.DeviceName)
 				return true, event
 			}
 		}
 	}
 	if f.FilterOut {
-		edgexcontext.LoggingClient.Trace(fmt.Sprintf("Event accepted: %s", event.Device))
+		edgexcontext.LoggingClient.Tracef("Event accepted: %s", event.DeviceName)
 		return true, event
 	}
 	return false, nil
@@ -89,7 +89,7 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 		return false, errors.New("no Event Received")
 	}
 
-	existingEvent, ok := params[0].(models.Event)
+	existingEvent, ok := params[0].(dtos.Event)
 	if !ok {
 		return false, errors.New("type received is not an Event")
 	}
@@ -99,21 +99,19 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 		return true, existingEvent
 	}
 
-	auxEvent := models.Event{
-		Pushed:   existingEvent.Pushed,
-		Device:   existingEvent.Device,
-		Created:  existingEvent.Created,
-		Modified: existingEvent.Modified,
-		Origin:   existingEvent.Origin,
-		Readings: []models.Reading{},
+	auxEvent := dtos.Event{
+		DeviceName: existingEvent.DeviceName,
+		Created:    existingEvent.Created,
+		Origin:     existingEvent.Origin,
+		Readings:   []dtos.BaseReading{},
 	}
 
 	if f.FilterOut {
 		for _, reading := range existingEvent.Readings {
 			readingFilteredOut := false
 			for _, filterID := range f.FilterValues {
-				if reading.Name == filterID {
-					edgexcontext.LoggingClient.Trace(fmt.Sprintf("Reading filtered out: %s", reading.Name))
+				if reading.ResourceName == filterID {
+					edgexcontext.LoggingClient.Tracef("Reading filtered out: %s", reading.ResourceName)
 					readingFilteredOut = true
 				}
 			}
@@ -124,15 +122,15 @@ func (f Filter) FilterByValueDescriptor(edgexcontext *appcontext.Context, params
 	} else {
 		for _, filterID := range f.FilterValues {
 			for _, reading := range existingEvent.Readings {
-				if reading.Name == filterID {
-					edgexcontext.LoggingClient.Trace(fmt.Sprintf("Reading accepted: %s", reading.Name))
+				if reading.ResourceName == filterID {
+					edgexcontext.LoggingClient.Tracef("Reading accepted: %s", reading.ResourceName)
 					auxEvent.Readings = append(auxEvent.Readings, reading)
 				}
 			}
 		}
 	}
 	thereExistReadings := len(auxEvent.Readings) > 0
-	var returnResult models.Event
+	var returnResult dtos.Event
 	if thereExistReadings {
 		returnResult = auxEvent
 	}

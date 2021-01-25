@@ -22,8 +22,9 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 )
 
 // Conversion houses various built in conversion transforms (XML, JSON, CSV)
@@ -42,7 +43,7 @@ func (f Conversion) TransformToXML(edgexcontext *appcontext.Context, params ...i
 		return false, errors.New("No Event Received")
 	}
 	edgexcontext.LoggingClient.Debug("Transforming to XML")
-	if event, ok := params[0].(models.Event); ok {
+	if event, ok := params[0].(dtos.Event); ok {
 		xml, err := event.ToXML()
 		if err != nil {
 			return false, fmt.Errorf("unable to marshal Event to XML: %s", err.Error())
@@ -60,7 +61,7 @@ func (f Conversion) TransformToJSON(edgexcontext *appcontext.Context, params ...
 		return false, errors.New("No Event Received")
 	}
 	edgexcontext.LoggingClient.Debug("Transforming to JSON")
-	if result, ok := params[0].(models.Event); ok {
+	if result, ok := params[0].(dtos.Event); ok {
 		b, err := json.Marshal(result)
 		if err != nil {
 			// LoggingClient.Error(fmt.Sprintf("Error parsing JSON. Error: %s", err.Error()))

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
@@ -29,6 +30,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/fxamacker/cbor/v2"
@@ -39,24 +44,66 @@ import (
 var lc logger.LoggingClient
 
 const (
-	devID1     = "id1"
 	serviceKey = "AppService-UnitTest"
 )
+
+var testEvent = dtos.Event{
+	Versionable: commonDTO.NewVersionable(),
+	Id:          "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc",
+	DeviceName:  "FamilyRoomThermostat",
+	ProfileName: "Thermostat",
+	Created:     time.Now().Unix(),
+	Origin:      time.Now().Unix(),
+	Readings: []dtos.BaseReading{
+		{
+			Versionable:   commonDTO.NewVersionable(),
+			Id:            "82eb2e26-0f24-48aa-ae4c-de9dac3f1234",
+			Created:       time.Now().Unix(),
+			Origin:        time.Now().Unix(),
+			DeviceName:    "FamilyRoomThermostat",
+			ResourceName:  "Temperature",
+			ProfileName:   "Thermostat",
+			ValueType:     v2.ValueTypeInt64,
+			SimpleReading: dtos.SimpleReading{Value: "72"},
+		},
+	},
+	Tags: nil,
+}
+
+var testAddEventRequest = requests.AddEventRequest{
+	BaseRequest: commonDTO.BaseRequest{},
+	Event:       testEvent,
+}
+
+var testV1Event = models.Event{
+	ID:      "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc",
+	Device:  "FamilyRoomThermostat",
+	Created: time.Now().Unix(),
+	Origin:  time.Now().Unix(),
+	Readings: []models.Reading{
+		{
+			Id:        "82eb2e26-0f24-48aa-ae4c-de9dac3f1234",
+			Created:   time.Now().Unix(),
+			Origin:    time.Now().Unix(),
+			Device:    "FamilyRoomThermostat",
+			Name:      "Temperature",
+			ValueType: v2.ValueTypeInt64,
+			Value:     "72",
+		},
+	},
+	Tags: nil,
+}
 
 func init() {
 	lc = logger.NewMockClient()
 }
 
 func TestProcessMessageNoTransforms(t *testing.T) {
-	// Event from device 1
-
-	eventIn := models.Event{
-		Device: devID1,
-	}
-	eventInBytes, _ := json.Marshal(eventIn)
+	payload, err := json.Marshal(testAddEventRequest)
+	require.NoError(t, err)
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
-		Payload:       eventInBytes,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
@@ -70,15 +117,12 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 }
 
 func TestProcessMessageOneCustomTransform(t *testing.T) {
-	// Event from device 1
+	payload, err := json.Marshal(testAddEventRequest)
+	require.NoError(t, err)
 
-	eventIn := models.Event{
-		Device: devID1,
-	}
-	eventInBytes, _ := json.Marshal(eventIn)
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
-		Payload:       eventInBytes,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
@@ -87,9 +131,9 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 	transform1WasCalled := false
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
-		if result, ok := params[0].(*models.Event); ok {
-			require.True(t, ok, "Should have receieved CoreData event")
-			require.Equal(t, devID1, result.Device, "Did not receive expected CoreData Event")
+		if result, ok := params[0].(*dtos.Event); ok {
+			require.True(t, ok, "Should have received EdgeX event")
+			require.Equal(t, testEvent.DeviceName, result.DeviceName, "Did not receive expected EdgeX event")
 		}
 		transform1WasCalled = true
 		return true, "Hello"
@@ -103,15 +147,12 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 }
 
 func TestProcessMessageTwoCustomTransforms(t *testing.T) {
-	// Event from device 1
+	payload, err := json.Marshal(testAddEventRequest)
+	require.NoError(t, err)
 
-	eventIn := models.Event{
-		Device: devID1,
-	}
-	eventInBytes, _ := json.Marshal(eventIn)
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
-		Payload:       eventInBytes,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
@@ -123,9 +164,9 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
-		if result, ok := params[0].(models.Event); ok {
+		if result, ok := params[0].(dtos.Event); ok {
 			require.True(t, ok, "Should have received Event")
-			assert.Equal(t, devID1, result.Device, "Did not receive expected Event")
+			assert.Equal(t, testEvent.DeviceName, result.DeviceName, "Did not receive expected Event")
 		}
 
 		return true, "Transform1Result"
@@ -148,15 +189,12 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 }
 
 func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
-	// Event from device 1
+	payload, err := json.Marshal(testAddEventRequest)
+	require.NoError(t, err)
 
-	eventIn := models.Event{
-		Device: devID1,
-	}
-	eventInBytes, _ := json.Marshal(eventIn)
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
-		Payload:       eventInBytes,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 	context := &appcontext.Context{
@@ -170,9 +208,9 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 		transform1WasCalled = true
 		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
 
-		if result, ok := params[0].(*models.Event); ok {
-			require.True(t, ok, "Should have received CoreData event")
-			require.Equal(t, devID1, result.Device, "Did not receive expected CoreData event")
+		if result, ok := params[0].(*dtos.Event); ok {
+			require.True(t, ok, "Should have received EdgeX event")
+			require.Equal(t, testEvent.DeviceName, result.DeviceName, "Did not receive expected EdgeX event")
 		}
 
 		return false, "Transform1Result"
@@ -205,7 +243,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 
 	// Send a RegistryInfo to the pipeline, instead of an Event
 	registryInfo := config.RegistryInfo{
-		Host: devID1,
+		Host: testEvent.DeviceName,
 	}
 	payload, _ := json.Marshal(registryInfo)
 	envelope := types.MessageEnvelope{
@@ -230,20 +268,16 @@ func TestProcessMessageTransformError(t *testing.T) {
 }
 
 func TestProcessMessageJSON(t *testing.T) {
-	// Event from device 1
-	expectedEventID := "1234"
 	expectedCorrelationID := "123-234-345-456"
-	eventIn := models.Event{
-		ID:     expectedEventID,
-		Device: devID1,
-	}
 
 	transform1WasCalled := false
 
-	eventInBytes, _ := json.Marshal(eventIn)
+	payload, err := json.Marshal(testAddEventRequest)
+	require.NoError(t, err)
+
 	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       eventInBytes,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
 
@@ -257,10 +291,10 @@ func TestProcessMessageJSON(t *testing.T) {
 
 		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
 
-		if result, ok := params[0].(*models.Event); ok {
-			require.True(t, ok, "Should have received CoreData event")
-			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
-			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
+		if result, ok := params[0].(*dtos.Event); ok {
+			require.True(t, ok, "Should have received EdgeX event")
+			assert.Equal(t, testEvent.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
+			assert.Equal(t, testEvent.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
 		}
 
 		return false, nil
@@ -271,30 +305,23 @@ func TestProcessMessageJSON(t *testing.T) {
 	runtime.SetTransforms([]appcontext.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
-	assert.Nil(t, result, "result should be null")
+	assert.Nilf(t, result, "result should be null. Got %v", result)
 	assert.True(t, transform1WasCalled, "transform1 should have been called")
 }
 
 func TestProcessMessageCBOR(t *testing.T) {
-	// Event from device 1
-	expectedEventID := "6789"
 	expectedCorrelationID := "123-234-345-456"
-	expectedChecksum := "1234567890"
-	eventIn := models.Event{
-		ID:     expectedEventID,
-		Device: devID1,
-	}
 
 	transform1WasCalled := false
 
-	eventCborBytes, err := cbor.Marshal(eventIn)
+	// TODO: Change to TestAddEventRequest when V2 has support for CBOR
+	payload, err := cbor.Marshal(testEvent)
 	assert.NoError(t, err, "expected no error when marshalling data")
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
-		Payload:       eventCborBytes,
+		Payload:       payload,
 		ContentType:   clients.ContentTypeCBOR,
-		Checksum:      expectedChecksum,
 	}
 
 	context := &appcontext.Context{
@@ -307,10 +334,10 @@ func TestProcessMessageCBOR(t *testing.T) {
 
 		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
 
-		if result, ok := params[0].(*models.Event); ok {
-			require.True(t, ok, "Should have received CoreData event")
-			assert.Equal(t, devID1, result.Device, "Did not receive expected CoreData event, wrong device")
-			assert.Equal(t, expectedEventID, result.ID, "Did not receive expected CoreData event, wrong ID")
+		if result, ok := params[0].(*dtos.Event); ok {
+			require.True(t, ok, "Should have received EdgeX event")
+			assert.Equal(t, testEvent.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
+			assert.Equal(t, testEvent.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
 		}
 
 		return false, nil
@@ -329,7 +356,7 @@ type CustomType struct {
 	ID string `json:"id"`
 }
 
-// Must implement the Marshaler interface so SetOutputData will marshal it to JSON
+// Must implement the Marshaller interface so SetOutputData will marshal it to JSON
 func (custom CustomType) MarshalJSON() ([]byte, error) {
 	test := struct {
 		ID string `json:"id"`
@@ -341,18 +368,20 @@ func (custom CustomType) MarshalJSON() ([]byte, error) {
 }
 
 func TestProcessMessageTargetType(t *testing.T) {
-	eventIn := models.Event{
-		Device: devID1,
-	}
-	eventJson, _ := json.Marshal(eventIn)
+	jsonPayload, err := json.Marshal(testAddEventRequest)
+	require.NoError(t, err)
 
-	eventCborBytes, err := cbor.Marshal(eventIn)
+	eventJson, err := json.Marshal(testEvent)
+	require.NoError(t, err)
+
+	// TODO: Change to TestAddEventRequest when V2 has support for CBOR
+	cborPayload, err := cbor.Marshal(testAddEventRequest)
 	assert.NoError(t, err, "expected no error when marshalling data")
 
 	expected := CustomType{
 		ID: "Id1",
 	}
-	customJson, _ := expected.MarshalJSON()
+	customJsonPayload, _ := expected.MarshalJSON()
 	byteData := []byte("This is my bytes")
 
 	targetTypeTests := []struct {
@@ -363,12 +392,12 @@ func TestProcessMessageTargetType(t *testing.T) {
 		ExpectedOutputData []byte
 		ErrorExpected      bool
 	}{
-		{"Default Nil Target Type", nil, eventJson, clients.ContentTypeJSON, eventJson, false},
-		{"Event as Json", &models.Event{}, eventJson, clients.ContentTypeJSON, eventJson, false},
-		{"Event as Cbor", &models.Event{}, eventCborBytes, clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
-		{"Custom Type Json", &CustomType{}, customJson, clients.ContentTypeJSON, customJson, false},
+		{"Default Nil Target Type", nil, jsonPayload, clients.ContentTypeJSON, eventJson, false},
+		{"Event as Json", &dtos.Event{}, jsonPayload, clients.ContentTypeJSON, eventJson, false},
+		{"Event as Cbor", &dtos.Event{}, cborPayload, clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
+		{"Custom Type Json", &CustomType{}, customJsonPayload, clients.ContentTypeJSON, customJsonPayload, false},
 		{"Byte Slice", &[]byte{}, byteData, "application/binary", byteData, false},
-		{"Target Type Not a pointer", models.Event{}, nil, "", nil, true},
+		{"Target Type Not a pointer", dtos.Event{}, nil, "", nil, true},
 	}
 
 	for _, currentTest := range targetTypeTests {
@@ -401,7 +430,7 @@ func TestProcessMessageTargetType(t *testing.T) {
 
 func TestExecutePipelinePersist(t *testing.T) {
 	expectedItemCount := 1
-	config := common.ConfigurationStruct{
+	configuration := common.ConfigurationStruct{
 		Writable: common.WritableInfo{
 			LogLevel: "DEBUG",
 			StoreAndForward: common.StoreAndForwardInfo{
@@ -411,7 +440,7 @@ func TestExecutePipelinePersist(t *testing.T) {
 	}
 
 	ctx := appcontext.Context{
-		Configuration: &config,
+		Configuration: &configuration,
 		LoggingClient: lc,
 		CorrelationID: "CorrelationID",
 	}
@@ -436,4 +465,139 @@ func TestExecutePipelinePersist(t *testing.T) {
 	require.Equal(t, expectedItemCount, len(storedObjects), "unexpected item count")
 	assert.Equal(t, serviceKey, storedObjects[0].AppServiceKey, "AppServiceKey not as expected")
 	assert.Equal(t, ctx.CorrelationID, storedObjects[0].CorrelationID, "CorrelationID not as expected")
+}
+
+// TODO: Remove once switch completely to V2 Event DTOs
+func TestProcessMessageJSONWithV1Event(t *testing.T) {
+	expectedCorrelationID := "123-234-345-456"
+
+	transform1WasCalled := false
+
+	eventInBytes, _ := json.Marshal(testV1Event)
+	envelope := types.MessageEnvelope{
+		CorrelationID: expectedCorrelationID,
+		Payload:       eventInBytes,
+		ContentType:   clients.ContentTypeJSON,
+	}
+
+	context := &appcontext.Context{
+		LoggingClient: lc,
+		CorrelationID: expectedCorrelationID,
+	}
+
+	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		transform1WasCalled = true
+
+		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
+
+		if result, ok := params[0].(*dtos.Event); ok {
+			require.True(t, ok, "Should have received EdgeX event")
+			assert.Equal(t, testEvent.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
+			assert.Equal(t, testEvent.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
+		}
+
+		return false, nil
+	}
+
+	runtime := GolangRuntime{}
+	runtime.Initialize(nil, nil)
+	runtime.SetTransforms([]appcontext.AppFunction{transform1})
+
+	result := runtime.ProcessMessage(context, envelope)
+	assert.Nil(t, result, "result should be null")
+	assert.True(t, transform1WasCalled, "transform1 should have been called")
+}
+
+func TestGolangRuntime_getApiVersion(t *testing.T) {
+	jsonV2Payload, _ := json.Marshal(testAddEventRequest)
+	cborV2Payload, _ := cbor.Marshal(testAddEventRequest)
+	jsonV1Payload, _ := json.Marshal(testV1Event)
+	cborV1Payload, _ := cbor.Marshal(testV1Event)
+
+	tests := []struct {
+		Name        string
+		Payload     []byte
+		ContentType string
+		Expected    string
+	}{
+		{"JSON V2 Event", jsonV2Payload, clients.ContentTypeJSON, ApiV2},
+		{"CBOR V2 Event", cborV2Payload, clients.ContentTypeCBOR, ApiV2},
+		{"JSON V1 Event", jsonV1Payload, clients.ContentTypeJSON, ApiV1},
+		{"CBOR V1 Event", cborV1Payload, clients.ContentTypeCBOR, ApiV1},
+	}
+
+	target := GolangRuntime{}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			envelope := types.MessageEnvelope{}
+			envelope.Payload = testCase.Payload
+			envelope.ContentType = testCase.ContentType
+
+			actual, err := target.getApiVersion(envelope)
+			require.NoError(t, err)
+			require.Equal(t, testCase.Expected, actual)
+		})
+	}
+}
+
+func TestGolangRuntime_unmarshalV1EventToV2Event(t *testing.T) {
+	target := GolangRuntime{}
+
+	jsonV1Payload, _ := json.Marshal(testV1Event)
+	cborV1Payload, _ := cbor.Marshal(testV1Event)
+	expected := testEvent
+	expected.ProfileName = "Unknown"
+	expected.Readings[0].ProfileName = "Unknown"
+
+	tests := []struct {
+		Name        string
+		Payload     []byte
+		ContentType string
+	}{
+		{"JSON V1 Event", jsonV1Payload, clients.ContentTypeJSON},
+		{"CBOR V1 Event", cborV1Payload, clients.ContentTypeCBOR},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			envelope := types.MessageEnvelope{}
+			envelope.Payload = testCase.Payload
+			envelope.ContentType = testCase.ContentType
+
+			actual, err := target.unmarshalV1EventToV2Event(envelope, lc)
+			require.NoError(t, err)
+			require.Equal(t, expected, *actual)
+		})
+	}
+}
+
+func TestGolangRuntime_unmarshalV2Event(t *testing.T) {
+	jsonV2Payload, _ := json.Marshal(testAddEventRequest)
+	cborV2Payload, _ := cbor.Marshal(testAddEventRequest)
+
+	expected := testEvent
+
+	tests := []struct {
+		Name        string
+		Payload     []byte
+		ContentType string
+	}{
+		{"JSON V2 Event", jsonV2Payload, clients.ContentTypeJSON},
+		{"CBOR V2 Event", cborV2Payload, clients.ContentTypeCBOR},
+	}
+
+	target := GolangRuntime{}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			envelope := types.MessageEnvelope{}
+			envelope.Payload = testCase.Payload
+			envelope.ContentType = testCase.ContentType
+
+			actual, err := target.unmarshalEventDTO(envelope, lc)
+			require.NoError(t, err)
+			require.Equal(t, expected, *actual)
+		})
+	}
 }

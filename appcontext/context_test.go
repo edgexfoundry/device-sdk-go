@@ -25,7 +25,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	localURL "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,27 +68,33 @@ func TestPushToCore(t *testing.T) {
 		EventClient:   eventClient,
 		LoggingClient: lc,
 	}
-	newEvent := &models.Event{
-		ID:     "newId",
-		Device: "device-name",
-		Origin: 1567802840199266000,
-		Readings: []models.Reading{
+	expectedEvent := &dtos.Event{
+		Versionable: common.NewVersionable(),
+		DeviceName:  "device-name",
+		Readings: []dtos.BaseReading{
 			{
-				Device:      "device-name",
-				Name:        "device-resource",
-				Value:       "value",
-				BinaryValue: []uint8(nil),
+				Versionable:  common.NewVersionable(),
+				DeviceName:   "device-name",
+				ResourceName: "device-resource",
+				ValueType:    v2.ValueTypeString,
+				SimpleReading: dtos.SimpleReading{
+					Value: "value",
+				},
 			},
 		},
 	}
-	result, err := ctx.PushToCoreData("device-name", "device-resource", "value")
+	actualEvent, err := ctx.PushToCoreData("device-name", "device-resource", "value")
 	require.NoError(t, err)
 
-	assert.NotNil(t, result)
-	assert.Equal(t, newEvent.ID, result.ID)
-	assert.Equal(t, newEvent.Device, result.Device)
-	assert.Equal(t, newEvent.Readings[0].Name, result.Readings[0].Name)
-	assert.Equal(t, newEvent.Readings[0].Value, result.Readings[0].Value)
+	assert.NotNil(t, actualEvent)
+	assert.Equal(t, expectedEvent.ApiVersion, actualEvent.ApiVersion)
+	assert.Equal(t, expectedEvent.DeviceName, actualEvent.DeviceName)
+	assert.True(t, len(expectedEvent.Readings) == 1)
+	assert.Equal(t, expectedEvent.Readings[0].DeviceName, actualEvent.Readings[0].DeviceName)
+	assert.Equal(t, expectedEvent.Readings[0].ResourceName, actualEvent.Readings[0].ResourceName)
+	assert.Equal(t, expectedEvent.Readings[0].Value, actualEvent.Readings[0].Value)
+	assert.Equal(t, expectedEvent.Readings[0].ValueType, actualEvent.Readings[0].ValueType)
+	assert.Equal(t, expectedEvent.Readings[0].ApiVersion, actualEvent.Readings[0].ApiVersion)
 }
 
 func TestSetRetryData(t *testing.T) {

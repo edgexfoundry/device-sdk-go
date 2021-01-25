@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 )
 
 // Tags contains the list of Tag key/values
@@ -45,7 +45,7 @@ func (t *Tags) AddTags(edgexcontext *appcontext.Context, params ...interface{}) 
 		return false, errors.New("no Event Received")
 	}
 
-	event, ok := params[0].(models.Event)
+	event, ok := params[0].(dtos.Event)
 	if !ok {
 		return false, errors.New("type received is not an Event")
 	}

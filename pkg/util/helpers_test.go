@@ -21,14 +21,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSplitComma(t *testing.T) {
-	commaDelimmited := "Hel lo,, ,Test,Hi, "
-	results := strings.FieldsFunc(commaDelimmited, SplitComma)
+	commaDelimited := "Hel lo,, ,Test,Hi, "
+	results := strings.FieldsFunc(commaDelimited, SplitComma)
 	// Should have 4 elements (space counts as an element)
 	assert.Equal(t, 5, len(results))
 	assert.Equal(t, "Hel lo", results[0])
@@ -38,8 +37,8 @@ func TestSplitComma(t *testing.T) {
 	assert.Equal(t, " ", results[4])
 }
 func TestSplitCommaEmpty(t *testing.T) {
-	commaDelimmited := ""
-	results := strings.FieldsFunc(commaDelimmited, SplitComma)
+	commaDelimited := ""
+	results := strings.FieldsFunc(commaDelimited, SplitComma)
 	// Should have 4 elements (space counts as an element)
 	assert.Equal(t, 0, len(results))
 }
@@ -68,9 +67,9 @@ func TestCoerceTypeByteArrayToByteArray(t *testing.T) {
 	assert.NoError(t, err)
 	assert.IsType(t, reflect.TypeOf(expectedType), reflect.TypeOf(result))
 }
-func TestCoerceTypeJSONMarshalerToByteArray(t *testing.T) {
-	myData := models.Event{
-		Device: "deviceId",
+func TestCoerceTypeJSONMarshallerToByteArray(t *testing.T) {
+	myData := dtos.Event{
+		DeviceName: "deviceId",
 	}
 	var expectedType []byte
 	result, err := CoerceType(myData)
