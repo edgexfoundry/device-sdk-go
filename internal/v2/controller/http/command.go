@@ -20,7 +20,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 )
 
-const SDKPostEventReserved = "ds-postevent"
+const SDKPostEventReserved = "ds-pushevent"
 const SDKReturnEventReserved = "ds-returnevent"
 const QueryParameterValueYes = "yes"
 const QueryParameterValueNo = "no"

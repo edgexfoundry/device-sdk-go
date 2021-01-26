@@ -901,7 +901,7 @@ paths:
             type: string
           example: allValues
         - in: query
-          name: ds-postevent
+          name: ds-pushevent
           schema:
             type: string
             enum:
