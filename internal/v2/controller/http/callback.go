@@ -124,7 +124,7 @@ func (c *V2HttpController) AddProvisionWatcher(writer http.ResponseWriter, reque
 
 	edgexErr := application.AddProvisionWatcher(addProvisionWatcherRequest, c.lc)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+		res := commonDTO.NewBaseResponse(addProvisionWatcherRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiWatcherCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiWatcherCallbackRoute)
@@ -143,9 +143,9 @@ func (c *V2HttpController) UpdateProvisionWatcher(writer http.ResponseWriter, re
 		return
 	}
 
-	edgexErr := application.UpdateProvisionWatcher(updateProvisionWatcherRequest, c.lc)
+	edgexErr := application.UpdateProvisionWatcher(updateProvisionWatcherRequest, c.dic)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+		res := commonDTO.NewBaseResponse(updateProvisionWatcherRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiWatcherCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiWatcherCallbackRoute)

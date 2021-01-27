@@ -74,11 +74,27 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 
 func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	ds := container.DeviceServiceFrom(dic.Get)
 
-	device, ok := cache.Devices().ForName(*updateDeviceRequest.Device.Name)
-	if !ok {
-		errMsg := fmt.Sprintf("failed to find device %s", *updateDeviceRequest.Device.Name)
-		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
+	device, exist := cache.Devices().ForName(*updateDeviceRequest.Device.Name)
+	if !exist {
+		// scenario that device migrate from another device service to here
+		if ds.Name == *updateDeviceRequest.Device.ServiceName {
+			var newDevice models.Device
+			requests.ReplaceDeviceModelFieldsWithDTO(&newDevice, updateDeviceRequest.Device)
+			req := requests.AddDeviceRequest{
+				BaseRequest: updateDeviceRequest.BaseRequest,
+				Device:      dtos.FromDeviceModelToDTO(newDevice),
+			}
+			return AddDevice(req, dic)
+		} else {
+			errMsg := fmt.Sprintf("failed to find device %s", *updateDeviceRequest.Device.ServiceName)
+			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		}
+	}
+	// scenario that device is moving to another device service
+	if ds.Name != *updateDeviceRequest.Device.ServiceName {
+		return DeleteDevice(*updateDeviceRequest.Device.Name, dic)
 	}
 
 	requests.ReplaceDeviceModelFieldsWithDTO(&device, updateDeviceRequest.Device)
@@ -94,18 +110,18 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 		errMsg := fmt.Sprintf("failed to update device %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
 	}
-	lc.Debug(fmt.Sprintf("device %s updated", device.Name))
+	lc.Debugf("device %s updated", device.Name)
 
 	driver := container.ProtocolDriverFrom(dic.Get)
 	err := driver.UpdateDevice(device.Name, transformDeviceProtocols(device.Protocols), contract.AdminState(device.AdminState))
 	if err == nil {
-		lc.Debug(fmt.Sprintf("Invoked driver.UpdateDevice callback for %s", device.Name))
+		lc.Debugf("Invoked driver.UpdateDevice callback for %s", device.Name)
 	} else {
 		errMsg := fmt.Sprintf("driver.UpdateDevice callback failed for %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
+	lc.Debugf("restarting autoevents for device %s", device.Name)
 	autoevent.GetManager().RestartForDevice(device.Name, dic)
 	return nil
 }
@@ -167,11 +183,27 @@ func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcher
 	return nil
 }
 
-func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest, lc logger.LoggingClient) errors.EdgeX {
-	provisionWatcher, ok := cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
-	if !ok {
-		errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.Name)
-		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
+func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest, dic *di.Container) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	ds := container.DeviceServiceFrom(dic.Get)
+
+	provisionWatcher, exist := cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
+	if !exist {
+		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
+			var newProvisionWatcher models.ProvisionWatcher
+			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
+			req := requests.AddProvisionWatcherRequest{
+				BaseRequest:      updateProvisionWatcherRequest.BaseRequest,
+				ProvisionWatcher: dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher),
+			}
+			return AddProvisionWatcher(req, lc)
+		} else {
+			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)
+			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		}
+	}
+	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
+		return DeleteProvisionWatcher(*updateProvisionWatcherRequest.ProvisionWatcher.Name, lc)
 	}
 
 	requests.ReplaceProvisionWatcherModelFieldsWithDTO(&provisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
