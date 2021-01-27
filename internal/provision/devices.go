@@ -36,7 +36,7 @@ func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) error {
 			err := createDevice(
 				d,
 				lc,
-				container.DeviceServiceFrom(dic.Get),
+				*container.DeviceServiceFrom(dic.Get),
 				container.MetadataDeviceClientFrom(dic.Get))
 			if err != nil {
 				lc.Error(fmt.Sprintf("creating Device %s from config failed", d.Name))

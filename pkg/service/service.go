@@ -53,7 +53,7 @@ type DeviceService struct {
 	edgexClients   clients.EdgeXClients
 	controller     *controller.RestController
 	config         *common.ConfigurationStruct
-	deviceService  contract.DeviceService
+	deviceService  *contract.DeviceService
 	driver         dsModels.ProtocolDriver
 	discovery      dsModels.ProtocolDiscovery
 	asyncCh        chan *dsModels.AsyncValues
@@ -188,7 +188,7 @@ func (s *DeviceService) selfRegister() error {
 		newDeviceService.Id = ds.Id
 	}
 
-	s.deviceService = newDeviceService
+	s.deviceService = &newDeviceService
 	return nil
 }
 
