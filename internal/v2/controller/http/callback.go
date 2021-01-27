@@ -10,13 +10,14 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/gorilla/mux"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 )
 
 func (c *V2HttpController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {
@@ -148,5 +149,26 @@ func (c *V2HttpController) UpdateProvisionWatcher(writer http.ResponseWriter, re
 		c.sendResponse(writer, request, v2.ApiWatcherCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiWatcherCallbackRoute)
+	}
+}
+
+func (c *V2HttpController) UpdateDeviceService(writer http.ResponseWriter, request *http.Request) {
+	defer request.Body.Close()
+
+	var updateDeviceServiceRequest requests.UpdateDeviceServiceRequest
+
+	err := json.NewDecoder(request.Body).Decode(&updateDeviceServiceRequest)
+	if err != nil {
+		edgexErr := errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to decode JSON", err)
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiServiceCallbackRoute)
+		return
+	}
+
+	edgexErr := application.UpdateDeviceService(updateDeviceServiceRequest, c.dic)
+	if edgexErr == nil {
+		res := commonDTO.NewBaseResponse(updateDeviceServiceRequest.RequestId, "", http.StatusOK)
+		c.sendResponse(writer, request, v2.ApiServiceCallbackRoute, res, http.StatusOK)
+	} else {
+		c.sendEdgexError(writer, request, edgexErr, v2.ApiServiceCallbackRoute)
 	}
 }

@@ -9,9 +9,6 @@ package application
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -20,6 +17,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
 
 func UpdateProfile(profileRequest requests.DeviceProfileRequest, lc logger.LoggingClient) errors.EdgeX {
@@ -193,6 +194,25 @@ func DeleteProvisionWatcher(name string, lc logger.LoggingClient) errors.EdgeX {
 	}
 
 	lc.Debugf("removed provision watcher %s", name)
+	return nil
+}
+
+func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceServiceRequest, dic *di.Container) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	ds := container.DeviceServiceFrom(dic.Get)
+
+	// we use request.Service.Name to identify the device service (i.e. it's not updatable)
+	// so if the request's service name is inconsistent with device service name
+	// we should not update it.
+	if ds.Name != *updateDeviceServiceRequest.Service.Name {
+		errMsg := fmt.Sprintf("failed to identify device service %s", *updateDeviceServiceRequest.Service.Name)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+	}
+
+	ds.AdminState = contract.AdminState(*updateDeviceServiceRequest.Service.AdminState)
+	ds.Labels = updateDeviceServiceRequest.Service.Labels
+
+	lc.Debug("device service updated")
 	return nil
 }
 
