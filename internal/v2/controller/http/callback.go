@@ -12,21 +12,20 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 )
 
 func (c *V2HttpController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	name := vars[common.NameVar]
+	name := vars[v2.Name]
 
 	err := application.DeleteDevice(name, c.dic)
 	if err == nil {
-		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+		res := common.NewBaseResponse("", "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiDeviceCallbackNameRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, err, v2.ApiDeviceCallbackNameRoute)
@@ -47,7 +46,7 @@ func (c *V2HttpController) AddDevice(writer http.ResponseWriter, request *http.R
 
 	edgexErr := application.AddDevice(addDeviceRequest, c.dic)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(addDeviceRequest.RequestId, "", http.StatusOK)
+		res := common.NewBaseResponse(addDeviceRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiDeviceCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceCallbackRoute)
@@ -68,7 +67,7 @@ func (c *V2HttpController) UpdateDevice(writer http.ResponseWriter, request *htt
 
 	edgexErr := application.UpdateDevice(updateDeviceRequest, c.dic)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(updateDeviceRequest.RequestId, "", http.StatusOK)
+		res := common.NewBaseResponse(updateDeviceRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiDeviceCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceCallbackRoute)
@@ -90,7 +89,7 @@ func (c *V2HttpController) UpdateProfile(writer http.ResponseWriter, request *ht
 
 	edgexErr = application.UpdateProfile(profileRequest, c.lc)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(profileRequest.RequestId, "", http.StatusOK)
+		res := common.NewBaseResponse(profileRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiProfileCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiProfileCallbackRoute)
@@ -99,11 +98,11 @@ func (c *V2HttpController) UpdateProfile(writer http.ResponseWriter, request *ht
 
 func (c *V2HttpController) DeleteProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
-	name := vars[common.NameVar]
+	name := vars[v2.Name]
 
 	err := application.DeleteProvisionWatcher(name, c.lc)
 	if err == nil {
-		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+		res := common.NewBaseResponse("", "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiWatcherCallbackNameRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, err, v2.ApiWatcherCallbackNameRoute)
@@ -124,7 +123,7 @@ func (c *V2HttpController) AddProvisionWatcher(writer http.ResponseWriter, reque
 
 	edgexErr := application.AddProvisionWatcher(addProvisionWatcherRequest, c.lc)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(addProvisionWatcherRequest.RequestId, "", http.StatusOK)
+		res := common.NewBaseResponse(addProvisionWatcherRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiWatcherCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiWatcherCallbackRoute)
@@ -145,7 +144,7 @@ func (c *V2HttpController) UpdateProvisionWatcher(writer http.ResponseWriter, re
 
 	edgexErr := application.UpdateProvisionWatcher(updateProvisionWatcherRequest, c.dic)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(updateProvisionWatcherRequest.RequestId, "", http.StatusOK)
+		res := common.NewBaseResponse(updateProvisionWatcherRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiWatcherCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiWatcherCallbackRoute)
@@ -166,7 +165,7 @@ func (c *V2HttpController) UpdateDeviceService(writer http.ResponseWriter, reque
 
 	edgexErr := application.UpdateDeviceService(updateDeviceServiceRequest, c.dic)
 	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(updateDeviceServiceRequest.RequestId, "", http.StatusOK)
+		res := common.NewBaseResponse(updateDeviceServiceRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, v2.ApiServiceCallbackRoute, res, http.StatusOK)
 	} else {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiServiceCallbackRoute)
