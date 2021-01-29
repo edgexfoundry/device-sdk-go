@@ -41,7 +41,7 @@ func (s *DeviceService) AddDevice(device contract.Device) (id string, err error)
 
 	millis := time.Now().UnixNano() / int64(time.Millisecond)
 	device.Origin = millis
-	device.Service = s.deviceService
+	device.Service = *s.deviceService
 	device.Profile = prf
 
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
