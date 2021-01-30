@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
@@ -92,6 +93,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	case *dtos.Event:
 		lc.Debug("Pipeline is expecting an Event")
 
+		var event *dtos.Event
 		var apiVersion string
 
 		// TODO: remove once fully switched over to V2 Event DTO
@@ -105,10 +107,10 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 		// TODO: remove once fully switched over to V2 Event DTO and simply call unmarshalEventDTO.
 		switch apiVersion {
 		case ApiV1:
-			target, err = gr.unmarshalV1EventToV2Event(envelope, lc)
+			event, err = gr.unmarshalV1EventToV2Event(envelope, lc)
 
 		case ApiV2:
-			target, err = gr.unmarshalEventDTO(envelope, lc)
+			event, err = gr.unmarshalEventDTO(envelope, lc)
 
 		default:
 			err = fmt.Errorf("unsupported API Version '%s' detected", apiVersion)
@@ -119,6 +121,12 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 			logError(lc, err, envelope.CorrelationID)
 			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 		}
+
+		if lc.LogLevel() == models.DebugLog {
+			gr.debugLogEvent(lc, event)
+		}
+
+		target = event
 
 	default:
 		customTypeName := di.TypeInstanceToName(target)
@@ -145,6 +153,30 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	gr.isBusyCopying.Unlock()
 
 	return gr.ExecutePipeline(target, envelope.ContentType, edgexcontext, transforms, 0, false)
+}
+
+func (gr *GolangRuntime) debugLogEvent(lc logger.LoggingClient, event *dtos.Event) {
+	lc.Debugf("Event Received with ProfileName=%s, DeviceName=%s and ReadingCount=%d",
+		event.ProfileName,
+		event.DeviceName,
+		len(event.Readings))
+	for index, reading := range event.Readings {
+		switch strings.ToLower(reading.ValueType) {
+		case strings.ToLower(v2.ValueTypeBinary):
+			lc.Debugf("Reading #%d received with ResourceName=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
+				index+1,
+				reading.ResourceName,
+				reading.ValueType,
+				reading.MediaType,
+				len(reading.BinaryValue))
+		default:
+			lc.Debugf("Reading #%d received with ResourceName=%s, ValueType=%s, Value=`%s`",
+				index+1,
+				reading.ResourceName,
+				reading.ValueType,
+				reading.Value)
+		}
+	}
 }
 
 func logError(lc logger.LoggingClient, err error, correlationID string) {
