@@ -255,6 +255,118 @@ components:
           additionalProperties:
             type: string
           description: "The attributes define how the value is addressed on the device"
+    BaseReading:
+      description: "A base reading type containing common properties from which more specific reading types inherit. This definition should not be implemented but is used elsewhere to indicate support for a mixed list of simple/binary readings in a single event."
+      type: object
+      properties:
+        apiVersion:
+          description: "A version number shows the API version in DTOs."
+          type: string
+        id:
+          description: "The unique identifier for the reading"
+          type: string
+          format: uuid
+        created:
+          description: "A Unix timestamp indicating when (if) the reading was initially persisted to a database."
+          type: integer
+        origin:
+          description: "A Unix timestamp indicating when the reading was originated at the source device (can support nanoseconds)"
+          type: integer
+        deviceName:
+          description: "The name of the device from which the reading originated"
+          type: string
+        resourceName:
+          description: "The device resource name for the reading"
+          type: string
+        profileName:
+          description: "The device profile name for the reading"
+          type: string
+        valueType:
+          description: "Indicates the datatype of the value property"
+          type: string
+      required:
+        - deviceName
+        - resourceName
+        - profileName
+        - origin
+        - valueType
+    SimpleReading:
+      description: "An event reading for a simple data type"
+      allOf:
+        - $ref: '#/components/schemas/BaseReading'
+        - type: object
+          properties:
+            value:
+              description: "A string representation of the reading's value"
+              type: string
+      required:
+        - value
+    BinaryReading:
+      description: "An event reading for a binary data type"
+      allOf:
+        - $ref: '#/components/schemas/BaseReading'
+        - type: object
+          properties:
+            binaryValue:
+              description: "If the value of the reading is binary, it will be found in this property as a byte array"
+              type: string
+              format: byte
+            mediaType:
+              description: "E.g. MIME Type, indicates what the content type of the binaryValue property is if it's populated."
+              type: string
+          required:
+            - binaryValue
+            - mediaType
+    Event:
+      description: "A discrete event containing one or more readings"
+      properties:
+        apiVersion:
+          description: "A version number shows the API version in DTOs."
+          type: string
+        id:
+          description: "The unique identifier for the event"
+          type: string
+          format: uuid
+        deviceName:
+          description: "The name of the device from which the event originated"
+          type: string
+        profileName:
+          description: "The name of the device profile from which the event originated"
+          type: string
+        created:
+          description: "A Unix timestamp indicating when (if) the event was initially persisted to a database."
+          type: integer
+        origin:
+          description: "A Unix timestamp indicating when the event was originated at the source device (can support nanoseconds)"
+          type: integer
+        readings:
+          description: "One or more readings captured at the time of the event"
+          type: array
+          items:
+            $ref: '#/components/schemas/SimpleReading'
+        tags:
+          description: "List of zero or more Tags attached to the Event which give more context to the Event"
+          title: tags
+          type: object
+          example: {
+            "Gateway-id": "HoustonStore-000123",
+            "Latitude": "29.630771",
+            "Longitude": "-95.377603",
+          }
+      required:
+        - id
+        - deviceName
+        - profileName
+        - origin
+        - readings
+    EventResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+      description: "A response type for returning an Event to the caller."
+      type: object
+      properties:
+        event:
+          $ref: '#/components/schemas/Event'
     ErrorResponse:
       allOf:
         - $ref: '#/components/schemas/BaseResponse'
@@ -975,13 +1087,15 @@ paths:
           required: true
           schema:
             type: string
-          example: sensor
+          example: sensor01
+          description: "A name uniquely identifying a device."
         - in: path
           name: command
           required: true
           schema:
             type: string
-          example: allValues
+          example: command01
+          description: "A name uniquely identifying a command."
         - in: query
           name: ds-pushevent
           schema:
@@ -991,6 +1105,7 @@ paths:
               - no
             default: no
           example: yes
+          description: "If set to yes, a successful GET will result in an event being pushed to the EdgeX system"
         - in: query
           name: ds-returnevent
           schema:
@@ -1000,6 +1115,7 @@ paths:
               - no
             default: yes
           example: no
+          description: "If set to no, there will be no Event returned in the http response"
       responses:
         '200':
           description: String as returned by the device/sensor through the device service.
@@ -1009,7 +1125,7 @@ paths:
           content:
             'application/json':
               schema:
-                $ref: '#/components/schemas/NewEventResponse'
+                $ref: '#/components/schemas/EventResponse'
         '404':
           description: If no device exists by the name provided or the command is unknown.
           headers:
@@ -1068,6 +1184,10 @@ paths:
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '404':
           description: If no device exists for the name provided or the command is unknown.
           headers:
