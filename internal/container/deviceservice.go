@@ -22,8 +22,8 @@ var ProtocolDiscoveryName = di.TypeInstanceToName((*models.ProtocolDiscovery)(ni
 var ProtocolDriverName = di.TypeInstanceToName((*models.ProtocolDriver)(nil))
 
 // DeviceServiceFrom helper function queries the DIC and returns device service struct.
-func DeviceServiceFrom(get di.Get) contract.DeviceService {
-	return get(DeviceServiceName).(contract.DeviceService)
+func DeviceServiceFrom(get di.Get) *contract.DeviceService {
+	return get(DeviceServiceName).(*contract.DeviceService)
 }
 
 // ProtocolDiscoveryFrom helper function queries the DIC and returns protocol discovery implementation.

@@ -92,6 +92,7 @@ func (c *RestController) InitV2RestRoutes() {
 	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.AddProvisionWatcher).Methods(http.MethodPost)
 	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.UpdateProvisionWatcher).Methods(http.MethodPut)
 	c.addReservedRoute(contractsV2.ApiProvisionWatcherByNameRoute, c.v2HttpController.DeleteProvisionWatcher).Methods(http.MethodDelete)
+	c.addReservedRoute(contractsV2.ApiServiceCallbackRoute, c.v2HttpController.UpdateDeviceService).Methods(http.MethodPut)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {

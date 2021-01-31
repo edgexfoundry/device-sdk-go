@@ -215,6 +215,29 @@ components:
           items:
             $ref: '#/components/schemas/Command'
           description: "Defines commands that are accessible via the core-command service,"
+    UpdateDeviceService:
+      description: "A DeviceService is responsible for proxying connectivity between a set of devices and the EdgeX Foundry core services."
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID uniquely identifies the device, a UUID for example
+        name:
+          type: string
+          description: Non-database identifier(must be unique)
+        labels:
+          type: array
+          description: tags or other labels applied to the device service for search or other identification needs
+          items:
+            type: string
+        baseAddress:
+          type: string
+          description: BaseAddress is a fully qualified URI, e.g. <protocol>:\\<hostname>:<port>/<optional path>
+        adminState:
+          type: string
+          enum: [locked, unlocked]
+          description: Device Service Admin State
     DeviceResource:
       description: "DeviceResource represents a value on a device that can be read or written."
       type: object
@@ -673,6 +696,16 @@ components:
           $ref: '#/components/schemas/ProvisionWatcher'
       required:
         - provisionWatcher
+    UpdateDeviceServiceRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequest'
+      description: "A request to update an existing device service definition. 'id' and 'name' must be populated in order to identify the service. Any other property that is populated in the request will be updated. Empty/blank properties will not be considered."
+      type: object
+      properties:
+        service:
+          $ref: '#/components/schemas/UpdateDeviceService'
+      required:
+        - service
     VersionResponse:
       description: "A response returned from the /version endpoint whose purpose is to report out the latest version supported by the service."
       allOf:
@@ -958,6 +991,55 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateProvisionWatcherRequest'
         required: true
+
+  /callback/service:
+    parameters:
+      - $ref: '#/components/parameters/correlatedRequestHeader'
+    put:
+      description: "This call is used by core-metadata to inform the device service that its characteristics have been updated"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceServiceRequest'
+        required: true
+      responses:
+        '200':
+          description: "Callback successful"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+        '400':
+          description: Invalid callback request.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: The device doesn't exist.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /callback/watcher/name/{name}:
     parameters:

@@ -86,7 +86,7 @@ func TestCallback(t *testing.T) {
 // Test Command REST call when service is locked.
 func TestCommandServiceLocked(t *testing.T) {
 	lc := logger.NewMockClient()
-	ds := contract.DeviceService{
+	ds := &contract.DeviceService{
 		AdminState: contract.Locked,
 	}
 	dic := di.NewContainer(di.ServiceConstructorMap{
@@ -123,7 +123,7 @@ func TestCommandServiceLocked(t *testing.T) {
 // specify an existing device.
 func TestCommandNoDevice(t *testing.T) {
 	lc := logger.NewMockClient()
-	ds := contract.DeviceService{}
+	ds := &contract.DeviceService{}
 	dc := &mock.DeviceClientMock{}
 	vdc := &mock.ValueDescriptorMock{}
 	pwc := &mock.ProvisionWatcherClientMock{}
