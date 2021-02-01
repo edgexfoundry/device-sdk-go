@@ -14,38 +14,34 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/responses"
-
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
+	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 type CommandProcessor struct {
-	device         *contract.Device
-	deviceResource *contract.DeviceResource
+	device         models.Device
+	deviceResource models.DeviceResource
 	correlationID  string
 	cmd            string
 	params         string
 	dic            *di.Container
 }
 
-func NewCommandProcessor(device *contract.Device, dr *contract.DeviceResource, correlationID string, cmd string, params string, dic *di.Container) *CommandProcessor {
+func NewCommandProcessor(device models.Device, dr models.DeviceResource, correlationID string, cmd string, params string, dic *di.Container) *CommandProcessor {
 	return &CommandProcessor{
 		device:         device,
 		deviceResource: dr,
@@ -56,9 +52,11 @@ func NewCommandProcessor(device *contract.Device, dr *contract.DeviceResource, c
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, dic *di.Container) (res responses.EventResponse, err edgexErr.EdgeX) {
-	var device contract.Device
-	deviceKey := vars[sdkCommon.NameVar]
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, dic *di.Container) (res dtos.Event, err edgexErr.EdgeX) {
+	var exist bool
+	var device models.Device
+	var deviceResource models.DeviceResource
+	deviceKey := vars[v2.Name]
 	// the device service will perform some operations(e.g. update LastConnected timestamp,
 	// push returning event to core-data) after a device is successfully interacted with if
 	// it has been configured to do so, and those operation apply to every protocol and
@@ -67,50 +65,49 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 		if err != nil {
 			return
 		}
-		go sdkCommon.UpdateLastConnected(
-			device.Name,
-			container.ConfigurationFrom(dic.Get),
-			bootstrapContainer.LoggingClientFrom(dic.Get),
-			container.MetadataDeviceClientFrom(dic.Get))
+		config := container.ConfigurationFrom(dic.Get)
+		if config.Device.UpdateLastConnected {
+			go common.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), container.MetadataDeviceClientFrom(dic.Get))
+		}
 
 		if sendEvent {
 			ec := container.CoredataEventClientFrom(dic.Get)
 			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-			go SendEvent(res, correlationID, lc, ec)
+			go common.SendEvent(res, correlationID, lc, ec)
 		}
 	}()
 
 	// check device service's AdminState
 	ds := container.DeviceServiceFrom(dic.Get)
-	if ds.AdminState == contract.Locked {
+	if ds.AdminState == models.Locked {
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, "service locked", nil)
 	}
 
 	// check provided device exists
-	device, exist := cache.Devices().ForName(deviceKey)
+	device, exist = cache.Devices().ForName(deviceKey)
 	if !exist {
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceKey), nil)
 	}
 
 	// check device's AdminState
-	if device.AdminState == contract.Locked {
+	if device.AdminState == models.Locked {
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
 	}
 
 	var method string
 	if isRead {
-		method = sdkCommon.GetCmdMethod
+		method = common.GetCmdMethod
 	} else {
-		method = sdkCommon.SetCmdMethod
+		method = common.SetCmdMethod
 	}
-	cmd := vars[sdkCommon.CommandVar]
-	cmdExists, e := cache.Profiles().CommandExists(device.Profile.Name, cmd, method)
+	cmd := vars[v2.Command]
+	cmdExists, e := cache.Profiles().CommandExists(device.ProfileName, cmd, method)
 	if e != nil {
 		errMsg := fmt.Sprintf("failed to identify command %s in cache", cmd)
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, e)
 	}
 
-	helper := NewCommandProcessor(&device, nil, correlationID, cmd, body, dic)
+	helper := NewCommandProcessor(device, deviceResource, correlationID, cmd, body, dic)
 	if cmdExists {
 		if isRead {
 			return helper.ReadCommand()
@@ -118,12 +115,12 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 			return res, helper.WriteCommand()
 		}
 	} else {
-		dr, drExists := cache.Profiles().DeviceResource(device.Profile.Name, cmd)
-		if !drExists {
+		deviceResource, exist = cache.Profiles().DeviceResource(device.ProfileName, cmd)
+		if !exist {
 			return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "command not found", nil)
 		}
 
-		helper = NewCommandProcessor(&device, &dr, correlationID, cmd, body, dic)
+		helper = NewCommandProcessor(device, deviceResource, correlationID, cmd, body, dic)
 		if isRead {
 			return helper.ReadDeviceResource()
 		} else {
@@ -132,12 +129,12 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	}
 }
 
-func (c *CommandProcessor) ReadDeviceResource() (res responses.EventResponse, e edgexErr.EdgeX) {
+func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name), sdkCommon.CorrelationHeader, c.correlationID)
+	lc.Debug(fmt.Sprintf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name), common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not write-only
-	if c.deviceResource.Properties.Value.ReadWrite == sdkCommon.DeviceResourceWriteOnly {
+	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceWriteOnly {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", c.deviceResource.Name)
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
@@ -152,9 +149,9 @@ func (c *CommandProcessor) ReadDeviceResource() (res responses.EventResponse, e 
 		if len(req.Attributes) <= 0 {
 			req.Attributes = make(map[string]string)
 		}
-		req.Attributes[sdkCommon.URLRawQuery] = c.params
+		req.Attributes[common.URLRawQuery] = c.params
 	}
-	req.Type = c.deviceResource.Properties.Value.Type
+	req.Type = c.deviceResource.Properties.Type
 	reqs = append(reqs, req)
 
 	// execute protocol-specific read operation
@@ -166,24 +163,23 @@ func (c *CommandProcessor) ReadDeviceResource() (res responses.EventResponse, e 
 	}
 
 	// convert CommandValue to Event
-	event, err := c.commandValuesToEvent(results, c.deviceResource.Name)
-	if err != nil {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to convert CommandValue to Event", err)
+	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, c.dic)
+	if e != nil {
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to convert CommandValue to Event", e)
 	}
 
-	res = responses.NewEventResponse(c.correlationID, "", http.StatusOK, event)
 	return
 }
 
-func (c *CommandProcessor) ReadCommand() (res responses.EventResponse, e edgexErr.EdgeX) {
+func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - readCmd: reading cmd: %s", c.cmd), sdkCommon.CorrelationHeader, c.correlationID)
+	lc.Debug(fmt.Sprintf("Application - readCmd: reading cmd: %s", c.cmd), common.CorrelationHeader, c.correlationID)
 
 	// check GET ResourceOperation(s) exist for provided command
-	ros, err := cache.Profiles().ResourceOperations(c.device.Profile.Name, c.cmd, sdkCommon.GetCmdMethod)
-	if err != nil {
+	ros, e := cache.Profiles().ResourceOperations(c.device.ProfileName, c.cmd, common.GetCmdMethod)
+	if e != nil {
 		errMsg := fmt.Sprintf("GET ResourceOperation(s) for %s command not found", c.cmd)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, err)
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, e)
 	}
 
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
@@ -198,14 +194,14 @@ func (c *CommandProcessor) ReadCommand() (res responses.EventResponse, e edgexEr
 	for i, op := range ros {
 		drName := op.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
-		dr, ok := cache.Profiles().DeviceResource(c.device.Profile.Name, drName)
+		dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, drName)
 		if !ok {
 			errMsg := fmt.Sprintf("deviceResource %s in GET commnd %s for %s not defined", drName, c.cmd, c.device.Name)
 			return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 		}
 
 		// check the deviceResource isn't write-only
-		if dr.Properties.Value.ReadWrite == sdkCommon.DeviceResourceWriteOnly {
+		if dr.Properties.ReadWrite == common.DeviceResourceWriteOnly {
 			errMsg := fmt.Sprintf("deviceResource %s in GET command %s is marked as write-only", drName, c.cmd)
 			return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
@@ -216,9 +212,9 @@ func (c *CommandProcessor) ReadCommand() (res responses.EventResponse, e edgexEr
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]string)
 			}
-			reqs[i].Attributes[sdkCommon.URLRawQuery] = c.params
+			reqs[i].Attributes[common.URLRawQuery] = c.params
 		}
-		reqs[i].Type = dr.Properties.Value.Type
+		reqs[i].Type = dr.Properties.Type
 	}
 
 	// execute protocol-specific read operation
@@ -230,21 +226,20 @@ func (c *CommandProcessor) ReadCommand() (res responses.EventResponse, e edgexEr
 	}
 
 	// convert CommandValue to Event
-	event, err := c.commandValuesToEvent(results, c.cmd)
-	if err != nil {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform CommandValue to Event", err)
+	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, c.dic)
+	if e != nil {
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform CommandValue to Event", e)
 	}
 
-	res = responses.NewEventResponse(c.correlationID, "", http.StatusOK, event)
 	return
 }
 
 func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - writeDeviceResource: writting deviceResource: %s", c.deviceResource.Name), sdkCommon.CorrelationHeader, c.correlationID)
+	lc.Debug(fmt.Sprintf("Application - writeDeviceResource: writting deviceResource: %s", c.deviceResource.Name), common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not read-only
-	if c.deviceResource.Properties.Value.ReadWrite == sdkCommon.DeviceResourceReadOnly {
+	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceReadOnly {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", c.deviceResource.Name)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
@@ -258,8 +253,8 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	// check request body contains provided deviceResource
 	v, ok := paramMap[c.deviceResource.Name]
 	if !ok {
-		if c.deviceResource.Properties.Value.DefaultValue != "" {
-			v = c.deviceResource.Properties.Value.DefaultValue
+		if c.deviceResource.Properties.DefaultValue != "" {
+			v = c.deviceResource.Properties.DefaultValue
 		} else {
 			errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", c.deviceResource.Name)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
@@ -281,7 +276,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	// transform write value
 	configuration := container.ConfigurationFrom(c.dic.Get)
 	if configuration.Device.DataTransform {
-		err = transformer.TransformWriteParameter(cv, c.deviceResource.Properties.Value, lc)
+		err = transformer.TransformWriteParameter(cv, c.deviceResource.Properties, lc)
 		if err != nil {
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform write value", nil)
 		}
@@ -300,13 +295,13 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 
 func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - writeCmd: writting command: %s", c.cmd), sdkCommon.CorrelationHeader, c.correlationID)
+	lc.Debug(fmt.Sprintf("Application - writeCmd: writting command: %s", c.cmd), common.CorrelationHeader, c.correlationID)
 
 	// check SET ResourceOperation(s) exist for provided command
-	ros, err := cache.Profiles().ResourceOperations(c.device.Profile.Name, c.cmd, sdkCommon.SetCmdMethod)
-	if err != nil {
+	ros, e := cache.Profiles().ResourceOperations(c.device.ProfileName, c.cmd, common.SetCmdMethod)
+	if e != nil {
 		errMsg := fmt.Sprintf("SET ResourceOperation(s) for %s command not found", c.cmd)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, err)
+		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, e)
 	}
 
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
@@ -327,14 +322,14 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	for _, ro := range ros {
 		drName := ro.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
-		dr, ok := cache.Profiles().DeviceResource(c.device.Profile.Name, drName)
+		dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, drName)
 		if !ok {
 			errMsg := fmt.Sprintf("deviceResource %s in PUT commnd %s for %s not defined", drName, c.cmd, c.device.Name)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 		}
 
 		// check the deviceResource isn't read-only
-		if dr.Properties.Value.ReadWrite == sdkCommon.DeviceResourceReadOnly {
+		if dr.Properties.ReadWrite == common.DeviceResourceReadOnly {
 			errMsg := fmt.Sprintf("deviceResource %s in PUT command %s is marked as read-only", drName, c.cmd)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
@@ -344,8 +339,8 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		if !ok {
 			if ro.Parameter != "" {
 				value = ro.Parameter
-			} else if dr.Properties.Value.DefaultValue != "" {
-				value = dr.Properties.Value.DefaultValue
+			} else if dr.Properties.DefaultValue != "" {
+				value = dr.Properties.DefaultValue
 			} else {
 				errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
 				return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
@@ -363,7 +358,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		}
 
 		// create CommandValue
-		cv, err := createCommandValueFromDeviceResource(&dr, value)
+		cv, err := createCommandValueFromDeviceResource(dr, value)
 		if err == nil {
 			cvs = append(cvs, cv)
 		} else {
@@ -374,7 +369,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	// prepare CommandRequests
 	reqs := make([]dsModels.CommandRequest, len(cvs))
 	for i, cv := range cvs {
-		dr, _ := cache.Profiles().DeviceResource(c.device.Profile.Name, cv.DeviceResourceName)
+		dr, _ := cache.Profiles().DeviceResource(c.device.ProfileName, cv.DeviceResourceName)
 
 		reqs[i].DeviceResourceName = cv.DeviceResourceName
 		reqs[i].Attributes = dr.Attributes
@@ -382,7 +377,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 
 		// transform write value
 		if configuration.Device.DataTransform {
-			err = transformer.TransformWriteParameter(cv, dr.Properties.Value, lc)
+			err = transformer.TransformWriteParameter(cv, dr.Properties, lc)
 			if err != nil {
 				return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform write values", err)
 			}
@@ -400,78 +395,6 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	return nil
 }
 
-func (c *CommandProcessor) commandValuesToEvent(cvs []*dsModels.CommandValue, cmd string) (eventDTO dtos.Event, e error) {
-	var err error
-	var transformsOK = true
-	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-
-	configuration := container.ConfigurationFrom(c.dic.Get)
-	readings := make([]dtos.BaseReading, 0, configuration.Device.MaxCmdOps)
-
-	for _, cv := range cvs {
-		// double check the CommandValue return from ProtocolDriver match device command
-		dr, ok := cache.Profiles().DeviceResource(c.device.Profile.Name, cv.DeviceResourceName)
-		if !ok {
-			return eventDTO, fmt.Errorf("no deviceResource %s for %s in CommandValue (%s)", cv.DeviceResourceName, c.device.Name, cv.String())
-		}
-
-		// perform data transformation
-		if configuration.Device.DataTransform {
-			err = transformer.TransformReadResult(cv, dr.Properties.Value, lc)
-			if err != nil {
-				lc.Error(fmt.Sprintf("failed to transform CommandValue (%s): %v", cv.String(), err), sdkCommon.CorrelationHeader, c.correlationID)
-
-				if errors.As(err, &transformer.OverflowError{}) {
-					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.Overflow)
-				} else if errors.As(err, &transformer.NaNError{}) {
-					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.NaN)
-				} else {
-					transformsOK = false
-				}
-			}
-		}
-
-		// assertion
-		dc := container.MetadataDeviceClientFrom(c.dic.Get)
-		err = transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, c.device, lc, dc)
-		if err != nil {
-			cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource: %s, with value: %s", cv.DeviceResourceName, cv.String()))
-		}
-
-		// ResourceOperation mapping
-		ro, err := cache.Profiles().ResourceOperation(c.device.Profile.Name, cv.DeviceResourceName, sdkCommon.GetCmdMethod)
-		if err != nil {
-			// this allows SDK to directly read deviceResource without deviceCommands defined.
-			lc.Debug(fmt.Sprintf("failed to read ResourceOperation: %v", err), sdkCommon.CorrelationHeader, c.correlationID)
-		} else if len(ro.Mappings) > 0 {
-			newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
-			if ok {
-				cv = newCV
-			} else {
-				lc.Warn(fmt.Sprintf("ResourceOperation (%s) mapping value (%s) failed with the mapping table: %v", ro.DeviceResource, cv.String(), ro.Mappings), sdkCommon.CorrelationHeader, c.correlationID)
-			}
-		}
-
-		reading := commandValueToReading(cv, c.device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
-		readings = append(readings, reading)
-
-		if cv.Type == v2.ValueTypeBinary {
-			lc.Debug(fmt.Sprintf("device: %s DeviceResource: %v reading: binary value", c.device.Name, cv.DeviceResourceName), sdkCommon.CorrelationHeader, c.correlationID)
-		} else {
-			lc.Debug(fmt.Sprintf("device: %s DeviceResource: %v reading: %v", c.device.Name, cv.DeviceResourceName, reading), sdkCommon.CorrelationHeader, c.correlationID)
-		}
-	}
-
-	if !transformsOK {
-		return eventDTO, fmt.Errorf("GET command %s transform failed for %s", cmd, c.device.Name)
-	}
-
-	eventDTO = dtos.Event{DeviceName: c.device.Name, Readings: readings}
-	eventDTO.Origin = sdkCommon.GetUniqueOrigin()
-
-	return
-}
-
 func parseParams(params string) (paramMap map[string]string, err error) {
 	err = json.Unmarshal([]byte(params), &paramMap)
 	if err != nil {
@@ -486,12 +409,12 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func createCommandValueFromDeviceResource(dr *contract.DeviceResource, v string) (*dsModels.CommandValue, error) {
+func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*dsModels.CommandValue, error) {
 	var err error
 	var result *dsModels.CommandValue
 
 	origin := time.Now().UnixNano()
-	switch strings.ToLower(dr.Properties.Value.Type) {
+	switch strings.ToLower(dr.Properties.Type) {
 	case strings.ToLower(v2.ValueTypeString):
 		result = dsModels.NewStringValue(dr.Name, origin, v)
 	case strings.ToLower(v2.ValueTypeBool):
@@ -711,40 +634,4 @@ func float64FromBytes(numericValue []byte) (res float64, err error) {
 	reader := bytes.NewReader(numericValue)
 	err = binary.Read(reader, binary.BigEndian, &res)
 	return
-}
-
-func commandValueToReading(cv *dsModels.CommandValue, deviceName string, mediaType string, encoding string) dtos.BaseReading {
-	if encoding == "" {
-		encoding = dsModels.DefaultFloatEncoding
-	}
-
-	reading := dtos.BaseReading{ResourceName: cv.DeviceResourceName, DeviceName: deviceName, ValueType: cv.Type}
-	if cv.Type == v2.ValueTypeBinary {
-		reading.BinaryValue = cv.BinValue
-		reading.MediaType = mediaType
-	} else {
-		reading.Value = cv.ValueToString(encoding)
-	}
-
-	// if value has a non-zero Origin, use it
-	if cv.Origin > 0 {
-		reading.Origin = cv.Origin
-	} else {
-		reading.Origin = time.Now().UnixNano()
-	}
-
-	return reading
-}
-
-func SendEvent(event responses.EventResponse, correlationID string, lc logger.LoggingClient, ec coredata.EventClient) {
-	// TODO: comment out until core-contracts(EventClient) supports v2models
-	// TODO: the usage of CBOR encoding for binary reading is under discussion
-	//ctx := context.WithValue(context.Background(), sdkCommon.CorrelationHeader, correlationID)
-	//ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeJSON)
-	//responseBody, err := ec.Add(ctx, event)
-	//if err != nil {
-	//	lc.Error("SendEvent: failed to push event to core data", "device", event.DeviceName, "response", responseBody, "error", err)
-	//} else {
-	//	lc.Info("SendEvent: pushed event to core data", clients.ContentType, clients.FromContext(ctx, clients.ContentType), clients.CorrelationHeader, id)
-	//}
 }
