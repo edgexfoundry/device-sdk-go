@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,72 +10,49 @@ package service
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/provision"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/google/uuid"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
 
 // AddDeviceProfile adds a new DeviceProfile to the Device Service and Core Metadata
 // Returns new DeviceProfile id or non-nil error.
-func (s *DeviceService) AddDeviceProfile(profile contract.DeviceProfile) (id string, err error) {
+func (s *DeviceService) AddDeviceProfile(profile models.DeviceProfile) (string, error) {
 	if p, ok := cache.Profiles().ForName(profile.Name); ok {
 		return p.Id, fmt.Errorf("name conflicted, Profile %s exists", profile.Name)
 	}
 
-	s.LoggingClient.Debug(fmt.Sprintf("Adding managed Profile: : %s", profile.Name))
-	millis := time.Now().UnixNano() / int64(time.Millisecond)
-	profile.Origin = millis
-
+	s.LoggingClient.Debugf("Adding managed Profile %s", profile.Name)
+	req := requests.DeviceProfileRequest{
+		BaseRequest: commonDTO.BaseRequest{
+			RequestId: uuid.New().String(),
+		},
+		Profile: dtos.FromDeviceProfileModelToDTO(profile),
+	}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err = s.edgexClients.DeviceProfileClient.Add(ctx, &profile)
+	res, err := s.edgexClients.DeviceProfileClient.Add(ctx, []requests.DeviceProfileRequest{req})
 	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("Add Profile failed %s, error: %v", profile.Name, err))
+		s.LoggingClient.Errorf("failed to add Profile %s to Core Metadata: %v", profile.Name, err)
 		return "", err
 	}
-	if err = common.VerifyIdFormat(id, "Device Profile"); err != nil {
+	err = cache.Profiles().Add(profile)
+	if err != nil {
+		s.LoggingClient.Errorf("failed to add Profile %s to cache", profile.Name)
 		return "", err
 	}
-	profile.Id = id
-	_ = cache.Profiles().Add(profile)
 
-	provision.CreateDescriptorsFromProfile(
-		&profile,
-		s.LoggingClient,
-		s.edgexClients.GeneralClient,
-		s.edgexClients.ValueDescriptorClient)
-
-	return id, nil
+	return res[0].Id, nil
 }
 
 // DeviceProfiles return all managed DeviceProfiles from cache
-func (s *DeviceService) DeviceProfiles() []contract.DeviceProfile {
+func (s *DeviceService) DeviceProfiles() []models.DeviceProfile {
 	return cache.Profiles().All()
-}
-
-// RemoveDeviceProfile removes the specified DeviceProfile by id from the cache and ensures that the
-// instance in Core Metadata is also removed.
-func (s *DeviceService) RemoveDeviceProfile(id string) error {
-	profile, ok := cache.Profiles().ForId(id)
-	if !ok {
-		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", id)
-		s.LoggingClient.Error(msg)
-		return fmt.Errorf(msg)
-	}
-
-	s.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %s", profile.Name))
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := s.edgexClients.DeviceProfileClient.Delete(ctx, id)
-	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("Delete DeviceProfile %s from Core Metadata failed", id))
-		return err
-	}
-
-	err = cache.Profiles().Remove(id)
-	return err
 }
 
 // RemoveDeviceProfileByName removes the specified DeviceProfile by name from the cache and ensures that the
@@ -83,60 +60,60 @@ func (s *DeviceService) RemoveDeviceProfile(id string) error {
 func (s *DeviceService) RemoveDeviceProfileByName(name string) error {
 	profile, ok := cache.Profiles().ForName(name)
 	if !ok {
-		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", name)
+		msg := fmt.Sprintf("failed to find Profile %s in cache", name)
 		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	s.LoggingClient.Debug(fmt.Sprintf("Removing managed DeviceProfile: : %s", profile.Name))
+	s.LoggingClient.Debugf("Removing managed Profile %s", profile.Name)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := s.edgexClients.DeviceProfileClient.DeleteByName(ctx, name)
+	_, err := s.edgexClients.DeviceProfileClient.DeleteByName(ctx, name)
 	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("Delete DeviceProfile %s from Core Metadata failed", name))
+		s.LoggingClient.Errorf("failed to delete Profile %s in Core Metadata", name)
 		return err
 	}
 
-	err = cache.Profiles().RemoveByName(profile.Name)
+	err = cache.Profiles().RemoveByName(name)
 	return err
 }
 
 // UpdateDeviceProfile updates the DeviceProfile in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceService) UpdateDeviceProfile(profile contract.DeviceProfile) error {
-	_, ok := cache.Profiles().ForId(profile.Id)
+func (s *DeviceService) UpdateDeviceProfile(profile models.DeviceProfile) error {
+	_, ok := cache.Profiles().ForName(profile.Name)
 	if !ok {
-		msg := fmt.Sprintf("DeviceProfile %s cannot be found in cache", profile.Id)
+		msg := fmt.Sprintf("failed to find Profile %s in cache", profile.Name)
 		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	s.LoggingClient.Debug(fmt.Sprintf("Updating managed DeviceProfile: : %s", profile.Name))
+	s.LoggingClient.Debugf("Updating managed Profile %s", profile.Name)
+	req := requests.DeviceProfileRequest{
+		BaseRequest: commonDTO.BaseRequest{
+			RequestId: uuid.New().String(),
+		},
+		Profile: dtos.FromDeviceProfileModelToDTO(profile),
+	}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	err := s.edgexClients.DeviceProfileClient.Update(ctx, profile)
+	_, err := s.edgexClients.DeviceProfileClient.Update(ctx, []requests.DeviceProfileRequest{req})
 	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("Update DeviceProfile %s from Core Metadata failed: %v", profile.Name, err))
+		s.LoggingClient.Errorf("failed to update Profile %s in Core Metadata: %v", profile.Name, err)
 		return err
 	}
-
-	err = cache.Profiles().Update(profile)
-	provision.CreateDescriptorsFromProfile(
-		&profile,
-		s.LoggingClient,
-		s.edgexClients.GeneralClient,
-		s.edgexClients.ValueDescriptorClient)
 
 	return err
 }
 
-// ResourceOperation retrieves the first matched ResourceOpereation instance from cache according to
+// ResourceOperation retrieves the first matched ResourceOperation instance from cache according to
 // the Device name, Device Resource name, and the method (get or set).
-func (s *DeviceService) ResourceOperation(deviceName string, deviceResource string, method string) (contract.ResourceOperation, bool) {
+func (s *DeviceService) ResourceOperation(deviceName string, deviceResource string, method string) (models.ResourceOperation, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
-		s.LoggingClient.Error(fmt.Sprintf("retrieving ResourceOperation - Device %s not found", deviceName))
+		s.LoggingClient.Errorf("failed to find device %s in cache", deviceName)
+		return models.ResourceOperation{}, false
 	}
 
-	ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, deviceResource, method)
+	ro, err := cache.Profiles().ResourceOperation(device.ProfileName, deviceResource, method)
 	if err != nil {
 		s.LoggingClient.Error(err.Error())
 		return ro, false
@@ -146,13 +123,14 @@ func (s *DeviceService) ResourceOperation(deviceName string, deviceResource stri
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
 // the Device name and Device Resource name
-func (s *DeviceService) DeviceResource(deviceName string, deviceResource string, _ string) (contract.DeviceResource, bool) {
+func (s *DeviceService) DeviceResource(deviceName string, deviceResource string) (models.DeviceResource, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
-		s.LoggingClient.Error(fmt.Sprintf("retrieving DeviceResource - Device %s not found", deviceName))
+		s.LoggingClient.Errorf("failed to find device %s in cache", deviceName)
+		return models.DeviceResource{}, false
 	}
 
-	dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, deviceResource)
+	dr, ok := cache.Profiles().DeviceResource(device.ProfileName, deviceResource)
 	if !ok {
 		return dr, false
 	}

@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2020 VMware
+// Copyright (C) 2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,24 +10,24 @@ package service
 import (
 	"fmt"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
 
 // AddDeviceAutoEvent adds a new AutoEvent to the Device with given name
-func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event contract.AutoEvent) error {
+func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoEvent) error {
 	found := false
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
-		msg := fmt.Sprintf("Device %s cannot be found in cache", deviceName)
+		msg := fmt.Sprintf("failed to find device %s in cache", deviceName)
 		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
 	for _, e := range device.AutoEvents {
 		if e.Resource == event.Resource {
-			s.LoggingClient.Debug(fmt.Sprintf("Updating existing auto event %s for device %s\n", e.Resource, deviceName))
+			s.LoggingClient.Debugf("Updating existing AutoEvent %s for device %s", e.Resource, deviceName)
 			e.Frequency = event.Frequency
 			e.OnChange = event.OnChange
 			found = true
@@ -35,35 +36,43 @@ func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event contract.Aut
 	}
 
 	if !found {
-		s.LoggingClient.Debug(fmt.Sprintf("Adding new auto event to device %s: %v\n", deviceName, event))
+		s.LoggingClient.Debugf("Adding new AutoEvent %s to device %s", event.Resource, deviceName)
 		device.AutoEvents = append(device.AutoEvents, event)
-		cache.Devices().Update(device)
+		err := cache.Devices().Update(device)
+		if err != nil {
+			s.LoggingClient.Errorf("failed to update device %s with AutoEvent change", deviceName)
+			return err
+		}
 	}
-
-	autoevent.GetManager().RestartForDevice(deviceName, nil)
+	s.manager.RestartForDevice(deviceName)
 
 	return nil
 }
 
 // RemoveDeviceAutoEvent removes an AutoEvent from the Device with given name
-func (s *DeviceService) RemoveDeviceAutoEvent(deviceName string, event contract.AutoEvent) error {
+func (s *DeviceService) RemoveDeviceAutoEvent(deviceName string, event models.AutoEvent) error {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
-		msg := fmt.Sprintf("Device %s cannot be found in cache", deviceName)
+		msg := fmt.Sprintf("failed to find device %s cannot in cache", deviceName)
 		s.LoggingClient.Error(msg)
 		return fmt.Errorf(msg)
 	}
 
-	autoevent.GetManager().StopForDevice(deviceName)
+	s.manager.StopForDevice(deviceName)
 	for i, e := range device.AutoEvents {
 		if e.Resource == event.Resource {
-			s.LoggingClient.Debug(fmt.Sprintf("Removing auto event %s for device %s\n", e.Resource, deviceName))
+			s.LoggingClient.Debugf("Removing AutoEvent %s for device %s", e.Resource, deviceName)
 			device.AutoEvents = append(device.AutoEvents[:i], device.AutoEvents[i+1:]...)
 			break
 		}
 	}
-	cache.Devices().Update(device)
-	autoevent.GetManager().RestartForDevice(deviceName, nil)
+
+	err := cache.Devices().Update(device)
+	if err != nil {
+		s.LoggingClient.Errorf("failed to update device %s with AutoEvent change", deviceName)
+		return err
+	}
+	s.manager.RestartForDevice(deviceName)
 
 	return nil
 }
