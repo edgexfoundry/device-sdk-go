@@ -14,17 +14,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/general"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/metadata"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
+	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 )
@@ -182,21 +180,13 @@ func checkServiceAvailableViaRegistry(serviceId string, rc registry.Client, lc l
 
 func initializeClients(dic *di.Container) {
 	configuration := container.ConfigurationFrom(dic.Get)
-	// initialize Core Metadata clients
-	ac := metadata.NewAddressableClient(local.New(configuration.Clients[common.ClientMetadata].Url() + clients.ApiAddressableRoute))
-	dc := metadata.NewDeviceClient(local.New(configuration.Clients[common.ClientMetadata].Url() + clients.ApiDeviceRoute))
-	dsc := metadata.NewDeviceServiceClient(local.New(configuration.Clients[common.ClientMetadata].Url() + clients.ApiDeviceServiceRoute))
-	dpc := metadata.NewDeviceProfileClient(local.New(configuration.Clients[common.ClientMetadata].Url() + clients.ApiDeviceProfileRoute))
-	gc := general.NewGeneralClient(local.New(configuration.Clients[common.ClientMetadata].Url()))
-	pwc := metadata.NewProvisionWatcherClient(local.New(configuration.Clients[common.ClientMetadata].Url() + clients.ApiProvisionWatcherRoute))
-	// initialize Core Data clients
-	ec := coredata.NewEventClient(local.New(configuration.Clients[common.ClientData].Url() + clients.ApiEventRoute))
-	vdc := coredata.NewValueDescriptorClient(local.New(configuration.Clients[common.ClientData].Url() + common.APIValueDescriptorRoute))
+	dc := v2clients.NewDeviceClient(configuration.Clients[common.ClientMetadata].Url())
+	dsc := v2clients.NewDeviceServiceClient(configuration.Clients[common.ClientMetadata].Url())
+	dpc := v2clients.NewDeviceProfileClient(configuration.Clients[common.ClientMetadata].Url())
+	pwc := v2clients.NewProvisionWatcherClient(configuration.Clients[common.ClientMetadata].Url())
+	ec := v2clients.NewEventClient(configuration.Clients[common.ClientData].Url())
 
 	dic.Update(di.ServiceConstructorMap{
-		container.MetadataAddressableClientName: func(get di.Get) interface{} {
-			return ac
-		},
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {
 			return dc
 		},
@@ -206,17 +196,11 @@ func initializeClients(dic *di.Container) {
 		container.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
 			return dpc
 		},
-		container.GeneralClientName: func(get di.Get) interface{} {
-			return gc
-		},
 		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
 			return pwc
 		},
 		container.CoredataEventClientName: func(get di.Get) interface{} {
 			return ec
-		},
-		container.CoredataValueDescriptorClientName: func(get di.Get) interface{} {
-			return vdc
 		},
 	})
 }
