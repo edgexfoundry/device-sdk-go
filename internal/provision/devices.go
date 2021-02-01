@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,79 +9,74 @@ package provision
 
 import (
 	"context"
-	"fmt"
-	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/metadata"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/google/uuid"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
 
-func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) error {
+func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	serviceName := container.DeviceServiceFrom(dic.Get).Name
+	var addDevicesReq []requests.AddDeviceRequest
 
-	lc.Debug("Loading pre-define Devices from configuration")
+	lc.Debug("loading pre-defined devices from configuration")
 	for _, d := range deviceList {
 		if _, ok := cache.Devices().ForName(d.Name); ok {
-			lc.Debug(fmt.Sprintf("Device %s exists, using the existing one", d.Name))
+			lc.Debugf("device %s exists, using the existing one", d.Name)
 			continue
 		} else {
-			lc.Debug(fmt.Sprintf("Device %s doesn't exist, creating a new one", d.Name))
-			err := createDevice(
-				d,
-				lc,
-				*container.DeviceServiceFrom(dic.Get),
-				container.MetadataDeviceClientFrom(dic.Get))
+			lc.Debugf("device %s doesn't exist, creating a new one", d.Name)
+			deviceDTO, err := createDeviceDTO(serviceName, d, dic)
 			if err != nil {
-				lc.Error(fmt.Sprintf("creating Device %s from config failed", d.Name))
 				return err
 			}
+			req := requests.AddDeviceRequest{
+				BaseRequest: commonDTO.BaseRequest{
+					RequestId: uuid.New().String(),
+				},
+				Device: deviceDTO,
+			}
+			addDevicesReq = append(addDevicesReq, req)
 		}
 	}
-	return nil
+
+	if len(addDevicesReq) == 0 {
+		return nil
+	}
+	dc := container.MetadataDeviceClientFrom(dic.Get)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	_, err := dc.Add(ctx, addDevicesReq)
+	return err
 }
 
-func createDevice(
-	dc common.DeviceConfig,
-	lc logger.LoggingClient,
-	ds contract.DeviceService,
-	mdc metadata.DeviceClient) error {
-	prf, ok := cache.Profiles().ForName(dc.Profile)
-	if !ok {
-		errMsg := fmt.Sprintf("Device Profile %s doesn't exist for Device %s", dc.Profile, dc.Name)
-		lc.Error(errMsg)
-		return fmt.Errorf(errMsg)
+func createDeviceDTO(name string, dc common.DeviceConfig, dic *di.Container) (deviceDTO dtos.Device, err errors.EdgeX) {
+	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
+	_, err = dpc.DeviceProfileByName(context.Background(), dc.Profile)
+	if err != nil {
+		return
 	}
 
-	millis := time.Now().UnixNano() / int64(time.Millisecond)
-	device := &contract.Device{
+	device := models.Device{
 		Name:           dc.Name,
-		Profile:        prf,
+		Description:    dc.Description,
 		Protocols:      dc.Protocols,
 		Labels:         dc.Labels,
-		Service:        ds,
-		AdminState:     contract.Unlocked,
-		OperatingState: contract.Enabled,
+		ProfileName:    dc.Profile,
+		ServiceName:    name,
+		AdminState:     models.Unlocked,
+		OperatingState: models.Up,
 		AutoEvents:     dc.AutoEvents,
 	}
-	device.Origin = millis
-	device.Description = dc.Description
-	lc.Debug(fmt.Sprintf("Adding Device: %v", device))
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	id, err := mdc.Add(ctx, device)
-	if err != nil {
-		return err
-	}
-	if err = common.VerifyIdFormat(id, "Device"); err != nil {
-		return err
-	}
-	device.Id = id
 
-	return nil
+	return dtos.FromDeviceModelToDTO(device), nil
 }
