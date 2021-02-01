@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,9 +11,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 )
 
 var (
@@ -75,6 +76,9 @@ func (p *profileCache) ForName(name string) (models.DeviceProfile, bool) {
 	defer p.mutex.Unlock()
 
 	profile, ok := p.deviceProfileMap[name]
+	if !ok {
+		return models.DeviceProfile{}, false
+	}
 	return *profile, ok
 }
 
@@ -250,8 +254,7 @@ func (p *profileCache) CommandExists(profileName string, cmd string, method stri
 	}
 
 	if _, ok := deviceCommands[cmd]; !ok {
-		errMsg := fmt.Sprintf("failed to find %s command %s in profile %s", method, cmd, profileName)
-		return false, errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
+		return false, nil
 	}
 
 	return true, nil

@@ -40,6 +40,9 @@ func (p *provisionWatcherCache) ForName(name string) (models.ProvisionWatcher, b
 	defer p.mutex.Unlock()
 
 	watcher, ok := p.pwMap[name]
+	if !ok {
+		return models.ProvisionWatcher{}, false
+	}
 	return *watcher, ok
 }
 

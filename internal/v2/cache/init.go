@@ -7,26 +7,54 @@
 package cache
 
 import (
-	"sync"
+	"context"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
-)
 
-var (
-	initOnce sync.Once
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 // Init basic state for cache
-func InitV2Cache() {
-	initOnce.Do(func() {
-		// TODO: retrieve data from metadata when v2 clients are ready.
-		var ds []models.Device
-		newDeviceCache(ds)
+func InitV2Cache(name string, dic *di.Container) errors.EdgeX {
+	dc := container.MetadataDeviceClientFrom(dic.Get)
+	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
+	pwc := container.MetadataProvisionWatcherClientFrom(dic.Get)
 
-		var dps []models.DeviceProfile
-		newProfileCache(dps)
+	// init device cache
+	deviceRes, err := dc.DevicesByServiceName(context.Background(), name, 0, -1)
+	if err != nil {
+		return err
+	}
+	devices := make([]models.Device, len(deviceRes.Devices))
+	for i := range deviceRes.Devices {
+		devices[i] = dtos.ToDeviceModel(deviceRes.Devices[i])
+	}
+	newDeviceCache(devices)
 
-		var pws []models.ProvisionWatcher
-		newProvisionWatcherCache(pws)
-	})
+	// init profile cache
+	profiles := make([]models.DeviceProfile, len(devices))
+	for i, d := range devices {
+		res, err := dpc.DeviceProfileByName(context.Background(), d.ProfileName)
+		if err != nil {
+			return err
+		}
+		profiles[i] = dtos.ToDeviceProfileModel(res.Profile)
+	}
+	newProfileCache(profiles)
+
+	// init provision watcher cache
+	pwRes, err := pwc.ProvisionWatchersByServiceName(context.Background(), name, 0, -1)
+	if err != nil {
+		return err
+	}
+	pws := make([]models.ProvisionWatcher, len(pwRes.ProvisionWatchers))
+	for i := range pwRes.ProvisionWatchers {
+		pws[i] = dtos.ToProvisionWatcherModel(pwRes.ProvisionWatchers[i])
+	}
+	newProvisionWatcherCache(pws)
+
+	return nil
 }

@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -53,6 +53,9 @@ func (d *deviceCache) ForName(name string) (models.Device, bool) {
 	defer d.mutex.Unlock()
 
 	device, ok := d.deviceMap[name]
+	if !ok {
+		return models.Device{}, ok
+	}
 	return *device, ok
 }
 
