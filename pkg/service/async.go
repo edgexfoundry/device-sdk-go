@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,18 +9,22 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"sync"
-	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/google/uuid"
+
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 // processAsyncResults processes readings that are pushed from
@@ -32,7 +36,7 @@ import (
 // is greater than or equal to two. Alternatively, we can process
 // AsyncValues one by one in the same order by changing the AsyncBufferSize
 // value to one.
-func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
+func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGroup, dic *di.Container) {
 	wg.Add(1)
 	defer func() {
 		wg.Done()
@@ -44,75 +48,25 @@ func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGr
 		case <-ctx.Done():
 			return
 		case acv := <-s.asyncCh:
-			go s.sendAsyncValues(acv, working)
+			go s.sendAsyncValues(acv, working, dic)
 		}
 	}
 }
 
 // sendAsyncValues convert AsyncValues to event and send the event to CoreData
-func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan bool) {
+func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan bool, dic *di.Container) {
 	working <- true
 	defer func() {
 		<-working
 	}()
-	readings := make([]contract.Reading, 0, len(acv.CommandValues))
 
-	device, ok := cache.Devices().ForName(acv.DeviceName)
-	if !ok {
-		s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - recieved Device %s not found in cache", acv.DeviceName))
+	event, err := transformer.CommandValuesToEventDTO(acv.CommandValues, acv.DeviceName, dic)
+	if err != nil {
+		s.LoggingClient.Errorf("failed to transform CommandValues to Event: %v", err)
 		return
 	}
 
-	for _, cv := range acv.CommandValues {
-		// get the device resource associated with the rsp.RO
-		dr, ok := cache.Profiles().DeviceResource(device.Profile.Name, cv.DeviceResourceName)
-		if !ok {
-			s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Device Resource %s not found in Device %s", cv.DeviceResourceName, acv.DeviceName))
-			continue
-		}
-
-		if s.config.Device.DataTransform {
-			err := transformer.TransformReadResult(cv, dr.Properties.Value, s.LoggingClient)
-			if err != nil {
-				s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - CommandValue (%s) transformed failed: %v", cv.String(), err))
-
-				if errors.As(err, &transformer.OverflowError{}) {
-					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.Overflow)
-				} else if errors.As(err, &transformer.NaNError{}) {
-					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, transformer.NaN)
-				} else {
-					cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Transformation failed for device resource, with value: %s, property value: %v, and error: %v", cv.String(), dr.Properties.Value, err))
-				}
-			}
-		}
-
-		err := transformer.CheckAssertion(cv, dr.Properties.Value.Assertion, &device, s.LoggingClient, s.edgexClients.DeviceClient)
-		if err != nil {
-			s.LoggingClient.Error(fmt.Sprintf("processAsyncResults - Assertion failed for device resource: %s, with value: %s and assertion: %s, %v", cv.DeviceResourceName, cv.String(), dr.Properties.Value.Assertion, err))
-			cv = dsModels.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource, with value: %s and assertion: %s", cv.String(), dr.Properties.Value.Assertion))
-		}
-
-		ro, err := cache.Profiles().ResourceOperation(device.Profile.Name, cv.DeviceResourceName, common.GetCmdMethod)
-		if err != nil {
-			s.LoggingClient.Debug(fmt.Sprintf("processAsyncResults - getting resource operation failed: %s", err.Error()))
-		} else if len(ro.Mappings) > 0 {
-			newCV, ok := transformer.MapCommandValue(cv, ro.Mappings)
-			if ok {
-				cv = newCV
-			} else {
-				s.LoggingClient.Warn(fmt.Sprintf("processAsyncResults - Mapping failed for Device Resource Operation: %s, with value: %s, %v", ro.DeviceCommand, cv.String(), err))
-			}
-		}
-
-		reading := common.CommandValueToReading(cv, device.Name, dr.Properties.Value.MediaType, dr.Properties.Value.FloatEncoding)
-		readings = append(readings, *reading)
-	}
-
-	// push to Core Data
-	cevent := contract.Event{Device: device.Name, Readings: readings}
-	event := &dsModels.Event{Event: cevent}
-	event.Origin = common.GetUniqueOrigin()
-	common.SendEvent(event, s.LoggingClient, s.edgexClients.EventClient)
+	common.SendEvent(event, "", s.LoggingClient, s.edgexClients.EventClient)
 }
 
 // processAsyncFilterAndAdd filter and add devices discovered by
@@ -133,28 +87,32 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 				for _, pw := range pws {
 					if whitelistPass(d, pw, s.LoggingClient) && blacklistPass(d, pw, s.LoggingClient) {
 						if _, ok := cache.Devices().ForName(d.Name); ok {
-							s.LoggingClient.Debug(fmt.Sprintf("Candidate discovered device %s already existed", d.Name))
+							s.LoggingClient.Debugf("Candidate discovered device %s already existed", d.Name)
 							break
 						}
 
-						s.LoggingClient.Info(fmt.Sprintf("Adding discovered device %s to Edgex", d.Name))
-						millis := time.Now().UnixNano() / int64(time.Millisecond)
-						device := &contract.Device{
+						s.LoggingClient.Infof("Adding discovered device %s to Edgex", d.Name)
+						device := contract.Device{
 							Name:           d.Name,
-							Profile:        pw.Profile,
+							Description:    d.Description,
+							ProfileName:    pw.ProfileName,
 							Protocols:      d.Protocols,
 							Labels:         d.Labels,
-							Service:        pw.Service,
+							ServiceName:    pw.ProfileName,
 							AdminState:     pw.AdminState,
-							OperatingState: contract.Enabled,
+							OperatingState: contract.Up,
 							AutoEvents:     nil,
 						}
-						device.Origin = millis
-						device.Description = d.Description
+						req := requests.AddDeviceRequest{
+							BaseRequest: commonDTO.BaseRequest{
+								RequestId: uuid.New().String(),
+							},
+							Device: dtos.FromDeviceModelToDTO(device),
+						}
 
-						_, err := s.edgexClients.DeviceClient.Add(ctx, device)
+						_, err := s.edgexClients.DeviceClient.Add(ctx, []requests.AddDeviceRequest{req})
 						if err != nil {
-							s.LoggingClient.Error(fmt.Sprintf("failed to create discovered device %s: %v", device.Name, err))
+							s.LoggingClient.Errorf("failed to create discovered device %s: %v", device.Name, err)
 						} else {
 							break
 						}
