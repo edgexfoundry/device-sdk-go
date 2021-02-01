@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -16,29 +16,26 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
+	"strconv"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-registry/v2/registry"
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/types"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-
-	"github.com/edgexfoundry/go-mod-registry/v2/registry"
-
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 )
 
 var (
@@ -53,9 +50,10 @@ type DeviceService struct {
 	edgexClients   clients.EdgeXClients
 	controller     *controller.RestController
 	config         *common.ConfigurationStruct
-	deviceService  *contract.DeviceService
+	deviceService  *models.DeviceService
 	driver         dsModels.ProtocolDriver
 	discovery      dsModels.ProtocolDiscovery
+	manager        dsModels.Manager
 	asyncCh        chan *dsModels.AsyncValues
 	deviceCh       chan []dsModels.DiscoveredDevice
 	initialized    bool
@@ -94,15 +92,13 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.SecretProvider = bootstrapContainer.SecretProviderFrom(dic.Get)
-	s.edgexClients.GeneralClient = container.GeneralClientFrom(dic.Get)
 	s.edgexClients.DeviceClient = container.MetadataDeviceClientFrom(dic.Get)
 	s.edgexClients.DeviceServiceClient = container.MetadataDeviceServiceClientFrom(dic.Get)
 	s.edgexClients.DeviceProfileClient = container.MetadataDeviceProfileClientFrom(dic.Get)
-	s.edgexClients.AddressableClient = container.MetadataAddressableClientFrom(dic.Get)
 	s.edgexClients.ProvisionWatcherClient = container.MetadataProvisionWatcherClientFrom(dic.Get)
 	s.edgexClients.EventClient = container.CoredataEventClientFrom(dic.Get)
-	s.edgexClients.ValueDescriptorClient = container.CoredataValueDescriptorClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
+	s.manager = container.ManagerFrom(dic.Get)
 	s.controller = controller.NewRestController(r, dic)
 }
 
@@ -135,107 +131,62 @@ func (s *DeviceService) Stop(force bool) {
 	if s.initialized {
 		_ = s.driver.Stop(false)
 	}
-	autoevent.GetManager().StopAutoEvents()
+	s.manager.StopAutoEvents()
 }
 
 // selfRegister register device service itself onto metadata.
 func (s *DeviceService) selfRegister() error {
-	addr, err := s.createAndUpdateAddressable()
-	if err != nil {
-		s.LoggingClient.Error(fmt.Sprintf("createAndUpdateAddressable failed: %v", err))
-		return err
+	newDeviceService := models.DeviceService{
+		Name:        s.ServiceName,
+		Labels:      s.config.Service.Labels,
+		BaseAddress: s.config.Service.Protocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
+		AdminState:  models.Unlocked,
 	}
-
-	newDeviceService := contract.DeviceService{
-		Name:           s.ServiceName,
-		Labels:         s.config.Service.Labels,
-		OperatingState: contract.Enabled,
-		Addressable:    *addr,
-		AdminState:     contract.Unlocked,
-	}
-	newDeviceService.Origin = time.Now().UnixNano() / int64(time.Millisecond)
-
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	s.LoggingClient.Debug("Trying to find DeviceService: " + s.ServiceName)
-	ds, err := s.edgexClients.DeviceServiceClient.DeviceServiceForName(ctx, s.ServiceName)
+
+	s.LoggingClient.Debugf("trying to find device service %s", newDeviceService.Name)
+	res, err := s.edgexClients.DeviceServiceClient.DeviceServiceByName(ctx, newDeviceService.Name)
 	if err != nil {
-		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
-			s.LoggingClient.Info(fmt.Sprintf("DeviceService %s doesn't exist, creating a new one", s.ServiceName))
-			id, err := s.edgexClients.DeviceServiceClient.Add(ctx, &newDeviceService)
+		if errors.Kind(err) == errors.KindEntityDoesNotExist {
+			s.LoggingClient.Infof("device service %s doesn't exist, creating a new one", newDeviceService.Name)
+			req := requests.AddDeviceServiceRequest{
+				BaseRequest: commonDTO.BaseRequest{
+					RequestId: uuid.New().String(),
+				},
+				Service: dtos.FromDeviceServiceModelToDTO(newDeviceService),
+			}
+			idRes, err := s.edgexClients.DeviceServiceClient.Add(ctx, []requests.AddDeviceServiceRequest{req})
 			if err != nil {
-				s.LoggingClient.Error(fmt.Sprintf("Failed to add Deviceservice %s: %v", s.ServiceName, err))
+				s.LoggingClient.Errorf("failed to add device service %s: %v", newDeviceService.Name, err)
 				return err
 			}
-			if err = common.VerifyIdFormat(id, "Device Service"); err != nil {
-				return err
-			}
-			// NOTE - this differs from Addressable and Device Resources,
-			// neither of which require the '.Service'prefix
-			newDeviceService.Id = id
-			s.LoggingClient.Debug("New DeviceService Id: " + newDeviceService.Id)
+			newDeviceService.Id = idRes[0].Id
+			s.LoggingClient.Debugf("new device service id: %s", newDeviceService.Id)
 		} else {
-			s.LoggingClient.Error(fmt.Sprintf("DeviceServicForName failed: %v", err))
+			s.LoggingClient.Errorf("failed to find device service %s", newDeviceService.Name)
 			return err
 		}
 	} else {
-		s.LoggingClient.Info(fmt.Sprintf("DeviceService %s exists, updating it", ds.Name))
-		err = s.edgexClients.DeviceServiceClient.Update(ctx, newDeviceService)
-		if err != nil {
-			s.LoggingClient.Error(fmt.Sprintf("Failed to update DeviceService %s: %v", newDeviceService.Name, err))
-			// use the existed one to at least make sure config is in sync with metadata.
-			newDeviceService = ds
+		s.LoggingClient.Infof("device service %s exists, updating it", s.ServiceName)
+		req := requests.UpdateDeviceServiceRequest{
+			BaseRequest: commonDTO.BaseRequest{
+				RequestId: uuid.New().String(),
+			},
+			Service: dtos.UpdateDeviceService{
+				Name:        &newDeviceService.Name,
+				BaseAddress: &newDeviceService.BaseAddress,
+				Labels:      newDeviceService.Labels,
+			},
 		}
-		newDeviceService.Id = ds.Id
+		_, err = s.edgexClients.DeviceServiceClient.Update(ctx, []requests.UpdateDeviceServiceRequest{req})
+		if err != nil {
+			s.LoggingClient.Errorf("failed to update device service %s with local config: %v", newDeviceService.Name, err)
+			newDeviceService = dtos.ToDeviceServiceModel(res.Service)
+		}
 	}
 
 	s.deviceService = &newDeviceService
 	return nil
-}
-
-// TODO: Addressable will be removed in v2.
-func (s *DeviceService) createAndUpdateAddressable() (*contract.Addressable, error) {
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-	newAddr := contract.Addressable{
-		Timestamps: contract.Timestamps{
-			Origin: time.Now().UnixNano() / int64(time.Millisecond),
-		},
-		Name:       s.ServiceName,
-		HTTPMethod: http.MethodPost,
-		Protocol:   common.HttpProto,
-		Address:    s.config.Service.Host,
-		Port:       s.config.Service.Port,
-		Path:       common.APICallbackRoute,
-	}
-
-	addr, err := s.edgexClients.AddressableClient.AddressableForName(ctx, s.ServiceName)
-	if err != nil {
-		if errsc, ok := err.(types.ErrServiceClient); ok && (errsc.StatusCode == http.StatusNotFound) {
-			s.LoggingClient.Info(fmt.Sprintf("Addressable %s doesn't exist, creating a new one", s.ServiceName))
-			id, err := s.edgexClients.AddressableClient.Add(ctx, &newAddr)
-			if err != nil {
-				s.LoggingClient.Error(fmt.Sprintf("Failed to add Addressable %s: %v", newAddr.Name, err))
-				return nil, err
-			}
-			if err = common.VerifyIdFormat(id, "Addressable"); err != nil {
-				return nil, err
-			}
-			newAddr.Id = id
-		} else {
-			s.LoggingClient.Error(fmt.Sprintf("AddressableForName failed: %v", err))
-			return nil, err
-		}
-	} else {
-		s.LoggingClient.Info(fmt.Sprintf("Addressable %s exists, updating it", s.ServiceName))
-		err = s.edgexClients.AddressableClient.Update(ctx, newAddr)
-		if err != nil {
-			s.LoggingClient.Error(fmt.Sprintf("Failed to update Addressable %s: %v", s.ServiceName, err))
-			// use the existed one to at least make sure config is in sync with metadata.
-			newAddr = addr
-		}
-		newAddr.Id = addr.Id
-	}
-
-	return &newAddr, nil
 }
 
 // RunningService returns the Service instance which is running
