@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -21,11 +21,6 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 )
-
-const SDKPostEventReserved = "ds-pushevent"
-const SDKReturnEventReserved = "ds-returnevent"
-const QueryParameterValueYes = "yes"
-const QueryParameterValueNo = "no"
 
 func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
@@ -49,7 +44,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	}
 
 	// push event to CoreData if specified (default no)
-	if ok, exist := reserved[SDKPostEventReserved]; exist && ok[0] == QueryParameterValueYes {
+	if ok, exist := reserved[v2.PushEvent]; exist && ok[0] == v2.ValueYes {
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
@@ -67,7 +62,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	}
 
 	// return event in http response if specified (default yes)
-	if ok, exist := reserved[SDKReturnEventReserved]; !exist || ok[0] == QueryParameterValueYes {
+	if ok, exist := reserved[v2.ReturnEvent]; !exist || ok[0] == v2.ValueYes {
 		// TODO: the usage of CBOR encoding for binary reading is under discussion
 		c.sendResponse(writer, request, v2.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
 	}
