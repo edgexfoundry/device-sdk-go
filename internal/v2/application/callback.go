@@ -7,18 +7,17 @@
 package application
 
 import (
+	"context"
 	"fmt"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
@@ -44,14 +43,12 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 	device := dtos.ToDeviceModel(addDeviceRequest.Device)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
-	// TODO: uncomment when core-contracts v2 client is ready.
-	//edgexErr := updateAssociatedProfile(device.ProfileName, dic)
-	//if edgexErr != nil {
-	//	errMsg := fmt.Sprintf("failed to update device profile %s", device.ProfileName)
-	//	return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
-	//}
+	edgexErr := updateAssociatedProfile(device.ProfileName, dic)
+	if edgexErr != nil {
+		return errors.NewCommonEdgeXWrapper(edgexErr)
+	}
 
-	edgexErr := cache.Devices().Add(device)
+	edgexErr = cache.Devices().Add(device)
 	if edgexErr != nil {
 		errMsg := fmt.Sprintf("failed to add device %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
@@ -59,7 +56,7 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 	lc.Debug(fmt.Sprintf("device %s added", device.Name))
 
 	driver := container.ProtocolDriverFrom(dic.Get)
-	err := driver.AddDevice(device.Name, transformDeviceProtocols(device.Protocols), contract.AdminState(device.AdminState))
+	err := driver.AddDevice(device.Name, device.Protocols, device.AdminState)
 	if err == nil {
 		lc.Debug(fmt.Sprintf("Invoked driver.AddDevice callback for %s", device.Name))
 	} else {
@@ -68,7 +65,7 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 	}
 
 	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
-	autoevent.GetManager().RestartForDevice(device.Name, dic)
+	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
 
@@ -98,14 +95,12 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 	}
 
 	requests.ReplaceDeviceModelFieldsWithDTO(&device, updateDeviceRequest.Device)
-	// TODO: uncomment when core-contracts v2 client is ready.
-	//edgexErr := updateAssociatedProfile(device.ProfileName, dic)
-	//if edgexErr != nil {
-	//	errMsg := fmt.Sprintf("failed to update device profile %s", device.ProfileName)
-	//	return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
-	//}
+	edgexErr := updateAssociatedProfile(device.ProfileName, dic)
+	if edgexErr != nil {
+		return errors.NewCommonEdgeXWrapper(edgexErr)
+	}
 
-	edgexErr := cache.Devices().Update(device)
+	edgexErr = cache.Devices().Update(device)
 	if edgexErr != nil {
 		errMsg := fmt.Sprintf("failed to update device %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
@@ -113,7 +108,7 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 	lc.Debugf("device %s updated", device.Name)
 
 	driver := container.ProtocolDriverFrom(dic.Get)
-	err := driver.UpdateDevice(device.Name, transformDeviceProtocols(device.Protocols), contract.AdminState(device.AdminState))
+	err := driver.UpdateDevice(device.Name, device.Protocols, device.AdminState)
 	if err == nil {
 		lc.Debugf("Invoked driver.UpdateDevice callback for %s", device.Name)
 	} else {
@@ -121,8 +116,8 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	lc.Debugf("restarting autoevents for device %s", device.Name)
-	autoevent.GetManager().RestartForDevice(device.Name, dic)
+	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
+	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
 
@@ -132,7 +127,7 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	device, ok := cache.Devices().ForName(name)
 	if ok {
 		lc.Debugf("Handler - stopping AutoEvents for device %s", device.Name)
-		autoevent.GetManager().StopForDevice(device.Name)
+		container.ManagerFrom(dic.Get).StopForDevice(device.Name)
 	} else {
 		errMsg := fmt.Sprintf("failed to find device %s", name)
 		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
@@ -147,7 +142,7 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	lc.Debugf("Removed device: %s", device.Name)
 
 	driver := container.ProtocolDriverFrom(dic.Get)
-	err := driver.RemoveDevice(device.Name, transformDeviceProtocols(device.Protocols))
+	err := driver.RemoveDevice(device.Name, device.Protocols)
 	if err == nil {
 		lc.Debugf("Invoked driver.RemoveDevice callback for %s", device.Name)
 	} else {
@@ -241,7 +236,7 @@ func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceService
 		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 
-	ds.AdminState = contract.AdminState(*updateDeviceServiceRequest.Service.AdminState)
+	ds.AdminState = models.AdminState(*updateDeviceServiceRequest.Service.AdminState)
 	ds.Labels = updateDeviceServiceRequest.Service.Labels
 
 	lc.Debug("device service updated")
@@ -251,49 +246,27 @@ func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceService
 // updateAssociatedProfile updates the profile specified in AddDeviceRequest or UpdateDeviceRequest
 // to stay consistent with core metadata.
 func updateAssociatedProfile(profileName string, dic *di.Container) errors.EdgeX {
-	// TODO: uncomment when core-contracts v2 clients are ready.
-	//lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	//gc := container.GeneralClientFrom(dic.Get)
-	//vdc := container.CoredataValueDescriptorClientFrom(dic.Get)
-	//dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
-	//
-	//profile, err := dpc.DeviceProfileForName(context.Background(), profileName)
-	//if err != nil {
-	//	errMsg := fmt.Sprintf("failed to find profile %s in metadata", profileName)
-	//	return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
-	//}
-	//
-	//_, exist := cache.Profiles().ForName(profileName)
-	//if exist == false {
-	//	err = cache.Profiles().Add(profile)
-	//	if err == nil {
-	//		provision.CreateDescriptorsFromProfile(&profile, lc, gc, vdc)
-	//		lc.Info(fmt.Sprintf("Added device profile: %s", profileName))
-	//	} else {
-	//		errMsg := fmt.Sprintf("failed to add profile %s", profileName)
-	//		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-	//	}
-	//} else {
-	//	err := cache.Profiles().Update(profile)
-	//	if err != nil {
-	//		lc.Warn(fmt.Sprintf("failed to to update profile %s in cache, using the original one", profileName))
-	//	}
-	//}
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
 
-	return nil
-}
-
-// TODO: remove this helper function when we fully moving to v2 API
-// transformDeviceProtocols transforms device protocol from v2 model to v1 model
-func transformDeviceProtocols(protocols map[string]models.ProtocolProperties) map[string]contract.ProtocolProperties {
-	var res = make(map[string]contract.ProtocolProperties)
-	for name, protocol := range protocols {
-		var p contract.ProtocolProperties = make(map[string]string)
-		for k, v := range protocol {
-			p[k] = v
-		}
-		res[name] = p
+	res, err := dpc.DeviceProfileByName(context.Background(), profileName)
+	if err != nil {
+		errMsg := fmt.Sprintf("failed to retrieve profile %s from metadata", profileName)
+		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, err)
 	}
 
-	return res
+	_, exist := cache.Profiles().ForName(profileName)
+	if !exist {
+		err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to add profile %s", profileName)
+			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+	}
+	err = cache.Profiles().Update(dtos.ToDeviceProfileModel(res.Profile))
+	if err != nil {
+		lc.Warnf("failed to to update profile %s in cache, using the original one", profileName)
+	}
+
+	return nil
 }
