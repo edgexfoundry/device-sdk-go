@@ -11,13 +11,14 @@ import (
 	"math"
 	"strconv"
 
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-func TransformWriteParameter(cv *dsModels.CommandValue, pv contract.PropertyValue, lc logger.LoggingClient) error {
+func TransformWriteParameter(cv *dsModels.CommandValue, pv models.PropertyValue, lc logger.LoggingClient) error {
 	var err error
 	if cv.Type == v2.ValueTypeString || cv.Type == v2.ValueTypeBool || cv.Type == v2.ValueTypeBinary {
 		return nil // do nothing for String, Bool and Binary

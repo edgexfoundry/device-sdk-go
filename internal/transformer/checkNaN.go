@@ -9,8 +9,9 @@ package transformer
 import (
 	"math"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 )
 
 // NaNError is used to throw the NaN error for the floating-point value
