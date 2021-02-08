@@ -21,6 +21,36 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestConfigurableFilterByProfileName(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		params    map[string]string
+		expectNil bool
+	}{
+		{"Non Existent Parameters", map[string]string{"": ""}, true},
+		{"Empty Parameters", map[string]string{ProfileNames: ""}, false},
+		{"Valid Parameters", map[string]string{ProfileNames: "GS1-AC-Drive, GS0-DC-Drive, GSX-ACDC-Drive"}, false},
+		{"Empty FilterOut Parameters", map[string]string{ProfileNames: "GS1-AC-Drive, GS0-DC-Drive, GSX-ACDC-Drive", FilterOut: ""}, true},
+		{"Valid FilterOut Parameters", map[string]string{ProfileNames: "GS1-AC-Drive, GS0-DC-Drive, GSX-ACDC-Drive", FilterOut: "true"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			trx := configurable.FilterByProfileName(tt.params)
+			if tt.expectNil {
+				assert.Nil(t, trx, "return result from FilterByProfileName should be nil")
+			} else {
+				assert.NotNil(t, trx, "return result from FilterByProfileName should not be nil")
+			}
+		})
+	}
+}
+
 func TestConfigurableFilterByDeviceName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
@@ -51,7 +81,7 @@ func TestConfigurableFilterByDeviceName(t *testing.T) {
 	}
 }
 
-func TestConfigurableFilterByValueDescriptor(t *testing.T) {
+func TestConfigurableFilterByResourceName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -64,18 +94,18 @@ func TestConfigurableFilterByValueDescriptor(t *testing.T) {
 		expectNil bool
 	}{
 		{"Non Existent Parameters", map[string]string{"": ""}, true},
-		{"Empty Parameters", map[string]string{ValueDescriptors: ""}, false},
-		{"Valid Parameters", map[string]string{ValueDescriptors: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03"}, false},
-		{"Empty FilterOut Parameters", map[string]string{ValueDescriptors: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: ""}, true},
-		{"Valid FilterOut Parameters", map[string]string{ValueDescriptors: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: "true"}, false},
+		{"Empty Parameters", map[string]string{ResourceNames: ""}, false},
+		{"Valid Parameters", map[string]string{ResourceNames: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03"}, false},
+		{"Empty FilterOut Parameters", map[string]string{ResourceNames: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: ""}, true},
+		{"Valid FilterOut Parameters", map[string]string{ResourceNames: "GS1-AC-Drive01, GS1-AC-Drive02, GS1-AC-Drive03", FilterOut: "true"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			trx := configurable.FilterByValueDescriptor(tt.params)
+			trx := configurable.FilterByResourceName(tt.params)
 			if tt.expectNil {
-				assert.Nil(t, trx, "return result from FilterByValueDescriptor should be nil")
+				assert.Nil(t, trx, "return result from FilterByResourceName should be nil")
 			} else {
-				assert.NotNil(t, trx, "return result from FilterByValueDescriptor should not be nil")
+				assert.NotNil(t, trx, "return result from FilterByResourceName should not be nil")
 			}
 		})
 	}

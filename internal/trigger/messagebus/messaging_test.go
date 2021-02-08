@@ -30,8 +30,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
@@ -43,32 +41,13 @@ import (
 
 var logClient logger.LoggingClient
 
-var expectedEvent = dtos.Event{
-	Versionable: commonDTO.NewVersionable(),
-	Id:          "7a1707f0-166f-4c4b-bc9d-1d54c74e0137",
-	DeviceName:  "LivingRoomThermostat",
-	ProfileName: "thermostat",
-	Created:     1485364897029,
-	Origin:      1471806386919,
-	Readings: []dtos.BaseReading{
-		{
-			Versionable:   commonDTO.NewVersionable(),
-			Id:            "7a1707f0-166f-4c4b-bc9d-1d54c74e0145",
-			Created:       1485364896983,
-			Origin:        1471806386919,
-			DeviceName:    "LivingRoomThermostat",
-			ResourceName:  "temperature",
-			ProfileName:   "thermostat",
-			ValueType:     v2.ValueTypeInt64,
-			SimpleReading: dtos.SimpleReading{Value: "38"},
-		},
-	},
-	Tags: nil,
-}
+var addEventRequest = createTestEventRequest()
+var expectedEvent = addEventRequest.Event
 
-var addEventRequest = requests.AddEventRequest{
-	BaseRequest: commonDTO.BaseRequest{},
-	Event:       expectedEvent,
+func createTestEventRequest() requests.AddEventRequest {
+	request := requests.NewAddRequest("thermostat", "LivingRoomThermostat")
+	request.Event.AddSimpleReading("temperature", v2.ValueTypeInt64, int64(38))
+	return request
 }
 
 func init() {

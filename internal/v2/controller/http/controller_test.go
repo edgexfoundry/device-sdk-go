@@ -187,7 +187,7 @@ func TestAddSecretRequest(t *testing.T) {
 	assert.NotNil(t, target)
 
 	validRequest := common.SecretRequest{
-		BaseRequest: common.BaseRequest{RequestId: expectedRequestId},
+		BaseRequest: common.BaseRequest{RequestId: expectedRequestId, Versionable: common.NewVersionable()},
 		Path:        "mqtt",
 		SecretData: []common.SecretDataKeyValue{
 			{Key: "username", Value: "username"},

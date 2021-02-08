@@ -35,11 +35,6 @@ import (
 
 var context *appcontext.Context
 
-const (
-	devID1 = "id1"
-	devID2 = "id2"
-)
-
 func init() {
 	lc := logger.NewMockClient()
 	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
@@ -55,11 +50,10 @@ func init() {
 }
 
 func TestTransformToXML(t *testing.T) {
-	// Event from device 1
 	eventIn := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>id1</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
 	conv := NewConversion()
 
 	continuePipeline, result := conv.TransformToXML(context, eventIn)
@@ -87,9 +81,9 @@ func TestTransformToXMLNotAnEvent(t *testing.T) {
 func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 	// Event from device 1
 	eventIn := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>id1</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
 	require.NotNil(t, result)
@@ -99,13 +93,13 @@ func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 	// Event from device 1
 	eventIn1 := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
 	// Event from device 1
 	eventIn2 := dtos.Event{
-		DeviceName: devID2,
+		DeviceName: deviceName2,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>id2</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device2</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn2, eventIn1, "", "")
 
@@ -118,9 +112,9 @@ func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 func TestTransformToJSON(t *testing.T) {
 	// Event from device 1
 	eventIn := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
-	expectedResult := `{"id":"","deviceName":"id1","profileName":"","created":0,"origin":0,"readings":null}`
+	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","created":0,"origin":0,"readings":null}`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn)
 
@@ -147,9 +141,9 @@ func TestTransformToJSONNotAnEvent(t *testing.T) {
 func TestTransformToJSONMultipleParametersValid(t *testing.T) {
 	// Event from device 1
 	eventIn := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
-	expectedResult := `{"id":"","deviceName":"id1","profileName":"","created":0,"origin":0,"readings":null}`
+	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","created":0,"origin":0,"readings":null}`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn, "", "", "")
 	assert.NotNil(t, result)
@@ -160,13 +154,13 @@ func TestTransformToJSONMultipleParametersValid(t *testing.T) {
 func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
 	// Event from device 1
 	eventIn1 := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
 	// Event from device 2
 	eventIn2 := dtos.Event{
-		DeviceName: devID2,
+		DeviceName: deviceName2,
 	}
-	expectedResult := `{"id":"","deviceName":"id2","profileName":"","created":0,"origin":0,"readings":null}`
+	expectedResult := `{"apiVersion":"","id":"","deviceName":"device2","profileName":"","created":0,"origin":0,"readings":null}`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn2, eventIn1, "", "")
 

@@ -56,7 +56,7 @@ func TestSetOutputDataEvent(t *testing.T) {
 	target := NewOutputData()
 
 	eventIn := dtos.Event{
-		DeviceName: devID1,
+		DeviceName: deviceName1,
 	}
 
 	expected, _ := json.Marshal(eventIn)
