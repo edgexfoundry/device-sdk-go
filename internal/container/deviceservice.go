@@ -23,7 +23,7 @@ var ProtocolDiscoveryName = di.TypeInstanceToName((*sdkModels.ProtocolDiscovery)
 var ProtocolDriverName = di.TypeInstanceToName((*sdkModels.ProtocolDriver)(nil))
 
 // ManagerName contains the name of autoevent manager implementation in the DIC
-var ManagerName = di.TypeInstanceToName((*sdkModels.Manager)(nil))
+var ManagerName = di.TypeInstanceToName((*sdkModels.AutoEventManager)(nil))
 
 // DeviceServiceFrom helper function queries the DIC and returns device service struct.
 func DeviceServiceFrom(get di.Get) *models.DeviceService {
@@ -45,6 +45,6 @@ func ProtocolDriverFrom(get di.Get) sdkModels.ProtocolDriver {
 }
 
 // ManagerFrom helper function queries the DIC and returns autoevent manager implementation
-func ManagerFrom(get di.Get) sdkModels.Manager {
-	return get(ManagerName).(sdkModels.Manager)
+func ManagerFrom(get di.Get) sdkModels.AutoEventManager {
+	return get(ManagerName).(sdkModels.AutoEventManager)
 }

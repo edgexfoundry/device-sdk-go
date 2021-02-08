@@ -1,3 +1,4 @@
+apiVersion: "v2"
 name: "Simple-Device"
 manufacturer: "Simple Corp."
 model: "SP-01"
@@ -10,62 +11,62 @@ deviceResources:
     name: "SwitchButton"
     description: "Switch On/Off."
     properties:
-        type: "Bool"
+        valueType: "Bool"
         readWrite: "RW"
         defaultValue: "true"
   -
     name: "Image"
     description: "Visual representation of Switch state."
     properties:
-        type: "Binary"
+        valueType: "Binary"
         readWrite: "R"
-        mediaType: "JPG"
+        mediaType: "image/jpeg"
   -
     name: "Xrotation"
     description: "X axis rotation rate"
     properties:
-        type: "Int32"
+        valueType: "Int32"
         readWrite: "RW"
   -
     name: "Yrotation"
     description: "Y axis rotation rate"
     properties:
-        type: "Int32"
+        valueType: "Int32"
         readWrite: "RW"
   -
     name: "Zrotation"
     description: "Z axis rotation rate"
     properties:
-        type: "Int32"
+        valueType: "Int32"
         readWrite: "RW"
   -
     name: "Uint8Array"
     description: "Unsigned 8bit array"
     properties:
-        type: "Uint8Array"
+        valueType: "Uint8Array"
         readWrite: "RW"
 
 deviceCommands:
   -
     name: "Switch"
     get:
-      - { operation: "get", deviceResource: "SwitchButton" }
+      - { deviceResource: "SwitchButton" }
     set:
-      - { operation: "set", deviceResource: "SwitchButton", parameter: "false" }
+      - { deviceResource: "SwitchButton", parameter: "false" }
   -
     name: "Image"
     get:
-      - { operation: "get", deviceResource: "Image" }
+      - { deviceResource: "Image" }
   -
     name: "Rotation"
     get:
-      - { operation: "get", deviceResource: "Xrotation" }
-      - { operation: "get", deviceResource: "Yrotation" }
-      - { operation: "get", deviceResource: "Zrotation" }
+      - { deviceResource: "Xrotation" }
+      - { deviceResource: "Yrotation" }
+      - { deviceResource: "Zrotation" }
     set:
-      - { operation: "set", deviceResource: "Xrotation", parameter: "0" }
-      - { operation: "set", deviceResource: "Yrotation", parameter: "0" }
-      - { operation: "set", deviceResource: "Zrotation", parameter: "0" }
+      - { deviceResource: "Xrotation", parameter: "0" }
+      - { deviceResource: "Yrotation", parameter: "0" }
+      - { deviceResource: "Zrotation", parameter: "0" }
 
 coreCommands:
   -

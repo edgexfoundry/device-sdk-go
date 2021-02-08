@@ -22,9 +22,8 @@ import (
 	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 // Clients contains references to dependencies required by the Clients bootstrap implementation.

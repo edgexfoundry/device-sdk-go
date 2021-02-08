@@ -54,7 +54,7 @@ func (d *deviceCache) ForName(name string) (models.Device, bool) {
 
 	device, ok := d.deviceMap[name]
 	if !ok {
-		return models.Device{}, ok
+		return models.Device{}, false
 	}
 	return *device, ok
 }

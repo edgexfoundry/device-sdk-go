@@ -134,3 +134,18 @@ https://github.com/leodido/go-urn/blob/master/LICENSE
 
 stretchr/objx (MIT) https://github.com/stretchr/objx
 https://github.com/stretchr/objx/blob/master/LICENSE
+
+fatih/color (MIT) https://github.com/fatih/color
+https://github.com/fatih/color/bglob/master/LICENSE.md
+
+hashicorp/go-hclog (MIT) https://github.com/hashicorp/go-hclog
+https://github.com/hashicorp/go-hclog/blob/master/LICENSE
+
+mattn/go-colorable (MIT) https://github.com/mattn/go-colorable
+https://github.com/mattn/go-colorable/blob/master/LICENSE
+
+mattn/go-isatty (MIT) https://github.com/mattn/go-isatty
+https://github.com/mattn/go-isatty/blob/master/LICENSE
+
+golang.org/x/sys (BSD-3) https://github.com/golang/sys
+https://github.com/golang/sys/blob/master/LICENSE

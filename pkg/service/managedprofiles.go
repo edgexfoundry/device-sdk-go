@@ -11,8 +11,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/google/uuid"
@@ -23,19 +23,14 @@ import (
 
 // AddDeviceProfile adds a new DeviceProfile to the Device Service and Core Metadata
 // Returns new DeviceProfile id or non-nil error.
-func (s *DeviceService) AddDeviceProfile(profile models.DeviceProfile) (string, error) {
+func (s *DeviceService) AddDeviceProfile(profile models.DeviceProfile) (string, errors.EdgeX) {
 	if p, ok := cache.Profiles().ForName(profile.Name); ok {
-		return p.Id, fmt.Errorf("name conflicted, Profile %s exists", profile.Name)
+		return p.Id, errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, Profile %s exists", profile.Name), nil)
 	}
 
 	s.LoggingClient.Debugf("Adding managed Profile %s", profile.Name)
-	req := requests.DeviceProfileRequest{
-		BaseRequest: commonDTO.BaseRequest{
-			RequestId: uuid.New().String(),
-		},
-		Profile: dtos.FromDeviceProfileModelToDTO(profile),
-	}
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	req := requests.NewDeviceProfileRequest(dtos.FromDeviceProfileModelToDTO(profile))
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	res, err := s.edgexClients.DeviceProfileClient.Add(ctx, []requests.DeviceProfileRequest{req})
 	if err != nil {
 		s.LoggingClient.Errorf("failed to add Profile %s to Core Metadata: %v", profile.Name, err)
@@ -57,16 +52,16 @@ func (s *DeviceService) DeviceProfiles() []models.DeviceProfile {
 
 // RemoveDeviceProfileByName removes the specified DeviceProfile by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceService) RemoveDeviceProfileByName(name string) error {
+func (s *DeviceService) RemoveDeviceProfileByName(name string) errors.EdgeX {
 	profile, ok := cache.Profiles().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find Profile %s in cache", name)
 		s.LoggingClient.Error(msg)
-		return fmt.Errorf(msg)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 
 	s.LoggingClient.Debugf("Removing managed Profile %s", profile.Name)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	_, err := s.edgexClients.DeviceProfileClient.DeleteByName(ctx, name)
 	if err != nil {
 		s.LoggingClient.Errorf("failed to delete Profile %s in Core Metadata", name)
@@ -79,22 +74,17 @@ func (s *DeviceService) RemoveDeviceProfileByName(name string) error {
 
 // UpdateDeviceProfile updates the DeviceProfile in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceService) UpdateDeviceProfile(profile models.DeviceProfile) error {
+func (s *DeviceService) UpdateDeviceProfile(profile models.DeviceProfile) errors.EdgeX {
 	_, ok := cache.Profiles().ForName(profile.Name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find Profile %s in cache", profile.Name)
 		s.LoggingClient.Error(msg)
-		return fmt.Errorf(msg)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 
 	s.LoggingClient.Debugf("Updating managed Profile %s", profile.Name)
-	req := requests.DeviceProfileRequest{
-		BaseRequest: commonDTO.BaseRequest{
-			RequestId: uuid.New().String(),
-		},
-		Profile: dtos.FromDeviceProfileModelToDTO(profile),
-	}
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	req := requests.NewDeviceProfileRequest(dtos.FromDeviceProfileModelToDTO(profile))
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	_, err := s.edgexClients.DeviceProfileClient.Update(ctx, []requests.DeviceProfileRequest{req})
 	if err != nil {
 		s.LoggingClient.Errorf("failed to update Profile %s in Core Metadata: %v", profile.Name, err)

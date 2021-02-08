@@ -16,10 +16,8 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
-	"github.com/google/uuid"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
@@ -103,13 +101,8 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 							OperatingState: contract.Up,
 							AutoEvents:     nil,
 						}
-						req := requests.AddDeviceRequest{
-							BaseRequest: commonDTO.BaseRequest{
-								RequestId: uuid.New().String(),
-							},
-							Device: dtos.FromDeviceModelToDTO(device),
-						}
 
+						req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))
 						_, err := s.edgexClients.DeviceClient.Add(ctx, []requests.AddDeviceRequest{req})
 						if err != nil {
 							s.LoggingClient.Errorf("failed to create discovered device %s: %v", device.Name, err)

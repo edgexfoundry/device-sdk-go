@@ -14,7 +14,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/google/uuid"
@@ -40,12 +39,7 @@ func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) errors.Edg
 			if err != nil {
 				return err
 			}
-			req := requests.AddDeviceRequest{
-				BaseRequest: commonDTO.BaseRequest{
-					RequestId: uuid.New().String(),
-				},
-				Device: deviceDTO,
-			}
+			req := requests.NewAddDeviceRequest(deviceDTO)
 			addDevicesReq = append(addDevicesReq, req)
 		}
 	}
@@ -54,7 +48,7 @@ func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) errors.Edg
 		return nil
 	}
 	dc := container.MetadataDeviceClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	_, err := dc.Add(ctx, addDevicesReq)
 	return err
 }

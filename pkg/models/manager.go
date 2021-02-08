@@ -5,13 +5,13 @@
 
 package models
 
-type Manager interface {
-	// StartAutoEvents starts all the autoevents of the device service
+type AutoEventManager interface {
+	// StartAutoEvents starts all the AutoEvents of the device service
 	StartAutoEvents()
-	// StopAutoEvents stops all the autoevents of the device service
+	// StopAutoEvents stops all the AutoEvents of the device service
 	StopAutoEvents()
-	// RestartForDevice restarts all the autoevents of the specific device
+	// RestartForDevice restarts all the AutoEvents of the specific device
 	RestartForDevice(name string)
-	// StopForDevice stops all the autoevents of the specific device
+	// StopForDevice stops all the AutoEvents of the specific device
 	StopForDevice(name string)
 }

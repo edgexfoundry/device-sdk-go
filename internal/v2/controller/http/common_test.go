@@ -187,13 +187,14 @@ func TestSecretRequest(t *testing.T) {
 	assert.NotNil(t, target)
 
 	validRequest := common.SecretRequest{
-		BaseRequest: common.BaseRequest{RequestId: expectedRequestId},
+		BaseRequest: common.NewBaseRequest(),
 		Path:        "mqtt",
 		SecretData: []common.SecretDataKeyValue{
 			{Key: "username", Value: "username"},
 			{Key: "password", Value: "password"},
 		},
 	}
+	validRequest.RequestId = expectedRequestId
 
 	NoPath := validRequest
 	NoPath.Path = ""

@@ -53,18 +53,18 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 		errMsg := fmt.Sprintf("failed to add device %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
 	}
-	lc.Debug(fmt.Sprintf("device %s added", device.Name))
+	lc.Debugf("device %s added", device.Name)
 
 	driver := container.ProtocolDriverFrom(dic.Get)
 	err := driver.AddDevice(device.Name, device.Protocols, device.AdminState)
 	if err == nil {
-		lc.Debug(fmt.Sprintf("Invoked driver.AddDevice callback for %s", device.Name))
+		lc.Debugf("Invoked driver.AddDevice callback for %s", device.Name)
 	} else {
 		errMsg := fmt.Sprintf("driver.AddDevice callback failed for %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
+	lc.Debugf("starting AutoEvents for device %s", device.Name)
 	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
@@ -79,10 +79,7 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 		if ds.Name == *updateDeviceRequest.Device.ServiceName {
 			var newDevice models.Device
 			requests.ReplaceDeviceModelFieldsWithDTO(&newDevice, updateDeviceRequest.Device)
-			req := requests.AddDeviceRequest{
-				BaseRequest: updateDeviceRequest.BaseRequest,
-				Device:      dtos.FromDeviceModelToDTO(newDevice),
-			}
+			req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(newDevice))
 			return AddDevice(req, dic)
 		} else {
 			errMsg := fmt.Sprintf("failed to find device %s", *updateDeviceRequest.Device.ServiceName)
@@ -116,7 +113,7 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	lc.Debug(fmt.Sprintf("Handler - starting AutoEvents for device %s", device.Name))
+	lc.Debugf("starting AutoEvents for device %s", device.Name)
 	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
@@ -126,7 +123,7 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	// check the device exist and stop its autoevents
 	device, ok := cache.Devices().ForName(name)
 	if ok {
-		lc.Debugf("Handler - stopping AutoEvents for device %s", device.Name)
+		lc.Debugf("stopping AutoEvents for device %s", device.Name)
 		container.ManagerFrom(dic.Get).StopForDevice(device.Name)
 	} else {
 		errMsg := fmt.Sprintf("failed to find device %s", name)
@@ -187,10 +184,7 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
 			var newProvisionWatcher models.ProvisionWatcher
 			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
-			req := requests.AddProvisionWatcherRequest{
-				BaseRequest:      updateProvisionWatcherRequest.BaseRequest,
-				ProvisionWatcher: dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher),
-			}
+			req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher))
 			return AddProvisionWatcher(req, lc)
 		} else {
 			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)

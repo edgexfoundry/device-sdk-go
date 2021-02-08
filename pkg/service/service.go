@@ -24,7 +24,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
@@ -53,7 +52,7 @@ type DeviceService struct {
 	deviceService  *models.DeviceService
 	driver         dsModels.ProtocolDriver
 	discovery      dsModels.ProtocolDiscovery
-	manager        dsModels.Manager
+	manager        dsModels.AutoEventManager
 	asyncCh        chan *dsModels.AsyncValues
 	deviceCh       chan []dsModels.DiscoveredDevice
 	initialized    bool
@@ -142,19 +141,14 @@ func (s *DeviceService) selfRegister() error {
 		BaseAddress: s.config.Service.Protocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
 		AdminState:  models.Unlocked,
 	}
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 
 	s.LoggingClient.Debugf("trying to find device service %s", newDeviceService.Name)
 	res, err := s.edgexClients.DeviceServiceClient.DeviceServiceByName(ctx, newDeviceService.Name)
 	if err != nil {
 		if errors.Kind(err) == errors.KindEntityDoesNotExist {
 			s.LoggingClient.Infof("device service %s doesn't exist, creating a new one", newDeviceService.Name)
-			req := requests.AddDeviceServiceRequest{
-				BaseRequest: commonDTO.BaseRequest{
-					RequestId: uuid.New().String(),
-				},
-				Service: dtos.FromDeviceServiceModelToDTO(newDeviceService),
-			}
+			req := requests.NewAddDeviceServiceRequest(dtos.FromDeviceServiceModelToDTO(newDeviceService))
 			idRes, err := s.edgexClients.DeviceServiceClient.Add(ctx, []requests.AddDeviceServiceRequest{req})
 			if err != nil {
 				s.LoggingClient.Errorf("failed to add device service %s: %v", newDeviceService.Name, err)
@@ -168,16 +162,7 @@ func (s *DeviceService) selfRegister() error {
 		}
 	} else {
 		s.LoggingClient.Infof("device service %s exists, updating it", s.ServiceName)
-		req := requests.UpdateDeviceServiceRequest{
-			BaseRequest: commonDTO.BaseRequest{
-				RequestId: uuid.New().String(),
-			},
-			Service: dtos.UpdateDeviceService{
-				Name:        &newDeviceService.Name,
-				BaseAddress: &newDeviceService.BaseAddress,
-				Labels:      newDeviceService.Labels,
-			},
-		}
+		req := requests.NewUpdateDeviceServiceRequest(dtos.FromDeviceServiceModelToUpdateDTO(newDeviceService))
 		_, err = s.edgexClients.DeviceServiceClient.Update(ctx, []requests.UpdateDeviceServiceRequest{req})
 		if err != nil {
 			s.LoggingClient.Errorf("failed to update device service %s with local config: %v", newDeviceService.Name, err)

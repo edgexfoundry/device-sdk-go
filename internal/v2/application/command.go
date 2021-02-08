@@ -57,6 +57,23 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	var device models.Device
 	var deviceResource models.DeviceResource
 	deviceKey := vars[v2.Name]
+
+	// check device service's AdminState
+	ds := container.DeviceServiceFrom(dic.Get)
+	if ds.AdminState == models.Locked {
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, "service locked", nil)
+	}
+
+	// check provided device exists
+	device, exist = cache.Devices().ForName(deviceKey)
+	if !exist {
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceKey), nil)
+	}
+
+	// check device's AdminState
+	if device.AdminState == models.Locked {
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
+	}
 	// the device service will perform some operations(e.g. update LastConnected timestamp,
 	// push returning event to core-data) after a device is successfully interacted with if
 	// it has been configured to do so, and those operation apply to every protocol and
@@ -76,23 +93,6 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 			go common.SendEvent(res, correlationID, lc, ec)
 		}
 	}()
-
-	// check device service's AdminState
-	ds := container.DeviceServiceFrom(dic.Get)
-	if ds.AdminState == models.Locked {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, "service locked", nil)
-	}
-
-	// check provided device exists
-	device, exist = cache.Devices().ForName(deviceKey)
-	if !exist {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceKey), nil)
-	}
-
-	// check device's AdminState
-	if device.AdminState == models.Locked {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
-	}
 
 	var method string
 	if isRead {
@@ -131,7 +131,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 
 func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name), common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not write-only
 	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceWriteOnly {
@@ -151,7 +151,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.Edge
 		}
 		req.Attributes[common.URLRawQuery] = c.params
 	}
-	req.Type = c.deviceResource.Properties.Type
+	req.Type = c.deviceResource.Properties.ValueType
 	reqs = append(reqs, req)
 
 	// execute protocol-specific read operation
@@ -173,7 +173,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.Edge
 
 func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - readCmd: reading cmd: %s", c.cmd), common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - readCmd: reading cmd: %s", c.cmd, common.CorrelationHeader, c.correlationID)
 
 	// check GET ResourceOperation(s) exist for provided command
 	ros, e := cache.Profiles().ResourceOperations(c.device.ProfileName, c.cmd, common.GetCmdMethod)
@@ -214,7 +214,7 @@ func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 			}
 			reqs[i].Attributes[common.URLRawQuery] = c.params
 		}
-		reqs[i].Type = dr.Properties.Type
+		reqs[i].Type = dr.Properties.ValueType
 	}
 
 	// execute protocol-specific read operation
@@ -236,7 +236,7 @@ func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 
 func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - writeDeviceResource: writting deviceResource: %s", c.deviceResource.Name), common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - writeDeviceResource: writing deviceResource: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not read-only
 	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceReadOnly {
@@ -295,7 +295,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 
 func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debug(fmt.Sprintf("Application - writeCmd: writting command: %s", c.cmd), common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - writeCmd: writing command: %s", c.cmd, common.CorrelationHeader, c.correlationID)
 
 	// check SET ResourceOperation(s) exist for provided command
 	ros, e := cache.Profiles().ResourceOperations(c.device.ProfileName, c.cmd, common.SetCmdMethod)
@@ -414,7 +414,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 	var result *dsModels.CommandValue
 
 	origin := time.Now().UnixNano()
-	switch strings.ToLower(dr.Properties.Type) {
+	switch strings.ToLower(dr.Properties.ValueType) {
 	case strings.ToLower(v2.ValueTypeString):
 		result = dsModels.NewStringValue(dr.Name, origin, v)
 	case strings.ToLower(v2.ValueTypeBool):

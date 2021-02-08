@@ -7,11 +7,12 @@
 package autoevent
 
 import (
-	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/OneOfOne/xxhash"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
@@ -28,10 +29,10 @@ type Executor struct {
 	deviceName   string
 	resource     string
 	onChange     bool
-	lastReadings map[string]dtos.BaseReading
+	lastReadings map[string]interface{}
 	duration     time.Duration
 	stop         bool
-	rwMutex      *sync.RWMutex
+	mutex        *sync.Mutex
 }
 
 // Run triggers this Executor executes the handler for the resource periodically
@@ -64,7 +65,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 			if evt != nil {
 				if e.onChange {
 					if e.compareReadings(evt.Readings) {
-						lc.Debugf("AutoEvent - readings are the same as previous one %v", e.lastReadings)
+						lc.Debugf("AutoEvent - readings are the same as previous one")
 						continue
 					}
 				}
@@ -97,41 +98,47 @@ func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors
 }
 
 func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
-	e.rwMutex.RLock()
-	defer e.rwMutex.RUnlock()
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
 
 	if len(e.lastReadings) != len(readings) {
-		e.lastReadings = make(map[string]dtos.BaseReading)
-		for _, r := range readings {
-			e.lastReadings[r.ResourceName] = r
-		}
+		e.renewLastReadings(readings)
 		return false
 	}
 
-	var res = true
+	var result = true
 	for _, reading := range readings {
 		if lastReading, ok := e.lastReadings[reading.ResourceName]; ok {
-			if reading.Value != "" {
-				if reading.Value != lastReading.Value {
-					e.lastReadings[reading.ResourceName] = reading
-					res = false
+			if reading.ValueType == v2.ValueTypeBinary {
+				checksum := xxhash.Checksum64(reading.BinaryValue)
+				if lastReading != checksum {
+					e.lastReadings[reading.ResourceName] = checksum
+					result = false
 				}
 			} else {
-				if bytes.Compare(lastReading.BinaryValue, reading.BinaryValue) != 0 {
-					e.lastReadings[reading.ResourceName] = reading
-					res = false
+				if lastReading != reading.Value {
+					e.lastReadings[reading.ResourceName] = reading.Value
+					result = false
 				}
 			}
 		} else {
-			e.lastReadings = make(map[string]dtos.BaseReading)
-			for _, r := range readings {
-				e.lastReadings[r.ResourceName] = r
-			}
+			e.renewLastReadings(readings)
 			return false
 		}
 	}
 
-	return res
+	return result
+}
+
+func (e *Executor) renewLastReadings(readings []dtos.BaseReading) {
+	e.lastReadings = make(map[string]interface{}, len(readings))
+	for _, r := range readings {
+		if r.ValueType == v2.ValueTypeBinary {
+			e.lastReadings[r.ResourceName] = xxhash.Checksum64(r.BinaryValue)
+		} else {
+			e.lastReadings[r.ResourceName] = r.Value
+		}
+	}
 }
 
 // Stop marks this Executor stopped
@@ -140,11 +147,11 @@ func (e *Executor) Stop() {
 }
 
 // NewExecutor creates an Executor for an AutoEvent
-func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, error) {
+func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, errors.EdgeX) {
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Frequency)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to parse AutoEvent %s duration", ae.Resource), err)
 	}
 
 	return &Executor{
@@ -153,5 +160,5 @@ func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, error) {
 		onChange:   ae.OnChange,
 		duration:   duration,
 		stop:       false,
-		rwMutex:    &sync.RWMutex{}}, nil
+		mutex:      &sync.Mutex{}}, nil
 }

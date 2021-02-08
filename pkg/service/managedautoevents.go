@@ -10,19 +10,20 @@ package service
 import (
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 )
 
 // AddDeviceAutoEvent adds a new AutoEvent to the Device with given name
-func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoEvent) error {
+func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoEvent) errors.EdgeX {
 	found := false
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		msg := fmt.Sprintf("failed to find device %s in cache", deviceName)
 		s.LoggingClient.Error(msg)
-		return fmt.Errorf(msg)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 
 	for _, e := range device.AutoEvents {
@@ -50,15 +51,14 @@ func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoE
 }
 
 // RemoveDeviceAutoEvent removes an AutoEvent from the Device with given name
-func (s *DeviceService) RemoveDeviceAutoEvent(deviceName string, event models.AutoEvent) error {
+func (s *DeviceService) RemoveDeviceAutoEvent(deviceName string, event models.AutoEvent) errors.EdgeX {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		msg := fmt.Sprintf("failed to find device %s cannot in cache", deviceName)
 		s.LoggingClient.Error(msg)
-		return fmt.Errorf(msg)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 
-	s.manager.StopForDevice(deviceName)
 	for i, e := range device.AutoEvents {
 		if e.Resource == event.Resource {
 			s.LoggingClient.Debugf("Removing AutoEvent %s for device %s", e.Resource, deviceName)

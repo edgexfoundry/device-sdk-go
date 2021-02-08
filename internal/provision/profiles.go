@@ -44,7 +44,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	lc.Debugf("created absolute path for loading pre-defined device profiles: %s", absPath)
 
 	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	res, edgexErr := dpc.AllDeviceProfiles(ctx, nil, 0, -1)
 	if edgexErr != nil {
 		return edgexErr
@@ -81,7 +81,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 			}
 
 			// add profile to metadata
-			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
+			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 			_, err = dpc.AddByYaml(ctx, fullPath)
 			if err != nil {
 				lc.Errorf("failed to add profile %s to metadata: %v", fullPath, err)

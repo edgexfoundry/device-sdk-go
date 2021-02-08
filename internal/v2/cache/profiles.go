@@ -142,15 +142,15 @@ func deviceResourceSliceToMap(deviceResources []models.DeviceResource) map[strin
 	return result
 }
 
-func profileResourceSliceToMaps(profileResources []models.ProfileResource) (map[string][]models.ResourceOperation, map[string][]models.ResourceOperation) {
-	getResult := make(map[string][]models.ResourceOperation, len(profileResources))
-	setResult := make(map[string][]models.ResourceOperation, len(profileResources))
-	for _, pr := range profileResources {
-		if len(pr.Get) > 0 {
-			getResult[pr.Name] = pr.Get
+func profileResourceSliceToMaps(deviceCommands []models.DeviceCommand) (map[string][]models.ResourceOperation, map[string][]models.ResourceOperation) {
+	getResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
+	setResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
+	for _, deviceCommand := range deviceCommands {
+		if len(deviceCommand.Get) > 0 {
+			getResult[deviceCommand.Name] = deviceCommand.Get
 		}
-		if len(pr.Set) > 0 {
-			setResult[pr.Name] = pr.Set
+		if len(deviceCommand.Set) > 0 {
+			setResult[deviceCommand.Name] = deviceCommand.Set
 		}
 	}
 

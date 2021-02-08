@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -39,7 +39,9 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic 
 		// double check the CommandValue return from ProtocolDriver match device command
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, cv.DeviceResourceName)
 		if !ok {
-			//return eventDTO, fmt.Errorf("no deviceResource %s for %s in CommandValue (%s)", cv.DeviceResourceName, c.device.Name, cv.String())
+			msg := fmt.Sprintf("failed to find DeviceResource %s in Device %s for CommandValue (%s)", cv.DeviceResourceName, deviceName, cv.String())
+			lc.Error(msg)
+			return eventDTO, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, msg, nil)
 		}
 
 		// perform data transformation
@@ -93,16 +95,8 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic 
 		return eventDTO, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, fmt.Sprintf("failed to transform value for %s", deviceName), nil)
 	}
 
-	eventDTO = dtos.Event{
-		Versionable: commonDTO.Versionable{
-			ApiVersion: v2.ApiVersion,
-		},
-		Id:          uuid.New().String(),
-		DeviceName:  device.Name,
-		ProfileName: device.ProfileName,
-		Origin:      time.Now().UnixNano() / int64(time.Millisecond),
-		Readings:    readings,
-	}
+	eventDTO = dtos.NewEvent(device.ProfileName, device.Name)
+	eventDTO.Readings = readings
 
 	return
 }
@@ -116,7 +110,7 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 		Versionable: commonDTO.Versionable{
 			ApiVersion: v2.ApiVersion,
 		},
-		Id:           uuid.New().String(),
+		Id:           uuid.NewString(),
 		DeviceName:   deviceName,
 		ProfileName:  profileName,
 		ResourceName: cv.DeviceResourceName,

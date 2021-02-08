@@ -7,8 +7,10 @@
 package autoevent
 
 import (
+	"math/rand"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +23,9 @@ func TestCompareReadings(t *testing.T) {
 	require.NoError(t, err)
 
 	testReadings := []dtos.BaseReading{{ResourceName: "r1"}, {ResourceName: "r2"}}
+	testReadings[0].ValueType = v2.ValueTypeInt8
 	testReadings[0].Value = "1"
+	testReadings[0].ValueType = v2.ValueTypeInt8
 	testReadings[1].Value = "2"
 
 	firstReadings := testReadings
@@ -37,12 +41,15 @@ func TestCompareReadings(t *testing.T) {
 	readingsValueUnchanged := readingsResourceChanged
 
 	readingsLengthChanged := append(readingsValueUnchanged, dtos.BaseReading{})
+	readingsLengthChanged[2].ValueType = v2.ValueTypeBinary
 	readingsLengthChanged[2].ResourceName = "b1"
-	readingsLengthChanged[2].BinaryValue = []byte{1, 2, 3}
+	readingsLengthChanged[2].BinaryValue = make([]byte, 1000)
+	rand.Read(readingsLengthChanged[2].BinaryValue)
 
 	readingsBinaryValueChanged := make([]dtos.BaseReading, len(readingsLengthChanged))
 	copy(readingsBinaryValueChanged, readingsLengthChanged)
-	readingsBinaryValueChanged[2].BinaryValue = []byte{4, 5, 6}
+	readingsBinaryValueChanged[2].BinaryValue = make([]byte, 1000)
+	rand.Read(readingsBinaryValueChanged[2].BinaryValue)
 
 	readingBinaryValueUnchanged := readingsBinaryValueChanged
 

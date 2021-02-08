@@ -47,27 +47,19 @@ func NewRestController(r *mux.Router, dic *di.Container) *RestController {
 }
 
 func (c *RestController) InitRestRoutes() {
-	c.InitV2RestRoutes()
-
-	c.router.Use(correlation.ManageHeader)
-	c.router.Use(correlation.OnResponseComplete)
-	c.router.Use(correlation.OnRequestBegin)
-}
-
-func (c *RestController) InitV2RestRoutes() {
 	c.LoggingClient.Info("Registering v2 routes...")
-
+	// common
 	c.addReservedRoute(contractsV2.ApiPingRoute, c.v2HttpController.Ping).Methods(http.MethodGet)
 	c.addReservedRoute(contractsV2.ApiVersionRoute, c.v2HttpController.Version).Methods(http.MethodGet)
 	c.addReservedRoute(contractsV2.ApiConfigRoute, c.v2HttpController.Config).Methods(http.MethodGet)
 	c.addReservedRoute(contractsV2.ApiMetricsRoute, c.v2HttpController.Metrics).Methods(http.MethodGet)
-
+	// secret
 	c.addReservedRoute(sdkCommon.APIV2SecretRoute, c.v2HttpController.Secret).Methods(http.MethodPost)
-
+	// discovery
 	c.addReservedRoute(contractsV2.ApiDiscoveryRoute, c.v2HttpController.Discovery).Methods(http.MethodPost)
-
+	// device command
 	c.addReservedRoute(contractsV2.ApiDeviceNameCommandNameRoute, c.v2HttpController.Command).Methods(http.MethodPut, http.MethodGet)
-
+	// callback
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.AddDevice).Methods(http.MethodPost)
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.UpdateDevice).Methods(http.MethodPut)
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackNameRoute, c.v2HttpController.DeleteDevice).Methods(http.MethodDelete)
@@ -76,6 +68,10 @@ func (c *RestController) InitV2RestRoutes() {
 	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.UpdateProvisionWatcher).Methods(http.MethodPut)
 	c.addReservedRoute(contractsV2.ApiProvisionWatcherByNameRoute, c.v2HttpController.DeleteProvisionWatcher).Methods(http.MethodDelete)
 	c.addReservedRoute(contractsV2.ApiServiceCallbackRoute, c.v2HttpController.UpdateDeviceService).Methods(http.MethodPut)
+
+	c.router.Use(correlation.ManageHeader)
+	c.router.Use(correlation.OnResponseComplete)
+	c.router.Use(correlation.OnRequestBegin)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
