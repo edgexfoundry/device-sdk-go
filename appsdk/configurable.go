@@ -88,12 +88,12 @@ func (dynamic AppFunctionsSDKConfigurable) FilterByProfileName(parameters map[st
 		}
 	}
 
-	deviceNamesCleaned := util.DeleteEmptyAndTrim(strings.FieldsFunc(profileNames, util.SplitComma))
+	profileNamesCleaned := util.DeleteEmptyAndTrim(strings.FieldsFunc(profileNames, util.SplitComma))
 	transform := transforms.Filter{
-		FilterValues: deviceNamesCleaned,
+		FilterValues: profileNamesCleaned,
 		FilterOut:    filterOutBool,
 	}
-	dynamic.Sdk.LoggingClient.Debug("Profile Name Filters", ProfileNames, strings.Join(deviceNamesCleaned, ","))
+	dynamic.Sdk.LoggingClient.Debugf("Profile Name Filters (filterOut=%v) are: '%s'", filterOutBool, strings.Join(profileNamesCleaned, ","))
 
 	return transform.FilterByProfileName
 }
@@ -129,7 +129,7 @@ func (dynamic AppFunctionsSDKConfigurable) FilterByDeviceName(parameters map[str
 		FilterValues: deviceNamesCleaned,
 		FilterOut:    filterOutBool,
 	}
-	dynamic.Sdk.LoggingClient.Debug("Device Name Filters", DeviceNames, strings.Join(deviceNamesCleaned, ","))
+	dynamic.Sdk.LoggingClient.Debugf("Device Name Filters (filterOut=%v) are: '%s'", filterOutBool, strings.Join(deviceNamesCleaned, ","))
 
 	return transform.FilterByDeviceName
 }
@@ -143,7 +143,7 @@ func (dynamic AppFunctionsSDKConfigurable) FilterByDeviceName(parameters map[str
 // For example, pressure reading data does not go to functions only interested in motion data.
 // This function is a configuration function and returns a function pointer.
 func (dynamic AppFunctionsSDKConfigurable) FilterByResourceName(parameters map[string]string) appcontext.AppFunction {
-	valueDescriptors, ok := parameters[ResourceNames]
+	resourceNames, ok := parameters[ResourceNames]
 	if !ok {
 		dynamic.Sdk.LoggingClient.Error("Could not find " + ResourceNames)
 		return nil
@@ -160,12 +160,12 @@ func (dynamic AppFunctionsSDKConfigurable) FilterByResourceName(parameters map[s
 		}
 	}
 
-	valueDescriptorsCleaned := util.DeleteEmptyAndTrim(strings.FieldsFunc(valueDescriptors, util.SplitComma))
+	resourceNamesCleaned := util.DeleteEmptyAndTrim(strings.FieldsFunc(resourceNames, util.SplitComma))
 	transform := transforms.Filter{
-		FilterValues: valueDescriptorsCleaned,
+		FilterValues: resourceNamesCleaned,
 		FilterOut:    filterOutBool,
 	}
-	dynamic.Sdk.LoggingClient.Debugf("Resource Name Filter for ResourceNames=%s", strings.Join(valueDescriptorsCleaned, ","))
+	dynamic.Sdk.LoggingClient.Debugf("Resource Name Filters (filterOut=%v) are `%s`", filterOutBool, strings.Join(resourceNamesCleaned, ","))
 
 	return transform.FilterByResourceName
 }

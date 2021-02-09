@@ -46,8 +46,11 @@ func NewFilterOut(filterValues []string) Filter {
 // If FilterOut is false, it filters out those Events not associated with the specified Device Profile listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Profile listed in FilterValues.
 func (f Filter) FilterByProfileName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-
-	edgexcontext.LoggingClient.Debug("Filtering by Device Profile")
+	mode := "For"
+	if f.FilterOut {
+		mode = "Out"
+	}
+	edgexcontext.LoggingClient.Debugf("Filtering %s by Device Profile. FilterValues are: '[%v]'", mode, f.FilterValues)
 
 	if len(params) < 1 {
 		return false, errors.New("no Event Received")
@@ -77,10 +80,10 @@ func (f Filter) FilterByProfileName(edgexcontext *appcontext.Context, params ...
 
 	// Will only get here if Event's ProfileName didn't match any names in FilterValues
 	if f.FilterOut {
-		edgexcontext.LoggingClient.Debugf("Event accepted for Profile=", event.DeviceName)
+		edgexcontext.LoggingClient.Debugf("Event accepted for Profile=", event.ProfileName)
 		return true, event
 	} else {
-		edgexcontext.LoggingClient.Debugf("Event not accepted for Profile=%s", event.DeviceName)
+		edgexcontext.LoggingClient.Debugf("Event not accepted for Profile=%s", event.ProfileName)
 		return false, nil
 	}
 }
@@ -89,8 +92,11 @@ func (f Filter) FilterByProfileName(edgexcontext *appcontext.Context, params ...
 // If FilterOut is false, it filters out those Events not associated with the specified Device Names listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Names listed in FilterValues.
 func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-
-	edgexcontext.LoggingClient.Debug("Filtering by Device Name")
+	mode := "For"
+	if f.FilterOut {
+		mode = "Out"
+	}
+	edgexcontext.LoggingClient.Debugf("Filtering %s by Device Name. FilterValues are: '[%v]'", mode, f.FilterValues)
 
 	if len(params) < 1 {
 		return false, errors.New("no Event Received")
@@ -133,8 +139,11 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 // If FilterOut is true, it out those Event Readings that are associated with the specified Resource Names listed in FilterValues.
 // This function will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-
-	edgexcontext.LoggingClient.Debug("Filtering by Resource Name")
+	mode := "For"
+	if f.FilterOut {
+		mode = "Out"
+	}
+	edgexcontext.LoggingClient.Debugf("Filtering %s by Resource Name. FilterValues are: '[%v]'", mode, f.FilterValues)
 
 	if len(params) < 1 {
 		return false, errors.New("no Event Received")
@@ -162,28 +171,42 @@ func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ..
 			readingFilteredOut := false
 			for _, name := range f.FilterValues {
 				if reading.ResourceName == name {
-					edgexcontext.LoggingClient.Debugf("Reading filtered out: %s", reading.ResourceName)
 					readingFilteredOut = true
+					break
 				}
 			}
+
 			if !readingFilteredOut {
+				edgexcontext.LoggingClient.Debugf("Reading accepted: %s", reading.ResourceName)
 				auxEvent.Readings = append(auxEvent.Readings, reading)
+			} else {
+				edgexcontext.LoggingClient.Debugf("Reading not accepted: %s", reading.ResourceName)
 			}
 		}
 	} else {
-		for _, name := range f.FilterValues {
-			for _, reading := range existingEvent.Readings {
+		for _, reading := range existingEvent.Readings {
+			readingFilteredFor := false
+			for _, name := range f.FilterValues {
 				if reading.ResourceName == name {
-					edgexcontext.LoggingClient.Debugf("Reading accepted: %s", reading.ResourceName)
-					auxEvent.Readings = append(auxEvent.Readings, reading)
+					readingFilteredFor = true
+					break
 				}
+			}
+
+			if readingFilteredFor {
+				edgexcontext.LoggingClient.Debugf("Reading accepted: %s", reading.ResourceName)
+				auxEvent.Readings = append(auxEvent.Readings, reading)
+			} else {
+				edgexcontext.LoggingClient.Debugf("Reading not accepted: %s", reading.ResourceName)
 			}
 		}
 	}
 
-	thereExistReadings := len(auxEvent.Readings) > 0
-	if thereExistReadings {
+	if len(auxEvent.Readings) > 0 {
+		edgexcontext.LoggingClient.Debugf("Event accepted: %d remaining reading(s)", len(auxEvent.Readings))
 		return true, auxEvent
 	}
+
+	edgexcontext.LoggingClient.Debug("Event not accepted: 0 remaining readings")
 	return false, nil
 }
