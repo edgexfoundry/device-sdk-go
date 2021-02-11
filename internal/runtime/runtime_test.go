@@ -50,7 +50,7 @@ var testV2Event = testAddEventRequest.Event
 
 func createAddEventRequest() requests.AddEventRequest {
 	request := requests.NewAddRequest("Thermostat", "FamilyRoomThermostat")
-	request.Event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
+	_ = request.Event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
 	return request
 }
 
@@ -293,8 +293,7 @@ func TestProcessMessageCBOR(t *testing.T) {
 
 	transform1WasCalled := false
 
-	// TODO: Change to TestAddEventRequest when V2 has support for CBOR
-	payload, err := cbor.Marshal(testV2Event)
+	payload, err := cbor.Marshal(testAddEventRequest)
 	assert.NoError(t, err, "expected no error when marshalling data")
 
 	envelope := types.MessageEnvelope{
@@ -350,12 +349,14 @@ func TestProcessMessageTargetType(t *testing.T) {
 	jsonPayload, err := json.Marshal(testAddEventRequest)
 	require.NoError(t, err)
 
-	eventJson, err := json.Marshal(testV2Event)
+	eventJsonPayload, err := json.Marshal(testV2Event)
 	require.NoError(t, err)
 
-	// TODO: Change to TestAddEventRequest when V2 has support for CBOR
 	cborPayload, err := cbor.Marshal(testAddEventRequest)
-	assert.NoError(t, err, "expected no error when marshalling data")
+	assert.NoError(t, err)
+
+	eventCborPayload, err := cbor.Marshal(testV2Event)
+	require.NoError(t, err)
 
 	expected := CustomType{
 		ID: "Id1",
@@ -371,39 +372,42 @@ func TestProcessMessageTargetType(t *testing.T) {
 		ExpectedOutputData []byte
 		ErrorExpected      bool
 	}{
-		{"Default Nil Target Type", nil, jsonPayload, clients.ContentTypeJSON, eventJson, false},
-		{"Event as Json", &dtos.Event{}, jsonPayload, clients.ContentTypeJSON, eventJson, false},
-		{"Event as Cbor", &dtos.Event{}, cborPayload, clients.ContentTypeCBOR, eventJson, false}, // Not re-encoding as CBOR
+		{"JSON default Target Type", nil, jsonPayload, clients.ContentTypeJSON, eventJsonPayload, false},
+		{"CBOR default Target Type", nil, cborPayload, clients.ContentTypeCBOR, eventJsonPayload, false},
+		{"JSON Event Event DTO", &dtos.Event{}, eventJsonPayload, clients.ContentTypeJSON, eventJsonPayload, false},
+		{"CBOR Event Event DTO", &dtos.Event{}, eventCborPayload, clients.ContentTypeCBOR, eventJsonPayload, false}, // Not re-encoding as CBOR
 		{"Custom Type Json", &CustomType{}, customJsonPayload, clients.ContentTypeJSON, customJsonPayload, false},
 		{"Byte Slice", &[]byte{}, byteData, "application/binary", byteData, false},
 		{"Target Type Not a pointer", dtos.Event{}, nil, "", nil, true},
 	}
 
 	for _, currentTest := range targetTypeTests {
-		envelope := types.MessageEnvelope{
-			CorrelationID: "123-234-345-456",
-			Payload:       currentTest.Payload,
-			ContentType:   currentTest.ContentType,
-		}
+		t.Run(currentTest.Name, func(t *testing.T) {
+			envelope := types.MessageEnvelope{
+				CorrelationID: "123-234-345-456",
+				Payload:       currentTest.Payload,
+				ContentType:   currentTest.ContentType,
+			}
 
-		context := &appcontext.Context{
-			LoggingClient: lc,
-		}
+			context := &appcontext.Context{
+				LoggingClient: lc,
+			}
 
-		runtime := GolangRuntime{TargetType: currentTest.TargetType}
-		runtime.Initialize(nil, nil)
-		runtime.SetTransforms([]appcontext.AppFunction{transforms.NewOutputData().SetOutputData})
+			runtime := GolangRuntime{TargetType: currentTest.TargetType}
+			runtime.Initialize(nil, nil)
+			runtime.SetTransforms([]appcontext.AppFunction{transforms.NewOutputData().SetOutputData})
 
-		err := runtime.ProcessMessage(context, envelope)
-		if currentTest.ErrorExpected {
-			assert.NotNil(t, err, fmt.Sprintf("expected an error for test '%s'", currentTest.Name))
-			assert.Error(t, err.Err, fmt.Sprintf("expected an error for test '%s'", currentTest.Name))
-		} else {
-			assert.Nil(t, err, fmt.Sprintf("unexpected error for test '%s'", currentTest.Name))
-		}
+			err := runtime.ProcessMessage(context, envelope)
+			if currentTest.ErrorExpected {
+				assert.NotNil(t, err, fmt.Sprintf("expected an error for test '%s'", currentTest.Name))
+				assert.Error(t, err.Err, fmt.Sprintf("expected an error for test '%s'", currentTest.Name))
+			} else {
+				assert.Nil(t, err, fmt.Sprintf("unexpected error for test '%s'", currentTest.Name))
+			}
 
-		// OutputData will be nil if an error occurred in the pipeline processing the data
-		assert.Equal(t, currentTest.ExpectedOutputData, context.OutputData, fmt.Sprintf("'%s' test failed", currentTest.Name))
+			// OutputData will be nil if an error occurred in the pipeline processing the data
+			assert.Equal(t, currentTest.ExpectedOutputData, context.OutputData, fmt.Sprintf("'%s' test failed", currentTest.Name))
+		})
 	}
 }
 

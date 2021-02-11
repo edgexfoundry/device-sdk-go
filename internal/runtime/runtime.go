@@ -26,6 +26,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	dbInterfaces "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
@@ -71,9 +73,11 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 	lc := edgexcontext.LoggingClient
 	lc.Debug("Processing message: " + strconv.Itoa(len(gr.transforms)) + " Transforms")
 
-	// Default expected Target Type for the function pipeline is a V2 Event DTO
+	// Default Target Type for the function pipeline is an AddEventRequest DTO
+	// which wraps an Event DTO. The un-wrapped Event DTO will be sent to the function
+	// pipeline.
 	if gr.TargetType == nil {
-		gr.TargetType = &dtos.Event{}
+		gr.TargetType = &requests.AddEventRequest{}
 	}
 
 	if reflect.TypeOf(gr.TargetType).Kind() != reflect.Ptr {
@@ -82,7 +86,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 		return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
 	}
 
-	// Must make a copy of the type so that data isn't retained between calls.
+	// Must make a copy of the type so that data isn't retained between calls for custom types
 	target := reflect.New(reflect.ValueOf(gr.TargetType).Elem().Type()).Interface()
 
 	switch target.(type) {
@@ -90,8 +94,8 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 		lc.Debug("Pipeline is expecting raw byte data")
 		target = &envelope.Payload
 
-	case *dtos.Event:
-		lc.Debug("Pipeline is expecting an Event")
+	case *requests.AddEventRequest:
+		lc.Debug("Pipeline is expecting an AddEventRequest")
 
 		var event *dtos.Event
 		var apiVersion string
@@ -118,6 +122,28 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 
 		if err != nil {
 			err = fmt.Errorf("unable to process Event object received: %s", err.Error())
+			logError(lc, err, envelope.CorrelationID)
+			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
+		}
+
+		if lc.LogLevel() == models.DebugLog {
+			gr.debugLogEvent(lc, event)
+		}
+
+		target = event
+
+	case *dtos.Event:
+		lc.Debug("Pipeline is expecting an Event DTO")
+
+		event := &dtos.Event{}
+		if err := gr.unmarshalPayload(envelope, event); err != nil {
+			err = fmt.Errorf("unable to process DTO Event received: %s", err.Error())
+			logError(lc, err, envelope.CorrelationID)
+			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
+		}
+
+		if err := v2.Validate(event); err != nil {
+			err = fmt.Errorf("validation failed on Event DTO: %s", err.Error())
 			logError(lc, err, envelope.CorrelationID)
 			return &MessageError{Err: err, ErrorCode: http.StatusBadRequest}
 		}
@@ -255,9 +281,7 @@ func (gr *GolangRuntime) getApiVersion(envelope types.MessageEnvelope) (string, 
 
 	// Use minimal struct with just the Event API version to find the version
 	type apiVersion struct {
-		Event struct {
-			commonDTO.Versionable
-		}
+		commonDTO.Versionable
 	}
 
 	version := apiVersion{}
@@ -266,12 +290,12 @@ func (gr *GolangRuntime) getApiVersion(envelope types.MessageEnvelope) (string, 
 		return "", err
 	}
 
-	// If ApiVersion not set then we have to assume it is a V1 Event
-	if len(version.Event.ApiVersion) == 0 {
+	// If ApiVersion not set then we have to assume it is a V1 Event, rather than a V2 AddEventRequest
+	if len(version.ApiVersion) == 0 {
 		return ApiV1, nil
 	}
 
-	return version.Event.ApiVersion, nil
+	return version.ApiVersion, nil
 }
 
 // TODO: Remove when completely switched to V2 Event DTO
@@ -299,6 +323,11 @@ func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelop
 		Tags:        v1Event.Tags,
 	}
 
+	// V1 Event ID may not be set if Core Data persistence is turned off
+	if len(v2Event.Id) == 0 {
+		v2Event.Id = uuid.NewString()
+	}
+
 	for _, v1Reading := range v1Event.Readings {
 		v2Reading := dtos.BaseReading{
 			Versionable:  commonDTO.NewVersionable(),
@@ -309,6 +338,11 @@ func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelop
 			ResourceName: v1Reading.Name,
 			ProfileName:  "Unknown",
 			ValueType:    v1Reading.ValueType,
+		}
+
+		// V1 Reading ID may not be set if Core Data persistence is turned off
+		if len(v2Reading.Id) == 0 {
+			v2Reading.Id = uuid.NewString()
 		}
 
 		if v1Reading.ValueType == v2.ValueTypeBinary {

@@ -119,6 +119,7 @@ type MqttBrokerConfig struct {
 type PipelineInfo struct {
 	ExecutionOrder           string
 	UseTargetTypeOfByteArray bool
+	UseTargetTypeOfEventDto  bool
 	Functions                map[string]PipelineFunction
 }
 

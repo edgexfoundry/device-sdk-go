@@ -8,3 +8,4 @@
 *.dll
 *.exe
 go.sum
+go.mod.bk
