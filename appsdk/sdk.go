@@ -30,8 +30,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
@@ -245,15 +243,9 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 	sdk.usingConfigurablePipeline = true
 
 	sdk.TargetType = nil
-	if sdk.config.Writable.Pipeline.UseTargetTypeOfByteArray && sdk.config.Writable.Pipeline.UseTargetTypeOfEventDto {
-		return nil, errors.New(
-			"can not set both UseTargetTypeOfByteArray and UseTargetTypeOfEventDto to true")
-	}
+
 	if sdk.config.Writable.Pipeline.UseTargetTypeOfByteArray {
 		sdk.TargetType = &[]byte{}
-	}
-	if sdk.config.Writable.Pipeline.UseTargetTypeOfEventDto {
-		sdk.TargetType = &dtos.Event{}
 	}
 
 	configurable := AppFunctionsSDKConfigurable{
