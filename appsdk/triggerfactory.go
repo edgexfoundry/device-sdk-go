@@ -108,7 +108,7 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStru
 			t, err = factory(sdk)
 			if err != nil {
 				sdk.LoggingClient.Error(fmt.Sprintf("failed to initialize custom trigger [%s]: %s", triggerType, err.Error()))
-				panic(err)
+				return nil
 			}
 		} else {
 			sdk.LoggingClient.Error(fmt.Sprintf("Invalid Trigger type of '%s' specified", configuration.Binding.Type))

@@ -18,6 +18,7 @@ package appsdk
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -187,4 +188,42 @@ func TestSetupTrigger_CustomType(t *testing.T) {
 
 	require.NotNil(t, trigger, "should be defined")
 	require.IsType(t, &mockCustomTrigger{}, trigger, "should be a custom trigger")
+}
+
+func TestSetupTrigger_CustomType_Error(t *testing.T) {
+	triggerName := uuid.New().String()
+
+	sdk := AppFunctionsSDK{
+		config: &common.ConfigurationStruct{
+			Binding: common.BindingInfo{
+				Type: triggerName,
+			},
+		},
+		LoggingClient: logger.MockLogger{},
+	}
+
+	sdk.RegisterCustomTriggerFactory(triggerName, func(c TriggerConfig) (Trigger, error) {
+		return &mockCustomTrigger{}, errors.New("this should force returning nil even though we'll have a value")
+	})
+
+	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
+
+	require.Nil(t, trigger, "should be nil")
+}
+
+func TestSetupTrigger_CustomType_NotFound(t *testing.T) {
+	triggerName := uuid.New().String()
+
+	sdk := AppFunctionsSDK{
+		config: &common.ConfigurationStruct{
+			Binding: common.BindingInfo{
+				Type: triggerName,
+			},
+		},
+		LoggingClient: logger.MockLogger{},
+	}
+
+	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
+
+	require.Nil(t, trigger, "should be nil")
 }
