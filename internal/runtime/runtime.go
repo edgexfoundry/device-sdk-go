@@ -340,6 +340,12 @@ func (gr *GolangRuntime) debugLogEvent(lc logger.LoggingClient, event *dtos.Even
 		event.ProfileName,
 		event.DeviceName,
 		len(event.Readings))
+	if len(event.Tags) > 0 {
+		lc.Debugf("Event tags are: [%v]", event.Tags)
+	} else {
+		lc.Debug("Event has no tags")
+	}
+
 	for index, reading := range event.Readings {
 		switch strings.ToLower(reading.ValueType) {
 		case strings.ToLower(v2.ValueTypeBinary):
