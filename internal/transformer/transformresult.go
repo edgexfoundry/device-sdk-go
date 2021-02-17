@@ -8,21 +8,18 @@ package transformer
 
 import (
 	"bytes"
-	"context"
 	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/metadata"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/requests/states/operating"
-	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/google/uuid"
 )
 
 const (
@@ -36,7 +33,7 @@ const (
 	NaN      = "NaN"
 )
 
-func TransformReadResult(cv *dsModels.CommandValue, pv contract.PropertyValue, lc logger.LoggingClient) error {
+func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue, lc logger.LoggingClient) error {
 	if cv.Type == v2.ValueTypeString || cv.Type == v2.ValueTypeBool || cv.Type == v2.ValueTypeBinary {
 		return nil // do nothing for String, Bool and Binary
 	}
@@ -603,14 +600,13 @@ func replaceNewCommandValue(cv *dsModels.CommandValue, newValue interface{}, lc 
 func CheckAssertion(
 	cv *dsModels.CommandValue,
 	assertion string,
-	device *contract.Device,
+	deviceName string,
 	lc logger.LoggingClient,
-	dc metadata.DeviceClient) error {
+	dc interfaces.DeviceClient) error {
 	if assertion != "" && cv.ValueToString() != assertion {
-		device.OperatingState = contract.Disabled
-		cache.Devices().Update(*device)
-		ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.New().String())
-		go dc.UpdateOpStateByName(ctx, device.Name, operating.UpdateRequest{OperatingState: contract.Disabled})
+		//device.OperatingState = models.Down
+		//cache.Devices().Update(*device)
+		go common.UpdateOperatingState(deviceName, models.Down, lc, dc)
 		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
 		lc.Error(msg)
 		return fmt.Errorf(msg)

@@ -1,3 +1,4 @@
+apiVersion: "v2"
 name: "Simple-Device"
 manufacturer: "Simple Corp."
 model: "SP-01"
@@ -10,132 +11,73 @@ deviceResources:
     name: "SwitchButton"
     description: "Switch On/Off."
     properties:
-      value:
-        { type: "Bool", readWrite: "RW", defaultValue: "true" }
-      units:
-        { type: "String", readWrite: "R", defaultValue: "On/Off" }
+        valueType: "Bool"
+        readWrite: "RW"
+        defaultValue: "true"
   -
     name: "Image"
     description: "Visual representation of Switch state."
     properties:
-      value:
-        { type: "Binary", readWrite: "R", mediaType: "JPG" }
-      units:
-        { type: "Binary", readWrite: "R", defaultValue: "On/Off" }
+        valueType: "Binary"
+        readWrite: "R"
+        mediaType: "image/jpeg"
   -
     name: "Xrotation"
     description: "X axis rotation rate"
     properties:
-      value:
-        { type: "Int32", readWrite: "RW" }
-      units:
-        { type: "string", readWrite: "R", defaultValue: "degrees/sec" }
+        valueType: "Int32"
+        readWrite: "RW"
   -
     name: "Yrotation"
     description: "Y axis rotation rate"
     properties:
-      value:
-        { type: "Int32", readWrite: "RW" }
-      units:
-        { type: "string", readWrite: "R", defaultValue: "degrees/sec" }
+        valueType: "Int32"
+        readWrite: "RW"
   -
     name: "Zrotation"
     description: "Z axis rotation rate"
     properties:
-      value:
-        { type: "Int32", readWrite: "RW" }
-      units:
-        { type: "string", readWrite: "R", defaultValue: "degrees/sec" }
+        valueType: "Int32"
+        readWrite: "RW"
   -
     name: "Uint8Array"
     description: "Unsigned 8bit array"
     properties:
-      value:
-        { type: "Uint8Array", readWrite: "RW" }
-      units:
-        { type: "string", readWrite: "R", defaultValue: "[]uint8" }
+        valueType: "Uint8Array"
+        readWrite: "RW"
 
 deviceCommands:
   -
     name: "Switch"
     get:
-      - { operation: "get", deviceResource: "SwitchButton" }
+      - { deviceResource: "SwitchButton" }
     set:
-      - { operation: "set", deviceResource: "SwitchButton", parameter: "false" }
+      - { deviceResource: "SwitchButton", parameter: "false" }
   -
     name: "Image"
     get:
-      - { operation: "get", deviceResource: "Image" }
+      - { deviceResource: "Image" }
   -
     name: "Rotation"
     get:
-      - { operation: "get", deviceResource: "Xrotation" }
-      - { operation: "get", deviceResource: "Yrotation" }
-      - { operation: "get", deviceResource: "Zrotation" }
+      - { deviceResource: "Xrotation" }
+      - { deviceResource: "Yrotation" }
+      - { deviceResource: "Zrotation" }
     set:
-      - { operation: "set", deviceResource: "Xrotation", parameter: "0" }
-      - { operation: "set", deviceResource: "Yrotation", parameter: "0" }
-      - { operation: "set", deviceResource: "Zrotation", parameter: "0" }
+      - { deviceResource: "Xrotation", parameter: "0" }
+      - { deviceResource: "Yrotation", parameter: "0" }
+      - { deviceResource: "Zrotation", parameter: "0" }
 
 coreCommands:
   -
     name: "Switch"
-    get:
-      path: "/api/v1/device/{deviceId}/SwitchButton"
-      responses:
-        -
-          code: "200"
-          description: ""
-          expectedValues: ["SwitchButton"]
-        -
-          code: "503"
-          description: "service unavailable"
-          expectedValues: []
-    put:
-      path: "/api/v1/device/{deviceId}/SwitchButton"
-      parameterNames: ["SwitchButton"]
-      responses:
-        -
-          code: "200"
-          description: ""
-        -
-          code: "503"
-          description: "service unavailable"
-          expectedValues: []
+    get: true
+    set: true
   -
     name: "Image"
-    get:
-      path: "/api/v1/device/{deviceId}/Image"
-      responses:
-        -
-          code: "200"
-          description: "CBOR encoded image transmitted as event to Core-Data"
-          expectedValues: ["Image"]
-        -
-          code: "500"
-          description: "Internal Server Error"
-          expectedValues: []
+    get: true
+    set: false
   -
-    name: "Rotation"
-    get:
-      path: "/api/v1/device/{deviceId}/Rotation"
-      responses:
-        -
-          code: "200"
-          description: "Successfully read the rotation sensors"
-          expectedValues: ["Xrotation","Yrotation","Zrotation"]
-        -
-          code: "500"
-          description: "Internal Server Error"
-          expectedValues: []
-    put:
-      path: "/api/v1/device/{deviceId}/Rotation"
-      parameterNames: ["Xrotation","Yrotation","Zrotation"]
-      responses:
-        -
-          code: "200"
-          description: "Successfully write the rotation sensors"
-        -
-          code: "500"
-          description: "Internal Server Error"
-          expectedValues: []
+   name: "Rotation"
+   get: true
+   set: true

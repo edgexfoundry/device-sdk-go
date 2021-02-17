@@ -1,13 +1,15 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package models
 
-import contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+import (
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+)
 
 // ProtocolDiscovery is a low-level device-specific interface implemented
 // by device services that support dynamic device discovery.
@@ -22,7 +24,7 @@ type ProtocolDiscovery interface {
 // DiscoveredDevice defines the required information for a found device.
 type DiscoveredDevice struct {
 	Name        string
-	Protocols   map[string]contract.ProtocolProperties
+	Protocols   map[string]models.ProtocolProperties
 	Description string
 	Labels      []string
 }

@@ -11,14 +11,15 @@ import (
 	"math"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTransformReadResult_NaN(t *testing.T) {
-	ro := contract.ResourceOperation{DeviceResource: "test-object"}
+	ro := models.ResourceOperation{DeviceResource: "test-object"}
 	float32Val, _ := dsModels.NewFloat32Value(ro.DeviceResource, 0, float32(math.NaN()))
 	float64Val, _ := dsModels.NewFloat64Value(ro.DeviceResource, 0, math.NaN())
 
@@ -31,7 +32,7 @@ func TestTransformReadResult_NaN(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pv := contract.PropertyValue{}
+			pv := models.PropertyValue{}
 			err := TransformReadResult(tt.cv, pv, lc)
 			assert.True(t, errors.Is(err, NaNError{}), "transform result should be NaNError")
 		})

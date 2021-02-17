@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,9 +11,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 )
 
 var (
@@ -75,6 +76,9 @@ func (p *profileCache) ForName(name string) (models.DeviceProfile, bool) {
 	defer p.mutex.Unlock()
 
 	profile, ok := p.deviceProfileMap[name]
+	if !ok {
+		return models.DeviceProfile{}, false
+	}
 	return *profile, ok
 }
 
@@ -138,15 +142,15 @@ func deviceResourceSliceToMap(deviceResources []models.DeviceResource) map[strin
 	return result
 }
 
-func profileResourceSliceToMaps(profileResources []models.ProfileResource) (map[string][]models.ResourceOperation, map[string][]models.ResourceOperation) {
-	getResult := make(map[string][]models.ResourceOperation, len(profileResources))
-	setResult := make(map[string][]models.ResourceOperation, len(profileResources))
-	for _, pr := range profileResources {
-		if len(pr.Get) > 0 {
-			getResult[pr.Name] = pr.Get
+func profileResourceSliceToMaps(deviceCommands []models.DeviceCommand) (map[string][]models.ResourceOperation, map[string][]models.ResourceOperation) {
+	getResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
+	setResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
+	for _, deviceCommand := range deviceCommands {
+		if len(deviceCommand.Get) > 0 {
+			getResult[deviceCommand.Name] = deviceCommand.Get
 		}
-		if len(pr.Set) > 0 {
-			setResult[pr.Name] = pr.Set
+		if len(deviceCommand.Set) > 0 {
+			setResult[deviceCommand.Name] = deviceCommand.Set
 		}
 	}
 
@@ -250,8 +254,7 @@ func (p *profileCache) CommandExists(profileName string, cmd string, method stri
 	}
 
 	if _, ok := deviceCommands[cmd]; !ok {
-		errMsg := fmt.Sprintf("failed to find %s command %s in profile %s", method, cmd, profileName)
-		return false, errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
+		return false, nil
 	}
 
 	return true, nil
