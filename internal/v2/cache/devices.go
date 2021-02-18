@@ -122,6 +122,10 @@ func (d *deviceCache) removeByName(name string) errors.EdgeX {
 // is used by the UpdateHandler to trigger update device admin state that's been
 // updated directly to Core Metadata.
 func (d *deviceCache) UpdateAdminState(name string, state models.AdminState) errors.EdgeX {
+	if state != models.Locked && state != models.Unlocked {
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "invalid AdminState", nil)
+	}
+
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 

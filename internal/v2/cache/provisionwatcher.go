@@ -118,6 +118,10 @@ func (p *provisionWatcherCache) removeByName(name string) error {
 
 // UpdateAdminState updates the ProvisionWatcher admin state in cache by name.
 func (p *provisionWatcherCache) UpdateAdminState(name string, state models.AdminState) error {
+	if state != models.Locked && state != models.Unlocked {
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "invalid AdminState", nil)
+	}
+
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
