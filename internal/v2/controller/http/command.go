@@ -25,30 +25,31 @@ import (
 func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
-	var body string
-	var sendEvent bool
+	var requestBody string
+	var queryParams string
 	var err edgexErr.EdgeX
 	var reserved url.Values
 	vars := mux.Vars(request)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
 
-	// read request body for PUT command, or parse query parameters for GET command.
+	// read request body for SET command
 	if request.Method == http.MethodPut {
-		body, err = readBodyAsString(request)
-	} else if request.Method == http.MethodGet {
-		body, reserved, err = filterQueryParams(request.URL.RawQuery)
+		requestBody, err = readBodyAsString(request)
 	}
+	// parse query parameter
+	queryParams, reserved, err = filterQueryParams(request.URL.RawQuery)
 	if err != nil {
 		c.sendEdgexError(writer, request, err, v2.ApiDeviceNameCommandNameRoute)
 		return
 	}
 
+	var sendEvent bool
 	// push event to CoreData if specified (default no)
 	if ok, exist := reserved[v2.PushEvent]; exist && ok[0] == v2.ValueYes {
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
-	event, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, body, c.dic)
+	event, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
 	if edgexErr != nil {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceNameCommandNameRoute)
 		return
@@ -56,7 +57,7 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 
 	var res interface{}
 	if event.Id != "" {
-		res = responses.NewEventResponse(correlationID, "", http.StatusOK, event)
+		res = responses.NewEventResponse("", "", http.StatusOK, event)
 	} else {
 		res = common.NewBaseResponse("", "", http.StatusOK)
 	}
@@ -75,7 +76,7 @@ func readBodyAsString(req *http.Request) (string, edgexErr.EdgeX) {
 		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to read request body", err)
 	}
 
-	if len(body) == 0 && req.Method == http.MethodPut {
+	if len(body) == 0 {
 		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "no request body provided for PUT command", nil)
 	}
 
