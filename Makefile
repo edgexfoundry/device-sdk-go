@@ -2,9 +2,15 @@
 
 GO=CGO_ENABLED=1 GO111MODULE=on go
 
-test:
+build:
+	make -C ./app-service-template build
+
+test-template:
+	make -C ./app-service-template test
+
+test: build test-template
 	$(GO) test ./... -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l .
 	[ "`gofmt -l .`" = "" ]
-	./bin/test-go-mod-tidy.sh
+	./app-service-template/bin/test-go-mod-tidy.sh

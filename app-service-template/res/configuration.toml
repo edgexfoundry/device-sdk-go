@@ -1,0 +1,103 @@
+# TODO: Go here for detailed information on Application Service configuation:
+#       https://docs.edgexfoundry.org/1.3/microservices/application/GeneralAppServiceConfig/
+[Writable]
+LogLevel = 'INFO'
+    [Writable.StoreAndForward]
+    Enabled = false
+    RetryInterval = '5m'
+    MaxRetryCount = 10
+
+    # TODO: if not running in secure mode, but do have secrets then add them here.
+    [Writable.InsecureSecrets]
+        [Writable.InsecureSecrets.DB]
+        path = "redisdb"
+            [Writable.InsecureSecrets.DB.Secrets]
+            username = ""
+            password = ""
+
+[Service]
+BootTimeout = '30s'
+ClientMonitor = '15s'
+CheckInterval = '10s'
+Host = 'localhost'
+Port = 49600  # TODO: set this port appropriately
+Protocol = 'http'
+ReadMaxLimit = 100
+StartupMsg = 'new-app-service Application Service has started'
+Timeout = '30s'
+
+[Registry]
+Host = 'localhost'
+Port = 8500
+Type = 'consul'
+
+[Database]
+Type = "redisdb"
+Host = "localhost"
+Port = 6379
+Timeout = "30s"
+
+# TODO: Determine if your service will use secrets in secure mode, i.e. Vault.
+#       if not this secion can be removed, but you must make sure EDGEX_SECURITY_SECRET_STORE is set to false
+#       Note is database is running in secure more and you have Store and Forward enable you will need to run this
+#       service in secure mode.
+#       For more deatils about SecretStore: https://docs.edgexfoundry.org/1.3/microservices/security/Ch-SecretStore/
+[SecretStore]
+Host = 'localhost'
+Port = 8200
+Path = '/v1/secret/edgex/appservice/'
+Protocol = 'http'
+RootCaCertPath = ''
+ServerName = ''
+TokenFile = '/vault/config/assets/resp-init.json'
+AdditionalRetryAttempts = 10
+RetryWaitPeriod = "1s"
+    [SecretStore.Authentication]
+    AuthType = 'X-Vault-Token'
+
+[Clients]
+  [Clients.CoreData]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 48080
+
+[Binding]
+Type="edgex-messagebus"
+SubscribeTopics="events, edgex/events"
+PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the message bus
+
+[MessageBus]
+Type = 'zero'
+    [MessageBus.SubscribeHost]
+        Host = 'localhost'
+        Port = 5563
+        Protocol = 'tcp'
+    [MessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
+        Host = '*'
+        Port = 5564
+        Protocol = 'tcp'
+
+# TODO: If using mqtt messagebus, Uncomment this section and remove above [Binding] & [MessageBus],
+#       Otherwise remove this commentedout block
+#[Binding]
+#Type="edgex-messagebus"
+#SubscribeTopics="events, edgex/events/#"
+#PublishTopic="event-xml"  # TODO: Remove if service is NOT publishing back to the message bus
+#
+#[MessageBus]
+#    Type = 'mqtt'
+#    [MessageBus.SubscribeHost]
+#    Host = 'localhost'
+#    Port = 1883
+#    Protocol = 'tcp'
+#    [MessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
+#        Host = 'localhost'
+#        Port = 1883
+#        Protocol = 'tcp'
+
+[ApplicationSettings]
+# TODO: Add custom settings needed by your app service
+# This can be any Key/Value pair you need.
+# For more details see: https://docs.edgexfoundry.org/1.3/microservices/application/GeneralAppServiceConfig/#application-settings
+# Example that works with devices from the Virtual Device service:
+DeviceNames = "Random-Boolean-Device, Random-Integer-Device, Random-UnsignedInteger-Device, Random-Float-Device, Random-Binary-Device"
