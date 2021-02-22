@@ -17,37 +17,14 @@
 package transforms
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-var context *appcontext.Context
-
-func init() {
-	lc := logger.NewMockClient()
-	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
-	mockSP := &mocks.SecretProvider{}
-	mockSP.On("GetSecrets", "/path", "Secret-Header-Name").Return(map[string]string{"Secret-Header-Name": "value"}, nil)
-	mockSP.On("GetSecrets", "/path", "Secret-Header-Name-2").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
-
-	context = &appcontext.Context{
-		LoggingClient:  lc,
-		EventClient:    eventClient,
-		SecretProvider: mockSP,
-	}
-}
 
 func TestTransformToXML(t *testing.T) {
 	eventIn := dtos.Event{

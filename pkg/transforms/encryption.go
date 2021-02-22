@@ -24,21 +24,35 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
+	"fmt"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 )
 
 type Encryption struct {
-	Key                  string
+	SecretPath           string
+	SecretName           string
+	EncryptionKey        string
 	InitializationVector string
 }
 
 // NewEncryption creates, initializes and returns a new instance of Encryption
-func NewEncryption(key string, initializationVector string) Encryption {
+func NewEncryption(encryptionKey string, initializationVector string) Encryption {
 	return Encryption{
-		Key:                  key,
+		EncryptionKey:        encryptionKey,
+		InitializationVector: initializationVector,
+	}
+}
+
+// NewEncryptionWithSecrets creates, initializes and returns a new instance of Encryption configured
+// to retrieve the encryption key from the Secret Store
+func NewEncryptionWithSecrets(secretPath string, secretName string, initializationVector string) Encryption {
+	return Encryption{
+		SecretPath:           secretPath,
+		SecretName:           secretName,
 		InitializationVector: initializationVector,
 	}
 }
@@ -65,11 +79,40 @@ func (aesData Encryption) EncryptWithAES(edgexcontext *appcontext.Context, param
 	}
 
 	iv := make([]byte, blockSize)
-	copy(iv, []byte(aesData.InitializationVector))
+	copy(iv, aesData.InitializationVector)
 
 	hash := sha1.New()
 
-	hash.Write([]byte((aesData.Key)))
+	// If using Secret Store for the encryption key
+	if len(aesData.SecretPath) != 0 && len(aesData.SecretName) != 0 {
+		// Note secrets are cached so this call doesn't result in unneeded calls to SecretStore Service and
+		// the cache is invalidated when StoreSecrets is used.
+		secretData, err := edgexcontext.SecretProvider.GetSecrets(aesData.SecretPath, aesData.SecretName)
+		if err != nil {
+			return false, fmt.Errorf(
+				"unable to retieve encryption key at secret path=%s and name=%s",
+				aesData.SecretPath,
+				aesData.SecretName)
+		}
+
+		key, ok := secretData[aesData.SecretName]
+		if !ok {
+			return false, fmt.Errorf("unable find encryption key in secret data for name=%s", aesData.SecretName)
+		}
+
+		edgexcontext.LoggingClient.Debugf(
+			"Using encryption key from Secret Store at path=%s & name=%s",
+			aesData.SecretPath,
+			aesData.SecretName)
+
+		aesData.EncryptionKey = key
+	}
+
+	if len(aesData.EncryptionKey) == 0 {
+		return false, fmt.Errorf("AES encryption key not set")
+	}
+
+	hash.Write([]byte((aesData.EncryptionKey)))
 	key := hash.Sum(nil)
 	key = key[:blockSize]
 
@@ -80,10 +123,10 @@ func (aesData Encryption) EncryptWithAES(edgexcontext *appcontext.Context, param
 
 	ecb := cipher.NewCBCEncrypter(block, iv)
 	content := pkcs5Padding(data, block.BlockSize())
-	crypted := make([]byte, len(content))
-	ecb.CryptBlocks(crypted, content)
+	encrypted := make([]byte, len(content))
+	ecb.CryptBlocks(encrypted, content)
 
-	encodedData := []byte(base64.StdEncoding.EncodeToString(crypted))
+	encodedData := []byte(base64.StdEncoding.EncodeToString(encrypted))
 
 	// Set response "content-type" header to "text/plain"
 	edgexcontext.ResponseContentType = clients.ContentTypeText

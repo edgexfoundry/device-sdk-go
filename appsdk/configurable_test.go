@@ -234,6 +234,7 @@ func TestBatchByCount(t *testing.T) {
 	trx := configurable.BatchByCount(params)
 	assert.NotNil(t, trx, "return result from BatchByCount should not be nil")
 }
+
 func TestBatchByTime(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
@@ -246,6 +247,7 @@ func TestBatchByTime(t *testing.T) {
 	trx := configurable.BatchByTime(params)
 	assert.NotNil(t, trx, "return result from BatchByTime should not be nil")
 }
+
 func TestBatchByTimeAndCount(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
@@ -274,6 +276,7 @@ func TestJSONLogic(t *testing.T) {
 	assert.NotNil(t, trx, "return result from JSONLogic should not be nil")
 
 }
+
 func TestConfigurableMQTTSecretSend(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
@@ -325,6 +328,56 @@ func TestAppFunctionsSDKConfigurable_AddTags(t *testing.T) {
 			params[testCase.ParamName] = testCase.TagsSpec
 
 			transform := configurable.AddTags(params)
+			assert.Equal(t, testCase.ExpectNil, transform == nil)
+		})
+	}
+}
+
+func TestAppFunctionsSDKConfigurable_EncryptWithAES(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	key := "xyz12345"
+	vector := "1243565"
+	secretsPath := "/aes"
+	secretName := "myKey"
+
+	tests := []struct {
+		Name          string
+		EncryptionKey string
+		InitVector    string
+		SecretPath    string
+		SecretName    string
+		ExpectNil     bool
+	}{
+		{"Good - Key & vector ", key, vector, "", "", false},
+		{"Good - Secrets & vector", "", vector, secretsPath, secretName, false},
+		{"Bad - No vector ", key, "", "", "", true},
+		{"Bad - No Key or secrets ", "", vector, "", "", true},
+		{"Bad - Missing secretPath", "", vector, "", secretName, true},
+		{"Bad - Missing secretName", "", vector, secretsPath, "", true},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			params := make(map[string]string)
+			if len(testCase.EncryptionKey) > 0 {
+				params[EncryptionKey] = testCase.EncryptionKey
+			}
+			if len(testCase.InitVector) > 0 {
+				params[InitVector] = testCase.InitVector
+			}
+			if len(testCase.SecretPath) > 0 {
+				params[SecretPath] = testCase.SecretPath
+			}
+			if len(testCase.SecretName) > 0 {
+				params[SecretName] = testCase.SecretName
+			}
+
+			transform := configurable.EncryptWithAES(params)
 			assert.Equal(t, testCase.ExpectNil, transform == nil)
 		})
 	}

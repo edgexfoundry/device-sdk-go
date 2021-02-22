@@ -17,6 +17,7 @@
 package transforms
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -24,11 +25,18 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/stretchr/testify/require"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -37,12 +45,22 @@ const (
 	badPath = "/somepath/bad"
 )
 
-var logClient logger.LoggingClient
+var lc logger.LoggingClient
 var config *common.ConfigurationStruct
+var context *appcontext.Context
 
 func TestMain(m *testing.M) {
-	logClient = logger.NewMockClient()
+	lc = logger.NewMockClient()
+	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
+
 	config = &common.ConfigurationStruct{}
+
+	context = &appcontext.Context{
+		LoggingClient: lc,
+		EventClient:   eventClient,
+		Configuration: config,
+	}
+
 	m.Run()
 }
 
@@ -118,6 +136,11 @@ func TestHTTPPostPut(t *testing.T) {
 
 func TestHTTPPostPutWithSecrets(t *testing.T) {
 	var methodUsed string
+
+	mockSP := &mocks.SecretProvider{}
+	mockSP.On("GetSecrets", "/path", "Secret-Header-Name").Return(map[string]string{"Secret-Header-Name": "value"}, nil)
+	mockSP.On("GetSecrets", "/path", "Secret-Header-Name-2").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
+	context.SecretProvider = mockSP
 
 	expectedValue := "value"
 	handler := func(w http.ResponseWriter, r *http.Request) {

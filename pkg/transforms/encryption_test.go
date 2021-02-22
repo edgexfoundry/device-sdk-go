@@ -22,9 +22,9 @@ import (
 	"crypto/cipher"
 	"crypto/sha1"
 	"encoding/base64"
-
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/stretchr/testify/assert"
@@ -36,6 +36,12 @@ const (
 	key         = "aquqweoruqwpeoruqwpoeruqwpoierupqoweiurpoqwiuerpqowieurqpowieurpoqiweuroipwqure"
 )
 
+var aesData = models.EncryptionDetails{
+	Algo:       "AES",
+	Key:        key,
+	InitVector: iv,
+}
+
 func aesDecrypt(crypt []byte, aesData models.EncryptionDetails) []byte {
 	hash := sha1.New()
 
@@ -44,7 +50,7 @@ func aesDecrypt(crypt []byte, aesData models.EncryptionDetails) []byte {
 	key = key[:blockSize]
 
 	iv := make([]byte, blockSize)
-	copy(iv, []byte(aesData.InitVector))
+	copy(iv, aesData.InitVector)
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -53,7 +59,7 @@ func aesDecrypt(crypt []byte, aesData models.EncryptionDetails) []byte {
 
 	decodedData, _ := base64.StdEncoding.DecodeString(string(crypt))
 
-	ecb := cipher.NewCBCDecrypter(block, []byte(iv))
+	ecb := cipher.NewCBCDecrypter(block, iv)
 	decrypted := make([]byte, len(decodedData))
 	ecb.CryptBlocks(decrypted, decodedData)
 
@@ -67,22 +73,34 @@ func pkcs5Trimming(encrypt []byte) []byte {
 	return encrypt[:len(encrypt)-int(padding)]
 }
 
-func TestAES(t *testing.T) {
-
-	aesData := models.EncryptionDetails{
-		Algo:       "AES",
-		Key:        key,
-		InitVector: iv,
-	}
-
+func TestNewEncryption(t *testing.T) {
 	enc := NewEncryption(aesData.Key, aesData.InitVector)
 
-	continuePipeline, cphrd := enc.EncryptWithAES(context, []byte(plainString))
+	continuePipeline, encrypted := enc.EncryptWithAES(context, []byte(plainString))
 	assert.True(t, continuePipeline)
 
-	decphrd := aesDecrypt(cphrd.([]byte), aesData)
+	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
-	assert.Equal(t, string(plainString), string(decphrd))
+	assert.Equal(t, plainString, string(decrypted))
+	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
+}
+
+func TestNewEncryptionWithSecrets(t *testing.T) {
+	secretPath := "AES"
+	secretName := "aesKey"
+
+	mockSP := &mocks.SecretProvider{}
+	mockSP.On("GetSecrets", secretPath, secretName).Return(map[string]string{secretName: key}, nil)
+	context.SecretProvider = mockSP
+
+	enc := NewEncryptionWithSecrets(secretPath, secretName, aesData.InitVector)
+
+	continuePipeline, encrypted := enc.EncryptWithAES(context, []byte(plainString))
+	assert.True(t, continuePipeline)
+
+	decrypted := aesDecrypt(encrypted.([]byte), aesData)
+
+	assert.Equal(t, plainString, string(decrypted))
 	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
 }
 
