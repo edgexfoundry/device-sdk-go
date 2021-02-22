@@ -77,7 +77,7 @@ func readBodyAsString(req *http.Request) (string, edgexErr.EdgeX) {
 	}
 
 	if len(body) == 0 {
-		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "no request body provided for PUT command", nil)
+		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "no request body provided for SET command", nil)
 	}
 
 	return string(body), nil
