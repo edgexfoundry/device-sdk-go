@@ -249,7 +249,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	// parse request body string
 	paramMap, err := parseParams(c.body)
 	if err != nil {
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse PUT parameters", err)
+		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse SET command parameters", err)
 	}
 
 	// check request body contains provided deviceResource
@@ -315,14 +315,14 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
 	configuration := container.ConfigurationFrom(c.dic.Get)
 	if len(ros) > configuration.Device.MaxCmdOps {
-		errMsg := fmt.Sprintf("PUT command %s exceed device %s MaxCmdOps (%d)", c.cmd, c.device.Name, configuration.Device.MaxCmdOps)
+		errMsg := fmt.Sprintf("SET command %s exceed device %s MaxCmdOps (%d)", c.cmd, c.device.Name, configuration.Device.MaxCmdOps)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 	}
 
 	// parse request body
 	paramMap, err := parseParams(c.body)
 	if err != nil {
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse PUT parameters", err)
+		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse SET command parameters", err)
 	}
 
 	// create CommandValues
@@ -332,13 +332,13 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		// check the deviceResource in ResourceOperation actually exist
 		dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, drName)
 		if !ok {
-			errMsg := fmt.Sprintf("deviceResource %s in PUT commnd %s for %s not defined", drName, c.cmd, c.device.Name)
+			errMsg := fmt.Sprintf("deviceResource %s in SET commnd %s for %s not defined", drName, c.cmd, c.device.Name)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
 		}
 
 		// check the deviceResource isn't read-only
 		if dr.Properties.ReadWrite == common.DeviceResourceReadOnly {
-			errMsg := fmt.Sprintf("deviceResource %s in PUT command %s is marked as read-only", drName, c.cmd)
+			errMsg := fmt.Sprintf("deviceResource %s in SET command %s is marked as read-only", drName, c.cmd)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
 
