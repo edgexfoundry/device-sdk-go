@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
@@ -45,8 +47,9 @@ var addEventRequest = createTestEventRequest()
 var expectedEvent = addEventRequest.Event
 
 func createTestEventRequest() requests.AddEventRequest {
-	request := requests.NewAddRequest("thermostat", "LivingRoomThermostat")
-	request.Event.AddSimpleReading("temperature", v2.ValueTypeInt64, int64(38))
+	event := dtos.NewEvent("thermostat", "LivingRoomThermostat")
+	_ = event.AddSimpleReading("temperature", v2.ValueTypeInt64, int64(38))
+	request := requests.NewAddEventRequest(event)
 	return request
 }
 

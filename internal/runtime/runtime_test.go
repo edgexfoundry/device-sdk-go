@@ -49,8 +49,9 @@ var testAddEventRequest = createAddEventRequest()
 var testV2Event = testAddEventRequest.Event
 
 func createAddEventRequest() requests.AddEventRequest {
-	request := requests.NewAddRequest("Thermostat", "FamilyRoomThermostat")
-	_ = request.Event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
+	event := dtos.NewEvent("Thermostat", "FamilyRoomThermostat")
+	event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
+	request := requests.NewAddEventRequest(event)
 	return request
 }
 
