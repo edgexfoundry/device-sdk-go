@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -78,7 +78,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsMod
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
 func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
-	s.lc.Debug(fmt.Sprintf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes))
+	s.lc.Debugf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes)
 
 	if len(reqs) == 1 {
 		res = make([]*dsModels.CommandValue, 1)
@@ -138,7 +138,7 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 	var err error
 
 	for i, r := range reqs {
-		s.lc.Info(fmt.Sprintf("SimpleDriver.HandleWriteCommands: protocols: %v, resource: %v, parameters: %v", protocols, reqs[i].DeviceResourceName, params[i]))
+		s.lc.Debugf("SimpleDriver.HandleWriteCommands: protocols: %v, resource: %v, parameters: %v, attributes: %v", protocols, reqs[i].DeviceResourceName, params[i], reqs[i].Attributes)
 		switch r.DeviceResourceName {
 		case "SwitchButton":
 			if s.switchButton, err = params[i].BoolValue(); err != nil {
@@ -163,7 +163,7 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 		case "Uint8Array":
 			v, err := params[i].Uint8ArrayValue()
 			if err == nil {
-				s.lc.Debug(fmt.Sprint("Uint8 array value from write command: ", v))
+				s.lc.Debugf("Uint8 array value from write command: ", v)
 			} else {
 				return err
 			}
@@ -180,7 +180,7 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 func (s *SimpleDriver) Stop(force bool) error {
 	// Then Logging Client might not be initialized
 	if s.lc != nil {
-		s.lc.Debug(fmt.Sprintf("SimpleDriver.Stop called: force=%v", force))
+		s.lc.Debugf("SimpleDriver.Stop called: force=%v", force)
 	}
 	return nil
 }
@@ -188,21 +188,21 @@ func (s *SimpleDriver) Stop(force bool) error {
 // AddDevice is a callback function that is invoked
 // when a new Device associated with this Device Service is added
 func (s *SimpleDriver) AddDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
-	s.lc.Debug(fmt.Sprintf("a new Device is added: %s", deviceName))
+	s.lc.Debugf("a new Device is added: %s", deviceName)
 	return nil
 }
 
 // UpdateDevice is a callback function that is invoked
 // when a Device associated with this Device Service is updated
 func (s *SimpleDriver) UpdateDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
-	s.lc.Debug(fmt.Sprintf("Device %s is updated", deviceName))
+	s.lc.Debugf("Device %s is updated", deviceName)
 	return nil
 }
 
 // RemoveDevice is a callback function that is invoked
 // when a Device associated with this Device Service is removed
 func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
-	s.lc.Debug(fmt.Sprintf("Device %s is removed", deviceName))
+	s.lc.Debugf("Device %s is removed", deviceName)
 	return nil
 }
 

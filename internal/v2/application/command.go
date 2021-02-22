@@ -37,22 +37,24 @@ type CommandProcessor struct {
 	deviceResource models.DeviceResource
 	correlationID  string
 	cmd            string
-	params         string
+	body           string
+	attributes     string
 	dic            *di.Container
 }
 
-func NewCommandProcessor(device models.Device, dr models.DeviceResource, correlationID string, cmd string, params string, dic *di.Container) *CommandProcessor {
+func NewCommandProcessor(device models.Device, dr models.DeviceResource, correlationID string, cmd string, body string, attributes string, dic *di.Container) *CommandProcessor {
 	return &CommandProcessor{
 		device:         device,
 		deviceResource: dr,
 		correlationID:  correlationID,
 		cmd:            cmd,
-		params:         params,
+		body:           body,
+		attributes:     attributes,
 		dic:            dic,
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, dic *di.Container) (res dtos.Event, err edgexErr.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, attributes string, dic *di.Container) (res dtos.Event, err edgexErr.EdgeX) {
 	var exist bool
 	var device models.Device
 	var deviceResource models.DeviceResource
@@ -107,7 +109,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, e)
 	}
 
-	helper := NewCommandProcessor(device, deviceResource, correlationID, cmd, body, dic)
+	helper := NewCommandProcessor(device, deviceResource, correlationID, cmd, body, attributes, dic)
 	if cmdExists {
 		if isRead {
 			return helper.ReadCommand()
@@ -120,7 +122,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 			return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, "command not found", nil)
 		}
 
-		helper = NewCommandProcessor(device, deviceResource, correlationID, cmd, body, dic)
+		helper = NewCommandProcessor(device, deviceResource, correlationID, cmd, body, attributes, dic)
 		if isRead {
 			return helper.ReadDeviceResource()
 		} else {
@@ -131,7 +133,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 
 func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debugf("Application - readDeviceResource: reading deviceResource: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - readDeviceResource: reading deviceResource: %s; %s: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not write-only
 	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceWriteOnly {
@@ -145,11 +147,11 @@ func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.Edge
 	// prepare CommandRequest
 	req.DeviceResourceName = c.deviceResource.Name
 	req.Attributes = c.deviceResource.Attributes
-	if c.params != "" {
+	if c.attributes != "" {
 		if len(req.Attributes) <= 0 {
 			req.Attributes = make(map[string]string)
 		}
-		req.Attributes[common.URLRawQuery] = c.params
+		req.Attributes[common.URLRawQuery] = c.attributes
 	}
 	req.Type = c.deviceResource.Properties.ValueType
 	reqs = append(reqs, req)
@@ -173,7 +175,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.Edge
 
 func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debugf("Application - readCmd: reading cmd: %s", c.cmd, common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - readCmd: reading cmd: %s; %s: %s", c.cmd, common.CorrelationHeader, c.correlationID)
 
 	// check GET ResourceOperation(s) exist for provided command
 	ros, e := cache.Profiles().ResourceOperations(c.device.ProfileName, c.cmd, common.GetCmdMethod)
@@ -208,11 +210,11 @@ func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 
 		reqs[i].DeviceResourceName = dr.Name
 		reqs[i].Attributes = dr.Attributes
-		if c.params != "" {
+		if c.attributes != "" {
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]string)
 			}
-			reqs[i].Attributes[common.URLRawQuery] = c.params
+			reqs[i].Attributes[common.URLRawQuery] = c.attributes
 		}
 		reqs[i].Type = dr.Properties.ValueType
 	}
@@ -236,7 +238,7 @@ func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 
 func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debugf("Application - writeDeviceResource: writing deviceResource: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - writeDeviceResource: writing deviceResource: %s; %s: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not read-only
 	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceReadOnly {
@@ -245,7 +247,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	}
 
 	// parse request body string
-	paramMap, err := parseParams(c.params)
+	paramMap, err := parseParams(c.body)
 	if err != nil {
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse PUT parameters", err)
 	}
@@ -271,6 +273,12 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	reqs := make([]dsModels.CommandRequest, 1)
 	reqs[0].DeviceResourceName = cv.DeviceResourceName
 	reqs[0].Attributes = c.deviceResource.Attributes
+	if c.attributes != "" {
+		if len(reqs[0].Attributes) <= 0 {
+			reqs[0].Attributes = make(map[string]string)
+		}
+		reqs[0].Attributes[common.URLRawQuery] = c.attributes
+	}
 	reqs[0].Type = cv.Type
 
 	// transform write value
@@ -295,7 +303,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 
 func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
-	lc.Debugf("Application - writeCmd: writing command: %s", c.cmd, common.CorrelationHeader, c.correlationID)
+	lc.Debugf("Application - writeCmd: writing command: %s; %s: %s", c.cmd, common.CorrelationHeader, c.correlationID)
 
 	// check SET ResourceOperation(s) exist for provided command
 	ros, e := cache.Profiles().ResourceOperations(c.device.ProfileName, c.cmd, common.SetCmdMethod)
@@ -312,7 +320,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	}
 
 	// parse request body
-	paramMap, err := parseParams(c.params)
+	paramMap, err := parseParams(c.body)
 	if err != nil {
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse PUT parameters", err)
 	}
@@ -373,6 +381,12 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 
 		reqs[i].DeviceResourceName = cv.DeviceResourceName
 		reqs[i].Attributes = dr.Attributes
+		if c.attributes != "" {
+			if len(reqs[i].Attributes) <= 0 {
+				reqs[i].Attributes = make(map[string]string)
+			}
+			reqs[i].Attributes[common.URLRawQuery] = c.attributes
+		}
 		reqs[i].Type = cv.Type
 
 		// transform write value
