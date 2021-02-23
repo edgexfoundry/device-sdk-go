@@ -78,6 +78,32 @@ func init() {
 	lc = logger.NewMockClient()
 }
 
+func TestProcessMessageBasRequest(t *testing.T) {
+	expected := http.StatusBadRequest
+
+	badRequest := testAddEventRequest
+	badRequest.Event.ProfileName = ""
+	badRequest.Event.DeviceName = ""
+	payload, err := json.Marshal(badRequest)
+	require.NoError(t, err)
+
+	envelope := types.MessageEnvelope{
+		CorrelationID: "123-234-345-456",
+		Payload:       payload,
+		ContentType:   clients.ContentTypeJSON,
+	}
+	context := &appcontext.Context{
+		LoggingClient: lc,
+	}
+
+	runtime := GolangRuntime{}
+	runtime.Initialize(nil, nil)
+
+	result := runtime.ProcessMessage(context, envelope)
+	require.NotNil(t, result)
+	assert.Equal(t, expected, result.ErrorCode)
+}
+
 func TestProcessMessageNoTransforms(t *testing.T) {
 	payload, err := json.Marshal(testAddEventRequest)
 	require.NoError(t, err)
@@ -89,6 +115,7 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 	context := &appcontext.Context{
 		LoggingClient: lc,
 	}
+
 	runtime := GolangRuntime{}
 	runtime.Initialize(nil, nil)
 

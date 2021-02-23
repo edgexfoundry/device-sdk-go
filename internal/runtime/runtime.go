@@ -109,9 +109,15 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 		// Dynamically process either AddEventRequest or Event DTO
 		event, err := gr.processEventPayload(envelope, lc)
 		if err != nil {
+			errorCode := http.StatusInternalServerError
+			if errors.Kind(err) == errors.KindContractInvalid {
+				errorCode = http.StatusBadRequest
+			}
+
 			err = fmt.Errorf("unable to process payload %s", err.Error())
 			logError(lc, err, envelope.CorrelationID)
-			return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
+
+			return &MessageError{Err: err, ErrorCode: errorCode}
 		}
 
 		if lc.LogLevel() == models.DebugLog {
