@@ -269,7 +269,7 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 	functions := make(map[string]common.PipelineFunction)
 	functions["FilterByDeviceName"] = common.PipelineFunction{
-		Parameters: map[string]string{"FilterValues": "Random-Float-Device, Random-Integer-Device"},
+		Parameters: map[string]string{"DeviceNames": "Random-Float-Device, Random-Integer-Device"},
 	}
 	functions["TransformToXML"] = common.PipelineFunction{}
 	functions["SetOutputData"] = common.PipelineFunction{}

@@ -149,8 +149,12 @@ func (processor *ConfigUpdateProcessor) processConfigChangedPipeline() {
 		transforms, err := sdk.LoadConfigurablePipeline()
 		if err != nil {
 			sdk.LoggingClient.Error("unable to reload Configurable Pipeline from new configuration: " + err.Error())
+			// Reset the transforms so error occurs when attempting to execute the pipeline.
+			sdk.transforms = nil
+			sdk.runtime.SetTransforms(nil)
 			return
 		}
+
 		err = sdk.SetFunctionsPipeline(transforms...)
 		if err != nil {
 			sdk.LoggingClient.Error("unable to set Configurable Pipeline functions from new configuration: " + err.Error())

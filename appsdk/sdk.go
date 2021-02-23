@@ -301,6 +301,11 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 		if !ok {
 			return nil, fmt.Errorf("failed to cast function %s as AppFunction type", functionName)
 		}
+
+		if function == nil {
+			return nil, fmt.Errorf("%s from configuration failed", functionName)
+		}
+
 		pipeline = append(pipeline, function)
 		configurable.Sdk.LoggingClient.Debug(fmt.Sprintf("%s function added to configurable pipeline", functionName))
 	}

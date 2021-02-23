@@ -96,15 +96,21 @@ func TestProcessMessageBasRequest(t *testing.T) {
 		LoggingClient: lc,
 	}
 
+	dummyTransform := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+		return true, "Hello"
+	}
+
 	runtime := GolangRuntime{}
 	runtime.Initialize(nil, nil)
-
+	runtime.SetTransforms([]appcontext.AppFunction{dummyTransform})
 	result := runtime.ProcessMessage(context, envelope)
 	require.NotNil(t, result)
 	assert.Equal(t, expected, result.ErrorCode)
 }
 
 func TestProcessMessageNoTransforms(t *testing.T) {
+	expected := http.StatusInternalServerError
+
 	payload, err := json.Marshal(testAddEventRequest)
 	require.NoError(t, err)
 	envelope := types.MessageEnvelope{
@@ -120,7 +126,8 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 	runtime.Initialize(nil, nil)
 
 	result := runtime.ProcessMessage(context, envelope)
-	require.Nil(t, result, "result should be nil since no transforms have been passed")
+	require.NotNil(t, result)
+	assert.Equal(t, expected, result.ErrorCode)
 }
 
 func TestProcessMessageOneCustomTransform(t *testing.T) {
