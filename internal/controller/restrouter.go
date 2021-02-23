@@ -64,9 +64,9 @@ func (c *RestController) InitRestRoutes() {
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackRoute, c.v2HttpController.UpdateDevice).Methods(http.MethodPut)
 	c.addReservedRoute(contractsV2.ApiDeviceCallbackNameRoute, c.v2HttpController.DeleteDevice).Methods(http.MethodDelete)
 	c.addReservedRoute(contractsV2.ApiProfileCallbackRoute, c.v2HttpController.UpdateProfile).Methods(http.MethodPut)
-	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.AddProvisionWatcher).Methods(http.MethodPost)
-	c.addReservedRoute(contractsV2.ApiProvisionWatcherRoute, c.v2HttpController.UpdateProvisionWatcher).Methods(http.MethodPut)
-	c.addReservedRoute(contractsV2.ApiProvisionWatcherByNameRoute, c.v2HttpController.DeleteProvisionWatcher).Methods(http.MethodDelete)
+	c.addReservedRoute(contractsV2.ApiWatcherCallbackRoute, c.v2HttpController.AddProvisionWatcher).Methods(http.MethodPost)
+	c.addReservedRoute(contractsV2.ApiWatcherCallbackRoute, c.v2HttpController.UpdateProvisionWatcher).Methods(http.MethodPut)
+	c.addReservedRoute(contractsV2.ApiWatcherCallbackNameRoute, c.v2HttpController.DeleteProvisionWatcher).Methods(http.MethodDelete)
 	c.addReservedRoute(contractsV2.ApiServiceCallbackRoute, c.v2HttpController.UpdateDeviceService).Methods(http.MethodPut)
 
 	c.router.Use(correlation.ManageHeader)

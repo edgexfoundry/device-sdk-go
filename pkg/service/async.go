@@ -96,10 +96,10 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 							ProfileName:    pw.ProfileName,
 							Protocols:      d.Protocols,
 							Labels:         d.Labels,
-							ServiceName:    pw.ProfileName,
+							ServiceName:    pw.ServiceName,
 							AdminState:     pw.AdminState,
 							OperatingState: contract.Up,
-							AutoEvents:     nil,
+							AutoEvents:     pw.AutoEvents,
 						}
 
 						req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))
