@@ -54,7 +54,7 @@ func NewCommandProcessor(device models.Device, dr models.DeviceResource, correla
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, attributes string, dic *di.Container) (res dtos.Event, err edgexErr.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, attributes string, dic *di.Container) (res *dtos.Event, err edgexErr.EdgeX) {
 	var exist bool
 	var device models.Device
 	var deviceResource models.DeviceResource
@@ -89,7 +89,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 			go common.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), container.MetadataDeviceClientFrom(dic.Get))
 		}
 
-		if sendEvent {
+		if res != nil && sendEvent {
 			ec := container.CoredataEventClientFrom(dic.Get)
 			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 			go common.SendEvent(res, correlationID, lc, ec)
@@ -131,7 +131,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	}
 }
 
-func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.EdgeX) {
+func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
 	lc.Debugf("Application - readDeviceResource: reading deviceResource: %s; %s: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
@@ -160,7 +160,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.Edge
 	driver := container.ProtocolDriverFrom(c.dic.Get)
 	results, err := driver.HandleReadCommands(c.device.Name, c.device.Protocols, reqs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error reading DeviceResourece %s for %s: %v", c.deviceResource.Name, c.device.Name, err)
+		errMsg := fmt.Sprintf("error reading DeviceResourece %s for %s", c.deviceResource.Name, c.device.Name)
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
@@ -173,7 +173,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res dtos.Event, e edgexErr.Edge
 	return
 }
 
-func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
+func (c *CommandProcessor) ReadCommand() (res *dtos.Event, e edgexErr.EdgeX) {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
 	lc.Debugf("Application - readCmd: reading cmd: %s; %s: %s", c.cmd, common.CorrelationHeader, c.correlationID)
 
@@ -223,7 +223,7 @@ func (c *CommandProcessor) ReadCommand() (res dtos.Event, e edgexErr.EdgeX) {
 	driver := container.ProtocolDriverFrom(c.dic.Get)
 	results, err := driver.HandleReadCommands(c.device.Name, c.device.Protocols, reqs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error reading DeviceCommand %s for %s: %v", c.cmd, c.device.Name, err)
+		errMsg := fmt.Sprintf("error reading DeviceCommand %s for %s", c.cmd, c.device.Name)
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
@@ -294,7 +294,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	driver := container.ProtocolDriverFrom(c.dic.Get)
 	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*dsModels.CommandValue{cv})
 	if err != nil {
-		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s: %v", c.deviceResource.Name, c.device.Name, err)
+		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s", c.deviceResource.Name, c.device.Name)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 
@@ -402,7 +402,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 	driver := container.ProtocolDriverFrom(c.dic.Get)
 	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, cvs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error writing DeviceResourece for %s: %v", c.device.Name, err)
+		errMsg := fmt.Sprintf("error writing DeviceCommand %s for %s", c.cmd, c.device.Name)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 	}
 

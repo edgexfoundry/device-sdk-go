@@ -24,11 +24,19 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic *di.Container) (eventDTO dtos.Event, e edgexErr.EdgeX) {
+func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic *di.Container) (*dtos.Event, edgexErr.EdgeX) {
+	// in some case device service driver implementation would generate no readings
+	// in this case no event would be created. Based on the implementation there would be 2 scenarios:
+	// 1. uninitialized *CommandValue slices, i.e. nil
+	// 2. initialized *CommandValue slice with no value in it.
+	if cvs == nil {
+		return nil, nil
+	}
+
 	device, exist := cache.Devices().ForName(deviceName)
 	if !exist {
 		errMsg := fmt.Sprintf("failed to find device %s", deviceName)
-		return eventDTO, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, errMsg, nil)
+		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, errMsg, nil)
 	}
 
 	var transformsOK = true
@@ -36,12 +44,15 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic 
 	config := container.ConfigurationFrom(dic.Get)
 	readings := make([]dtos.BaseReading, 0, config.Device.MaxCmdOps)
 	for _, cv := range cvs {
+		if cv == nil {
+			continue
+		}
 		// double check the CommandValue return from ProtocolDriver match device command
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, cv.DeviceResourceName)
 		if !ok {
 			msg := fmt.Sprintf("failed to find DeviceResource %s in Device %s for CommandValue (%s)", cv.DeviceResourceName, deviceName, cv.String())
 			lc.Error(msg)
-			return eventDTO, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, msg, nil)
+			return nil, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, msg, nil)
 		}
 
 		// perform data transformation
@@ -92,13 +103,17 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic 
 	}
 
 	if !transformsOK {
-		return eventDTO, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, fmt.Sprintf("failed to transform value for %s", deviceName), nil)
+		return nil, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, fmt.Sprintf("failed to transform value for %s", deviceName), nil)
 	}
 
-	eventDTO = dtos.NewEvent(device.ProfileName, device.Name)
-	eventDTO.Readings = readings
+	if len(readings) > 0 {
+		eventDTO := dtos.NewEvent(device.ProfileName, device.Name)
+		eventDTO.Readings = readings
 
-	return
+		return &eventDTO, nil
+	} else {
+		return nil, nil
+	}
 }
 
 func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType, encoding string) dtos.BaseReading {

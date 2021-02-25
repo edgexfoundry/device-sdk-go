@@ -75,7 +75,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				// By adding a buffer here, the user can use the Service.AsyncBufferSize configuration to control the goroutine for sending events.
 				go func() {
 					buffer <- true
-					common.SendEvent(*evt, "", lc, container.CoredataEventClientFrom(dic.Get))
+					common.SendEvent(evt, "", lc, container.CoredataEventClientFrom(dic.Get))
 					<-buffer
 				}()
 			} else {
@@ -94,7 +94,7 @@ func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors
 	if err != nil {
 		return event, err
 	}
-	return &res, nil
+	return res, nil
 }
 
 func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {

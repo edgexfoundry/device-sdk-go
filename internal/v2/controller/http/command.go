@@ -49,15 +49,15 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
-	event, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
+	eventDTO, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
 	if edgexErr != nil {
 		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceNameCommandNameRoute)
 		return
 	}
 
 	var res interface{}
-	if event.Id != "" {
-		res = responses.NewEventResponse("", "", http.StatusOK, event)
+	if eventDTO != nil {
+		res = responses.NewEventResponse("", "", http.StatusOK, *eventDTO)
 	} else {
 		res = common.NewBaseResponse("", "", http.StatusOK)
 	}

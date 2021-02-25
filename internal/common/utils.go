@@ -62,11 +62,11 @@ func UpdateOperatingState(name string, state string, lc logger.LoggingClient, dc
 	}
 }
 
-func SendEvent(event dtos.Event, correlationID string, lc logger.LoggingClient, ec interfaces.EventClient) {
+func SendEvent(event *dtos.Event, correlationID string, lc logger.LoggingClient, ec interfaces.EventClient) {
 	ctx := context.WithValue(context.Background(), CorrelationHeader, correlationID)
 	ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeJSON)
 
-	req := requests.NewAddEventRequest(event)
+	req := requests.NewAddEventRequest(*event)
 	res, err := ec.Add(ctx, req)
 	if err != nil {
 		lc.Errorf("failed to push event to core-data: %s", err)
