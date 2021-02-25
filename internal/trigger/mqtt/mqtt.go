@@ -65,7 +65,7 @@ func NewTrigger(
 func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
 	// Convenience short cuts
 	logger := trigger.edgeXClients.LoggingClient
-	brokerConfig := trigger.configuration.MqttBroker
+	brokerConfig := trigger.configuration.ExternalMqtt
 	topics := trigger.configuration.Binding.SubscribeTopics
 
 	logger.Info("Initializing MQTT Trigger")
@@ -80,7 +80,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 
 	brokerUrl, err := url.Parse(brokerConfig.Url)
 	if err != nil {
-		return nil, fmt.Errorf("invalid MQTT Broker Url '%s': %s", trigger.configuration.MqttBroker.Url, err.Error())
+		return nil, fmt.Errorf("invalid MQTT Broker Url '%s': %s", trigger.configuration.ExternalMqtt.Url, err.Error())
 	}
 
 	opts := pahoMqtt.NewClientOptions()
@@ -132,7 +132,7 @@ func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 	// Convenience short cuts
 	logger := trigger.edgeXClients.LoggingClient
 	topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(trigger.configuration.Binding.SubscribeTopics, util.SplitComma))
-	qos := trigger.configuration.MqttBroker.QoS
+	qos := trigger.configuration.ExternalMqtt.QoS
 
 	for _, topic := range topics {
 		if token := mqttClient.Subscribe(topic, qos, trigger.messageHandler); token.Wait() && token.Error() != nil {
@@ -149,7 +149,7 @@ func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.Message) {
 	// Convenience short cuts
 	logger := trigger.edgeXClients.LoggingClient
-	brokerConfig := trigger.configuration.MqttBroker
+	brokerConfig := trigger.configuration.ExternalMqtt
 	topic := trigger.configuration.Binding.PublishTopic
 
 	data := message.Payload()

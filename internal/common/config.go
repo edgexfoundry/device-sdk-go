@@ -51,7 +51,7 @@ type ConfigurationStruct struct {
 	// MessageBus
 	MessageBus types.MessageBusConfig
 	// MqttBroker
-	MqttBroker MqttBrokerConfig
+	ExternalMqtt ExternalMqttConfig
 	// Binding
 	Binding BindingInfo
 	// ApplicationSettings
@@ -91,8 +91,8 @@ type BindingInfo struct {
 	PublishTopic    string
 }
 
-// MqttBrokerConfig contains the MQTT broker configuration for MQTT Trigger
-type MqttBrokerConfig struct {
+// ExternalMqttConfig contains the MQTT broker configuration for MQTT Trigger
+type ExternalMqttConfig struct {
 	// Url contains the fully qualified URL to connect to the MQTT broker
 	Url string
 	// ClientId to connect to the broker with.
