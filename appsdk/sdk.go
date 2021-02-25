@@ -21,11 +21,9 @@ import (
 	"errors"
 	"fmt"
 	nethttp "net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -63,13 +61,8 @@ import (
 const (
 	// ProfileSuffixPlaceholder is used to create unique names for profiles
 	ProfileSuffixPlaceholder = "<profile>"
-	envV1Profile             = "edgex_profile" // TODO: Remove for release v2.0.0
 	envProfile               = "EDGEX_PROFILE"
 	envServiceKey            = "EDGEX_SERVICE_KEY"
-	envV1Service             = "edgex_service"    // deprecated TODO: Remove for release v2.0.0
-	envServiceProtocol       = "Service_Protocol" // Used for envV1Service processing TODO: Remove for release v2.0.0
-	envServiceHost           = "Service_Host"     // Used for envV1Service processing TODO: Remove for release v2.0.0
-	envServicePort           = "Service_Port"     // Used for envV1Service processing TODO: Remove for release v2.0.0
 
 	bindingTypeMessageBus      = "MESSAGEBUS"
 	bindingTypeEdgeXMessageBus = "EDGEX-MESSAGEBUS"
@@ -377,14 +370,6 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	sdk.LoggingClient.Info(fmt.Sprintf("Starting %s %s ", sdk.ServiceKey, internal.ApplicationVersion))
 
-	// The use of the edgex_service environment variable (only used for App Services) has been deprecated
-	// and not included in the common bootstrap. Have to be handle here before calling into the common bootstrap
-	// so proper overrides are set.
-	// TODO: Remove for release v2.0.0
-	if err := sdk.handleEdgexService(); err != nil {
-		return err
-	}
-
 	sdk.config = &common.ConfigurationStruct{}
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
@@ -516,11 +501,6 @@ func (sdk *AppFunctionsSDK) setServiceKey(profile string) {
 
 	// Have to handle environment override here before common bootstrap is used so it is passed the proper service key
 	profileOverride := os.Getenv(envProfile)
-	if len(profileOverride) == 0 {
-		// V2 not set so try V1
-		profileOverride = os.Getenv(envV1Profile) // TODO: Remove for release v2.0.0:
-	}
-
 	if len(profileOverride) > 0 {
 		profile = profileOverride
 	}
@@ -532,33 +512,4 @@ func (sdk *AppFunctionsSDK) setServiceKey(profile string) {
 
 	// No profile specified so remove the placeholder text
 	sdk.ServiceKey = strings.Replace(sdk.ServiceKey, ProfileSuffixPlaceholder, "", 1)
-}
-
-// handleEdgexService checks to see if the "edgex_service" environment variable is set and if so creates appropriate config
-// overrides from the URL parts.
-// TODO: Remove for release v2.0.0
-func (sdk *AppFunctionsSDK) handleEdgexService() error {
-	if envValue := os.Getenv(envV1Service); envValue != "" {
-		u, err := url.Parse(envValue)
-		if err != nil {
-			return fmt.Errorf(
-				"failed to parse 'edgex_service' environment value '%s' as a URL: %s",
-				envValue,
-				err.Error())
-		}
-
-		_, err = strconv.ParseInt(u.Port(), 10, 0)
-		if err != nil {
-			return fmt.Errorf(
-				"failed to parse port from 'edgex_service' environment value '%s' as an integer: %s",
-				envValue,
-				err.Error())
-		}
-
-		os.Setenv(envServiceProtocol, u.Scheme)
-		os.Setenv(envServiceHost, u.Hostname())
-		os.Setenv(envServicePort, u.Port())
-	}
-
-	return nil
 }

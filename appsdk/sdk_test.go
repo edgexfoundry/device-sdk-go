@@ -23,17 +23,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var lc logger.LoggingClient
@@ -76,7 +77,7 @@ func TestAddBackgroundPublisher(t *testing.T) {
 	}
 
 	require.NotNil(t, pub.output, "publisher should have an output channel set")
-	require.NotNil(t, sdk.backgroundChannel, "sdk should have a background channel set for passing to trigger intitialization")
+	require.NotNil(t, sdk.backgroundChannel, "sdk should have a background channel set for passing to trigger initialization")
 
 	// compare addresses since types will not match
 	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundChannel), fmt.Sprintf("%p", pub.output),
@@ -368,27 +369,12 @@ func TestSetServiceKey(t *testing.T) {
 			expectedServiceKey: "MyAppService-mqtt-export",
 		},
 		{
-			name:               "Profile specified with V1 override",
-			profile:            "rules-engine",
-			profileEnvVar:      envV1Profile,
-			profileEnvValue:    "rules-engine-mqtt",
-			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
-			expectedServiceKey: "MyAppService-rules-engine-mqtt",
-		},
-		{
 			name:               "Profile specified with V2 override",
 			profile:            "rules-engine",
 			profileEnvVar:      envProfile,
 			profileEnvValue:    "rules-engine-redis",
 			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-rules-engine-redis",
-		},
-		{
-			name:               "No profile specified with V1 override",
-			profileEnvVar:      envV1Profile,
-			profileEnvValue:    "sample",
-			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
-			expectedServiceKey: "MyAppService-sample",
 		},
 		{
 			name:               "No profile specified with V2 override",
@@ -444,10 +430,12 @@ func TestSetServiceKey(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			if len(test.profileEnvVar) > 0 && len(test.profileEnvValue) > 0 {
-				os.Setenv(test.profileEnvVar, test.profileEnvValue)
+				err := os.Setenv(test.profileEnvVar, test.profileEnvValue)
+				require.NoError(t, err)
 			}
 			if len(test.serviceKeyEnvValue) > 0 {
-				os.Setenv(envServiceKey, test.serviceKeyEnvValue)
+				err := os.Setenv(envServiceKey, test.serviceKeyEnvValue)
+				require.NoError(t, err)
 			}
 			defer os.Clearenv()
 
