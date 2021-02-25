@@ -16,9 +16,13 @@
 package appsdk
 
 import (
+	"net/http"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 )
 
 func TestConfigurableFilterByProfileName(t *testing.T) {
@@ -125,32 +129,90 @@ func TestConfigurableTransformToJSON(t *testing.T) {
 	assert.NotNil(t, trx, "return result from TransformToJSON should not be nil")
 }
 
-func TestConfigurableHTTPPost(t *testing.T) {
+func TestConfigurableHTTPPostAndPut(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
 		},
 	}
 
-	params := make(map[string]string)
+	testUrl := "http://url"
+	testMimeType := clients.ContentTypeJSON
+	testPersistOnError := "false"
+	testBadPersistOnError := "bogus"
+	testHeaderName := "My-Header"
+	testSecretPath := "/path"
+	testSecretName := "header"
 
-	// no url in params
-	params[""] = "fake"
-	trx := configurable.HTTPPost(params)
-	assert.Nil(t, trx, "return result from HTTPPost should be nil")
+	tests := []struct {
+		Name           string
+		Method         string
+		Url            *string
+		MimeType       *string
+		PersistOnError *string
+		HeaderName     *string
+		SecretPath     *string
+		SecretName     *string
+		ExpectValid    bool
+	}{
+		{"Valid Post - ony required params", http.MethodPost, &testUrl, &testMimeType, nil, nil, nil, nil, true},
+		{"Valid Post - w/o secrets", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
+		{"Valid Post - with secrets", http.MethodPost, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Valid Post - with all params", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Invalid Post - no url", http.MethodPost, nil, &testMimeType, nil, nil, nil, nil, false},
+		{"Invalid Post - no mimeType", http.MethodPost, &testUrl, nil, nil, nil, nil, nil, false},
+		{"Invalid Post - bad persistOnError", http.MethodPost, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
+		{"Invalid Post - missing headerName", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
+		{"Invalid Post - missing secretPath", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
+		{"Invalid Post - missing secretName", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
+		{"Valid Put - ony required params", http.MethodPut, &testUrl, &testMimeType, nil, nil, nil, nil, true},
+		{"Valid Put - w/o secrets", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
+		{"Valid Put - with secrets", http.MethodPut, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Valid Put - with all params", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Invalid Put - no url", http.MethodPut, nil, &testMimeType, nil, nil, nil, nil, false},
+		{"Invalid Put - no mimeType", http.MethodPut, &testUrl, nil, nil, nil, nil, nil, false},
+		{"Invalid Put - bad persistOnError", http.MethodPut, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
+		{"Invalid Put - missing headerName", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
+		{"Invalid Put - missing secretPath", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
+		{"Invalid Put - missing secretName", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
+	}
 
-	// no mime type
-	params[Url] = "http://url"
-	trx = configurable.HTTPPost(params)
-	assert.Nil(t, trx, "return result from HTTPPost should be nil")
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			params := make(map[string]string)
+			if test.Url != nil {
+				params[Url] = *test.Url
+			}
 
-	params[MimeType] = ""
-	trx = configurable.HTTPPost(params)
-	assert.NotNil(t, trx, "return result from HTTPPost should not be nil")
+			if test.MimeType != nil {
+				params[MimeType] = *test.MimeType
+			}
 
-	params[PersistOnError] = "true"
-	trx = configurable.HTTPPost(params)
-	assert.NotNil(t, trx, "return result from HTTPPost should not be nil")
+			if test.PersistOnError != nil {
+				params[PersistOnError] = *test.PersistOnError
+			}
+
+			if test.HeaderName != nil {
+				params[HeaderName] = *test.HeaderName
+			}
+
+			if test.SecretPath != nil {
+				params[SecretPath] = *test.SecretPath
+			}
+
+			if test.SecretName != nil {
+				params[SecretName] = *test.SecretName
+			}
+
+			var transform appcontext.AppFunction
+			if test.Method == http.MethodPost {
+				transform = configurable.HTTPPost(params)
+			} else {
+				transform = configurable.HTTPPut(params)
+			}
+			assert.Equal(t, test.ExpectValid, transform != nil)
+		})
+	}
 }
 
 func TestConfigurableHTTPPostJSON(t *testing.T) {

@@ -41,8 +41,8 @@ import (
 
 const (
 	msgStr  = "test message"
-	path    = "/somepath/foo"
-	badPath = "/somepath/bad"
+	path    = "/some-path/foo"
+	badPath = "/some-path/bad"
 )
 
 var lc logger.LoggingClient
@@ -80,7 +80,7 @@ func TestHTTPPostPut(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 
 		readMsg, _ := ioutil.ReadAll(r.Body)
-		r.Body.Close()
+		_ = r.Body.Close()
 		if strings.Compare((string)(readMsg), msgStr) != 0 {
 			t.Errorf("Invalid msg received %v, expected %v", readMsg, msgStr)
 		}
@@ -98,7 +98,7 @@ func TestHTTPPostPut(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(handler))
 	defer ts.Close()
 
-	url, err := url.Parse(ts.URL)
+	targetUrl, err := url.Parse(ts.URL)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -120,7 +120,7 @@ func TestHTTPPostPut(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			context.RetryData = nil
 			methodUsed = ""
-			sender := NewHTTPSender(`http://`+url.Host+test.Path, "", test.PersistOnFail)
+			sender := NewHTTPSender(`http://`+targetUrl.Host+test.Path, "", test.PersistOnFail)
 
 			if test.ExpectedMethod == http.MethodPost {
 				sender.HTTPPost(context, msgStr)
@@ -137,61 +137,69 @@ func TestHTTPPostPut(t *testing.T) {
 func TestHTTPPostPutWithSecrets(t *testing.T) {
 	var methodUsed string
 
+	expectedValue := "my-API-key"
+
 	mockSP := &mocks.SecretProvider{}
-	mockSP.On("GetSecrets", "/path", "Secret-Header-Name").Return(map[string]string{"Secret-Header-Name": "value"}, nil)
-	mockSP.On("GetSecrets", "/path", "Secret-Header-Name-2").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
+	mockSP.On("GetSecrets", "/path", "header").Return(map[string]string{"Secret-Header-Name": expectedValue}, nil)
+	mockSP.On("GetSecrets", "/path", "bogus").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
 	context.SecretProvider = mockSP
 
-	expectedValue := "value"
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		methodUsed = r.Method
+	// create test server with handler
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		methodUsed = request.Method
 
-		if r.URL.EscapedPath() == badPath {
-			w.WriteHeader(http.StatusNotFound)
+		if request.URL.EscapedPath() == badPath {
+			writer.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		writer.WriteHeader(http.StatusOK)
 
-		actualValue := r.Header.Get("Secret-Header-Name")
+		actualValue := request.Header.Get("Secret-Header-Name")
+
 		if actualValue != "" {
 			// Only validate is key was found in the header
 			require.Equal(t, expectedValue, actualValue)
 		}
-	}
-
-	// create test server with handler
-	ts := httptest.NewServer(http.HandlerFunc(handler))
+	}))
 	defer ts.Close()
 
-	url, err := url.Parse(ts.URL)
+	targetUrl, err := url.Parse(ts.URL)
 	require.NoError(t, err)
 
 	tests := []struct {
 		Name                 string
 		Path                 string
-		SecretHeaderName     string
+		HeaderName           string
+		SecretName           string
 		SecretPath           string
 		ExpectToContinue     bool
 		ExpectedErrorMessage string
 		ExpectedMethod       string
 	}{
-		{"unsuccessful POST w/o secret header name", path, "", "/path", false, "SecretPath was specified but no header name was provided", ""},
-		{"unsuccessful POST w/o secret path name", path, "Secret-Header-Name", "", false, "HTTP Header Secret Name was provided but no SecretPath was provided", ""},
-		{"successful POST with secrets", path, "Secret-Header-Name", "/path", true, "", http.MethodPost},
-		{"successful POST without secrets", path, "", "", true, "", http.MethodPost},
-		{"unsuccessful POST with secrets - retrieval fails", path, "Secret-Header-Name-2", "/path", false, "FAKE NOT FOUND ERROR", ""},
-		{"unsuccessful PUT w/o secret header name", path, "", "/path", false, "SecretPath was specified but no header name was provided", ""},
-		{"unsuccessful PUT w/o secret path name", path, "Secret-Header-Name", "", false, "HTTP Header Secret Name was provided but no SecretPath was provided", ""},
-		{"successful PUT with secrets", path, "Secret-Header-Name", "/path", true, "", http.MethodPut},
-		{"successful PUT without secrets", path, "", "", true, "", http.MethodPut},
-		{"unsuccessful PUT with secrets - retrieval fails", path, "Secret-Header-Name-2", "/path", false, "FAKE NOT FOUND ERROR", ""},
+		{"unsuccessful POST w/o secret header name", path, "", "header", "/path", false, "HTTP Header Name required when using secrets", ""},
+		{"unsuccessful POST w/o secret path", path, "Secret-Header", "header", "", false, "HTTP Header SecretName was provided but no SecretPath was provided", ""},
+		{"unsuccessful POST w/o secret name", path, "Secret-Header", "", "/path", false, "SecretPath was specified but no SecretName was provided", ""},
+		{"successful POST with secrets", path, "Secret-Header-Name", "header", "/path", true, "", http.MethodPost},
+		{"successful POST without secrets", path, "", "", "", true, "", http.MethodPost},
+		{"unsuccessful POST with secrets - retrieval fails", path, "Secret-Header", "bogus", "/path", false, "FAKE NOT FOUND ERROR", ""},
+		{"unsuccessful PUT w/o secret header name", path, "", "header", "/path", false, "HTTP Header Name required when using secrets", ""},
+		{"unsuccessful PUT w/o secret path name", path, "Secret-Header", "header", "", false, "HTTP Header SecretName was provided but no SecretPath was provided", ""},
+		{"successful PUT with secrets", path, "Secret-Header", "header", "/path", true, "", http.MethodPut},
+		{"successful PUT without secrets", path, "", "", "", true, "", http.MethodPut},
+		{"unsuccessful PUT with secrets - retrieval fails", path, "Secret-Header", "bogus", "/path", false, "FAKE NOT FOUND ERROR", ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			methodUsed = ""
-			sender := NewHTTPSenderWithSecretHeader(`http://`+url.Host+test.Path, "", false, test.SecretHeaderName, test.SecretPath)
+			sender := NewHTTPSenderWithSecretHeader(
+				`http://`+targetUrl.Host+test.Path,
+				"",
+				false,
+				test.HeaderName,
+				test.SecretPath,
+				test.SecretName)
 
 			var continuePipeline bool
 			var err interface{}
