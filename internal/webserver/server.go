@@ -307,7 +307,7 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 //
 // Trigger
 //
-// Available when HTTPTrigger is specified as the binding in configuration. This API
+// Available when 'http' is specified as the Trigger Type in configuration. This API
 // provides a way to initiate and start processing the defined pipeline using the data submitted.
 //
 // ---

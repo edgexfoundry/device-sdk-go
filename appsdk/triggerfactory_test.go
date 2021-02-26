@@ -37,17 +37,7 @@ import (
 )
 
 func TestRegisterCustomTriggerFactory_HTTP(t *testing.T) {
-	name := strings.ToTitle(bindingTypeHTTP)
-
-	sdk := AppFunctionsSDK{}
-	err := sdk.RegisterCustomTriggerFactory(name, nil)
-
-	require.Error(t, err, "should throw error")
-	require.Zero(t, len(sdk.customTriggerFactories), "nothing should be registered")
-}
-
-func TestRegisterCustomTriggerFactory_MessageBus(t *testing.T) {
-	name := strings.ToTitle(bindingTypeMessageBus)
+	name := strings.ToTitle(TriggerTypeHTTP)
 
 	sdk := AppFunctionsSDK{}
 	err := sdk.RegisterCustomTriggerFactory(name, nil)
@@ -57,7 +47,7 @@ func TestRegisterCustomTriggerFactory_MessageBus(t *testing.T) {
 }
 
 func TestRegisterCustomTriggerFactory_EdgeXMessageBus(t *testing.T) {
-	name := strings.ToTitle(bindingTypeEdgeXMessageBus)
+	name := strings.ToTitle(TriggerTypeMessageBus)
 
 	sdk := AppFunctionsSDK{}
 	err := sdk.RegisterCustomTriggerFactory(name, nil)
@@ -67,7 +57,7 @@ func TestRegisterCustomTriggerFactory_EdgeXMessageBus(t *testing.T) {
 }
 
 func TestRegisterCustomTriggerFactory_MQTT(t *testing.T) {
-	name := strings.ToTitle(bindingTypeMQTT)
+	name := strings.ToTitle(TriggerTypeMQTT)
 
 	sdk := AppFunctionsSDK{}
 	err := sdk.RegisterCustomTriggerFactory(name, nil)
@@ -100,8 +90,8 @@ func TestRegisterCustomTrigger(t *testing.T) {
 func TestSetupTrigger_HTTP(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "http",
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeHTTP,
 			},
 		},
 		LoggingClient: logger.MockLogger{},
@@ -113,27 +103,11 @@ func TestSetupTrigger_HTTP(t *testing.T) {
 	require.IsType(t, &http.Trigger{}, trigger, "should be an http trigger")
 }
 
-func TestSetupTrigger_MessageBus(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "messagebus",
-			},
-		},
-		LoggingClient: logger.MockLogger{},
-	}
-
-	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
-
-	require.NotNil(t, trigger, "should be defined")
-	require.IsType(t, &messagebus.Trigger{}, trigger, "should be a messagebus trigger")
-}
-
 func TestSetupTrigger_EdgeXMessageBus(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "edgex-messagebus",
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMessageBus,
 			},
 		},
 		LoggingClient: logger.MockLogger{},
@@ -148,8 +122,8 @@ func TestSetupTrigger_EdgeXMessageBus(t *testing.T) {
 func TestSetupTrigger_MQTT(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "external-mqtt",
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMQTT,
 			},
 		},
 		LoggingClient: logger.MockLogger{},
@@ -164,7 +138,7 @@ func TestSetupTrigger_MQTT(t *testing.T) {
 type mockCustomTrigger struct {
 }
 
-func (*mockCustomTrigger) Initialize(wg *sync.WaitGroup, ctx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
+func (*mockCustomTrigger) Initialize(_ *sync.WaitGroup, _ context.Context, _ <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
 	return nil, nil
 }
 
@@ -173,16 +147,17 @@ func TestSetupTrigger_CustomType(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
+			Trigger: common.TriggerInfo{
 				Type: triggerName,
 			},
 		},
 		LoggingClient: logger.MockLogger{},
 	}
 
-	sdk.RegisterCustomTriggerFactory(triggerName, func(c TriggerConfig) (Trigger, error) {
+	err := sdk.RegisterCustomTriggerFactory(triggerName, func(c TriggerConfig) (Trigger, error) {
 		return &mockCustomTrigger{}, nil
 	})
+	require.NoError(t, err)
 
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
@@ -195,16 +170,17 @@ func TestSetupTrigger_CustomType_Error(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
+			Trigger: common.TriggerInfo{
 				Type: triggerName,
 			},
 		},
 		LoggingClient: logger.MockLogger{},
 	}
 
-	sdk.RegisterCustomTriggerFactory(triggerName, func(c TriggerConfig) (Trigger, error) {
+	err := sdk.RegisterCustomTriggerFactory(triggerName, func(c TriggerConfig) (Trigger, error) {
 		return &mockCustomTrigger{}, errors.New("this should force returning nil even though we'll have a value")
 	})
+	require.NoError(t, err)
 
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
@@ -216,7 +192,7 @@ func TestSetupTrigger_CustomType_NotFound(t *testing.T) {
 
 	sdk := AppFunctionsSDK{
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
+			Trigger: common.TriggerInfo{
 				Type: triggerName,
 			},
 		},

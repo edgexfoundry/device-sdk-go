@@ -41,7 +41,7 @@ var lc logger.LoggingClient
 
 func TestMain(m *testing.M) {
 	// No remote and no file results in STDOUT logging only
-	lc = logger.NewMockClient()
+	lc = logger.NewClient("cc", "DEBUG")
 	m.Run()
 }
 
@@ -88,7 +88,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
+			Trigger: common.TriggerInfo{
 				Type: "htTp",
 			},
 		},
@@ -105,8 +105,8 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "meSsaGebus",
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMessageBus,
 			},
 		},
 	}
@@ -122,8 +122,8 @@ func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 	sdk := AppFunctionsSDK{
 		LoggingClient: lc,
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "meSsaGebus",
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMessageBus,
 			},
 		},
 	}
@@ -137,8 +137,8 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 		LoggingClient: lc,
 		runtime:       &runtime.GolangRuntime{},
 		config: &common.ConfigurationStruct{
-			Binding: common.BindingInfo{
-				Type: "meSsaGebus",
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMessageBus,
 			},
 		},
 	}

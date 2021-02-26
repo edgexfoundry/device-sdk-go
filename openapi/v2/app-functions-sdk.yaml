@@ -278,7 +278,7 @@ paths:
       - $ref: '#/components/parameters/correlatedRequestHeader'
     post:
       summary: Trigger function pipeline from HTTP request.
-      description: Available when HTTPTrigger is specified as the binding in configuration. Provides a way to initiate and start processing the defined pipeline using the data submitted.
+      description: Available when 'http' is specified as the Trigger type in configuration. Provides a way to initiate and start processing the defined pipeline using the data submitted.
       requestBody:
         content:
           application/json:

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Technotects
+// Copyright (c) 2020 Technocrats
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -56,25 +56,24 @@ func (sdk *AppFunctionsSDK) defaultTriggerContextBuilder(env types.MessageEnvelo
 }
 
 // RegisterCustomTriggerFactory allows users to register builders for custom trigger types
-func (s *AppFunctionsSDK) RegisterCustomTriggerFactory(name string,
+func (sdk *AppFunctionsSDK) RegisterCustomTriggerFactory(name string,
 	factory func(TriggerConfig) (Trigger, error)) error {
 	nu := strings.ToUpper(name)
 
-	if nu == bindingTypeEdgeXMessageBus ||
-		nu == bindingTypeMessageBus ||
-		nu == bindingTypeHTTP ||
-		nu == bindingTypeMQTT {
+	if nu == TriggerTypeMessageBus ||
+		nu == TriggerTypeHTTP ||
+		nu == TriggerTypeMQTT {
 		return errors.New(fmt.Sprintf("cannot register custom trigger for builtin type (%s)", name))
 	}
 
-	if s.customTriggerFactories == nil {
-		s.customTriggerFactories = make(map[string]func(sdk *AppFunctionsSDK) (Trigger, error), 1)
+	if sdk.customTriggerFactories == nil {
+		sdk.customTriggerFactories = make(map[string]func(sdk *AppFunctionsSDK) (Trigger, error), 1)
 	}
 
-	s.customTriggerFactories[nu] = func(sdk *AppFunctionsSDK) (Trigger, error) {
+	sdk.customTriggerFactories[nu] = func(sdk *AppFunctionsSDK) (Trigger, error) {
 		return factory(TriggerConfig{
-			Config:           s.config,
-			Logger:           s.LoggingClient,
+			Config:           sdk.config,
+			Logger:           sdk.LoggingClient,
 			ContextBuilder:   sdk.defaultTriggerContextBuilder,
 			MessageProcessor: sdk.defaultTriggerMessageProcessor,
 		})
@@ -86,19 +85,18 @@ func (s *AppFunctionsSDK) RegisterCustomTriggerFactory(name string,
 // setupTrigger configures the appropriate trigger as specified by configuration.
 func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStruct, runtime *runtime.GolangRuntime) Trigger {
 	var t Trigger
-	// Need to make dynamic, search for the binding that is input
+	// Need to make dynamic, search for the trigger that is input
 
-	switch triggerType := strings.ToUpper(configuration.Binding.Type); triggerType {
-	case bindingTypeHTTP:
+	switch triggerType := strings.ToUpper(configuration.Trigger.Type); triggerType {
+	case TriggerTypeHTTP:
 		sdk.LoggingClient.Info("HTTP trigger selected")
 		t = &http.Trigger{Configuration: configuration, Runtime: runtime, Webserver: sdk.webserver, EdgeXClients: sdk.EdgexClients}
 
-	case bindingTypeMessageBus,
-		bindingTypeEdgeXMessageBus: // Allows for more explicit name now that we have plain MQTT option also
+	case TriggerTypeMessageBus:
 		sdk.LoggingClient.Info("EdgeX MessageBus trigger selected")
 		t = &messagebus.Trigger{Configuration: configuration, Runtime: runtime, EdgeXClients: sdk.EdgexClients}
 
-	case bindingTypeMQTT:
+	case TriggerTypeMQTT:
 		sdk.LoggingClient.Info("External MQTT trigger selected")
 		t = mqtt.NewTrigger(configuration, runtime, sdk.EdgexClients, sdk.secretProvider)
 
@@ -111,7 +109,7 @@ func (sdk *AppFunctionsSDK) setupTrigger(configuration *common.ConfigurationStru
 				return nil
 			}
 		} else {
-			sdk.LoggingClient.Error(fmt.Sprintf("Invalid Trigger type of '%s' specified", configuration.Binding.Type))
+			sdk.LoggingClient.Error(fmt.Sprintf("Invalid Trigger type of '%s' specified", configuration.Trigger.Type))
 		}
 	}
 

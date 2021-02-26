@@ -64,10 +64,9 @@ const (
 	envProfile               = "EDGEX_PROFILE"
 	envServiceKey            = "EDGEX_SERVICE_KEY"
 
-	bindingTypeMessageBus      = "MESSAGEBUS"
-	bindingTypeEdgeXMessageBus = "EDGEX-MESSAGEBUS"
-	bindingTypeMQTT            = "EXTERNAL-MQTT"
-	bindingTypeHTTP            = "HTTP"
+	TriggerTypeMessageBus = "EDGEX-MESSAGEBUS"
+	TriggerTypeMQTT       = "EXTERNAL-MQTT"
+	TriggerTypeHTTP       = "HTTP"
 
 	OptionalPasswordKey = "Password"
 )
@@ -423,15 +422,15 @@ func (sdk *AppFunctionsSDK) Initialize() error {
 
 	// If using the RedisStreams MessageBus implementation then need to make sure the
 	// password for the Redis DB is set in the MessageBus Optional properties.
-	bindingType := strings.ToUpper(sdk.config.Binding.Type)
-	if (bindingType == bindingTypeMessageBus || bindingType == bindingTypeEdgeXMessageBus) &&
-		sdk.config.MessageBus.Type == messaging.RedisStreams {
+	triggerType := strings.ToUpper(sdk.config.Trigger.Type)
+	if triggerType == TriggerTypeMessageBus &&
+		sdk.config.Trigger.EdgexMessageBus.Type == messaging.RedisStreams {
 
 		credentials, err := sdk.secretProvider.GetSecrets(sdk.config.Database.Type)
 		if err != nil {
 			return fmt.Errorf("unable to set RedisStreams password from DB credentials")
 		}
-		sdk.config.MessageBus.Optional[OptionalPasswordKey] = credentials[secret.PasswordKey]
+		sdk.config.Trigger.EdgexMessageBus.Optional[OptionalPasswordKey] = credentials[secret.PasswordKey]
 	}
 
 	// We do special processing when the writeable section of the configuration changes, so have

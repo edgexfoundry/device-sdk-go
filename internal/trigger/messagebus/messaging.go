@@ -50,18 +50,18 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	var err error
 	lc := trigger.EdgeXClients.LoggingClient
 
-	lc.Infof("Initializing Message Bus Trigger for '%s'", trigger.Configuration.MessageBus.Type)
+	lc.Infof("Initializing Message Bus Trigger for '%s'", trigger.Configuration.Trigger.EdgexMessageBus.Type)
 
-	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.MessageBus)
+	trigger.client, err = messaging.NewMessageClient(trigger.Configuration.Trigger.EdgexMessageBus)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(strings.TrimSpace(trigger.Configuration.Binding.SubscribeTopics)) == 0 {
+	if len(strings.TrimSpace(trigger.Configuration.Trigger.SubscribeTopics)) == 0 {
 		// Still allows subscribing to blank topic to receive all messages
-		trigger.topics = append(trigger.topics, types.TopicChannel{Topic: trigger.Configuration.Binding.SubscribeTopics, Messages: make(chan types.MessageEnvelope)})
+		trigger.topics = append(trigger.topics, types.TopicChannel{Topic: trigger.Configuration.Trigger.SubscribeTopics, Messages: make(chan types.MessageEnvelope)})
 	} else {
-		topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(trigger.Configuration.Binding.SubscribeTopics, util.SplitComma))
+		topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(trigger.Configuration.Trigger.SubscribeTopics, util.SplitComma))
 		for _, topic := range topics {
 			trigger.topics = append(trigger.topics, types.TopicChannel{Topic: topic, Messages: make(chan types.MessageEnvelope)})
 		}
@@ -75,17 +75,17 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	}
 
 	lc.Infof("Subscribing to topic(s): '%s' @ %s://%s:%d",
-		trigger.Configuration.Binding.SubscribeTopics,
-		trigger.Configuration.MessageBus.SubscribeHost.Protocol,
-		trigger.Configuration.MessageBus.SubscribeHost.Host,
-		trigger.Configuration.MessageBus.SubscribeHost.Port)
+		trigger.Configuration.Trigger.SubscribeTopics,
+		trigger.Configuration.Trigger.EdgexMessageBus.SubscribeHost.Protocol,
+		trigger.Configuration.Trigger.EdgexMessageBus.SubscribeHost.Host,
+		trigger.Configuration.Trigger.EdgexMessageBus.SubscribeHost.Port)
 
-	if len(trigger.Configuration.MessageBus.PublishHost.Host) > 0 {
+	if len(trigger.Configuration.Trigger.EdgexMessageBus.PublishHost.Host) > 0 {
 		lc.Infof("Publishing to topic: '%s' @ %s://%s:%d",
-			trigger.Configuration.Binding.PublishTopic,
-			trigger.Configuration.MessageBus.PublishHost.Protocol,
-			trigger.Configuration.MessageBus.PublishHost.Host,
-			trigger.Configuration.MessageBus.PublishHost.Port)
+			trigger.Configuration.Trigger.PublishTopic,
+			trigger.Configuration.Trigger.EdgexMessageBus.PublishHost.Protocol,
+			trigger.Configuration.Trigger.EdgexMessageBus.PublishHost.Host,
+			trigger.Configuration.Trigger.EdgexMessageBus.PublishHost.Port)
 	}
 
 	// Need to have a go func for each subscription so we know with topic the data was received for.
@@ -122,13 +122,13 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 
 			case bg := <-background:
 				go func() {
-					err := trigger.client.Publish(bg, trigger.Configuration.Binding.PublishTopic)
+					err := trigger.client.Publish(bg, trigger.Configuration.Trigger.PublishTopic)
 					if err != nil {
 						lc.Errorf("Failed to publish background Message to bus, %v", err)
 						return
 					}
 
-					lc.Debugf("Published background message to bus on %s topic", trigger.Configuration.Binding.PublishTopic)
+					lc.Debugf("Published background message to bus on %s topic", trigger.Configuration.Trigger.PublishTopic)
 					lc.Tracef("%s=%s", clients.CorrelationHeader, bg.CorrelationID)
 				}()
 			}
@@ -136,7 +136,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	}()
 
 	if err := trigger.client.Subscribe(trigger.topics, messageErrors); err != nil {
-		return nil, fmt.Errorf("failed to subscribe to topic(s) '%s': %s", trigger.Configuration.Binding.SubscribeTopics, err.Error())
+		return nil, fmt.Errorf("failed to subscribe to topic(s) '%s': %s", trigger.Configuration.Trigger.SubscribeTopics, err.Error())
 	}
 
 	deferred := func() {
@@ -186,13 +186,13 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 			Payload:       edgexContext.OutputData,
 			ContentType:   contentType,
 		}
-		err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Binding.PublishTopic)
+		err := trigger.client.Publish(outputEnvelope, trigger.Configuration.Trigger.PublishTopic)
 		if err != nil {
 			logger.Errorf("Failed to publish Message to bus, %v", err)
 			return
 		}
 
-		logger.Debugf("Published message to bus on '%s' topic", trigger.Configuration.Binding.PublishTopic)
+		logger.Debugf("Published message to bus on '%s' topic", trigger.Configuration.Trigger.PublishTopic)
 		logger.Tracef("%s=%s", clients.CorrelationHeader, message.CorrelationID)
 	}
 }

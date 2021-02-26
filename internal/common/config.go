@@ -20,7 +20,6 @@ import (
 	"time"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
@@ -42,25 +41,21 @@ type WritableInfo struct {
 // ConfigurationStruct
 // swagger:model ConfigurationStruct
 type ConfigurationStruct struct {
-	// Writable
+	// Writable contains the configuration that change be change on the fly
 	Writable WritableInfo
-	// Registry
+	// Registry contains the configuration for connecting the Registry service
 	Registry bootstrapConfig.RegistryInfo
-	// Service
+	// Service contains the standard 'service' configuration for the Application service
 	Service ServiceInfo
-	// MessageBus
-	MessageBus types.MessageBusConfig
-	// MqttBroker
-	ExternalMqtt ExternalMqttConfig
-	// Binding
-	Binding BindingInfo
-	// ApplicationSettings
+	// Trigger contains the configuration for the Function Pipeline Trigger
+	Trigger TriggerInfo
+	// ApplicationSettings contains the custom configuration for the Application service
 	ApplicationSettings map[string]string
-	// Clients
+	// Clients contains the configuration for connecting to the dependent Edgex clients
 	Clients map[string]bootstrapConfig.ClientInfo
-	// Database
+	// Database contains the configuration for connection to the Database
 	Database db.DatabaseInfo
-	// SecretStore
+	// SecretStore contains the configuration for connection to the Secret Store when in secure mode
 	SecretStore bootstrapConfig.SecretStoreInfo
 }
 
@@ -79,16 +74,21 @@ type ServiceInfo struct {
 	Timeout        string
 }
 
-// BindingInfo contains Metadata associated with each binding
-type BindingInfo struct {
+// TriggerInfo contains Metadata associated with each Trigger
+type TriggerInfo struct {
 	// Type of trigger to start pipeline
-	//
-	// example: messagebus
-	// required: true
-	// enum: messagebus (edgex-messagebus), http, external-mqtt
-	Type            string
-	SubscribeTopics string // Comma separated list of topics.
-	PublishTopic    string
+	// enum: http, edgex-messagebus, or external-mqtt
+	Type string
+	// SubscribeTopics is a comma separated list of topics
+	// Used when Type=edgex-messagebus, or Type=external-mqtt
+	SubscribeTopics string
+	// PublishTopic is the topic to publish pipeline output (if any) to
+	// Used when Type=edgex-messagebus, or Type=external-mqtt
+	PublishTopic string
+	// Used when Type=edgex-messagebus
+	EdgexMessageBus types.MessageBusConfig
+	// Used when Type=external-mqtt
+	ExternalMqtt ExternalMqttConfig
 }
 
 // ExternalMqttConfig contains the MQTT broker configuration for MQTT Trigger

@@ -41,7 +41,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var logClient logger.LoggingClient
+// Note the constant TriggerTypeMessageBus can not be used due to cyclic imports
+const TriggerTypeMessageBus = "EDGEX-MESSAGEBUS"
+
+var lc logger.LoggingClient
 
 var addEventRequest = createTestEventRequest()
 var expectedEvent = addEventRequest.Event
@@ -53,36 +56,38 @@ func createTestEventRequest() requests.AddEventRequest {
 	return request
 }
 
-func init() {
-	logClient = logger.NewMockClient()
+func TestMain(m *testing.M) {
+	lc = logger.NewMockClient()
+	m.Run()
 }
 
 func TestInitialize(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "publish",
 			SubscribeTopics: "events",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5563,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5563,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5563,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5563,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	assert.NotNil(t, trigger.client, "Expected client to be set")
 	assert.Equal(t, 1, len(trigger.topics))
@@ -93,29 +98,30 @@ func TestInitialize(t *testing.T) {
 func TestInitializeBadConfiguration(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "publish",
 			SubscribeTopics: "events",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "aaaa", //as type is not "zero", should return an error on client initialization
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5568,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5568,
-				Protocol: "tcp",
+
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "aaaa", //as type is not "zero", should return an error on client initialization
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5568,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5568,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	assert.Error(t, err)
 }
@@ -123,22 +129,22 @@ func TestInitializeBadConfiguration(t *testing.T) {
 func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "",
 			SubscribeTopics: "",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5566,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5564,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5566,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5564,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
@@ -156,7 +162,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(nil, nil)
 	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 
 	payload, err := json.Marshal(addEventRequest)
@@ -191,22 +197,22 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "PublishTopic",
 			SubscribeTopics: "SubscribeTopic",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5586,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5584,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5586,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5584,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
@@ -229,7 +235,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(nil, nil)
 	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -247,7 +253,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -289,22 +295,22 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "PublishTopic",
 			SubscribeTopics: "SubscribeTopic",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5701,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5702,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5701,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5702,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
@@ -324,7 +330,7 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(nil, nil)
 	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -342,7 +348,7 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -384,22 +390,22 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "PublishTopic",
 			SubscribeTopics: "SubscribeTopic",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5703,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5704,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5703,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5704,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
@@ -418,7 +424,7 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(nil, nil)
 	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -436,7 +442,7 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -476,22 +482,22 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "PublishTopic",
 			SubscribeTopics: "SubscribeTopic",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5588,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5590,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5588,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5590,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
@@ -502,7 +508,7 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(nil, nil)
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -520,7 +526,7 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Binding.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -554,22 +560,22 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	config := common.ConfigurationStruct{
-		Binding: common.BindingInfo{
-			Type:            "edgeX-meSsaGebus",
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
 			PublishTopic:    "",
 			SubscribeTopics: "t1,t2",
-		},
-		MessageBus: types.MessageBusConfig{
-			Type: "zero",
-			PublishHost: types.HostInfo{
-				Host:     "*",
-				Port:     5592,
-				Protocol: "tcp",
-			},
-			SubscribeHost: types.HostInfo{
-				Host:     "localhost",
-				Port:     5594,
-				Protocol: "tcp",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5592,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5594,
+					Protocol: "tcp",
+				},
 			},
 		},
 	}
@@ -586,7 +592,7 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(nil, nil)
 	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: logClient}}
+	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
