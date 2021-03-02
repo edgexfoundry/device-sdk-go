@@ -165,7 +165,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e edgexErr.Edg
 	}
 
 	// convert CommandValue to Event
-	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, c.dic)
+	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, c.deviceResource.Name, c.dic)
 	if e != nil {
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to convert CommandValue to Event", e)
 	}
@@ -228,7 +228,7 @@ func (c *CommandProcessor) ReadCommand() (res *dtos.Event, e edgexErr.EdgeX) {
 	}
 
 	// convert CommandValue to Event
-	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, c.dic)
+	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, c.cmd, c.dic)
 	if e != nil {
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform CommandValue to Event", e)
 	}

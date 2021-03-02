@@ -58,7 +58,20 @@ func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan 
 		<-working
 	}()
 
-	event, err := transformer.CommandValuesToEventDTO(acv.CommandValues, acv.DeviceName, dic)
+	if len(acv.CommandValues) == 0 {
+		s.LoggingClient.Error("Skip sending AsyncValues because the CommandValues is empty.")
+		return
+	}
+	if len(acv.CommandValues) > 1 && acv.SourceName == "" {
+		s.LoggingClient.Error("Skip sending AsyncValues because the SourceName is empty.")
+		return
+	}
+	// We can use the first reading's DeviceResourceName as the SourceName
+	// when the CommandValues contains only one reading and the AsyncValues's SourceName is empty.
+	if len(acv.CommandValues) == 1 && acv.SourceName == "" {
+		acv.SourceName = acv.CommandValues[0].DeviceResourceName
+	}
+	event, err := transformer.CommandValuesToEventDTO(acv.CommandValues, acv.DeviceName, acv.SourceName, dic)
 	if err != nil {
 		s.LoggingClient.Errorf("failed to transform CommandValues to Event: %v", err)
 		return

@@ -27,8 +27,8 @@ func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoE
 	}
 
 	for _, e := range device.AutoEvents {
-		if e.Resource == event.Resource {
-			s.LoggingClient.Debugf("Updating existing AutoEvent %s for device %s", e.Resource, deviceName)
+		if e.SourceName == event.SourceName {
+			s.LoggingClient.Debugf("Updating existing AutoEvent %s for device %s", e.SourceName, deviceName)
 			e.Frequency = event.Frequency
 			e.OnChange = event.OnChange
 			found = true
@@ -37,7 +37,7 @@ func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoE
 	}
 
 	if !found {
-		s.LoggingClient.Debugf("Adding new AutoEvent %s to device %s", event.Resource, deviceName)
+		s.LoggingClient.Debugf("Adding new AutoEvent %s to device %s", event.SourceName, deviceName)
 		device.AutoEvents = append(device.AutoEvents, event)
 		err := cache.Devices().Update(device)
 		if err != nil {
@@ -60,8 +60,8 @@ func (s *DeviceService) RemoveDeviceAutoEvent(deviceName string, event models.Au
 	}
 
 	for i, e := range device.AutoEvents {
-		if e.Resource == event.Resource {
-			s.LoggingClient.Debugf("Removing AutoEvent %s for device %s", e.Resource, deviceName)
+		if e.SourceName == event.SourceName {
+			s.LoggingClient.Debugf("Removing AutoEvent %s for device %s", e.SourceName, deviceName)
 			device.AutoEvents = append(device.AutoEvents[:i], device.AutoEvents[i+1:]...)
 			break
 		}

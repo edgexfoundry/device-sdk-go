@@ -68,19 +68,19 @@ func InitDependencyClients(ctx context.Context, startupTimer startup.Timer, dic 
 
 func validateClientConfig(configuration *common.ConfigurationStruct) error {
 
-	if len(configuration.Clients[common.ClientMetadata].Host) == 0 {
+	if len(configuration.Clients[clients.CoreMetaDataServiceKey].Host) == 0 {
 		return fmt.Errorf("fatal error; Host setting for Core Metadata client not configured")
 	}
 
-	if configuration.Clients[common.ClientMetadata].Port == 0 {
+	if configuration.Clients[clients.CoreMetaDataServiceKey].Port == 0 {
 		return fmt.Errorf("fatal error; Port setting for Core Metadata client not configured")
 	}
 
-	if len(configuration.Clients[common.ClientData].Host) == 0 {
+	if len(configuration.Clients[clients.CoreDataServiceKey].Host) == 0 {
 		return fmt.Errorf("fatal error; Host setting for Core Data client not configured")
 	}
 
-	if configuration.Clients[common.ClientData].Port == 0 {
+	if configuration.Clients[clients.CoreDataServiceKey].Port == 0 {
 		return fmt.Errorf("fatal error; Port setting for Core Ddata client not configured")
 	}
 
@@ -90,7 +90,7 @@ func validateClientConfig(configuration *common.ConfigurationStruct) error {
 }
 
 func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, dic *di.Container) bool {
-	var dependencyList = []string{common.ClientData, common.ClientMetadata}
+	var dependencyList = []string{clients.CoreDataServiceKey, clients.CoreMetaDataServiceKey}
 	var waitGroup sync.WaitGroup
 	checkingErr := true
 
@@ -98,9 +98,9 @@ func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, di
 	waitGroup.Add(dependencyCount)
 
 	for i := 0; i < dependencyCount; i++ {
-		go func(wg *sync.WaitGroup, serviceName string) {
+		go func(wg *sync.WaitGroup, serviceKey string) {
 			defer wg.Done()
-			if checkServiceAvailable(ctx, serviceName, startupTimer, dic) == false {
+			if checkServiceAvailable(ctx, serviceKey, startupTimer, dic) == false {
 				checkingErr = false
 			}
 		}(&waitGroup, dependencyList[i])
@@ -110,7 +110,7 @@ func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, di
 	return checkingErr
 }
 
-func checkServiceAvailable(ctx context.Context, serviceId string, startupTimer startup.Timer, dic *di.Container) bool {
+func checkServiceAvailable(ctx context.Context, serviceKey string, startupTimer startup.Timer, dic *di.Container) bool {
 	rc := bootstrapContainer.RegistryFrom(dic.Get)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
@@ -120,12 +120,12 @@ func checkServiceAvailable(ctx context.Context, serviceId string, startupTimer s
 			return false
 		default:
 			if rc != nil {
-				if checkServiceAvailableViaRegistry(serviceId, rc, lc) == nil {
+				if checkServiceAvailableViaRegistry(serviceKey, rc, lc) == nil {
 					return true
 				}
 			} else {
 				configuration := container.ConfigurationFrom(dic.Get)
-				if checkServiceAvailableByPing(serviceId, configuration, lc) == nil {
+				if checkServiceAvailableByPing(serviceKey, configuration, lc) == nil {
 					return true
 				}
 			}
@@ -133,13 +133,13 @@ func checkServiceAvailable(ctx context.Context, serviceId string, startupTimer s
 		}
 	}
 
-	lc.Error(fmt.Sprintf("dependency %s service checking time out", serviceId))
+	lc.Error(fmt.Sprintf("dependency %s service checking time out", serviceKey))
 	return false
 }
 
-func checkServiceAvailableByPing(serviceId string, configuration *common.ConfigurationStruct, lc logger.LoggingClient) error {
-	lc.Info(fmt.Sprintf("Check %v service's status by ping...", serviceId))
-	addr := configuration.Clients[serviceId].Url()
+func checkServiceAvailableByPing(serviceKey string, configuration *common.ConfigurationStruct, lc logger.LoggingClient) error {
+	lc.Info(fmt.Sprintf("Check %v service's status by ping...", serviceKey))
+	addr := configuration.Clients[serviceKey].Url()
 	timeout := int64(configuration.Service.Timeout) * int64(time.Millisecond)
 
 	client := http.Client{
@@ -154,21 +154,16 @@ func checkServiceAvailableByPing(serviceId string, configuration *common.Configu
 	return err
 }
 
-func checkServiceAvailableViaRegistry(serviceId string, rc registry.Client, lc logger.LoggingClient) error {
-	lc.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceId))
+func checkServiceAvailableViaRegistry(serviceKey string, rc registry.Client, lc logger.LoggingClient) error {
+	lc.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceKey))
 
 	if !rc.IsAlive() {
-		errMsg := fmt.Sprintf("unable to check status of %s service: Registry not running", serviceId)
+		errMsg := fmt.Sprintf("unable to check status of %s service: Registry not running", serviceKey)
 		lc.Error(errMsg)
 		return fmt.Errorf(errMsg)
 	}
 
-	if serviceId == common.ClientData {
-		serviceId = clients.CoreDataServiceKey
-	} else {
-		serviceId = clients.CoreMetaDataServiceKey
-	}
-	_, err := rc.IsServiceAvailable(serviceId)
+	_, err := rc.IsServiceAvailable(serviceKey)
 	if err != nil {
 		lc.Error(err.Error())
 		return err
@@ -179,11 +174,11 @@ func checkServiceAvailableViaRegistry(serviceId string, rc registry.Client, lc l
 
 func initializeClients(dic *di.Container) {
 	configuration := container.ConfigurationFrom(dic.Get)
-	dc := v2clients.NewDeviceClient(configuration.Clients[common.ClientMetadata].Url())
-	dsc := v2clients.NewDeviceServiceClient(configuration.Clients[common.ClientMetadata].Url())
-	dpc := v2clients.NewDeviceProfileClient(configuration.Clients[common.ClientMetadata].Url())
-	pwc := v2clients.NewProvisionWatcherClient(configuration.Clients[common.ClientMetadata].Url())
-	ec := v2clients.NewEventClient(configuration.Clients[common.ClientData].Url())
+	dc := v2clients.NewDeviceClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
+	dsc := v2clients.NewDeviceServiceClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
+	dpc := v2clients.NewDeviceProfileClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
+	pwc := v2clients.NewProvisionWatcherClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
+	ec := v2clients.NewEventClient(configuration.Clients[clients.CoreDataServiceKey].Url())
 
 	dic.Update(di.ServiceConstructorMap{
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {

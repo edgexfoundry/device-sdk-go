@@ -27,12 +27,12 @@ Port = 8500
 Type = 'consul'
 
 [Clients]
-  [Clients.Data]
+  [Clients.edgex-core-data]
   Protocol = 'http'
   Host = 'localhost'
   Port = 48080
 
-  [Clients.Metadata]
+  [Clients.edgex-core-metadata]
   Protocol = 'http'
   Host = 'localhost'
   Port = 48081
@@ -81,8 +81,8 @@ RetryWaitPeriod = "1s"
   [[DeviceList.AutoEvents]]
     Frequency = '10s'
     OnChange = false
-    Resource = 'Switch'
+    SourceName = 'Switch'
   [[DeviceList.AutoEvents]]
     Frequency = '30s'
     OnChange = false
-    Resource = 'Image'
+    SourceName = 'Image'

@@ -18,7 +18,6 @@ import (
 	"strings"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 )
 
 const (
@@ -27,7 +26,8 @@ const (
 	MaxBinaryBytes = 16777216
 	// DefaultFoloatEncoding indicates the representation of floating value of reading.
 	// It would be configurable in system level in the future
-	DefaultFloatEncoding = models.Base64Encoding
+	DefaultFloatEncoding = "Base64"
+	ENotation            = "eNotation"
 )
 
 // CommandValue is the struct to represent the reading value of a Get command coming
@@ -402,21 +402,21 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 	case v2.ValueTypeFloat32:
 		floatEncoding := getFloatEncoding(encoding)
 
-		if floatEncoding == models.ENotation {
+		if floatEncoding == ENotation {
 			var res float32
 			binary.Read(reader, binary.BigEndian, &res)
 			str = fmt.Sprintf("%e", res)
-		} else if floatEncoding == models.Base64Encoding {
+		} else if floatEncoding == DefaultFloatEncoding {
 			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 		}
 	case v2.ValueTypeFloat64:
 		floatEncoding := getFloatEncoding(encoding)
 
-		if floatEncoding == models.ENotation {
+		if floatEncoding == ENotation {
 			var res float64
 			binary.Read(reader, binary.BigEndian, &res)
 			str = fmt.Sprintf("%e", res)
-		} else if floatEncoding == models.Base64Encoding {
+		} else if floatEncoding == DefaultFloatEncoding {
 			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
 		}
 	case v2.ValueTypeBinary:
@@ -432,10 +432,10 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 
 func getFloatEncoding(encoding []string) string {
 	if len(encoding) > 0 {
-		if encoding[0] == models.Base64Encoding {
-			return models.Base64Encoding
-		} else if encoding[0] == models.ENotation {
-			return models.ENotation
+		if encoding[0] == DefaultFloatEncoding {
+			return DefaultFloatEncoding
+		} else if encoding[0] == ENotation {
+			return ENotation
 		}
 	}
 
