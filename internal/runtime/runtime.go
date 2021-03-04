@@ -288,8 +288,9 @@ func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelop
 	v2Event := dtos.Event{
 		Versionable: commonDTO.NewVersionable(),
 		Id:          v1Event.ID,
-		DeviceName:  v1Event.Device,
 		ProfileName: "Unknown",
+		DeviceName:  v1Event.Device,
+		SourceName:  "Unknown",
 		Created:     v1Event.Created,
 		Origin:      v1Event.Origin,
 		Tags:        v1Event.Tags,

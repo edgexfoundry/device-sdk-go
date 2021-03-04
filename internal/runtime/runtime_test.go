@@ -49,7 +49,7 @@ var testAddEventRequest = createAddEventRequest()
 var testV2Event = testAddEventRequest.Event
 
 func createAddEventRequest() requests.AddEventRequest {
-	event := dtos.NewEvent("Thermostat", "FamilyRoomThermostat")
+	event := dtos.NewEvent("Thermostat", "FamilyRoomThermostat", "Temperature")
 	event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
 	request := requests.NewAddEventRequest(event)
 	return request
@@ -252,7 +252,7 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 
 func TestProcessMessageTransformError(t *testing.T) {
 	// Error expected from FilterByDeviceName
-	expectedError := "type received is not an Event"
+	expectedError := "FilterByDeviceName: type received is not an Event"
 	expectedErrorCode := http.StatusUnprocessableEntity
 
 	// Send a RegistryInfo to the pipeline, instead of an Event
@@ -544,6 +544,7 @@ func TestGolangRuntime_processEventPayload(t *testing.T) {
 	expectedV2Event := testV2Event
 	expectedV2EventFromV1Event := testV2Event
 	expectedV2EventFromV1Event.ProfileName = "Unknown"
+	expectedV2EventFromV1Event.SourceName = "Unknown"
 	expectedV2EventFromV1Event.Readings = []dtos.BaseReading{testV2Event.Readings[0]}
 	expectedV2EventFromV1Event.Readings[0].ProfileName = "Unknown"
 
@@ -592,6 +593,7 @@ func TestGolangRuntime_unmarshalV1EventToV2Event(t *testing.T) {
 
 	expectedEvent := testV2Event
 	expectedEvent.ProfileName = "Unknown"
+	expectedEvent.SourceName = "Unknown"
 	expectedEvent.Readings[0].ProfileName = "Unknown"
 
 	tests := []struct {

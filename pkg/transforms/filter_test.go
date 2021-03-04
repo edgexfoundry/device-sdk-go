@@ -27,11 +27,14 @@ import (
 )
 
 const (
+	profileName1 = "profile1"
+	profileName2 = "profile2"
+
 	deviceName1 = "device1"
 	deviceName2 = "device2"
 
-	profileName1 = "profile1"
-	profileName2 = "profile2"
+	sourceName1 = "source1"
+	sourceName2 = "source2"
 
 	resource1 = "resource1"
 	resource2 = "resource2"
@@ -39,7 +42,7 @@ const (
 )
 
 func TestFilter_FilterByProfileName(t *testing.T) {
-	profile1Event := dtos.NewEvent(profileName1, deviceName1)
+	profile1Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
 
 	tests := []struct {
 		Name              string
@@ -75,7 +78,7 @@ func TestFilter_FilterByProfileName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterByProfileName(context)
-				assert.EqualError(t, result.(error), "no Event Received")
+				assert.EqualError(t, result.(error), "FilterByProfileName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				var continuePipeline bool
@@ -96,7 +99,7 @@ func TestFilter_FilterByProfileName(t *testing.T) {
 }
 
 func TestFilter_FilterByDeviceName(t *testing.T) {
-	device1Event := dtos.NewEvent(profileName1, deviceName1)
+	device1Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
 
 	tests := []struct {
 		Name              string
@@ -132,7 +135,7 @@ func TestFilter_FilterByDeviceName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterByDeviceName(context)
-				assert.EqualError(t, result.(error), "no Event Received")
+				assert.EqualError(t, result.(error), "FilterByDeviceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				var continuePipeline bool
@@ -152,24 +155,81 @@ func TestFilter_FilterByDeviceName(t *testing.T) {
 	}
 }
 
+func TestFilter_FilterBySourceName(t *testing.T) {
+	source1Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
+
+	tests := []struct {
+		Name              string
+		Filters           []string
+		FilterOut         bool
+		EventIn           *dtos.Event
+		ExpectedNilResult bool
+		ExtraParam        bool
+	}{
+		{"filter for - no event", []string{sourceName1}, true, nil, true, false},
+		{"filter for - no filter values", []string{}, false, &source1Event, false, false},
+		{"filter for with extra params - found", []string{sourceName1}, false, &source1Event, false, true},
+		{"filter for - found", []string{sourceName1}, false, &source1Event, false, false},
+		{"filter for - not found", []string{sourceName2}, false, &source1Event, true, false},
+
+		{"filter out - no event", []string{sourceName1}, true, nil, true, false},
+		{"filter out - no filter values", []string{}, true, &source1Event, false, false},
+		{"filter out extra param - found", []string{sourceName1}, true, &source1Event, true, true},
+		{"filter out - found", []string{sourceName1}, true, &source1Event, true, false},
+		{"filter out - not found", []string{sourceName2}, true, &source1Event, false, false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			var filter Filter
+			if test.FilterOut {
+				filter = NewFilterOut(test.Filters)
+			} else {
+				filter = NewFilterFor(test.Filters)
+			}
+
+			expectedContinue := !test.ExpectedNilResult
+
+			if test.EventIn == nil {
+				continuePipeline, result := filter.FilterBySourceName(context)
+				assert.EqualError(t, result.(error), "FilterBySourceName: no Event Received")
+				assert.False(t, continuePipeline)
+			} else {
+				var continuePipeline bool
+				var result interface{}
+				if test.ExtraParam {
+					continuePipeline, result = filter.FilterBySourceName(context, *test.EventIn, "application/event")
+				} else {
+					continuePipeline, result = filter.FilterBySourceName(context, *test.EventIn)
+				}
+				assert.Equal(t, expectedContinue, continuePipeline)
+				assert.Equal(t, test.ExpectedNilResult, result == nil)
+				if result != nil && test.EventIn != nil {
+					assert.Equal(t, *test.EventIn, result)
+				}
+			}
+		})
+	}
+}
+
 func TestFilter_FilterByResourceName(t *testing.T) {
 	// event with a reading for resource 1
-	resource1Event := dtos.NewEvent(profileName1, deviceName1)
+	resource1Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
 	err := resource1Event.AddSimpleReading(resource1, v2.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	// event with a reading for resource 2
-	resource2Event := dtos.NewEvent(profileName1, deviceName1)
+	resource2Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
 	err = resource2Event.AddSimpleReading(resource2, v2.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	// event with a reading for resource 3
-	resource3Event := dtos.NewEvent(profileName1, deviceName1)
+	resource3Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
 	err = resource3Event.AddSimpleReading(resource3, v2.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	// event with readings for resource 1 & 2
-	twoResourceEvent := dtos.NewEvent(profileName1, deviceName1)
+	twoResourceEvent := dtos.NewEvent(profileName1, deviceName1, sourceName1)
 	err = twoResourceEvent.AddSimpleReading(resource1, v2.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 	err = twoResourceEvent.AddSimpleReading(resource2, v2.ValueTypeInt32, int32(123))
@@ -219,7 +279,7 @@ func TestFilter_FilterByResourceName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterByResourceName(context)
-				assert.EqualError(t, result.(error), "no Event Received")
+				assert.EqualError(t, result.(error), "FilterByResourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				var continuePipeline bool

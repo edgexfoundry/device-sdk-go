@@ -17,7 +17,9 @@
 package transforms
 
 import (
-	"errors"
+	"fmt"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 
@@ -46,92 +48,52 @@ func NewFilterOut(filterValues []string) Filter {
 // If FilterOut is false, it filters out those Events not associated with the specified Device Profile listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Profile listed in FilterValues.
 func (f Filter) FilterByProfileName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	mode := "For"
-	if f.FilterOut {
-		mode = "Out"
-	}
-	edgexcontext.LoggingClient.Debugf("Filtering %s by Device Profile. FilterValues are: '[%v]'", mode, f.FilterValues)
-
-	if len(params) < 1 {
-		return false, errors.New("no Event Received")
+	event, err := f.setupForFiltering("FilterByProfileName", "ProfileName", edgexcontext.LoggingClient, params...)
+	if err != nil {
+		return false, err
 	}
 
-	event, ok := params[0].(dtos.Event)
-	if !ok {
-		return false, errors.New("type received is not an Event")
+	ok := f.doEventFilter("ProfileName", event.ProfileName, edgexcontext.LoggingClient)
+	if ok {
+		return true, *event
 	}
 
-	// No names to filter for, so pass events thru rather than filtering them all out.
-	if len(f.FilterValues) == 0 {
-		return true, event
-	}
+	return false, nil
 
-	for _, name := range f.FilterValues {
-		if event.ProfileName == name {
-			if f.FilterOut {
-				edgexcontext.LoggingClient.Debugf("Event not accepted for Profile=%s", event.ProfileName)
-				return false, nil
-			} else {
-				edgexcontext.LoggingClient.Debugf("Event accepted for Profile=%s", event.ProfileName)
-				return true, event
-			}
-		}
-	}
-
-	// Will only get here if Event's ProfileName didn't match any names in FilterValues
-	if f.FilterOut {
-		edgexcontext.LoggingClient.Debugf("Event accepted for Profile=", event.ProfileName)
-		return true, event
-	} else {
-		edgexcontext.LoggingClient.Debugf("Event not accepted for Profile=%s", event.ProfileName)
-		return false, nil
-	}
 }
 
 // FilterByDeviceName filters based on the specified Device Names, aka Instance of a Device.
 // If FilterOut is false, it filters out those Events not associated with the specified Device Names listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Names listed in FilterValues.
 func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	mode := "For"
-	if f.FilterOut {
-		mode = "Out"
-	}
-	edgexcontext.LoggingClient.Debugf("Filtering %s by Device Name. FilterValues are: '[%v]'", mode, f.FilterValues)
-
-	if len(params) < 1 {
-		return false, errors.New("no Event Received")
+	event, err := f.setupForFiltering("FilterByDeviceName", "DeviceName", edgexcontext.LoggingClient, params...)
+	if err != nil {
+		return false, err
 	}
 
-	event, ok := params[0].(dtos.Event)
-	if !ok {
-		return false, errors.New("type received is not an Event")
+	ok := f.doEventFilter("DeviceName", event.DeviceName, edgexcontext.LoggingClient)
+	if ok {
+		return true, *event
 	}
 
-	// No names to filter for, so pass events thru rather than filtering them all out.
-	if len(f.FilterValues) == 0 {
-		return true, event
+	return false, nil
+}
+
+// FilterBySourceName filters based on the specified Source for the Event, aka resource or command name.
+// If FilterOut is false, it filters out those Events not associated with the specified Source listed in FilterValues.
+// If FilterOut is true, it out those Events that are associated with the specified Source listed in FilterValues.
+func (f Filter) FilterBySourceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
+	event, err := f.setupForFiltering("FilterBySourceName", "SourceName", edgexcontext.LoggingClient, params...)
+	if err != nil {
+		return false, err
 	}
 
-	for _, name := range f.FilterValues {
-		if event.DeviceName == name {
-			if f.FilterOut {
-				edgexcontext.LoggingClient.Debugf("Event not accepted for Device=%s", event.DeviceName)
-				return false, nil
-			} else {
-				edgexcontext.LoggingClient.Debugf("Event accepted for Device=%s", event.DeviceName)
-				return true, event
-			}
-		}
+	ok := f.doEventFilter("SourceName", event.SourceName, edgexcontext.LoggingClient)
+	if ok {
+		return true, *event
 	}
 
-	// Will only get here if Event's DeviceName didn't match any names in FilterValues
-	if f.FilterOut {
-		edgexcontext.LoggingClient.Debugf("Event accepted for Device=", event.DeviceName)
-		return true, event
-	} else {
-		edgexcontext.LoggingClient.Debugf("Event not accepted for Device=%s", event.DeviceName)
-		return false, nil
-	}
+	return false, nil
 }
 
 // FilterByResourceName filters based on the specified Reading resource names, aka Instance of a Device.
@@ -139,24 +101,14 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 // If FilterOut is true, it out those Event Readings that are associated with the specified Resource Names listed in FilterValues.
 // This function will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	mode := "For"
-	if f.FilterOut {
-		mode = "Out"
-	}
-	edgexcontext.LoggingClient.Debugf("Filtering %s by Resource Name. FilterValues are: '[%v]'", mode, f.FilterValues)
-
-	if len(params) < 1 {
-		return false, errors.New("no Event Received")
-	}
-
-	existingEvent, ok := params[0].(dtos.Event)
-	if !ok {
-		return false, errors.New("type received is not an Event")
+	existingEvent, err := f.setupForFiltering("FilterByResourceName", "ResourceName", edgexcontext.LoggingClient, params...)
+	if err != nil {
+		return false, err
 	}
 
 	// No filter values, so pass all event and all readings thru, rather than filtering them all out.
 	if len(f.FilterValues) == 0 {
-		return true, existingEvent
+		return true, *existingEvent
 	}
 
 	auxEvent := dtos.Event{
@@ -209,4 +161,51 @@ func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ..
 
 	edgexcontext.LoggingClient.Debug("Event not accepted: 0 remaining readings")
 	return false, nil
+}
+
+func (f Filter) setupForFiltering(funcName string, filterProperty string, lc logger.LoggingClient, params ...interface{}) (*dtos.Event, error) {
+	mode := "For"
+	if f.FilterOut {
+		mode = "Out"
+	}
+	lc.Debugf("Filtering %s by %s. FilterValues are: '[%v]'", mode, filterProperty, f.FilterValues)
+
+	if len(params) < 1 {
+		return nil, fmt.Errorf("%s: no Event Received", funcName)
+	}
+
+	event, ok := params[0].(dtos.Event)
+	if !ok {
+		return nil, fmt.Errorf("%s: type received is not an Event", funcName)
+	}
+
+	return &event, nil
+}
+
+func (f Filter) doEventFilter(filterProperty string, value string, lc logger.LoggingClient) bool {
+	// No names to filter for, so pass events thru rather than filtering them all out.
+	if len(f.FilterValues) == 0 {
+		return true
+	}
+
+	for _, name := range f.FilterValues {
+		if value == name {
+			if f.FilterOut {
+				lc.Debugf("Event not accepted for %s=%s", filterProperty, value)
+				return false
+			} else {
+				lc.Debugf("Event accepted for %s=%s", filterProperty, value)
+				return true
+			}
+		}
+	}
+
+	// Will only get here if Event's SourceName didn't match any names in FilterValues
+	if f.FilterOut {
+		lc.Debugf("Event accepted for %s=%s", filterProperty, value)
+		return true
+	} else {
+		lc.Debugf("Event not accepted for %s=%s", filterProperty, value)
+		return false
+	}
 }

@@ -30,7 +30,7 @@ func TestTransformToXML(t *testing.T) {
 	eventIn := dtos.Event{
 		DeviceName: deviceName1,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Created>0</Created><Origin>0</Origin></Event>`
 	conv := NewConversion()
 
 	continuePipeline, result := conv.TransformToXML(context, eventIn)
@@ -60,7 +60,7 @@ func TestTransformToXMLMultipleParametersValid(t *testing.T) {
 	eventIn := dtos.Event{
 		DeviceName: deviceName1,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Created>0</Created><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
 	require.NotNil(t, result)
@@ -76,7 +76,7 @@ func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
 	eventIn2 := dtos.Event{
 		DeviceName: deviceName2,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device2</DeviceName><ProfileName></ProfileName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device2</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Created>0</Created><Origin>0</Origin></Event>`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, eventIn2, eventIn1, "", "")
 
@@ -91,7 +91,7 @@ func TestTransformToJSON(t *testing.T) {
 	eventIn := dtos.Event{
 		DeviceName: deviceName1,
 	}
-	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","origin":0,"readings":null}`
+	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","sourceName":"","origin":0,"readings":null}`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn)
 
@@ -120,7 +120,7 @@ func TestTransformToJSONMultipleParametersValid(t *testing.T) {
 	eventIn := dtos.Event{
 		DeviceName: deviceName1,
 	}
-	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","origin":0,"readings":null}`
+	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","sourceName":"","origin":0,"readings":null}`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn, "", "", "")
 	assert.NotNil(t, result)
@@ -137,7 +137,7 @@ func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
 	eventIn2 := dtos.Event{
 		DeviceName: deviceName2,
 	}
-	expectedResult := `{"apiVersion":"","id":"","deviceName":"device2","profileName":"","origin":0,"readings":null}`
+	expectedResult := `{"apiVersion":"","id":"","deviceName":"device2","profileName":"","sourceName":"","origin":0,"readings":null}`
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, eventIn2, eventIn1, "", "")
 

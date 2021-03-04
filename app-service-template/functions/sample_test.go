@@ -72,11 +72,12 @@ func TestSample_OutputXML(t *testing.T) {
 }
 
 func createTestEvent(t *testing.T) dtos.Event {
-	deviceName := "MyDevice"
 	profileName := "MyProfile"
+	deviceName := "MyDevice"
+	sourceName := "MySource"
 	resourceName := "MyResource"
 
-	event := dtos.NewEvent(profileName, deviceName)
+	event := dtos.NewEvent(profileName, deviceName, sourceName)
 	err := event.AddSimpleReading(resourceName, v2.ValueTypeInt32, int32(1234))
 	require.NoError(t, err)
 

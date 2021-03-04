@@ -83,6 +83,36 @@ func TestFilterByDeviceName(t *testing.T) {
 	}
 }
 
+func TestFilterBySourceName(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		params    map[string]string
+		expectNil bool
+	}{
+		{"Non Existent Parameters", map[string]string{"": ""}, true},
+		{"Empty Parameters", map[string]string{SourceNames: ""}, false},
+		{"Valid Parameters", map[string]string{SourceNames: "R1, C2, R4"}, false},
+		{"Empty FilterOut Parameters", map[string]string{SourceNames: "R1, C2, R4", FilterOut: ""}, true},
+		{"Valid FilterOut Parameters", map[string]string{SourceNames: "R1, C2, R4", FilterOut: "true"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			trx := configurable.FilterBySourceName(tt.params)
+			if tt.expectNil {
+				assert.Nil(t, trx, "return result from FilterBySourceName should be nil")
+			} else {
+				assert.NotNil(t, trx, "return result from FilterBySourceName should not be nil")
+			}
+		})
+	}
+}
+
 func TestFilterByResourceName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
