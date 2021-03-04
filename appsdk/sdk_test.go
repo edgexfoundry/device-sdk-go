@@ -41,7 +41,7 @@ var lc logger.LoggingClient
 
 func TestMain(m *testing.M) {
 	// No remote and no file results in STDOUT logging only
-	lc = logger.NewClient("cc", "DEBUG")
+	lc = logger.NewMockClient()
 	m.Run()
 }
 
@@ -241,7 +241,7 @@ func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
 
 	appFunctions, err := sdk.LoadConfigurablePipeline()
 	require.Error(t, err, "expected error for function not found in config")
-	assert.Equal(t, "function Bogus configuration not found in Pipeline.Functions section", err.Error())
+	assert.Equal(t, "function 'Bogus' configuration not found in Pipeline.Functions section", err.Error())
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
 }
 
@@ -272,7 +272,9 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 	functions["FilterByDeviceName"] = common.PipelineFunction{
 		Parameters: map[string]string{"DeviceNames": "Random-Float-Device, Random-Integer-Device"},
 	}
-	functions["TransformToXML"] = common.PipelineFunction{}
+	functions["Transform"] = common.PipelineFunction{
+		Parameters: map[string]string{TransformType: TransformXml},
+	}
 	functions["SetOutputData"] = common.PipelineFunction{}
 
 	sdk := AppFunctionsSDK{
@@ -280,7 +282,7 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder: "FilterByDeviceName, TransformToXML, SetOutputData",
+					ExecutionOrder: "FilterByDeviceName, Transform, SetOutputData",
 					Functions:      functions,
 				},
 			},
@@ -295,7 +297,9 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 
 func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 	functions := make(map[string]common.PipelineFunction)
-	functions["CompressWithGZIP"] = common.PipelineFunction{}
+	functions["Compress"] = common.PipelineFunction{
+		Parameters: map[string]string{Algorithm: CompressGZIP},
+	}
 	functions["SetOutputData"] = common.PipelineFunction{}
 
 	sdk := AppFunctionsSDK{
@@ -303,7 +307,7 @@ func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder:           "CompressWithGZIP, SetOutputData",
+					ExecutionOrder:           "Compress, SetOutputData",
 					UseTargetTypeOfByteArray: true,
 					Functions:                functions,
 				},
@@ -320,7 +324,9 @@ func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 
 func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	functions := make(map[string]common.PipelineFunction)
-	functions["CompressWithGZIP"] = common.PipelineFunction{}
+	functions["Compress"] = common.PipelineFunction{
+		Parameters: map[string]string{Algorithm: CompressGZIP},
+	}
 	functions["SetOutputData"] = common.PipelineFunction{}
 
 	sdk := AppFunctionsSDK{
@@ -328,7 +334,7 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder:           "CompressWithGZIP, SetOutputData",
+					ExecutionOrder:           "Compress, SetOutputData",
 					UseTargetTypeOfByteArray: false,
 					Functions:                functions,
 				},

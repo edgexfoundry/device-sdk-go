@@ -21,11 +21,9 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 )
 
-func TestConfigurableFilterByProfileName(t *testing.T) {
+func TestFilterByProfileName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -55,7 +53,7 @@ func TestConfigurableFilterByProfileName(t *testing.T) {
 	}
 }
 
-func TestConfigurableFilterByDeviceName(t *testing.T) {
+func TestFilterByDeviceName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -85,7 +83,7 @@ func TestConfigurableFilterByDeviceName(t *testing.T) {
 	}
 }
 
-func TestConfigurableFilterByResourceName(t *testing.T) {
+func TestFilterByResourceName(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -115,21 +113,34 @@ func TestConfigurableFilterByResourceName(t *testing.T) {
 	}
 }
 
-func TestConfigurableTransformToXML(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{}
+func TestTransform(t *testing.T) {
+	configurable := AppFunctionsSDKConfigurable{
+		Sdk: &AppFunctionsSDK{
+			LoggingClient: lc,
+		},
+	}
 
-	trx := configurable.TransformToXML()
-	assert.NotNil(t, trx, "return result from TransformToXML should not be nil")
+	tests := []struct {
+		Name          string
+		TransformType string
+		ExpectValid   bool
+	}{
+		{"Good - XML", "xMl", true},
+		{"Good - JSON", "JsOn", true},
+		{"Bad Type", "baDType", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			params := make(map[string]string)
+			params[TransformType] = test.TransformType
+			transform := configurable.Transform(params)
+			assert.Equal(t, test.ExpectValid, transform != nil)
+		})
+	}
 }
 
-func TestConfigurableTransformToJSON(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{}
-
-	trx := configurable.TransformToJSON()
-	assert.NotNil(t, trx, "return result from TransformToJSON should not be nil")
-}
-
-func TestConfigurableHTTPPostAndPut(t *testing.T) {
+func TestHTTPExport(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -155,31 +166,33 @@ func TestConfigurableHTTPPostAndPut(t *testing.T) {
 		SecretName     *string
 		ExpectValid    bool
 	}{
-		{"Valid Post - ony required params", http.MethodPost, &testUrl, &testMimeType, nil, nil, nil, nil, true},
+		{"Valid Post - ony required params", ExportMethodPost, &testUrl, &testMimeType, nil, nil, nil, nil, true},
 		{"Valid Post - w/o secrets", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
-		{"Valid Post - with secrets", http.MethodPost, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Valid Post - with all params", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Invalid Post - no url", http.MethodPost, nil, &testMimeType, nil, nil, nil, nil, false},
-		{"Invalid Post - no mimeType", http.MethodPost, &testUrl, nil, nil, nil, nil, nil, false},
-		{"Invalid Post - bad persistOnError", http.MethodPost, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
-		{"Invalid Post - missing headerName", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
-		{"Invalid Post - missing secretPath", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
-		{"Invalid Post - missing secretName", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
-		{"Valid Put - ony required params", http.MethodPut, &testUrl, &testMimeType, nil, nil, nil, nil, true},
-		{"Valid Put - w/o secrets", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
+		{"Valid Post - with secrets", ExportMethodPost, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Valid Post - with all params", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Invalid Post - no url", ExportMethodPost, nil, &testMimeType, nil, nil, nil, nil, false},
+		{"Invalid Post - no mimeType", ExportMethodPost, &testUrl, nil, nil, nil, nil, nil, false},
+		{"Invalid Post - bad persistOnError", ExportMethodPost, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
+		{"Invalid Post - missing headerName", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
+		{"Invalid Post - missing secretPath", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
+		{"Invalid Post - missing secretName", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
+		{"Valid Put - ony required params", ExportMethodPut, &testUrl, &testMimeType, nil, nil, nil, nil, true},
+		{"Valid Put - w/o secrets", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
 		{"Valid Put - with secrets", http.MethodPut, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Valid Put - with all params", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Invalid Put - no url", http.MethodPut, nil, &testMimeType, nil, nil, nil, nil, false},
-		{"Invalid Put - no mimeType", http.MethodPut, &testUrl, nil, nil, nil, nil, nil, false},
-		{"Invalid Put - bad persistOnError", http.MethodPut, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
-		{"Invalid Put - missing headerName", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
-		{"Invalid Put - missing secretPath", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
-		{"Invalid Put - missing secretName", http.MethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
+		{"Valid Put - with all params", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Invalid Put - no url", ExportMethodPut, nil, &testMimeType, nil, nil, nil, nil, false},
+		{"Invalid Put - no mimeType", ExportMethodPut, &testUrl, nil, nil, nil, nil, nil, false},
+		{"Invalid Put - bad persistOnError", ExportMethodPut, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
+		{"Invalid Put - missing headerName", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
+		{"Invalid Put - missing secretPath", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
+		{"Invalid Put - missing secretName", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			params := make(map[string]string)
+			params[ExportMethod] = test.Method
+
 			if test.Url != nil {
 				params[Url] = *test.Url
 			}
@@ -204,58 +217,13 @@ func TestConfigurableHTTPPostAndPut(t *testing.T) {
 				params[SecretName] = *test.SecretName
 			}
 
-			var transform appcontext.AppFunction
-			if test.Method == http.MethodPost {
-				transform = configurable.HTTPPost(params)
-			} else {
-				transform = configurable.HTTPPut(params)
-			}
+			transform := configurable.HTTPExport(params)
 			assert.Equal(t, test.ExpectValid, transform != nil)
 		})
 	}
 }
 
-func TestConfigurableHTTPPostJSON(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{
-		Sdk: &AppFunctionsSDK{
-			LoggingClient: lc,
-		},
-	}
-
-	params := make(map[string]string)
-
-	// no url in params
-	params[""] = ""
-	trx := configurable.HTTPPostJSON(params)
-	assert.Nil(t, trx, "return result from HTTPPostJSON should be nil")
-
-	params[Url] = "http://url"
-	params[PersistOnError] = "true"
-	trx = configurable.HTTPPostJSON(params)
-	assert.NotNil(t, trx, "return result from HTTPPostJSON should not be nil")
-}
-
-func TestConfigurableHTTPPostXML(t *testing.T) {
-	configurable := AppFunctionsSDKConfigurable{
-		Sdk: &AppFunctionsSDK{
-			LoggingClient: lc,
-		},
-	}
-
-	params := make(map[string]string)
-
-	// no url in params
-	params[""] = ""
-	trx := configurable.HTTPPostXML(params)
-	assert.Nil(t, trx, "return result from HTTPPostXML should be nil")
-
-	params[Url] = "http://url"
-	params[PersistOnError] = "true"
-	trx = configurable.HTTPPostXML(params)
-	assert.NotNil(t, trx, "return result from HTTPPostXML should not be nil")
-}
-
-func TestConfigurableSetOutputData(t *testing.T) {
+func TestSetOutputData(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -292,9 +260,10 @@ func TestBatchByCount(t *testing.T) {
 	}
 
 	params := make(map[string]string)
+	params[Mode] = BatchByCount
 	params[BatchThreshold] = "30"
-	trx := configurable.BatchByCount(params)
-	assert.NotNil(t, trx, "return result from BatchByCount should not be nil")
+	transform := configurable.Batch(params)
+	assert.NotNil(t, transform, "return result for BatchByCount should not be nil")
 }
 
 func TestBatchByTime(t *testing.T) {
@@ -305,9 +274,10 @@ func TestBatchByTime(t *testing.T) {
 	}
 
 	params := make(map[string]string)
-	params[TimeInterval] = "10"
-	trx := configurable.BatchByTime(params)
-	assert.NotNil(t, trx, "return result from BatchByTime should not be nil")
+	params[Mode] = BatchByTime
+	params[TimeInterval] = "10s"
+	transform := configurable.Batch(params)
+	assert.NotNil(t, transform, "return result for BatchByTime should not be nil")
 }
 
 func TestBatchByTimeAndCount(t *testing.T) {
@@ -318,11 +288,12 @@ func TestBatchByTimeAndCount(t *testing.T) {
 	}
 
 	params := make(map[string]string)
+	params[Mode] = BatchByTimeAndCount
 	params[BatchThreshold] = "30"
 	params[TimeInterval] = "10"
 
-	trx := configurable.BatchByTimeAndCount(params)
-	assert.NotNil(t, trx, "return result from BatchByTimeAndCount should not be nil")
+	trx := configurable.Batch(params)
+	assert.NotNil(t, trx, "return result for BatchByTimeAndCount should not be nil")
 }
 
 func TestJSONLogic(t *testing.T) {
@@ -339,7 +310,7 @@ func TestJSONLogic(t *testing.T) {
 
 }
 
-func TestConfigurableMQTTSecretSend(t *testing.T) {
+func TestMQTTExport(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -358,11 +329,11 @@ func TestConfigurableMQTTSecretSend(t *testing.T) {
 	params[PersistOnError] = "false"
 	params[AuthMode] = "none"
 
-	trx := configurable.MQTTSecretSend(params)
+	trx := configurable.MQTTExport(params)
 	assert.NotNil(t, trx, "return result from MQTTSecretSend should not be nil")
 }
 
-func TestAppFunctionsSDKConfigurable_AddTags(t *testing.T) {
+func TestAddTags(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -395,7 +366,7 @@ func TestAppFunctionsSDKConfigurable_AddTags(t *testing.T) {
 	}
 }
 
-func TestAppFunctionsSDKConfigurable_EncryptWithAES(t *testing.T) {
+func TestEncrypt(t *testing.T) {
 	configurable := AppFunctionsSDKConfigurable{
 		Sdk: &AppFunctionsSDK{
 			LoggingClient: lc,
@@ -409,23 +380,28 @@ func TestAppFunctionsSDKConfigurable_EncryptWithAES(t *testing.T) {
 
 	tests := []struct {
 		Name          string
+		Algorithm     string
 		EncryptionKey string
 		InitVector    string
 		SecretPath    string
 		SecretName    string
 		ExpectNil     bool
 	}{
-		{"Good - Key & vector ", key, vector, "", "", false},
-		{"Good - Secrets & vector", "", vector, secretsPath, secretName, false},
-		{"Bad - No vector ", key, "", "", "", true},
-		{"Bad - No Key or secrets ", "", vector, "", "", true},
-		{"Bad - Missing secretPath", "", vector, "", secretName, true},
-		{"Bad - Missing secretName", "", vector, secretsPath, "", true},
+		{"Good - Key & vector ", EncryptAES, key, vector, "", "", false},
+		{"Good - Secrets & vector", "aEs", "", vector, secretsPath, secretName, false},
+		{"Bad - No algorithm ", "", key, "", "", "", true},
+		{"Bad - No vector ", EncryptAES, key, "", "", "", true},
+		{"Bad - No Key or secrets ", EncryptAES, "", vector, "", "", true},
+		{"Bad - Missing secretPath", EncryptAES, "", vector, "", secretName, true},
+		{"Bad - Missing secretName", EncryptAES, "", vector, secretsPath, "", true},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.Name, func(t *testing.T) {
 			params := make(map[string]string)
+			if len(testCase.Algorithm) > 0 {
+				params[Algorithm] = testCase.Algorithm
+			}
 			if len(testCase.EncryptionKey) > 0 {
 				params[EncryptionKey] = testCase.EncryptionKey
 			}
@@ -439,7 +415,7 @@ func TestAppFunctionsSDKConfigurable_EncryptWithAES(t *testing.T) {
 				params[SecretName] = testCase.SecretName
 			}
 
-			transform := configurable.EncryptWithAES(params)
+			transform := configurable.Encrypt(params)
 			assert.Equal(t, testCase.ExpectNil, transform == nil)
 		})
 	}

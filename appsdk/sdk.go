@@ -251,13 +251,13 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 		return nil, errors.New(
 			"execution Order has 0 functions specified. You must have a least one function in the pipeline")
 	}
-	sdk.LoggingClient.Debug("Execution Order", "Functions", strings.Join(executionOrder, ","))
+	sdk.LoggingClient.Debugf("Function Pipeline Execution Order: [%s]", pipelineConfig.ExecutionOrder)
 
 	for _, functionName := range executionOrder {
 		functionName = strings.TrimSpace(functionName)
 		configuration, ok := pipelineConfig.Functions[functionName]
 		if !ok {
-			return nil, fmt.Errorf("function %s configuration not found in Pipeline.Functions section", functionName)
+			return nil, fmt.Errorf("function '%s' configuration not found in Pipeline.Functions section", functionName)
 		}
 
 		result := valueOfType.MethodByName(functionName)
@@ -271,7 +271,9 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 		inputParameters := make([]reflect.Value, result.Type().NumIn())
 		// set keys to be all lowercase to avoid casing issues from configuration
 		for key := range configuration.Parameters {
-			configuration.Parameters[strings.ToLower(key)] = configuration.Parameters[key]
+			value := configuration.Parameters[key]
+			delete(configuration.Parameters, key) // Make sure the old key has been removed so don't have multiples
+			configuration.Parameters[strings.ToLower(key)] = value
 		}
 		for index := range inputParameters {
 			parameter := result.Type().In(index)
@@ -299,10 +301,29 @@ func (sdk *AppFunctionsSDK) LoadConfigurablePipeline() ([]appcontext.AppFunction
 		}
 
 		pipeline = append(pipeline, function)
-		configurable.Sdk.LoggingClient.Debug(fmt.Sprintf("%s function added to configurable pipeline", functionName))
+		configurable.Sdk.LoggingClient.Debugf(
+			"%s function added to configurable pipeline with parameters: [%s]",
+			functionName,
+			listParameters(configuration.Parameters))
 	}
 
 	return pipeline, nil
+}
+
+func listParameters(parameters map[string]string) string {
+	result := ""
+	first := true
+	for key, value := range parameters {
+		if first {
+			result = fmt.Sprintf("%s='%s'", key, value)
+			first = false
+			continue
+		}
+
+		result += fmt.Sprintf(", %s='%s'", key, value)
+	}
+
+	return result
 }
 
 // SetFunctionsPipeline allows you to define each function to execute and the order in which each function
