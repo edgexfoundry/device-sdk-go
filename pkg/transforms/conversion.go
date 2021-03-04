@@ -64,7 +64,6 @@ func (f Conversion) TransformToJSON(edgexcontext *appcontext.Context, params ...
 	if result, ok := params[0].(dtos.Event); ok {
 		b, err := json.Marshal(result)
 		if err != nil {
-			// LoggingClient.Error(fmt.Sprintf("Error parsing JSON. Error: %s", err.Error()))
 			return false, errors.New("Error marshalling JSON")
 		}
 		edgexcontext.ResponseContentType = clients.ContentTypeJSON

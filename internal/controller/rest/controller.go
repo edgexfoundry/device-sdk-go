@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package http
+package rest
 
 import (
 	"encoding/json"
@@ -31,27 +31,27 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 
 	"github.com/gorilla/mux"
 )
 
-// V2HttpController controller for V2 REST APIs
-type V2HttpController struct {
+// Controller controller for V2 REST APIs
+type Controller struct {
 	router         *mux.Router
 	secretProvider interfaces.SecretProvider
 	lc             logger.LoggingClient
 	config         *sdkCommon.ConfigurationStruct
 }
 
-// NewV2HttpController creates and initializes an V2HttpController
-func NewV2HttpController(
+// NewController creates and initializes an Controller
+func NewController(
 	router *mux.Router,
 	lc logger.LoggingClient,
 	config *sdkCommon.ConfigurationStruct,
-	secretProvider interfaces.SecretProvider) *V2HttpController {
-	return &V2HttpController{
+	secretProvider interfaces.SecretProvider) *Controller {
+	return &Controller{
 		router:         router,
 		secretProvider: secretProvider,
 		lc:             lc,
@@ -59,43 +59,30 @@ func NewV2HttpController(
 	}
 }
 
-// ConfigureStandardRoutes loads standard V2 routes
-func (v2c *V2HttpController) ConfigureStandardRoutes() {
-	v2c.lc.Info("Registering standard V2 routes...")
-	v2c.router.HandleFunc(contractsV2.ApiPingRoute, v2c.Ping).Methods(http.MethodGet)
-	v2c.router.HandleFunc(contractsV2.ApiVersionRoute, v2c.Version).Methods(http.MethodGet)
-	v2c.router.HandleFunc(contractsV2.ApiMetricsRoute, v2c.Metrics).Methods(http.MethodGet)
-	v2c.router.HandleFunc(contractsV2.ApiConfigRoute, v2c.Config).Methods(http.MethodGet)
-	v2c.router.HandleFunc(internal.ApiV2AddSecretRoute, v2c.AddSecret).Methods(http.MethodPost)
-
-	/// V2 Trigger is not considered a standard route. Trigger route (when configured) is setup by the HTTP Trigger
-	//  in internal/trigger/http/rest.go
-}
-
 // Ping handles the request to /ping endpoint. Is used to test if the service is working
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2HttpController) Ping(writer http.ResponseWriter, request *http.Request) {
+func (v2c *Controller) Ping(writer http.ResponseWriter, request *http.Request) {
 	response := common.NewPingResponse()
-	v2c.sendResponse(writer, request, contractsV2.ApiPingRoute, response, http.StatusOK)
+	v2c.sendResponse(writer, request, contracts.ApiPingRoute, response, http.StatusOK)
 }
 
 // Version handles the request to /version endpoint. Is used to request the service's versions
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2HttpController) Version(writer http.ResponseWriter, request *http.Request) {
+func (v2c *Controller) Version(writer http.ResponseWriter, request *http.Request) {
 	response := common.NewVersionSdkResponse(internal.ApplicationVersion, internal.SDKVersion)
-	v2c.sendResponse(writer, request, contractsV2.ApiVersionRoute, response, http.StatusOK)
+	v2c.sendResponse(writer, request, contracts.ApiVersionRoute, response, http.StatusOK)
 }
 
 // Config handles the request to /config endpoint. Is used to request the service's configuration
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2HttpController) Config(writer http.ResponseWriter, request *http.Request) {
+func (v2c *Controller) Config(writer http.ResponseWriter, request *http.Request) {
 	response := common.NewConfigResponse(*v2c.config)
-	v2c.sendResponse(writer, request, contractsV2.ApiVersionRoute, response, http.StatusOK)
+	v2c.sendResponse(writer, request, contracts.ApiVersionRoute, response, http.StatusOK)
 }
 
 // Metrics handles the request to the /metrics endpoint, memory and cpu utilization stats
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.Request) {
+func (v2c *Controller) Metrics(writer http.ResponseWriter, request *http.Request) {
 	t := telemetry.NewSystemUsage()
 	metrics := common.Metrics{
 		MemAlloc:       t.Memory.Alloc,
@@ -108,12 +95,12 @@ func (v2c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.R
 	}
 
 	response := common.NewMetricsResponse(metrics)
-	v2c.sendResponse(writer, request, contractsV2.ApiMetricsRoute, response, http.StatusOK)
+	v2c.sendResponse(writer, request, contracts.ApiMetricsRoute, response, http.StatusOK)
 }
 
 // AddSecret handles the request to add App Service exclusive secret to the Secret Store
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (v2c *V2HttpController) AddSecret(writer http.ResponseWriter, request *http.Request) {
+func (v2c *Controller) AddSecret(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = request.Body.Close()
 	}()
@@ -133,10 +120,10 @@ func (v2c *V2HttpController) AddSecret(writer http.ResponseWriter, request *http
 	}
 
 	response := common.NewBaseResponse(secretRequest.RequestId, "", http.StatusCreated)
-	v2c.sendResponse(writer, request, internal.ApiV2AddSecretRoute, response, http.StatusCreated)
+	v2c.sendResponse(writer, request, internal.ApiAddSecretRoute, response, http.StatusCreated)
 }
 
-func (v2c *V2HttpController) sendError(
+func (v2c *Controller) sendError(
 	writer http.ResponseWriter,
 	request *http.Request,
 	errKind errors.ErrKind,
@@ -147,11 +134,11 @@ func (v2c *V2HttpController) sendError(
 	v2c.lc.Error(edgexErr.Error())
 	v2c.lc.Debug(edgexErr.DebugMessages())
 	response := common.NewBaseResponse(requestID, edgexErr.Message(), edgexErr.Code())
-	v2c.sendResponse(writer, request, internal.ApiV2AddSecretRoute, response, edgexErr.Code())
+	v2c.sendResponse(writer, request, internal.ApiAddSecretRoute, response, edgexErr.Code())
 }
 
 // sendResponse puts together the response packet for the V2 API
-func (v2c *V2HttpController) sendResponse(
+func (v2c *Controller) sendResponse(
 	writer http.ResponseWriter,
 	request *http.Request,
 	api string,
@@ -179,7 +166,7 @@ func (v2c *V2HttpController) sendResponse(
 	}
 }
 
-func (v2c *V2HttpController) prepareSecret(request common.SecretRequest) (string, map[string]string) {
+func (v2c *Controller) prepareSecret(request common.SecretRequest) (string, map[string]string) {
 	var secretsKV = make(map[string]string)
 	for _, secret := range request.SecretData {
 		secretsKV[secret.Key] = secret.Value

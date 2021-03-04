@@ -17,8 +17,7 @@
 package internal
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	v2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 )
 
 const (
@@ -26,10 +25,8 @@ const (
 	DatabaseName         = "application-service"
 	CorrelationHeaderKey = "X-Correlation-ID"
 
-	ApiTriggerRoute     = clients.ApiBase + "/trigger"
-	ApiV2TriggerRoute   = v2.ApiBase + "/trigger"
-	ApiSecretsRoute     = clients.ApiBase + "/secrets"
-	ApiV2AddSecretRoute = v2.ApiBase + "/secret"
+	ApiTriggerRoute   = contracts.ApiBase + "/trigger"
+	ApiAddSecretRoute = contracts.ApiBase + "/secret"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build

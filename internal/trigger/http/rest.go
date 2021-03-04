@@ -54,8 +54,6 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 
 	logger.Info("Initializing HTTP Trigger")
 	trigger.Webserver.SetupTriggerRoute(internal.ApiTriggerRoute, trigger.requestHandler)
-	// Note: Trigger endpoint doesn't change for V2 API, so just using same handler.
-	trigger.Webserver.SetupTriggerRoute(internal.ApiV2TriggerRoute, trigger.requestHandler)
 	logger.Info("HTTP Trigger Initialized")
 
 	return nil, nil

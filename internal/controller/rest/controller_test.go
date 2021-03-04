@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package http
+package rest
 
 import (
 	"encoding/json"
@@ -36,59 +36,20 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var expectedCorrelationId = uuid.New().String()
 
-func TestConfigureStandardRoutes(t *testing.T) {
-	router := mux.NewRouter()
-	target := NewV2HttpController(router, logger.NewMockClient(), nil, nil)
-	target.ConfigureStandardRoutes()
-
-	var routes []*mux.Route
-	walkFunc := func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		routes = append(routes, route)
-		return nil
-	}
-	err := router.Walk(walkFunc)
-
-	require.NoError(t, err)
-	assert.Len(t, routes, 5)
-
-	paths := make(map[string]string)
-	for _, route := range routes {
-		url, err := route.URLPath("", "")
-		require.NoError(t, err)
-		methods, err := route.GetMethods()
-		require.NoError(t, err)
-		require.Len(t, methods, 1)
-		paths[url.Path] = methods[0]
-	}
-
-	assert.Contains(t, paths, contractsV2.ApiPingRoute)
-	assert.Contains(t, paths, contractsV2.ApiConfigRoute)
-	assert.Contains(t, paths, contractsV2.ApiMetricsRoute)
-	assert.Contains(t, paths, contractsV2.ApiVersionRoute)
-	assert.Contains(t, paths, internal.ApiV2AddSecretRoute)
-
-	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiPingRoute])
-	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiConfigRoute])
-	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiMetricsRoute])
-	assert.Equal(t, http.MethodGet, paths[contractsV2.ApiVersionRoute])
-	assert.Equal(t, http.MethodPost, paths[internal.ApiV2AddSecretRoute])
-}
-
 func TestPingRequest(t *testing.T) {
-	target := NewV2HttpController(nil, logger.NewMockClient(), nil, nil)
+	target := NewController(nil, logger.NewMockClient(), nil, nil)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiPingRoute, target.Ping, nil)
+	recorder := doRequest(t, http.MethodGet, contracts.ApiPingRoute, target.Ping, nil)
 
 	actual := common.PingResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -97,7 +58,7 @@ func TestPingRequest(t *testing.T) {
 	_, err = time.Parse(time.UnixDate, actual.Timestamp)
 	assert.NoError(t, err)
 
-	require.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	require.Equal(t, contracts.ApiVersion, actual.ApiVersion)
 }
 
 func TestVersionRequest(t *testing.T) {
@@ -107,29 +68,29 @@ func TestVersionRequest(t *testing.T) {
 	internal.ApplicationVersion = expectedAppVersion
 	internal.SDKVersion = expectedSdkVersion
 
-	target := NewV2HttpController(nil, logger.NewMockClient(), nil, nil)
+	target := NewController(nil, logger.NewMockClient(), nil, nil)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiVersion, target.Version, nil)
+	recorder := doRequest(t, http.MethodGet, contracts.ApiVersion, target.Version, nil)
 
 	actual := common.VersionSdkResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
-	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, contracts.ApiVersion, actual.ApiVersion)
 	assert.Equal(t, expectedAppVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
 }
 
 func TestMetricsRequest(t *testing.T) {
-	target := NewV2HttpController(nil, logger.NewMockClient(), nil, nil)
+	target := NewController(nil, logger.NewMockClient(), nil, nil)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiMetricsRoute, target.Metrics, nil)
+	recorder := doRequest(t, http.MethodGet, contracts.ApiMetricsRoute, target.Metrics, nil)
 
 	actual := common.MetricsResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
-	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, contracts.ApiVersion, actual.ApiVersion)
 	assert.NotZero(t, actual.Metrics.MemAlloc)
 	assert.NotZero(t, actual.Metrics.MemFrees)
 	assert.NotZero(t, actual.Metrics.MemLiveObjects)
@@ -151,15 +112,15 @@ func TestConfigRequest(t *testing.T) {
 		},
 	}
 
-	target := NewV2HttpController(nil, logger.NewMockClient(), &expectedConfig, nil)
+	target := NewController(nil, logger.NewMockClient(), &expectedConfig, nil)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiConfigRoute, target.Config, nil)
+	recorder := doRequest(t, http.MethodGet, contracts.ApiConfigRoute, target.Config, nil)
 
 	actualResponse := common.ConfigResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, contracts.ApiVersion, actualResponse.ApiVersion)
 
 	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into sdkCommon.ConfigurationStruct
 	configJson, err := json.Marshal(actualResponse.Config)
@@ -183,7 +144,7 @@ func TestAddSecretRequest(t *testing.T) {
 	mockProvider.On("StoreSecrets", "/mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
 	mockProvider.On("StoreSecrets", "/no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
 
-	target := NewV2HttpController(nil, lc, config, mockProvider)
+	target := NewController(nil, lc, config, mockProvider)
 	assert.NotNil(t, target)
 
 	validRequest := common.SecretRequest{
@@ -246,7 +207,7 @@ func TestAddSecretRequest(t *testing.T) {
 
 			reader := strings.NewReader(string(jsonData))
 
-			req, err := http.NewRequest(http.MethodPost, internal.ApiV2AddSecretRoute, reader)
+			req, err := http.NewRequest(http.MethodPost, internal.ApiAddSecretRoute, reader)
 			require.NoError(t, err)
 			req.Header.Set(internal.CorrelationHeaderKey, expectedCorrelationId)
 
@@ -259,7 +220,7 @@ func TestAddSecretRequest(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.ExpectedStatusCode, recorder.Result().StatusCode, "HTTP status code not as expected")
-			assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
+			assert.Equal(t, contracts.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
 			assert.Equal(t, testCase.ExpectedStatusCode, actualResponse.StatusCode, "BaseResponse status code not as expected")
 
 			if testCase.ErrorExpected {
