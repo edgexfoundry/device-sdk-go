@@ -14,9 +14,6 @@ import (
 )
 
 const (
-	ClientData     = "Data"
-	ClientMetadata = "Metadata"
-
 	EnvInstanceName = "EDGEX_INSTANCE_NAME"
 
 	Colon      = ":"

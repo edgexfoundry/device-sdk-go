@@ -9,7 +9,6 @@ package models
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -18,16 +17,12 @@ import (
 	"strings"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 )
 
 const (
 	// Policy limits should be located in global config namespace
 	// Currently assigning 16MB (binary), 16 * 2^20 bytes
 	MaxBinaryBytes = 16777216
-	// DefaultFoloatEncoding indicates the representation of floating value of reading.
-	// It would be configurable in system level in the future
-	DefaultFloatEncoding = models.Base64Encoding
 )
 
 // CommandValue is the struct to represent the reading value of a Get command coming
@@ -400,25 +395,13 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 		}
 		str = strconv.FormatInt(res, 10)
 	case v2.ValueTypeFloat32:
-		floatEncoding := getFloatEncoding(encoding)
-
-		if floatEncoding == models.ENotation {
-			var res float32
-			binary.Read(reader, binary.BigEndian, &res)
-			str = fmt.Sprintf("%e", res)
-		} else if floatEncoding == models.Base64Encoding {
-			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
-		}
+		var res float32
+		binary.Read(reader, binary.BigEndian, &res)
+		str = fmt.Sprintf("%e", res)
 	case v2.ValueTypeFloat64:
-		floatEncoding := getFloatEncoding(encoding)
-
-		if floatEncoding == models.ENotation {
-			var res float64
-			binary.Read(reader, binary.BigEndian, &res)
-			str = fmt.Sprintf("%e", res)
-		} else if floatEncoding == models.Base64Encoding {
-			str = base64.StdEncoding.EncodeToString(cv.NumericValue)
-		}
+		var res float64
+		binary.Read(reader, binary.BigEndian, &res)
+		str = fmt.Sprintf("%e", res)
 	case v2.ValueTypeBinary:
 		// produce string representation of first 20 bytes of binary value
 		str = fmt.Sprintf(fmt.Sprintf("Binary: [%v...]", string(cv.BinValue[:20])))
@@ -428,18 +411,6 @@ func (cv *CommandValue) ValueToString(encoding ...string) (str string) {
 	}
 
 	return
-}
-
-func getFloatEncoding(encoding []string) string {
-	if len(encoding) > 0 {
-		if encoding[0] == models.Base64Encoding {
-			return models.Base64Encoding
-		} else if encoding[0] == models.ENotation {
-			return models.ENotation
-		}
-	}
-
-	return DefaultFloatEncoding
 }
 
 // String returns a string representation of a CommandValue instance.

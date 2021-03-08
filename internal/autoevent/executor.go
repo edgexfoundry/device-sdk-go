@@ -27,7 +27,7 @@ import (
 
 type Executor struct {
 	deviceName   string
-	resource     string
+	sourceName   string
 	onChange     bool
 	lastReadings map[string]interface{}
 	duration     time.Duration
@@ -35,7 +35,7 @@ type Executor struct {
 	mutex        *sync.Mutex
 }
 
-// Run triggers this Executor executes the handler for the resource periodically
+// Run triggers this Executor executes the handler for the event source periodically
 func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool, dic *di.Container) {
 	wg.Add(1)
 	defer wg.Done()
@@ -55,10 +55,10 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				return
 			}
 
-			lc.Debugf("AutoEvent - reading %s", e.resource)
+			lc.Debugf("AutoEvent - reading %s", e.sourceName)
 			evt, err := readResource(e, dic)
 			if err != nil {
-				lc.Errorf("AutoEvent - error occurs when reading resource %s: %v", e.resource, err)
+				lc.Errorf("AutoEvent - error occurs when reading resource %s: %v", e.sourceName, err)
 				continue
 			}
 
@@ -79,7 +79,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 					<-buffer
 				}()
 			} else {
-				lc.Debugf("AutoEvent - no event generated when reading resource %s", e.resource)
+				lc.Debugf("AutoEvent - no event generated when reading resource %s", e.sourceName)
 			}
 		}
 	}
@@ -88,7 +88,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors.EdgeX) {
 	vars := make(map[string]string, 2)
 	vars[v2.Name] = e.deviceName
-	vars[v2.Command] = e.resource
+	vars[v2.Command] = e.sourceName
 
 	res, err := application.CommandHandler(true, false, "", vars, "", "", dic)
 	if err != nil {
@@ -151,12 +151,12 @@ func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, errors.Edge
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Frequency)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to parse AutoEvent %s duration", ae.Resource), err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to parse AutoEvent %s duration", ae.SourceName), err)
 	}
 
 	return &Executor{
 		deviceName: deviceName,
-		resource:   ae.Resource,
+		sourceName: ae.SourceName,
 		onChange:   ae.OnChange,
 		duration:   duration,
 		stop:       false,

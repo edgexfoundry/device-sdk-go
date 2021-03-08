@@ -24,7 +24,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic *di.Container) (*dtos.Event, edgexErr.EdgeX) {
+func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sourceName string, dic *di.Container) (*dtos.Event, edgexErr.EdgeX) {
 	// in some case device service driver implementation would generate no readings
 	// in this case no event would be created. Based on the implementation there would be 2 scenarios:
 	// 1. uninitialized *CommandValue slices, i.e. nil
@@ -107,7 +107,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic 
 	}
 
 	if len(readings) > 0 {
-		eventDTO := dtos.NewEvent(device.ProfileName, device.Name)
+		eventDTO := dtos.NewEvent(device.ProfileName, device.Name, sourceName)
 		eventDTO.Readings = readings
 
 		return &eventDTO, nil
@@ -117,10 +117,6 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, dic 
 }
 
 func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType, encoding string) dtos.BaseReading {
-	if encoding == "" {
-		encoding = models.DefaultFloatEncoding
-	}
-
 	reading := dtos.BaseReading{
 		Versionable: commonDTO.Versionable{
 			ApiVersion: v2.ApiVersion,
@@ -135,7 +131,7 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 		reading.BinaryValue = cv.BinValue
 		reading.MediaType = mediaType
 	} else {
-		reading.Value = cv.ValueToString(encoding)
+		reading.Value = cv.ValueToString()
 	}
 
 	// if value has a non-zero Origin, use it

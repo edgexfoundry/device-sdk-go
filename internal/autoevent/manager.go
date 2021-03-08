@@ -82,7 +82,7 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEv
 	for _, autoEvent := range autoEvents {
 		executor, err := NewExecutor(deviceName, autoEvent)
 		if err != nil {
-			lc.Errorf("failed to create executor of AutoEvent %s for Device %s: %v", autoEvent.Resource, deviceName, err)
+			lc.Errorf("failed to create executor of AutoEvent %s for Device %s: %v", autoEvent.SourceName, deviceName, err)
 			// skip this AutoEvent if it causes error during creation
 			continue
 		}

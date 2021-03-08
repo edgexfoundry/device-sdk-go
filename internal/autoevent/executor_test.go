@@ -18,7 +18,7 @@ import (
 )
 
 func TestCompareReadings(t *testing.T) {
-	autoEvent := models.AutoEvent{Resource: "resource", OnChange: true, Frequency: "500ms"}
+	autoEvent := models.AutoEvent{SourceName: "sourceName", OnChange: true, Frequency: "500ms"}
 	e, err := NewExecutor("device-test", autoEvent)
 	require.NoError(t, err)
 
