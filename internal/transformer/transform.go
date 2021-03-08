@@ -117,10 +117,6 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 }
 
 func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType, encoding string) dtos.BaseReading {
-	if encoding == "" {
-		encoding = models.DefaultFloatEncoding
-	}
-
 	reading := dtos.BaseReading{
 		Versionable: commonDTO.Versionable{
 			ApiVersion: v2.ApiVersion,
@@ -135,7 +131,7 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 		reading.BinaryValue = cv.BinValue
 		reading.MediaType = mediaType
 	} else {
-		reading.Value = cv.ValueToString(encoding)
+		reading.Value = cv.ValueToString()
 	}
 
 	// if value has a non-zero Origin, use it

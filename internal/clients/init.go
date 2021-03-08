@@ -133,12 +133,12 @@ func checkServiceAvailable(ctx context.Context, serviceKey string, startupTimer 
 		}
 	}
 
-	lc.Error(fmt.Sprintf("dependency %s service checking time out", serviceKey))
+	lc.Errorf("dependency %s service checking time out", serviceKey)
 	return false
 }
 
 func checkServiceAvailableByPing(serviceKey string, configuration *common.ConfigurationStruct, lc logger.LoggingClient) error {
-	lc.Info(fmt.Sprintf("Check %v service's status by ping...", serviceKey))
+	lc.Infof("Check %v service's status by ping...", serviceKey)
 	addr := configuration.Clients[serviceKey].Url()
 	timeout := int64(configuration.Service.Timeout) * int64(time.Millisecond)
 
@@ -155,7 +155,7 @@ func checkServiceAvailableByPing(serviceKey string, configuration *common.Config
 }
 
 func checkServiceAvailableViaRegistry(serviceKey string, rc registry.Client, lc logger.LoggingClient) error {
-	lc.Info(fmt.Sprintf("Check %s service's status via Registry...", serviceKey))
+	lc.Infof("Check %s service's status via Registry...", serviceKey)
 
 	if !rc.IsAlive() {
 		errMsg := fmt.Sprintf("unable to check status of %s service: Registry not running", serviceKey)
