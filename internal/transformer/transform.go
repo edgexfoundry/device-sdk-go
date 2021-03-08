@@ -8,15 +8,12 @@ package transformer
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
-	"github.com/google/uuid"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -61,10 +58,17 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			if err != nil {
 				lc.Errorf("failed to transform CommandValue (%s): %v", cv.String(), err)
 
+				var edgexErr edgexErr.EdgeX
 				if errors.As(err, &OverflowError{}) {
-					cv = models.NewStringValue(cv.DeviceResourceName, cv.Origin, Overflow)
+					cv, edgexErr = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, Overflow)
+					if edgexErr != nil {
+						return nil, edgexErr
+					}
 				} else if errors.As(err, &NaNError{}) {
-					cv = models.NewStringValue(cv.DeviceResourceName, cv.Origin, NaN)
+					cv, edgexErr = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, NaN)
+					if edgexErr != nil {
+						return nil, edgexErr
+					}
 				} else {
 					transformsOK = false
 				}
@@ -75,7 +79,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		dc := container.MetadataDeviceClientFrom(dic.Get)
 		err := CheckAssertion(cv, dr.Properties.Assertion, device.Name, lc, dc)
 		if err != nil {
-			cv = models.NewStringValue(cv.DeviceResourceName, cv.Origin, fmt.Sprintf("Assertion failed for device resource: %s, with value: %s", cv.DeviceResourceName, cv.String()))
+			return nil, err
 		}
 
 		// ResourceOperation mapping
@@ -92,7 +96,10 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			}
 		}
 
-		reading := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType, "")
+		reading, edgexErr := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType)
+		if err != nil {
+			return nil, edgexErr
+		}
 		readings = append(readings, reading)
 
 		if cv.Type == v2.ValueTypeBinary {
@@ -116,30 +123,21 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 	}
 }
 
-func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType, encoding string) dtos.BaseReading {
-	reading := dtos.BaseReading{
-		Versionable: commonDTO.Versionable{
-			ApiVersion: v2.ApiVersion,
-		},
-		Id:           uuid.NewString(),
-		DeviceName:   deviceName,
-		ProfileName:  profileName,
-		ResourceName: cv.DeviceResourceName,
-		ValueType:    cv.Type,
-	}
+func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType string) (dtos.BaseReading, edgexErr.EdgeX) {
+	var err edgexErr.EdgeX
+	var reading dtos.BaseReading
+
 	if cv.Type == v2.ValueTypeBinary {
-		reading.BinaryValue = cv.BinValue
-		reading.MediaType = mediaType
+		var binary []byte
+		binary, err = cv.BinaryValue()
+		reading = dtos.NewBinaryReading(profileName, deviceName, cv.DeviceResourceName, binary, mediaType)
 	} else {
-		reading.Value = cv.ValueToString()
+		var e error
+		reading, e = dtos.NewSimpleReading(profileName, deviceName, cv.DeviceResourceName, cv.Type, cv.Value)
+		if e != nil {
+			err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, fmt.Sprintf("failed to transform CommandValue (%s) to Reading", cv.String()), err)
+		}
 	}
 
-	// if value has a non-zero Origin, use it
-	if cv.Origin > 0 {
-		reading.Origin = cv.Origin
-	} else {
-		reading.Origin = time.Now().UnixNano() / int64(time.Millisecond)
-	}
-
-	return reading
+	return reading, err
 }

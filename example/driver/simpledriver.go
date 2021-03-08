@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
@@ -82,18 +83,17 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 
 	if len(reqs) == 1 {
 		res = make([]*dsModels.CommandValue, 1)
-		now := time.Now().UnixNano()
 		if reqs[0].DeviceResourceName == "SwitchButton" {
-			cv, _ := dsModels.NewBoolValue(reqs[0].DeviceResourceName, now, s.switchButton)
+			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeBool, s.switchButton)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Xrotation" {
-			cv, _ := dsModels.NewInt32Value(reqs[0].DeviceResourceName, now, s.xRotation)
+			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeInt32, s.xRotation)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Yrotation" {
-			cv, _ := dsModels.NewInt32Value(reqs[0].DeviceResourceName, now, s.yRotation)
+			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeInt32, s.yRotation)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Zrotation" {
-			cv, _ := dsModels.NewInt32Value(reqs[0].DeviceResourceName, now, s.zRotation)
+			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeInt32, s.zRotation)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Image" {
 			// Show a binary/image representation of the switch's on/off value
@@ -103,24 +103,23 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			} else {
 				err = getImageBytes("./res/off.jpg", buf)
 			}
-			cvb, _ := dsModels.NewBinaryValue(reqs[0].DeviceResourceName, now, buf.Bytes())
+			cvb, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeBinary, buf.Bytes())
 			res[0] = cvb
 		} else if reqs[0].DeviceResourceName == "Uint8Array" {
-			cv, _ := dsModels.NewUint8ArrayValue(reqs[0].DeviceResourceName, now, []uint8{0, 1, 2})
+			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeUint8Array, []uint8{0, 1, 2})
 			res[0] = cv
 		}
 	} else if len(reqs) == 3 {
 		res = make([]*dsModels.CommandValue, 3)
 		for i, r := range reqs {
 			var cv *dsModels.CommandValue
-			now := time.Now().UnixNano()
 			switch r.DeviceResourceName {
 			case "Xrotation":
-				cv, _ = dsModels.NewInt32Value(r.DeviceResourceName, now, s.xRotation)
+				cv, _ = dsModels.NewCommandValue(r.DeviceResourceName, v2.ValueTypeInt32, s.xRotation)
 			case "Yrotation":
-				cv, _ = dsModels.NewInt32Value(r.DeviceResourceName, now, s.yRotation)
+				cv, _ = dsModels.NewCommandValue(r.DeviceResourceName, v2.ValueTypeInt32, s.yRotation)
 			case "Zrotation":
-				cv, _ = dsModels.NewInt32Value(r.DeviceResourceName, now, s.zRotation)
+				cv, _ = dsModels.NewCommandValue(r.DeviceResourceName, v2.ValueTypeInt32, s.zRotation)
 			}
 			res[i] = cv
 		}

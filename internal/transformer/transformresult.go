@@ -7,13 +7,12 @@
 package transformer
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
@@ -85,7 +84,7 @@ func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue, lc 
 	}
 
 	if value != newValue {
-		err = replaceNewCommandValue(cv, newValue, lc)
+		cv.Value = newValue
 	}
 	return err
 }
@@ -586,39 +585,31 @@ func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, error) {
 	return v, nil
 }
 
-func replaceNewCommandValue(cv *dsModels.CommandValue, newValue interface{}, lc logger.LoggingClient) error {
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.BigEndian, newValue)
-	if err != nil {
-		lc.Error(fmt.Sprintf("binary.Write failed: %v", err))
-	} else {
-		cv.NumericValue = buf.Bytes()
-	}
-	return err
-}
-
 func CheckAssertion(
 	cv *dsModels.CommandValue,
 	assertion string,
 	deviceName string,
 	lc logger.LoggingClient,
-	dc interfaces.DeviceClient) error {
+	dc interfaces.DeviceClient) errors.EdgeX {
 	if assertion != "" && cv.ValueToString() != assertion {
-		//device.OperatingState = models.Down
-		//cache.Devices().Update(*device)
 		go common.UpdateOperatingState(deviceName, models.Down, lc, dc)
-		msg := fmt.Sprintf("assertion (%s) failed with value: %s", assertion, cv.ValueToString())
-		lc.Error(msg)
-		return fmt.Errorf(msg)
+		errMsg := fmt.Sprintf("Assertion failed for DeviceResource %s, with value %s", cv.DeviceResourceName, cv.ValueToString())
+		lc.Error(errMsg)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 	return nil
 }
 
 func MapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
-	newValue, ok := mappings[value.ValueToString()]
+	var err errors.EdgeX
 	var result *dsModels.CommandValue
+
+	newValue, ok := mappings[value.ValueToString()]
 	if ok {
-		result = dsModels.NewStringValue(value.DeviceResourceName, value.Origin, newValue)
+		result, err = dsModels.NewCommandValue(value.DeviceResourceName, v2.ValueTypeString, newValue)
+		if err != nil {
+			return nil, false
+		}
 	}
 	return result, ok
 }
