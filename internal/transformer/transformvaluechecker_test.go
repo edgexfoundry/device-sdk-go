@@ -9,9 +9,12 @@ package transformer
 import (
 	"math"
 	"testing"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 func TestCheckTransformedValueInRange_numericDataType(t *testing.T) {
+	lc := logger.NewMockClient()
 	var tests = []struct {
 		origin      interface{}
 		transformed float64
@@ -46,6 +49,7 @@ func TestCheckTransformedValueInRange_numericDataType(t *testing.T) {
 }
 
 func TestCheckTransformedValueInRange_unsupportedDataType(t *testing.T) {
+	lc := logger.NewMockClient()
 	origin := "123"
 	transformed := float64(123)
 

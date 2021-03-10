@@ -46,7 +46,7 @@ func TransformWriteParameter(cv *dsModels.CommandValue, pv models.PropertyValue,
 	}
 
 	if value != newValue {
-		err = replaceNewCommandValue(cv, newValue, lc)
+		cv.Value = newValue
 	}
 	return err
 }

@@ -11,7 +11,10 @@ import (
 	"math"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/stretchr/testify/require"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 
@@ -19,9 +22,12 @@ import (
 )
 
 func TestTransformReadResult_NaN(t *testing.T) {
+	lc := logger.NewMockClient()
 	ro := models.ResourceOperation{DeviceResource: "test-object"}
-	float32Val, _ := dsModels.NewFloat32Value(ro.DeviceResource, 0, float32(math.NaN()))
-	float64Val, _ := dsModels.NewFloat64Value(ro.DeviceResource, 0, math.NaN())
+	float32Val, err := dsModels.NewCommandValue(ro.DeviceResource, v2.ValueTypeFloat32, float32(math.NaN()))
+	require.NoError(t, err)
+	float64Val, err := dsModels.NewCommandValue(ro.DeviceResource, v2.ValueTypeFloat64, math.NaN())
+	require.NoError(t, err)
 
 	tests := []struct {
 		name string

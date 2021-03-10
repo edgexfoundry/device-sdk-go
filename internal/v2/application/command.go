@@ -11,12 +11,10 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -423,156 +421,173 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*dsModels.CommandValue, error) {
-	var err error
+func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*dsModels.CommandValue, edgexErr.EdgeX) {
+	var err edgexErr.EdgeX
 	var result *dsModels.CommandValue
 
-	origin := time.Now().UnixNano()
-	switch strings.ToLower(dr.Properties.ValueType) {
-	case strings.ToLower(v2.ValueTypeString):
-		result = dsModels.NewStringValue(dr.Name, origin, v)
-	case strings.ToLower(v2.ValueTypeBool):
+	switch dr.Properties.ValueType {
+	case v2.ValueTypeString:
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeString, v)
+	case v2.ValueTypeBool:
 		value, err := strconv.ParseBool(v)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewBoolValue(dr.Name, origin, value)
-	case strings.ToLower(v2.ValueTypeBoolArray):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeBool, value)
+	case v2.ValueTypeBoolArray:
 		var arr []bool
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewBoolArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeUint8):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeBoolArray, arr)
+	case v2.ValueTypeUint8:
 		n, err := strconv.ParseUint(v, 10, 8)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewUint8Value(dr.Name, origin, uint8(n))
-	case strings.ToLower(v2.ValueTypeUint8Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint8, uint8(n))
+	case v2.ValueTypeUint8Array:
 		var arr []uint8
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 8)
 			if err != nil {
-				return result, err
+				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 			}
 			arr = append(arr, uint8(n))
 		}
-		result, err = dsModels.NewUint8ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeUint16):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint8Array, arr)
+	case v2.ValueTypeUint16:
 		n, err := strconv.ParseUint(v, 10, 16)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewUint16Value(dr.Name, origin, uint16(n))
-	case strings.ToLower(v2.ValueTypeUint16Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint16, uint16(n))
+	case v2.ValueTypeUint16Array:
 		var arr []uint16
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 16)
 			if err != nil {
-				return result, err
+				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 			}
 			arr = append(arr, uint16(n))
 		}
-		result, err = dsModels.NewUint16ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeUint32):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint16Array, arr)
+	case v2.ValueTypeUint32:
 		n, err := strconv.ParseUint(v, 10, 32)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewUint32Value(dr.Name, origin, uint32(n))
-	case strings.ToLower(v2.ValueTypeUint32Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint32, uint32(n))
+	case v2.ValueTypeUint32Array:
 		var arr []uint32
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 32)
 			if err != nil {
-				return result, err
+				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 			}
 			arr = append(arr, uint32(n))
 		}
-		result, err = dsModels.NewUint32ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeUint64):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint32Array, arr)
+	case v2.ValueTypeUint64:
 		n, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewUint64Value(dr.Name, origin, n)
-	case strings.ToLower(v2.ValueTypeUint64Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint64, n)
+	case v2.ValueTypeUint64Array:
 		var arr []uint64
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 64)
 			if err != nil {
-				return result, err
+				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 			}
 			arr = append(arr, n)
 		}
-		result, err = dsModels.NewUint64ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeInt8):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint64Array, arr)
+	case v2.ValueTypeInt8:
 		n, err := strconv.ParseInt(v, 10, 8)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt8Value(dr.Name, origin, int8(n))
-	case strings.ToLower(v2.ValueTypeInt8Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt8, int8(n))
+	case v2.ValueTypeInt8Array:
 		var arr []int8
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt8ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeInt16):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt8Array, arr)
+	case v2.ValueTypeInt16:
 		n, err := strconv.ParseInt(v, 10, 16)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt16Value(dr.Name, origin, int16(n))
-	case strings.ToLower(v2.ValueTypeInt16Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt16, int16(n))
+	case v2.ValueTypeInt16Array:
 		var arr []int16
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt16ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeInt32):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt16Array, arr)
+	case v2.ValueTypeInt32:
 		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt32Value(dr.Name, origin, int32(n))
-	case strings.ToLower(v2.ValueTypeInt32Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt32, int32(n))
+	case v2.ValueTypeInt32Array:
 		var arr []int32
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt32ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeInt64):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt32Array, arr)
+	case v2.ValueTypeInt64:
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt64Value(dr.Name, origin, n)
-	case strings.ToLower(v2.ValueTypeInt64Array):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt64, n)
+	case v2.ValueTypeInt64Array:
 		var arr []int64
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewInt64ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeFloat32):
-		n, e := strconv.ParseFloat(v, 32)
-		if e == nil {
-			result, err = dsModels.NewFloat32Value(dr.Name, origin, float32(n))
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt64Array, arr)
+	case v2.ValueTypeFloat32:
+		val, err := strconv.ParseFloat(v, 32)
+		if err == nil {
+			result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32, float32(val))
 			break
 		}
-		if numError, ok := e.(*strconv.NumError); ok {
+		if numError, ok := err.(*strconv.NumError); ok {
 			if numError.Err == strconv.ErrRange {
-				err = e
+				err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "NumError", err)
 				break
 			}
 		}
@@ -586,25 +601,27 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			} else if math.IsNaN(float64(val)) {
 				err = fmt.Errorf("fail to parse %v to float32, unexpected result %v", v, val)
 			} else {
-				result, err = dsModels.NewFloat32Value(dr.Name, origin, val)
+				result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32, val)
 			}
 		}
-	case strings.ToLower(v2.ValueTypeFloat32Array):
+	case v2.ValueTypeFloat32Array:
 		var arr []float32
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewFloat32ArrayValue(dr.Name, origin, arr)
-	case strings.ToLower(v2.ValueTypeFloat64):
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32Array, arr)
+	case v2.ValueTypeFloat64:
 		var val float64
-		val, err = strconv.ParseFloat(v, 64)
+		val, err := strconv.ParseFloat(v, 64)
 		if err == nil {
-			result, err = dsModels.NewFloat64Value(dr.Name, origin, val)
+			result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64, val)
 			break
 		}
 		if numError, ok := err.(*strconv.NumError); ok {
 			if numError.Err == strconv.ErrRange {
+				err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "NumError", err)
 				break
 			}
 		}
@@ -617,22 +634,19 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			} else if math.IsNaN(val) {
 				err = fmt.Errorf("fail to parse %v to float64, unexpected result %v", v, val)
 			} else {
-				result, err = dsModels.NewFloat64Value(dr.Name, origin, val)
+				result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64, val)
 			}
 		}
-	case strings.ToLower(v2.ValueTypeFloat64Array):
+	case v2.ValueTypeFloat64Array:
 		var arr []float64
-		err = json.Unmarshal([]byte(v), &arr)
+		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
-			return result, err
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewFloat64ArrayValue(dr.Name, origin, arr)
+		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64Array, arr)
 	default:
-		err = errors.New("unsupported deviceResource value type")
-	}
-
-	if err != nil {
-		return result, err
+		err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "unrecognized value type", nil)
 	}
 
 	return result, err
