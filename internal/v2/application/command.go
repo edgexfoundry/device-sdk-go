@@ -284,7 +284,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	if configuration.Device.DataTransform {
 		err = transformer.TransformWriteParameter(cv, c.deviceResource.Properties, lc)
 		if err != nil {
-			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform write value", nil)
+			return edgexErr.NewCommonEdgeX(edgexErr.KindContractInvalid, "failed to transform set parameter", err)
 		}
 	}
 
@@ -391,7 +391,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		if configuration.Device.DataTransform {
 			err = transformer.TransformWriteParameter(cv, dr.Properties, lc)
 			if err != nil {
-				return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform write values", err)
+				return edgexErr.NewCommonEdgeX(edgexErr.KindContractInvalid, "failed to transform set parameter", err)
 			}
 		}
 	}
