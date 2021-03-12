@@ -1,53 +1,50 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2020 IOTech Ltd
+// Copyright (C) 2019-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package transformer
 
 import (
-	"fmt"
 	"math"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
-func checkTransformedValueInRange(origin interface{}, transformed float64, lc logger.LoggingClient) bool {
+func checkTransformedValueInRange(origin interface{}, transformed float64) bool {
 	inRange := false
 	switch origin.(type) {
 	case uint8:
-		if transformed >= 0 && transformed <= math.MaxUint8 {
+		if transformed >= 0 && transformed <= math.MaxUint8 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case uint16:
-		if transformed >= 0 && transformed <= math.MaxUint16 {
+		if transformed >= 0 && transformed <= math.MaxUint16 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case uint32:
-		if transformed >= 0 && transformed <= math.MaxUint32 {
+		if transformed >= 0 && transformed <= math.MaxUint32 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case uint64:
 		// if the variable isn't casted to float64, this statement will cause error on 32bit system
 		maxiMum := float64(math.MaxUint64)
-		if transformed >= 0 && transformed <= maxiMum {
+		if transformed >= 0 && transformed <= maxiMum && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case int8:
-		if transformed >= math.MinInt8 && transformed <= math.MaxInt8 {
+		if transformed >= math.MinInt8 && transformed <= math.MaxInt8 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case int16:
-		if transformed >= math.MinInt16 && transformed <= math.MaxInt16 {
+		if transformed >= math.MinInt16 && transformed <= math.MaxInt16 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case int32:
-		if transformed >= math.MinInt32 && transformed <= math.MaxInt32 {
+		if transformed >= math.MinInt32 && transformed <= math.MaxInt32 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case int64:
-		if transformed >= math.MinInt64 && transformed <= math.MaxInt64 {
+		if transformed >= math.MinInt64 && transformed <= math.MaxInt64 && math.Trunc(transformed) == transformed {
 			inRange = true
 		}
 	case float32:
@@ -59,7 +56,7 @@ func checkTransformedValueInRange(origin interface{}, transformed float64, lc lo
 			inRange = true
 		}
 	default:
-		lc.Error(fmt.Sprintf("data type %T doesn't support range checking", origin))
+		return false
 	}
 
 	return inRange
