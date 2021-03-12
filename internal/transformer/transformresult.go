@@ -32,7 +32,7 @@ const (
 	NaN      = "NaN"
 )
 
-func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue) errors.EdgeX {
+func TransformReadResult(cv *dsModels.CommandValue, pv models.ResourceProperties) errors.EdgeX {
 	if !isNumericValueType(cv) {
 		return nil
 	}

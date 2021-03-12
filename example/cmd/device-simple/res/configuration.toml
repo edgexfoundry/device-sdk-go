@@ -81,7 +81,7 @@ RetryWaitPeriod = "1s"
   [[DeviceList.AutoEvents]]
     Frequency = '10s'
     OnChange = false
-    SourceName = 'Switch'
+    SourceName = 'SwitchButton'
   [[DeviceList.AutoEvents]]
     Frequency = '30s'
     OnChange = false

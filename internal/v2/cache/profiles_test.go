@@ -8,6 +8,7 @@ package cache
 import (
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,13 +20,13 @@ var testProfile = models.DeviceProfile{
 	},
 	DeviceCommands: []models.DeviceCommand{
 		models.DeviceCommand{
-			Name: TestDeviceCommand,
-			Get: []models.ResourceOperation{
+			Name:      TestDeviceCommand,
+			ReadWrite: v2.ReadWrite_R,
+			ResourceOperations: []models.ResourceOperation{
 				models.ResourceOperation{DeviceResource: TestDeviceResource},
 			},
 		},
 	},
-	CoreCommands: nil,
 }
 
 var newProfile = models.DeviceProfile{
@@ -35,13 +36,13 @@ var newProfile = models.DeviceProfile{
 	},
 	DeviceCommands: []models.DeviceCommand{
 		models.DeviceCommand{
-			Name: "newCommand",
-			Get: []models.ResourceOperation{
+			Name:      "newCommand",
+			ReadWrite: v2.ReadWrite_R,
+			ResourceOperations: []models.ResourceOperation{
 				models.ResourceOperation{DeviceResource: "newResource"},
 			},
 		},
 	},
-	CoreCommands: nil,
 }
 
 func Test_profileCache_ForName(t *testing.T) {
@@ -178,7 +179,7 @@ func Test_profileCache_ResourceOperations(t *testing.T) {
 		{"Invalid - nonexistent Profile name", "nil", TestDeviceCommand, "GET", nil, true},
 		{"Invalid - nonexistent Command name", TestProfile, "nil", "GET", nil, true},
 		{"Invalid - invalid method", TestProfile, TestDeviceCommand, "INVALID", nil, true},
-		{"Valid", TestProfile, TestDeviceCommand, "GET", testProfile.DeviceCommands[0].Get, false},
+		{"Valid", TestProfile, TestDeviceCommand, "GET", testProfile.DeviceCommands[0].ResourceOperations, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -208,7 +209,7 @@ func Test_profileCache_ResourceOperation(t *testing.T) {
 		{"Invalid - nonexistent Profile name", "nil", TestDeviceResource, "GET", models.ResourceOperation{}, true},
 		{"Invalid - nonexistent DeviceResource name", TestProfile, "nil", "GET", models.ResourceOperation{}, true},
 		{"Invalid - invalid method", TestProfile, TestDeviceResource, "INVALID", models.ResourceOperation{}, true},
-		{"Valid", TestProfile, TestDeviceResource, "Get", testProfile.DeviceCommands[0].Get[0], false},
+		{"Valid", TestProfile, TestDeviceResource, "Get", testProfile.DeviceCommands[0].ResourceOperations[0], false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
