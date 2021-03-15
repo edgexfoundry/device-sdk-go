@@ -20,7 +20,7 @@ func isNaN(cv *models.CommandValue) (bool, errors.EdgeX) {
 	case v2.ValueTypeFloat32:
 		v, err := cv.Float32Value()
 		if err != nil {
-			return false, err
+			return false, errors.NewCommonEdgeXWrapper(err)
 		}
 		if math.IsNaN(float64(v)) {
 			return true, nil
@@ -28,7 +28,7 @@ func isNaN(cv *models.CommandValue) (bool, errors.EdgeX) {
 	case v2.ValueTypeFloat64:
 		v, err := cv.Float64Value()
 		if err != nil {
-			return false, err
+			return false, errors.NewCommonEdgeXWrapper(err)
 		}
 		if math.IsNaN(v) {
 			return true, nil

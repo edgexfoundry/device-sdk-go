@@ -53,19 +53,19 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 
 		// perform data transformation
 		if config.Device.DataTransform {
-			err := TransformReadResult(cv, dr.Properties, lc)
+			err := TransformReadResult(cv, dr.Properties)
 			if err != nil {
 				lc.Errorf("failed to transform CommandValue (%s): %v", cv.String(), err)
 
 				if errors.Kind(err) == errors.KindOverflowError {
 					cv, err = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, Overflow)
 					if err != nil {
-						return nil, err
+						return nil, errors.NewCommonEdgeXWrapper(err)
 					}
 				} else if errors.Kind(err) == errors.KindNaNError {
 					cv, err = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, NaN)
 					if err != nil {
-						return nil, err
+						return nil, errors.NewCommonEdgeXWrapper(err)
 					}
 				} else {
 					transformsOK = false
@@ -75,9 +75,9 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 
 		// assertion
 		dc := container.MetadataDeviceClientFrom(dic.Get)
-		err := CheckAssertion(cv, dr.Properties.Assertion, device.Name, lc, dc)
+		err := checkAssertion(cv, dr.Properties.Assertion, device.Name, lc, dc)
 		if err != nil {
-			return nil, err
+			return nil, errors.NewCommonEdgeXWrapper(err)
 		}
 
 		// ResourceOperation mapping
@@ -86,7 +86,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			// this allows SDK to directly read deviceResource without deviceCommands defined.
 			lc.Debugf("failed to read ResourceOperation: %v", err)
 		} else if len(ro.Mappings) > 0 {
-			newCV, ok := MapCommandValue(cv, ro.Mappings)
+			newCV, ok := mapCommandValue(cv, ro.Mappings)
 			if ok {
 				cv = newCV
 			} else {
@@ -94,9 +94,9 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			}
 		}
 
-		reading, edgexErr := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType)
+		reading, err := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType)
 		if err != nil {
-			return nil, edgexErr
+			return nil, errors.NewCommonEdgeXWrapper(err)
 		}
 		readings = append(readings, reading)
 

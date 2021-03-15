@@ -10,14 +10,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-func TransformWriteParameter(cv *dsModels.CommandValue, pv models.PropertyValue, lc logger.LoggingClient) errors.EdgeX {
+func TransformWriteParameter(cv *dsModels.CommandValue, pv models.PropertyValue) errors.EdgeX {
 	if !isNumericValueType(cv) {
 		return nil
 	}
@@ -28,38 +27,38 @@ func TransformWriteParameter(cv *dsModels.CommandValue, pv models.PropertyValue,
 	if pv.Maximum != "" {
 		err = validateWriteMaximum(value, pv.Maximum)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Minimum != "" {
 		err = validateWriteMinimum(value, pv.Minimum)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Offset != "" && pv.Offset != defaultOffset {
 		newValue, err = transformOffset(newValue, pv.Offset, false)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Scale != "" && pv.Scale != defaultScale {
 		newValue, err = transformScale(newValue, pv.Scale, false)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformBase(newValue, pv.Base, false)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 
 	if value != newValue {
 		cv.Value = newValue
 	}
-	return err
+	return nil
 }
 
 func validateWriteMaximum(value interface{}, maximum string) errors.EdgeX {

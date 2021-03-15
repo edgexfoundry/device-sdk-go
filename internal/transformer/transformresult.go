@@ -32,13 +32,13 @@ const (
 	NaN      = "NaN"
 )
 
-func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue, lc logger.LoggingClient) errors.EdgeX {
+func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue) errors.EdgeX {
 	if !isNumericValueType(cv) {
 		return nil
 	}
 	res, err := isNaN(cv)
 	if err != nil {
-		return err
+		return errors.NewCommonEdgeXWrapper(err)
 	} else if res {
 		errMSg := fmt.Sprintf("NaN error for DeviceResource %s", cv.DeviceResourceName)
 		return errors.NewCommonEdgeX(errors.KindNaNError, errMSg, nil)
@@ -51,39 +51,39 @@ func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue, lc 
 		(cv.Type == v2.ValueTypeUint8 || cv.Type == v2.ValueTypeUint16 || cv.Type == v2.ValueTypeUint32 || cv.Type == v2.ValueTypeUint64) {
 		newValue, err = transformReadMask(newValue, pv.Mask)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Shift != "" && pv.Shift != defaultShift &&
 		(cv.Type == v2.ValueTypeUint8 || cv.Type == v2.ValueTypeUint16 || cv.Type == v2.ValueTypeUint32 || cv.Type == v2.ValueTypeUint64) {
 		newValue, err = transformReadShift(newValue, pv.Shift)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Base != "" && pv.Base != defaultBase {
 		newValue, err = transformBase(newValue, pv.Base, true)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Scale != "" && pv.Scale != defaultScale {
 		newValue, err = transformScale(newValue, pv.Scale, true)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Offset != "" && pv.Offset != defaultOffset {
 		newValue, err = transformOffset(newValue, pv.Offset, true)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 
 	if value != newValue {
 		cv.Value = newValue
 	}
-	return err
+	return nil
 }
 
 func transformBase(value interface{}, base string, read bool) (interface{}, errors.EdgeX) {
@@ -458,52 +458,52 @@ func commandValueForTransform(cv *dsModels.CommandValue) (v interface{}, err err
 	case v2.ValueTypeUint8:
 		v, err = cv.Uint8Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeUint16:
 		v, err = cv.Uint16Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeUint32:
 		v, err = cv.Uint32Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeUint64:
 		v, err = cv.Uint64Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt8:
 		v, err = cv.Int8Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt16:
 		v, err = cv.Int16Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt32:
 		v, err = cv.Int32Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt64:
 		v, err = cv.Int64Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeFloat32:
 		v, err = cv.Float32Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeFloat64:
 		v, err = cv.Float64Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	default:
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "unsupported ValueType for transformation", nil)
@@ -511,7 +511,7 @@ func commandValueForTransform(cv *dsModels.CommandValue) (v interface{}, err err
 	return v, nil
 }
 
-func CheckAssertion(
+func checkAssertion(
 	cv *dsModels.CommandValue,
 	assertion string,
 	deviceName string,
@@ -520,13 +520,12 @@ func CheckAssertion(
 	if assertion != "" && cv.ValueToString() != assertion {
 		go common.UpdateOperatingState(deviceName, models.Down, lc, dc)
 		errMsg := fmt.Sprintf("Assertion failed for DeviceResource %s, with value %s", cv.DeviceResourceName, cv.ValueToString())
-		lc.Error(errMsg)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 	return nil
 }
 
-func MapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
+func mapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
 	var err errors.EdgeX
 	var result *dsModels.CommandValue
 
