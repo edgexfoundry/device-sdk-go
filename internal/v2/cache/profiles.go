@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
@@ -38,7 +39,6 @@ type profileCache struct {
 	deviceResourceMap        map[string]map[string]models.DeviceResource
 	getResourceOperationsMap map[string]map[string][]models.ResourceOperation
 	setResourceOperationsMap map[string]map[string][]models.ResourceOperation
-	commandsMap              map[string]map[string]models.Command
 	mutex                    sync.RWMutex
 }
 
@@ -48,12 +48,10 @@ func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 	drMap := make(map[string]map[string]models.DeviceResource, defaultSize)
 	getRoMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
 	setRoMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
-	cmdMap := make(map[string]map[string]models.Command, defaultSize)
 	for _, dp := range profiles {
 		dpMap[dp.Name] = &dp
 		drMap[dp.Name] = deviceResourceSliceToMap(dp.DeviceResources)
 		getRoMap[dp.Name], setRoMap[dp.Name] = deviceCommandSliceToMap(dp.DeviceCommands)
-		cmdMap[dp.Name] = commandSliceToMap(dp.CoreCommands)
 	}
 
 	pc = &profileCache{
@@ -61,7 +59,7 @@ func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 		deviceResourceMap:        drMap,
 		getResourceOperationsMap: getRoMap,
 		setResourceOperationsMap: setRoMap,
-		commandsMap:              cmdMap}
+	}
 	return pc
 }
 
@@ -109,7 +107,6 @@ func (p *profileCache) add(profile models.DeviceProfile) errors.EdgeX {
 	p.deviceProfileMap[profile.Name] = &profile
 	p.deviceResourceMap[profile.Name] = deviceResourceSliceToMap(profile.DeviceResources)
 	p.getResourceOperationsMap[profile.Name], p.setResourceOperationsMap[profile.Name] = deviceCommandSliceToMap(profile.DeviceCommands)
-	p.commandsMap[profile.Name] = commandSliceToMap(profile.CoreCommands)
 	return nil
 }
 
@@ -126,24 +123,15 @@ func deviceCommandSliceToMap(deviceCommands []models.DeviceCommand) (map[string]
 	getResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
 	setResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
 	for _, deviceCommand := range deviceCommands {
-		if len(deviceCommand.Get) > 0 {
-			getResult[deviceCommand.Name] = deviceCommand.Get
+		if strings.Contains(deviceCommand.ReadWrite, v2.ReadWrite_R) {
+			getResult[deviceCommand.Name] = deviceCommand.ResourceOperations
 		}
-		if len(deviceCommand.Set) > 0 {
-			setResult[deviceCommand.Name] = deviceCommand.Set
+		if strings.Contains(deviceCommand.ReadWrite, v2.ReadWrite_W) {
+			setResult[deviceCommand.Name] = deviceCommand.ResourceOperations
 		}
 	}
 
 	return getResult, setResult
-}
-
-func commandSliceToMap(commands []models.Command) map[string]models.Command {
-	result := make(map[string]models.Command, len(commands))
-	for _, cmd := range commands {
-		result[cmd.Name] = cmd
-	}
-
-	return result
 }
 
 // Update updates the profile in the cache
@@ -177,7 +165,6 @@ func (p *profileCache) removeByName(name string) errors.EdgeX {
 	delete(p.deviceResourceMap, name)
 	delete(p.getResourceOperationsMap, name)
 	delete(p.setResourceOperationsMap, name)
-	delete(p.commandsMap, name)
 	return nil
 }
 

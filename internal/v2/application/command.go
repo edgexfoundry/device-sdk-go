@@ -343,8 +343,8 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		// check request body contains the deviceResource
 		value, ok := paramMap[ro.DeviceResource]
 		if !ok {
-			if ro.Parameter != "" {
-				value = ro.Parameter
+			if ro.DefaultValue != "" {
+				value = ro.DefaultValue
 			} else if dr.Properties.DefaultValue != "" {
 				value = dr.Properties.DefaultValue
 			} else {

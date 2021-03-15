@@ -9,6 +9,7 @@ description: "Example of Simple Device"
 deviceResources:
   -
     name: "SwitchButton"
+    isHidden: false
     description: "Switch On/Off."
     properties:
         valueType: "Bool"
@@ -16,6 +17,7 @@ deviceResources:
         defaultValue: "true"
   -
     name: "Image"
+    isHidden: false
     description: "Visual representation of Switch state."
     properties:
         valueType: "Binary"
@@ -23,24 +25,28 @@ deviceResources:
         mediaType: "image/jpeg"
   -
     name: "Xrotation"
+    isHidden: true
     description: "X axis rotation rate"
     properties:
         valueType: "Int32"
         readWrite: "RW"
   -
     name: "Yrotation"
+    isHidden: true
     description: "Y axis rotation rate"
     properties:
         valueType: "Int32"
         readWrite: "RW"
   -
     name: "Zrotation"
+    isHidden: true
     description: "Z axis rotation rate"
     properties:
         valueType: "Int32"
         readWrite: "RW"
   -
     name: "Uint8Array"
+    isHidden: false
     description: "Unsigned 8bit array"
     properties:
         valueType: "Uint8Array"
@@ -49,35 +55,21 @@ deviceResources:
 deviceCommands:
   -
     name: "Switch"
-    get:
-      - { deviceResource: "SwitchButton" }
-    set:
-      - { deviceResource: "SwitchButton", parameter: "false" }
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "SwitchButton", defaultValue: "false" }
   -
     name: "Image"
-    get:
+    isHidden: false
+    readWrite: "R"
+    resourceOperations:
       - { deviceResource: "Image" }
   -
     name: "Rotation"
-    get:
-      - { deviceResource: "Xrotation" }
-      - { deviceResource: "Yrotation" }
-      - { deviceResource: "Zrotation" }
-    set:
-      - { deviceResource: "Xrotation", parameter: "0" }
-      - { deviceResource: "Yrotation", parameter: "0" }
-      - { deviceResource: "Zrotation", parameter: "0" }
-
-coreCommands:
-  -
-    name: "Switch"
-    get: true
-    set: true
-  -
-    name: "Image"
-    get: true
-    set: false
-  -
-   name: "Rotation"
-   get: true
-   set: true
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "Xrotation", defaultValue: "0" }
+      - { deviceResource: "Yrotation", defaultValue: "0" }
+      - { deviceResource: "Zrotation", defaultValue: "0" }

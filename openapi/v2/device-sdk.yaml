@@ -21,11 +21,11 @@ components:
         onChange:
           description: "If true, new Events will only be generated if successive readings differ in value."
           type: boolean
-        resource:
-          description: "Indicates the resource to be read"
+        sourceName:
+          description: "SourceName indicates the name of the resource or device command in the device profile which describes the event to generate"
           type: string
       required:
-        - resource
+        - sourceName
         - frequency
     NewBaseReading:
       description: "A base reading type containing common properties from which more specific reading types inherit. This definition should not be implemented but is used elsewhere to indicate support for a mixed list of simple/binary readings in a single event."
@@ -78,34 +78,6 @@ components:
         message:
           description: "A field that can contain a free-form message, such as an error message."
           type: string
-    Command:
-      description: "Defines an operation which will be made available by the core-command service"
-      type: object
-      properties:
-        created:
-          type: integer
-          description: "A Unix timestamp indicating when the object was initially persisted to a database"
-        modified:
-          type: integer
-          description: "A Unix timestamp indicating when the object was last modified"
-        id:
-          type: string
-          format: uuid
-          description: "The unique identifier for the command"
-        name:
-          type: string
-          description: "The command name"
-        get:
-          $ref: '#/components/schemas/CommandAction'
-        put:
-          $ref: '#/components/schemas/CommandAction'
-    CommandAction:
-      description: "Defines a read or write command as issued to a device via the core-command service"
-      type: object
-      properties:
-        path:
-          type: string
-          description: "The path part of the URL used to access the command"
     Device:
       description: "A device is an IoT object represented in EdgeX."
       type: object
@@ -173,48 +145,41 @@ components:
       description: "A profile defining a class of device to be onboarded, including its capabilities and data format."
       type: object
       properties:
-        created:
-          type: integer
-          description: "A Unix timestamp indicating when the object was initially persisted to a database"
-        modified:
-          type: integer
-          description: "A Unix timestamp indicating when the object was last modified"
-        description:
-          type: string
-          description: "A free-format descriptive field for additional device profile information"
         id:
           type: string
           format: uuid
-          description: "The unique identifier for the device profile"
+          description: ID uniquely identifies the device profile, a UUID for example
         name:
           type: string
-          description: "The device profile name"
+          description: Non-database identifier (must be unique)
+        description:
+          type: string
+          description: Description.
+        created:
+          type: integer
+          description: Created is a timestamp indicating when the entity was created.
+        modified:
+          type: integer
+          description: Modified is a timestamp indicating when the entity was last modified.
         manufacturer:
           type: string
-          description: "The manufacturer of the device being described"
+          description: Manufacturer of the device
         model:
           type: string
-          description: "The model name of the device being described"
+          description: Model of the device
         labels:
           type: array
+          description: Labels used to search for groups of profiles
           items:
             type: string
-          description: "Other labels applied to the device profile to help with searching"
         deviceResources:
           type: array
           items:
             $ref: '#/components/schemas/DeviceResource'
-          description: "Defines individual values that can be queried or set"
         deviceCommands:
           type: array
           items:
-            $ref: '#/components/schemas/ProfileResource'
-          description: "Defines aggregations of deviceResources."
-        coreCommands:
-          type: array
-          items:
-            $ref: '#/components/schemas/Command'
-          description: "Defines commands that are accessible via the core-command service,"
+            $ref: '#/components/schemas/DeviceCommand'
     UpdateDeviceService:
       description: "A DeviceService is responsible for proxying connectivity between a set of devices and the EdgeX Foundry core services."
       type: object
@@ -242,19 +207,24 @@ components:
       description: "DeviceResource represents a value on a device that can be read or written."
       type: object
       properties:
-        name:
-          type: string
-          description: "The name of the device resource"
         description:
           type: string
-          description: "A longer description of the device resource"
+        name:
+          type: string
+        isHidden:
+          type: boolean
+          description: "Indicate the visibility of the DeviceResource via a CoreCommand."
+        tag:
+          type: string
         properties:
-          $ref: '#/components/schemas/PropertyValue'
+          $ref: '#/components/schemas/ResourceProperties'
         attributes:
           type: object
+          description: Each Device Service should define required and optional keys
           additionalProperties:
             type: string
-          description: "The attributes define how the value is addressed on the device"
+      required:
+        - name
     BaseReading:
       description: "A base reading type containing common properties from which more specific reading types inherit. This definition should not be implemented but is used elsewhere to indicate support for a mixed list of simple/binary readings in a single event."
       type: object
@@ -469,69 +439,72 @@ components:
           description: "Outputs the current server timestamp in RFC1123 format"
           example: "Mon, 02 Jan 2006 15:04:05 MST"
           type: string
-    ProfileResource:
+    DeviceCommand:
       description: "Defines read/write capabilities native to the device"
       type: object
       properties:
         name:
           type: string
-          description: "The name of the profile resource"
-        get:
+        isHidden:
+          type: boolean
+          description: "Indicate the visibility of the DeviceCommand via a CoreCommand."
+        readWrite:
+          type: string
+          description: "Read/Write Permissions set for this DeviceCommand. The value can be R, W, or RW. R enables GET command, and W enables SET command in the Core Command Service."
+        resourceOperations:
           type: array
           items:
             $ref: '#/components/schemas/ResourceOperation'
-        set:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceOperation'
-    PropertyValue:
+      required:
+        - name
+        - readWrite
+        - resourceOperations
+    ResourceProperties:
       description: "Defines constraints with regard to the range of acceptable values assigned to an event reading and defined as a property within a device profile."
       type: object
       properties:
-        type:
+        valueType:
           type: string
-          description: "The type of the data which may be read from this propertty"
+          description: "ValueDescriptor Type of property after transformations. Optional: uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64, bool, string, binary, uint8array, uint16array, uint32array, uint64array, int8array, int16array, int32array, int64array, float32array, float64array, boolarray."
         readWrite:
           type: string
-          enum: [r, w, rw]
-          description: "Whether this property is read-only, write-only, or both readable and writable"
+          description: "Read/Write Permissions set for this ResourceProperties. The value can be R, W, or RW. R enables GET command, and W enables SET command in the Core Command Service."
         units:
           type: string
-          description: "The units of measurement for the value expressed in this property"
+          description: A string which describes the measurement units associated with a property value  Examples include "deg/s", "degreesFarenheit", "G", or "% Relative Humidity"
         minimum:
           type: string
-          description: "For numeric types, defines a minimum value that is permitted to be set"
+          description: Minimum value that can be get/set from this property
         maximum:
           type: string
-          description: "For numeric types, defines a maximum value that is permitted to be set"
+          description: Maximum value that can be get/set from this property
         defaultValue:
           type: string
-          description: "Defines a default value used if one is not provided in a set request"
+          description: Default value set to this property if no argument is passed. If present, should be compatible with the Type field
         mask:
           type: string
-          description: "Constant with which a value of integral type is bitwise-ANDed"
+          description: Mask to be applied prior to get/set of property. Only valid where Type is one of the integer types.
         shift:
           type: string
-          description: "Constant with which a value of integral type is bit-shifted"
+          description: Shift to be applied after masking, prior to get/set of property. Only valid where Type is one of the integer types
         scale:
           type: string
-          description: "Constant by which a value of numeric type is scaled"
+          description: Multiplicative factor to be applied after shifting, prior to get/set of property. Only valid where Type is one of the integer or float types
         offset:
           type: string
-          description: "Constant by which a value of numeric type is increased"
+          description: Additive factor to be applied after multiplying, prior to get/set of property. Only valid where Type is one of the integer or float types
         base:
           type: string
-          description: "Constant by which a value of numeric type is exponentiated"
+          description: 'Base for property to be applied to, leave 0 for no power operation (i.e. base ^ property: 2 ^ 10). Only valid where Type is one of the integer or float types.'
         assertion:
           type: string
-          description: "Value to which a reading is compared to assert correct operation of the device"
-        floatEncoding:
-          type: string
-          enum: [base64le, eNotation]
-          description: "Format for floating point values. base64le indicates a base64 encoding of the float's little-endian binary representation"
+          description: Required value of the property, set for checking error state.  Failing an assertion condition will mark the device with an error state
         mediaType:
           type: string
-          description: "The type of data contained in a binary value"
+          description: A string value used to indicate the type of binary data if Type=binary
+      required:
+        - valueType
+        - readWrite
     ProtocolProperties:
       description: "The properties required to address a device via a particular protocol."
       example: {"Host":"floor4.hq.acme.com","Port":"8080"}
@@ -590,27 +563,19 @@ components:
       description: "Defines an operation of which a device is capable."
       type: object
       properties:
-        index:
-          type: string
-          description: "Defines the ordering of ResourceOperations within a DeviceCommand"
-        operation:
-          type: string
-          enum: [get, set]
-          description: "Whether the operation is a get/read or set/write"
         deviceResource:
           type: string
-          description: "Name of a deviceResource to access. Only one of deviceResource and deviceCommand should be specified."
-        parameter:
+          description: The replacement of Object field. Must name a DeviceResource in this profile
+        defaultValue:
           type: string
-          description: "Default value to be taken for set operations."
-        deviceCommand:
-          type: string
-          description: "Name of a deviceCommand to access. Only one of deviceResource and deviceCommand should be specified."
+          description: If present, should be compatible with the Type field of the named DeviceResource
         mappings:
           type: object
+          description: Only valid where the Type of the named DeviceResource is String
           additionalProperties:
             type: string
-          description: "1:1 mappings for substituting values of string type"
+      required:
+        - deviceResource
     NewSimpleReading:
       description: "An event reading for a simple data type"
       allOf:

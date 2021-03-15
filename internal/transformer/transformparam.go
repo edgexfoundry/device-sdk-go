@@ -16,7 +16,7 @@ import (
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-func TransformWriteParameter(cv *dsModels.CommandValue, pv models.PropertyValue) errors.EdgeX {
+func TransformWriteParameter(cv *dsModels.CommandValue, pv models.ResourceProperties) errors.EdgeX {
 	if !isNumericValueType(cv) {
 		return nil
 	}
