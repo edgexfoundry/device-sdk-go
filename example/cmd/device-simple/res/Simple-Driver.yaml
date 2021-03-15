@@ -9,6 +9,7 @@ description: "Example of Simple Device"
 deviceResources:
   -
     name: "SwitchButton"
+    isHidden: false
     description: "Switch On/Off."
     properties:
         valueType: "Bool"
@@ -16,6 +17,7 @@ deviceResources:
         defaultValue: "true"
   -
     name: "Image"
+    isHidden: false
     description: "Visual representation of Switch state."
     properties:
         valueType: "Binary"
@@ -44,6 +46,7 @@ deviceResources:
         readWrite: "RW"
   -
     name: "Uint8Array"
+    isHidden: false
     description: "Unsigned 8bit array"
     properties:
         valueType: "Uint8Array"
@@ -52,16 +55,19 @@ deviceResources:
 deviceCommands:
   -
     name: "Switch"
-    readWrite: "W"
+    isHidden: false
+    readWrite: "RW"
     resourceOperations:
       - { deviceResource: "SwitchButton", defaultValue: "false" }
   -
     name: "Image"
+    isHidden: false
     readWrite: "R"
     resourceOperations:
       - { deviceResource: "Image" }
   -
     name: "Rotation"
+    isHidden: false
     readWrite: "RW"
     resourceOperations:
       - { deviceResource: "Xrotation", defaultValue: "0" }

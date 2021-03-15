@@ -145,8 +145,6 @@ components:
       description: "A profile defining a class of device to be onboarded, including its capabilities and data format."
       type: object
       properties:
-        apiVersion:
-          type: string
         id:
           type: string
           format: uuid
