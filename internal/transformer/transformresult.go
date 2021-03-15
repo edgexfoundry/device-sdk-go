@@ -32,15 +32,16 @@ const (
 	NaN      = "NaN"
 )
 
-func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue, lc logger.LoggingClient) error {
-	if cv.Type == v2.ValueTypeString || cv.Type == v2.ValueTypeBool || cv.Type == v2.ValueTypeBinary {
-		return nil // do nothing for String, Bool and Binary
+func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue) errors.EdgeX {
+	if !isNumericValueType(cv) {
+		return nil
 	}
 	res, err := isNaN(cv)
 	if err != nil {
-		return err
+		return errors.NewCommonEdgeXWrapper(err)
 	} else if res {
-		return fmt.Errorf("NaN error for device resource '%s', error: %w", cv.DeviceResourceName, NaNError{})
+		errMSg := fmt.Sprintf("NaN error for DeviceResource %s", cv.DeviceResourceName)
+		return errors.NewCommonEdgeX(errors.KindNaNError, errMSg, nil)
 	}
 
 	value, err := commandValueForTransform(cv)
@@ -48,54 +49,48 @@ func TransformReadResult(cv *dsModels.CommandValue, pv models.PropertyValue, lc 
 
 	if pv.Mask != "" && pv.Mask != defaultMask &&
 		(cv.Type == v2.ValueTypeUint8 || cv.Type == v2.ValueTypeUint16 || cv.Type == v2.ValueTypeUint32 || cv.Type == v2.ValueTypeUint64) {
-		newValue, err = transformReadMask(newValue, pv.Mask, lc)
+		newValue, err = transformReadMask(newValue, pv.Mask)
 		if err != nil {
-			return err
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-
 	if pv.Shift != "" && pv.Shift != defaultShift &&
 		(cv.Type == v2.ValueTypeUint8 || cv.Type == v2.ValueTypeUint16 || cv.Type == v2.ValueTypeUint32 || cv.Type == v2.ValueTypeUint64) {
-		newValue, err = transformReadShift(newValue, pv.Shift, lc)
+		newValue, err = transformReadShift(newValue, pv.Shift)
 		if err != nil {
-			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-
 	if pv.Base != "" && pv.Base != defaultBase {
-		newValue, err = transformReadBase(newValue, pv.Base, lc)
+		newValue, err = transformBase(newValue, pv.Base, true)
 		if err != nil {
-			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-
 	if pv.Scale != "" && pv.Scale != defaultScale {
-		newValue, err = transformReadScale(newValue, pv.Scale, lc)
+		newValue, err = transformScale(newValue, pv.Scale, true)
 		if err != nil {
-			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-
 	if pv.Offset != "" && pv.Offset != defaultOffset {
-		newValue, err = transformReadOffset(newValue, pv.Offset, lc)
+		newValue, err = transformOffset(newValue, pv.Offset, true)
 		if err != nil {
-			return fmt.Errorf("transform failed for device resource '%v', error: %w ", cv.DeviceResourceName, err)
+			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 
 	if value != newValue {
 		cv.Value = newValue
 	}
-	return err
+	return nil
 }
 
-func transformReadBase(value interface{}, base string, lc logger.LoggingClient) (interface{}, error) {
+func transformBase(value interface{}, base string, read bool) (interface{}, errors.EdgeX) {
 	b, err := strconv.ParseFloat(base, 64)
 	if err != nil {
-		lc.Error(fmt.Sprintf("the base %s of PropertyValue cannot be parsed to float64: %v", base, err))
-		return value, err
-	} else if b == 0 {
-		return value, nil // do nothing if Base = 0
+		errMsg := fmt.Sprintf("the base value %s of PropertyValue cannot be parsed to float64", base)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	var valueFloat64 float64
@@ -122,10 +117,15 @@ func transformReadBase(value interface{}, base string, lc logger.LoggingClient) 
 		valueFloat64 = v
 	}
 
-	valueFloat64 = math.Pow(b, valueFloat64)
-	inRange := checkTransformedValueInRange(value, valueFloat64, lc)
+	if read {
+		valueFloat64 = math.Pow(b, valueFloat64)
+	} else {
+		valueFloat64 = math.Log(valueFloat64) / math.Log(b)
+	}
+	inRange := checkTransformedValueInRange(value, valueFloat64)
 	if !inRange {
-		return value, NewOverflowError(value, valueFloat64)
+		errMsg := fmt.Sprintf("transformed value out of its original type (%T) range", value)
+		return 0, errors.NewCommonEdgeX(errors.KindOverflowError, errMsg, nil)
 	}
 
 	switch value.(type) {
@@ -150,442 +150,368 @@ func transformReadBase(value interface{}, base string, lc logger.LoggingClient) 
 	case float64:
 		value = valueFloat64
 	}
-	return value, err
-}
-
-func transformReadScale(value interface{}, scale string, lc logger.LoggingClient) (interface{}, error) {
-	switch v := value.(type) {
-	case uint8:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint8(transformedValue)
-	case uint16:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint16(transformedValue)
-	case uint32:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint32(transformedValue)
-	case uint64:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint64(transformedValue)
-	case int8:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int8(transformedValue)
-	case int16:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int16(transformedValue)
-	case int32:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int32(transformedValue)
-	case int64:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		nv := float64(v)
-		transformedValue := nv * s
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int64(transformedValue)
-	case float32:
-		s, err := strconv.ParseFloat(scale, 32)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		ns := float32(s)
-		transformedValue := float64(v * ns)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = v * ns
-	case float64:
-		s, err := strconv.ParseFloat(scale, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the scale %s of PropertyValue cannot be parsed to %T: %v", scale, v, err))
-			return value, err
-		}
-		value = v * s
-	}
-
 	return value, nil
 }
 
-func transformReadOffset(value interface{}, offset string, lc logger.LoggingClient) (interface{}, error) {
+func transformScale(value interface{}, scale string, read bool) (interface{}, errors.EdgeX) {
+	s, err := strconv.ParseFloat(scale, 64)
+	if err != nil {
+		errMsg := fmt.Sprintf("the scale value %s of PropertyValue cannot be parsed to float64", scale)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+	}
+
+	var valueFloat64 float64
 	switch v := value.(type) {
 	case uint8:
-		o, err := strconv.ParseUint(offset, 10, 8)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint8(transformedValue)
+		valueFloat64 = float64(v)
 	case uint16:
-		o, err := strconv.ParseUint(offset, 10, 16)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint16(transformedValue)
+		valueFloat64 = float64(v)
 	case uint32:
-		o, err := strconv.ParseUint(offset, 10, 32)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = uint32(transformedValue)
+		valueFloat64 = float64(v)
 	case uint64:
-		o, err := strconv.ParseUint(offset, 10, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := uint64(v + o)
-
-		inRange := checkTransformedValueInRange(value, float64(transformedValue), lc)
-		if !inRange {
-			return value, NewOverflowError(value, float64(transformedValue))
-		}
-
-		value = uint64(v + o)
+		valueFloat64 = float64(v)
 	case int8:
-		o, err := strconv.ParseInt(offset, 10, 8)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int8(transformedValue)
+		valueFloat64 = float64(v)
 	case int16:
-		o, err := strconv.ParseInt(offset, 10, 16)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int16(transformedValue)
+		valueFloat64 = float64(v)
 	case int32:
-		o, err := strconv.ParseInt(offset, 10, 32)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = int32(transformedValue)
+		valueFloat64 = float64(v)
 	case int64:
-		o, err := strconv.ParseInt(offset, 10, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := int64(v + o)
-
-		inRange := checkTransformedValueInRange(value, float64(transformedValue), lc)
-		if !inRange {
-			return value, NewOverflowError(value, float64(transformedValue))
-		}
-
-		value = transformedValue
+		valueFloat64 = float64(v)
 	case float32:
-		o, err := strconv.ParseFloat(offset, 32)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		transformedValue := float64(v) + float64(o)
-
-		inRange := checkTransformedValueInRange(value, transformedValue, lc)
-		if !inRange {
-			return value, NewOverflowError(value, transformedValue)
-		}
-
-		value = float32(transformedValue)
+		valueFloat64 = float64(v)
 	case float64:
-		o, err := strconv.ParseFloat(offset, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the offset %s of PropertyValue cannot be parsed to %T: %v", offset, v, err))
-			return value, err
-		}
-		value = v + o
+		valueFloat64 = v
 	}
 
-	return value, nil
-}
-
-func transformReadMask(value interface{}, mask string, lc logger.LoggingClient) (interface{}, error) {
-	nv, err := strconv.ParseUint(fmt.Sprintf("%v", value), 10, 64)
-	if err != nil {
-		lc.Error(fmt.Sprintf("the value %s cannot be parsed to uint64: %v", value, err))
-		return value, err
-	}
-	m, err := strconv.ParseUint(mask, 10, 64)
-	if err != nil {
-		return value, fmt.Errorf("invalid mask value, the mask %s should be unsigned and parsed to %T. %v", mask, m, err)
-	}
-
-	transformedValue := nv & m
-
-	switch value.(type) {
-	case uint8:
-		value = uint8(transformedValue)
-	case uint16:
-		value = uint16(transformedValue)
-	case uint32:
-		value = uint32(transformedValue)
-	case uint64:
-		value = uint64(transformedValue)
-	}
-
-	return value, err
-}
-
-func transformReadShift(value interface{}, shift string, lc logger.LoggingClient) (interface{}, error) {
-	nv, err := strconv.ParseUint(fmt.Sprintf("%v", value), 10, 64)
-	if err != nil {
-		lc.Error(fmt.Sprintf("the value %s cannot be parsed to uint64: %v", value, err))
-		return value, err
-	}
-	signed, err := isSignedNumber(shift)
-	if err != nil {
-		return value, err
-	}
-
-	var transformedValue uint64
-	if signed {
-		signedShift, err := strconv.ParseInt(shift, 10, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the shift %s of PropertyValue cannot be parsed to %T: %v", shift, signedShift, err))
-			return value, err
-		}
-		s := uint64(-signedShift)
-		transformedValue = nv >> s
+	if read {
+		valueFloat64 = valueFloat64 * s
 	} else {
-		s, err := strconv.ParseUint(shift, 10, 64)
-		if err != nil {
-			lc.Error(fmt.Sprintf("the shift %s of PropertyValue cannot be parsed to %T: %v", shift, s, err))
-			return value, err
-		}
-		transformedValue = nv << s
+		valueFloat64 = valueFloat64 / s
 	}
-
-	inRange := checkTransformedValueInRange(value, float64(transformedValue), lc)
+	inRange := checkTransformedValueInRange(value, valueFloat64)
 	if !inRange {
-		return value, NewOverflowError(value, float64(transformedValue))
+		errMsg := fmt.Sprintf("transformed value out of its original type (%T) range", value)
+		return 0, errors.NewCommonEdgeX(errors.KindOverflowError, errMsg, nil)
 	}
 
-	switch value.(type) {
+	switch v := value.(type) {
 	case uint8:
-		value = uint8(transformedValue)
+		if read {
+			value = v * uint8(s)
+		} else {
+			value = v / uint8(s)
+		}
 	case uint16:
-		value = uint16(transformedValue)
+		if read {
+			value = v * uint16(s)
+		} else {
+			value = v / uint16(s)
+		}
 	case uint32:
-		value = uint32(transformedValue)
+		if read {
+			value = v * uint32(s)
+		} else {
+			value = v / uint32(s)
+		}
 	case uint64:
-		value = uint64(transformedValue)
+		if read {
+			value = v * uint64(s)
+		} else {
+			value = v / uint64(s)
+		}
+	case int8:
+		if read {
+			value = v * int8(s)
+		} else {
+			value = v / int8(s)
+		}
+	case int16:
+		if read {
+			value = v * int16(s)
+		} else {
+			value = v / int16(s)
+		}
+	case int32:
+		if read {
+			value = v * int32(s)
+		} else {
+			value = v / int32(s)
+		}
+	case int64:
+		if read {
+			value = v * int64(s)
+		} else {
+			value = v / int64(s)
+		}
+	case float32:
+		if read {
+			value = v * float32(s)
+		} else {
+			value = v / float32(s)
+		}
+	case float64:
+		if read {
+			value = v * s
+		} else {
+			value = v / s
+		}
 	}
-
-	return value, err
+	return value, nil
 }
 
-func isSignedNumber(shift string) (bool, error) {
-	s, err := strconv.ParseFloat(shift, 64)
+func transformOffset(value interface{}, offset string, read bool) (interface{}, errors.EdgeX) {
+	o, err := strconv.ParseFloat(offset, 64)
 	if err != nil {
-		return false, fmt.Errorf("invalid shift value, the shift %v should be parsed to float64 for checking the sign of the number. %v", shift, err)
+		errMsg := fmt.Sprintf("the offset value %s of PropertyValue cannot be parsed to float64", offset)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
-	return math.Signbit(s), nil
+
+	var valueFloat64 float64
+	switch v := value.(type) {
+	case uint8:
+		valueFloat64 = float64(v)
+	case uint16:
+		valueFloat64 = float64(v)
+	case uint32:
+		valueFloat64 = float64(v)
+	case uint64:
+		valueFloat64 = float64(v)
+	case int8:
+		valueFloat64 = float64(v)
+	case int16:
+		valueFloat64 = float64(v)
+	case int32:
+		valueFloat64 = float64(v)
+	case int64:
+		valueFloat64 = float64(v)
+	case float32:
+		valueFloat64 = float64(v)
+	case float64:
+		valueFloat64 = v
+	}
+
+	if read {
+		valueFloat64 = valueFloat64 + o
+	} else {
+		valueFloat64 = valueFloat64 - 0
+	}
+	inRange := checkTransformedValueInRange(value, valueFloat64)
+	if !inRange {
+		errMsg := fmt.Sprintf("transformed value out of its original type (%T) range", value)
+		return 0, errors.NewCommonEdgeX(errors.KindOverflowError, errMsg, nil)
+	}
+
+	switch v := value.(type) {
+	case uint8:
+		if read {
+			value = v + uint8(o)
+		} else {
+			value = v - uint8(o)
+		}
+	case uint16:
+		if read {
+			value = v + uint16(o)
+		} else {
+			value = v - uint16(o)
+		}
+	case uint32:
+		if read {
+			value = v + uint32(o)
+		} else {
+			value = v - uint32(o)
+		}
+	case uint64:
+		if read {
+			value = v + uint64(o)
+		} else {
+			value = v - uint64(o)
+		}
+	case int8:
+		if read {
+			value = v + int8(o)
+		} else {
+			value = v - int8(o)
+		}
+	case int16:
+		if read {
+			value = v + int16(o)
+		} else {
+			value = v - int16(o)
+		}
+	case int32:
+		if read {
+			value = v + int32(o)
+		} else {
+			value = v - int32(o)
+		}
+	case int64:
+		if read {
+			value = v + int64(o)
+		} else {
+			value = v - int64(o)
+		}
+	case float32:
+		if read {
+			value = v + float32(o)
+		} else {
+			value = v - float32(o)
+		}
+	case float64:
+		if read {
+			value = v + o
+		} else {
+			value = v - o
+		}
+	}
+	return value, nil
 }
 
-func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, error) {
-	var v interface{}
-	var err error = nil
+func transformReadMask(value interface{}, mask string) (interface{}, errors.EdgeX) {
+	switch v := value.(type) {
+	case uint8:
+		m, err := strconv.ParseUint(mask, 10, 8)
+		if err != nil {
+			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		value = v & uint8(m)
+	case uint16:
+		m, err := strconv.ParseUint(mask, 10, 16)
+		if err != nil {
+			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		value = v & uint16(m)
+	case uint32:
+		m, err := strconv.ParseUint(mask, 10, 32)
+		if err != nil {
+			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		value = v & uint32(m)
+	case uint64:
+		m, err := strconv.ParseUint(mask, 10, 64)
+		if err != nil {
+			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		value = v & m
+	}
+
+	return value, nil
+}
+
+func transformReadShift(value interface{}, shift string) (interface{}, errors.EdgeX) {
+	switch v := value.(type) {
+	case uint8:
+		s, err := strconv.ParseInt(shift, 10, 8)
+		if err != nil {
+			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		if s > 0 {
+			value = v << s
+		} else {
+			value = v >> (-s)
+		}
+	case uint16:
+		s, err := strconv.ParseInt(shift, 10, 16)
+		if err != nil {
+			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		if s > 0 {
+			value = v << s
+		} else {
+			value = v >> (-s)
+		}
+	case uint32:
+		s, err := strconv.ParseInt(shift, 10, 32)
+		if err != nil {
+			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		if s > 0 {
+			value = v << s
+		} else {
+			value = v >> (-s)
+		}
+	case uint64:
+		s, err := strconv.ParseInt(shift, 10, 64)
+		if err != nil {
+			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
+			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		if s > 0 {
+			value = v << s
+		} else {
+			value = v >> (-s)
+		}
+	}
+
+	return value, nil
+}
+
+func commandValueForTransform(cv *dsModels.CommandValue) (v interface{}, err errors.EdgeX) {
 	switch cv.Type {
 	case v2.ValueTypeUint8:
 		v, err = cv.Uint8Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeUint16:
 		v, err = cv.Uint16Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeUint32:
 		v, err = cv.Uint32Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeUint64:
 		v, err = cv.Uint64Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt8:
 		v, err = cv.Int8Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt16:
 		v, err = cv.Int16Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt32:
 		v, err = cv.Int32Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeInt64:
 		v, err = cv.Int64Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeFloat32:
 		v, err = cv.Float32Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	case v2.ValueTypeFloat64:
 		v, err = cv.Float64Value()
 		if err != nil {
-			return 0, err
+			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
 	default:
-		err = fmt.Errorf("wrong data type of CommandValue to transform: %s", cv.String())
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "unsupported ValueType for transformation", nil)
 	}
 	return v, nil
 }
 
-func CheckAssertion(
+func checkAssertion(
 	cv *dsModels.CommandValue,
 	assertion string,
 	deviceName string,
@@ -594,13 +520,12 @@ func CheckAssertion(
 	if assertion != "" && cv.ValueToString() != assertion {
 		go common.UpdateOperatingState(deviceName, models.Down, lc, dc)
 		errMsg := fmt.Sprintf("Assertion failed for DeviceResource %s, with value %s", cv.DeviceResourceName, cv.ValueToString())
-		lc.Error(errMsg)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 	return nil
 }
 
-func MapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
+func mapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
 	var err errors.EdgeX
 	var result *dsModels.CommandValue
 
@@ -612,4 +537,22 @@ func MapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (
 		}
 	}
 	return result, ok
+}
+
+func isNumericValueType(cv *dsModels.CommandValue) bool {
+	switch cv.Type {
+	case v2.ValueTypeUint8:
+	case v2.ValueTypeUint16:
+	case v2.ValueTypeUint32:
+	case v2.ValueTypeUint64:
+	case v2.ValueTypeInt8:
+	case v2.ValueTypeInt16:
+	case v2.ValueTypeInt32:
+	case v2.ValueTypeInt64:
+	case v2.ValueTypeFloat32:
+	case v2.ValueTypeFloat64:
+	default:
+		return false
+	}
+	return true
 }
