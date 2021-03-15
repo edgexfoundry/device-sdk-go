@@ -19,7 +19,7 @@ var d = dsModels.DiscoveredDevice{
 	Name: "device-sdk-test",
 }
 
-func Test_whitelistPass(t *testing.T) {
+func Test_checkAllowList(t *testing.T) {
 	lc := logger.NewMockClient()
 	pw := models.ProvisionWatcher{
 		Name: "test-watcher",
@@ -85,13 +85,13 @@ func Test_whitelistPass(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			d.Protocols = testCase.protocols
-			result := whitelistPass(d, pw, lc)
+			result := checkAllowList(d, pw, lc)
 			assert.Equal(t, testCase.expected, result)
 		})
 	}
 }
 
-func Test_blacklistPass(t *testing.T) {
+func Test_checkBlockList(t *testing.T) {
 	lc := logger.NewMockClient()
 	pw := models.ProvisionWatcher{
 		Name: "test-watcher",
@@ -141,7 +141,7 @@ func Test_blacklistPass(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			d.Protocols = testCase.protocols
-			result := blacklistPass(d, pw, lc)
+			result := checkBlockList(d, pw, lc)
 			assert.Equal(t, testCase.expected, result)
 		})
 	}
