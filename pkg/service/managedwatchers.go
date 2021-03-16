@@ -58,7 +58,7 @@ func (s *DeviceService) GetProvisionWatcherByName(name string) (models.Provision
 	pw, ok := cache.ProvisionWatchers().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find ProvisionWatcher %s in cache", name)
-		s.LoggingClient.Info(msg)
+		s.LoggingClient.Error(msg)
 		return models.ProvisionWatcher{}, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 	return pw, nil
