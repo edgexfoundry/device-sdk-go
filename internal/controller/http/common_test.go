@@ -30,15 +30,14 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
-
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -55,9 +54,9 @@ func TestPingRequest(t *testing.T) {
 		},
 	})
 
-	target := NewV2HttpController(dic)
+	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiPingRoute, target.Ping, nil)
+	recorder := doRequest(t, http.MethodGet, v2.ApiPingRoute, target.Ping, nil)
 
 	actual := common.PingResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
@@ -66,7 +65,7 @@ func TestPingRequest(t *testing.T) {
 	_, err = time.Parse(time.UnixDate, actual.Timestamp)
 	assert.NoError(t, err)
 
-	require.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	require.Equal(t, v2.ApiVersion, actual.ApiVersion)
 }
 
 func TestVersionRequest(t *testing.T) {
@@ -82,15 +81,15 @@ func TestVersionRequest(t *testing.T) {
 		},
 	})
 
-	target := NewV2HttpController(dic)
+	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiVersion, target.Version, nil)
+	recorder := doRequest(t, http.MethodGet, v2.ApiVersion, target.Version, nil)
 
 	actual := common.VersionSdkResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
-	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, v2.ApiVersion, actual.ApiVersion)
 	assert.Equal(t, expectedServiceVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
 }
@@ -102,15 +101,15 @@ func TestMetricsRequest(t *testing.T) {
 		},
 	})
 
-	target := NewV2HttpController(dic)
+	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiMetricsRoute, target.Metrics, nil)
+	recorder := doRequest(t, http.MethodGet, v2.ApiMetricsRoute, target.Metrics, nil)
 
 	actual := common.MetricsResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
-	assert.Equal(t, contractsV2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, v2.ApiVersion, actual.ApiVersion)
 	assert.NotZero(t, actual.Metrics.MemAlloc)
 	assert.NotZero(t, actual.Metrics.MemFrees)
 	assert.NotZero(t, actual.Metrics.MemLiveObjects)
@@ -125,7 +124,7 @@ func TestConfigRequest(t *testing.T) {
 		Writable: sdkCommon.WritableInfo{
 			LogLevel: "DEBUG",
 		},
-		Registry: bootstrapConfig.RegistryInfo{
+		Registry: config.RegistryInfo{
 			Host: "localhost",
 			Port: 8500,
 			Type: "consul",
@@ -141,15 +140,15 @@ func TestConfigRequest(t *testing.T) {
 		},
 	})
 
-	target := NewV2HttpController(dic)
+	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, contractsV2.ApiConfigRoute, target.Config, nil)
+	recorder := doRequest(t, http.MethodGet, v2.ApiConfigRoute, target.Config, nil)
 
 	actualResponse := common.ConfigResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, v2.ApiVersion, actualResponse.ApiVersion)
 
 	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into sdkCommon.ConfigurationStruct
 	configJson, err := json.Marshal(actualResponse.Config)
@@ -183,7 +182,7 @@ func TestSecretRequest(t *testing.T) {
 		},
 	})
 
-	target := NewV2HttpController(dic)
+	target := NewRestController(mux.NewRouter(), dic)
 	assert.NotNil(t, target)
 
 	validRequest := common.SecretRequest{
@@ -260,7 +259,7 @@ func TestSecretRequest(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.ExpectedStatusCode, recorder.Result().StatusCode, "HTTP status code not as expected")
-			assert.Equal(t, contractsV2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
+			assert.Equal(t, v2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
 			assert.Equal(t, testCase.ExpectedStatusCode, actualResponse.StatusCode, "BaseResponse status code not as expected")
 
 			if testCase.ErrorExpected {

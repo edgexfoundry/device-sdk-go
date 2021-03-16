@@ -13,7 +13,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 )
 
 // AddDeviceAutoEvent adds a new AutoEvent to the Device with given name
