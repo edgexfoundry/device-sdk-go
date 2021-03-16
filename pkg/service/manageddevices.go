@@ -62,7 +62,7 @@ func (s *DeviceService) GetDeviceByName(name string) (models.Device, errors.Edge
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find Device %s in cache", name)
-		s.LoggingClient.Info(msg)
+		s.LoggingClient.Error(msg)
 		return models.Device{}, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 	return device, nil

@@ -50,6 +50,17 @@ func (s *DeviceService) DeviceProfiles() []models.DeviceProfile {
 	return cache.Profiles().All()
 }
 
+// GetProfileByName returns the Profile by its name if it exists in the cache, or returns an error.
+func (s *DeviceService) GetProfileByName(name string) (models.DeviceProfile, errors.EdgeX) {
+	profile, ok := cache.Profiles().ForName(name)
+	if !ok {
+		msg := fmt.Sprintf("failed to find Profile %s in cache", name)
+		s.LoggingClient.Error(msg)
+		return models.DeviceProfile{}, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
+	}
+	return profile, nil
+}
+
 // RemoveDeviceProfileByName removes the specified DeviceProfile by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *DeviceService) RemoveDeviceProfileByName(name string) errors.EdgeX {
