@@ -9,7 +9,6 @@ package common
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
@@ -18,22 +17,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 )
-
-var (
-	previousOrigin int64
-	originMutex    sync.Mutex
-)
-
-func GetUniqueOrigin() int64 {
-	originMutex.Lock()
-	defer originMutex.Unlock()
-	now := time.Now().UnixNano()
-	if now <= previousOrigin {
-		now = previousOrigin + 1
-	}
-	previousOrigin = now
-	return now
-}
 
 func UpdateLastConnected(name string, lc logger.LoggingClient, dc interfaces.DeviceClient) {
 	t := time.Now().UnixNano() / int64(time.Millisecond)
