@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -13,39 +13,38 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/telemetry"
-
-	contractsV2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 )
 
 // Ping handles the request to /ping endpoint. Is used to test if the service is working
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (c *V2HttpController) Ping(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) Ping(writer http.ResponseWriter, request *http.Request) {
 	response := common.NewPingResponse()
-	c.sendResponse(writer, request, contractsV2.ApiPingRoute, response, http.StatusOK)
+	c.sendResponse(writer, request, v2.ApiPingRoute, response, http.StatusOK)
 }
 
 // Version handles the request to /version endpoint. Is used to request the service's versions
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (c *V2HttpController) Version(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) Version(writer http.ResponseWriter, request *http.Request) {
 	response := common.NewVersionSdkResponse(sdkCommon.ServiceVersion, sdkCommon.SDKVersion)
-	c.sendResponse(writer, request, contractsV2.ApiVersionRoute, response, http.StatusOK)
+	c.sendResponse(writer, request, v2.ApiVersionRoute, response, http.StatusOK)
 }
 
 // Config handles the request to /config endpoint. Is used to request the service's configuration
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (c *V2HttpController) Config(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) Config(writer http.ResponseWriter, request *http.Request) {
 	response := common.NewConfigResponse(container.ConfigurationFrom(c.dic.Get))
-	c.sendResponse(writer, request, contractsV2.ApiVersionRoute, response, http.StatusOK)
+	c.sendResponse(writer, request, v2.ApiVersionRoute, response, http.StatusOK)
 }
 
 // Metrics handles the request to the /metrics endpoint, memory and cpu utilization stats
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) Metrics(writer http.ResponseWriter, request *http.Request) {
 	telem := telemetry.NewSystemUsage()
 	metrics := common.Metrics{
 		MemAlloc:       telem.Memory.Alloc,
@@ -58,12 +57,12 @@ func (c *V2HttpController) Metrics(writer http.ResponseWriter, request *http.Req
 	}
 
 	response := common.NewMetricsResponse(metrics)
-	c.sendResponse(writer, request, contractsV2.ApiMetricsRoute, response, http.StatusOK)
+	c.sendResponse(writer, request, v2.ApiMetricsRoute, response, http.StatusOK)
 }
 
 // Secret handles the request to add Device Service exclusive secret to the Secret Store
 // It returns a response as specified by the V2 API swagger in openapi/v2
-func (c *V2HttpController) Secret(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) Secret(writer http.ResponseWriter, request *http.Request) {
 	defer func() {
 		_ = request.Body.Close()
 	}()
@@ -89,7 +88,7 @@ func (c *V2HttpController) Secret(writer http.ResponseWriter, request *http.Requ
 	c.sendResponse(writer, request, sdkCommon.APIV2SecretRoute, response, http.StatusCreated)
 }
 
-func (c *V2HttpController) prepareSecret(request common.SecretRequest) (string, map[string]string) {
+func (c *RestController) prepareSecret(request common.SecretRequest) (string, map[string]string) {
 	var secretKVs = make(map[string]string)
 	for _, secret := range request.SecretData {
 		secretKVs[secret.Key] = secret.Value

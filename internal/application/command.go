@@ -23,10 +23,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/cache"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
@@ -134,7 +134,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e edgexErr.Edg
 	lc.Debugf("Application - readDeviceResource: reading deviceResource: %s; %s: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not write-only
-	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceWriteOnly {
+	if c.deviceResource.Properties.ReadWrite == v2.ReadWrite_W {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", c.deviceResource.Name)
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
@@ -201,7 +201,7 @@ func (c *CommandProcessor) ReadCommand() (res *dtos.Event, e edgexErr.EdgeX) {
 		}
 
 		// check the deviceResource isn't write-only
-		if dr.Properties.ReadWrite == common.DeviceResourceWriteOnly {
+		if dr.Properties.ReadWrite == v2.ReadWrite_W {
 			errMsg := fmt.Sprintf("deviceResource %s in GET command %s is marked as write-only", drName, c.cmd)
 			return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}
@@ -239,7 +239,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	lc.Debugf("Application - writeDeviceResource: writing deviceResource: %s; %s: %s", c.deviceResource.Name, common.CorrelationHeader, c.correlationID)
 
 	// check provided deviceResource is not read-only
-	if c.deviceResource.Properties.ReadWrite == common.DeviceResourceReadOnly {
+	if c.deviceResource.Properties.ReadWrite == v2.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", c.deviceResource.Name)
 		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 	}
@@ -335,7 +335,7 @@ func (c *CommandProcessor) WriteCommand() edgexErr.EdgeX {
 		}
 
 		// check the deviceResource isn't read-only
-		if dr.Properties.ReadWrite == common.DeviceResourceReadOnly {
+		if dr.Properties.ReadWrite == v2.ReadWrite_R {
 			errMsg := fmt.Sprintf("deviceResource %s in SET command %s is marked as read-only", drName, c.cmd)
 			return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
 		}

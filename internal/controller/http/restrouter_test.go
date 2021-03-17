@@ -15,14 +15,14 @@
 // limitations under the License.
 //
 
-package controller
+package http
 
 import (
 	"fmt"
 	"net/http"
 	"testing"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
@@ -43,7 +43,7 @@ func TestAddRoute(t *testing.T) {
 
 	lc := logger.NewMockClient()
 	dic := di.NewContainer(di.ServiceConstructorMap{
-		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+		container.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc
 		},
 	})
@@ -61,7 +61,7 @@ func TestAddRoute(t *testing.T) {
 				t.Fatal()
 			}
 
-			err = controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+			err := controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
 				path, err := route.GetPathTemplate()
 				if err != nil {
 					return err
@@ -90,7 +90,7 @@ func TestAddRoute(t *testing.T) {
 func TestInitRestRoutes(t *testing.T) {
 	lc := logger.NewMockClient()
 	dic := di.NewContainer(di.ServiceConstructorMap{
-		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+		container.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc
 		},
 	})

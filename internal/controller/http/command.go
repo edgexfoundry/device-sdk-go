@@ -12,22 +12,22 @@ import (
 	"net/url"
 	"strings"
 
-	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/responses"
 	"github.com/gorilla/mux"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
 )
 
-func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var requestBody string
 	var queryParams string
-	var err edgexErr.EdgeX
+	var err errors.EdgeX
 	var reserved url.Values
 	vars := mux.Vars(request)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
@@ -69,24 +69,24 @@ func (c *V2HttpController) Command(writer http.ResponseWriter, request *http.Req
 	}
 }
 
-func readBodyAsString(req *http.Request) (string, edgexErr.EdgeX) {
+func readBodyAsString(req *http.Request) (string, errors.EdgeX) {
 	defer req.Body.Close()
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to read request body", err)
+		return "", errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
 	}
 
 	if len(body) == 0 {
-		return "", edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "no request body provided for SET command", nil)
+		return "", errors.NewCommonEdgeX(errors.KindServerError, "no request body provided for SET command", nil)
 	}
 
 	return string(body), nil
 }
 
-func filterQueryParams(queryParams string) (string, url.Values, edgexErr.EdgeX) {
+func filterQueryParams(queryParams string) (string, url.Values, errors.EdgeX) {
 	m, err := url.ParseQuery(queryParams)
 	if err != nil {
-		edgexErr := edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse query parameter", err)
+		edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to parse query parameter", err)
 		return "", nil, edgexErr
 	}
 

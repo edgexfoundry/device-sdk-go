@@ -33,7 +33,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller"
+	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
@@ -47,7 +47,7 @@ type DeviceService struct {
 	RegistryClient registry.Client
 	SecretProvider interfaces.SecretProvider
 	edgexClients   clients.EdgeXClients
-	controller     *controller.RestController
+	controller     *restController.RestController
 	config         *common.ConfigurationStruct
 	deviceService  *models.DeviceService
 	driver         dsModels.ProtocolDriver
@@ -98,7 +98,7 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.edgexClients.EventClient = container.CoredataEventClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
 	s.manager = container.ManagerFrom(dic.Get)
-	s.controller = controller.NewRestController(r, dic)
+	s.controller = restController.NewRestController(r, dic)
 }
 
 // Name returns the name of this Device Service

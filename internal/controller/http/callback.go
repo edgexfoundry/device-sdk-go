@@ -16,10 +16,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/v2/application"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
 )
 
-func (c *V2HttpController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	name := vars[v2.Name]
 
@@ -32,7 +32,7 @@ func (c *V2HttpController) DeleteDevice(writer http.ResponseWriter, request *htt
 	}
 }
 
-func (c *V2HttpController) AddDevice(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) AddDevice(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var addDeviceRequest requests.AddDeviceRequest
@@ -53,7 +53,7 @@ func (c *V2HttpController) AddDevice(writer http.ResponseWriter, request *http.R
 	}
 }
 
-func (c *V2HttpController) UpdateDevice(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) UpdateDevice(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var updateDeviceRequest requests.UpdateDeviceRequest
@@ -74,7 +74,7 @@ func (c *V2HttpController) UpdateDevice(writer http.ResponseWriter, request *htt
 	}
 }
 
-func (c *V2HttpController) UpdateProfile(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) UpdateProfile(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var edgexErr errors.EdgeX
@@ -96,7 +96,7 @@ func (c *V2HttpController) UpdateProfile(writer http.ResponseWriter, request *ht
 	}
 }
 
-func (c *V2HttpController) DeleteProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) DeleteProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	name := vars[v2.Name]
 
@@ -109,7 +109,7 @@ func (c *V2HttpController) DeleteProvisionWatcher(writer http.ResponseWriter, re
 	}
 }
 
-func (c *V2HttpController) AddProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) AddProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var addProvisionWatcherRequest requests.AddProvisionWatcherRequest
@@ -130,7 +130,7 @@ func (c *V2HttpController) AddProvisionWatcher(writer http.ResponseWriter, reque
 	}
 }
 
-func (c *V2HttpController) UpdateProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) UpdateProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest
@@ -151,7 +151,7 @@ func (c *V2HttpController) UpdateProvisionWatcher(writer http.ResponseWriter, re
 	}
 }
 
-func (c *V2HttpController) UpdateDeviceService(writer http.ResponseWriter, request *http.Request) {
+func (c *RestController) UpdateDeviceService(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
 	var updateDeviceServiceRequest requests.UpdateDeviceServiceRequest
