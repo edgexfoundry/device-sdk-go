@@ -11,7 +11,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
@@ -47,7 +46,6 @@ func UpdateOperatingState(name string, state string, lc logger.LoggingClient, dc
 
 func SendEvent(event *dtos.Event, correlationID string, lc logger.LoggingClient, ec interfaces.EventClient) {
 	ctx := context.WithValue(context.Background(), CorrelationHeader, correlationID)
-	ctx = context.WithValue(ctx, clients.ContentType, clients.ContentTypeJSON)
 
 	req := requests.NewAddEventRequest(*event)
 	res, err := ec.Add(ctx, req)
