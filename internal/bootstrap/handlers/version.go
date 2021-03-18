@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 )
 
 const (
@@ -85,7 +84,7 @@ func (vv *VersionValidator) BootstrapHandler(
 		return true
 	}
 
-	url := config.Clients[common.CoreDataClientName].Url() + clients.ApiVersionRoute
+	url := config.Clients[CoreDataClientName].Url() + clients.ApiVersionRoute
 	var data []byte
 	var err error
 	for startupTimer.HasNotElapsed() {

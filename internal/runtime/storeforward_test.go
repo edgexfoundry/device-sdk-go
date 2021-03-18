@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,42 +18,61 @@ package runtime
 
 import (
 	"errors"
+	"os"
 	"testing"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces/mocks"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 )
+
+var dic *di.Container
+
+func TestMain(m *testing.M) {
+	config := common.ConfigurationStruct{
+		Writable: common.WritableInfo{
+			LogLevel:        "DEBUG",
+			StoreAndForward: common.StoreAndForwardInfo{Enabled: true, MaxRetryCount: 10},
+		},
+	}
+
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+	})
+
+	os.Exit(m.Run())
+}
 
 func TestProcessRetryItems(t *testing.T) {
 
 	targetTransformWasCalled := false
 	expectedPayload := "This is a sample payload"
 
-	config := common.ConfigurationStruct{
-		Writable: common.WritableInfo{
-			LogLevel:        "DEBUG",
-			StoreAndForward: common.StoreAndForwardInfo{MaxRetryCount: 10},
-		},
+	transformPassthru := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		return true, data
 	}
 
-	transformPassthru := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		return true, params[0]
-	}
-
-	successTransform := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	successTransform := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		targetTransformWasCalled = true
 
-		actualPayload, ok := params[0].([]byte)
+		actualPayload, ok := data.([]byte)
 
 		require.True(t, ok, "Expected []byte payload")
 		require.Equal(t, expectedPayload, string(actualPayload))
@@ -61,16 +80,15 @@ func TestProcessRetryItems(t *testing.T) {
 		return false, nil
 	}
 
-	failureTransform := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	failureTransform := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		targetTransformWasCalled = true
 		return false, errors.New("I failed")
 	}
-
 	runtime := GolangRuntime{}
 
 	tests := []struct {
 		Name                     string
-		TargetTransform          appcontext.AppFunction
+		TargetTransform          interfaces.AppFunction
 		TargetTransformWasCalled bool
 		ExpectedPayload          string
 		RetryCount               int
@@ -88,8 +106,8 @@ func TestProcessRetryItems(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			targetTransformWasCalled = false
 
-			runtime.Initialize(creatMockStoreClient(), nil)
-			runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
+			runtime.Initialize(dic)
+			runtime.SetTransforms([]interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
 
 			version := runtime.storeForward.pipelineHash
 			if test.BadVersion {
@@ -98,7 +116,7 @@ func TestProcessRetryItems(t *testing.T) {
 			storedObject := contracts.NewStoredObject("dummy", []byte(test.ExpectedPayload), 2, version)
 			storedObject.RetryCount = test.RetryCount
 
-			removes, updates := runtime.storeForward.processRetryItems([]contracts.StoredObject{storedObject}, &config, common.EdgeXClients{LoggingClient: lc})
+			removes, updates := runtime.storeForward.processRetryItems([]contracts.StoredObject{storedObject})
 			assert.Equal(t, test.TargetTransformWasCalled, targetTransformWasCalled, "Target transform not called")
 			if test.RetryCount != test.ExpectedRetryCount {
 				if assert.True(t, len(updates) > 0, "Remove count not as expected") {
@@ -113,23 +131,18 @@ func TestProcessRetryItems(t *testing.T) {
 func TestDoStoreAndForwardRetry(t *testing.T) {
 	serviceKey := "AppService-UnitTest"
 	payload := []byte("My Payload")
-	config := common.ConfigurationStruct{
-		Writable: common.WritableInfo{
-			LogLevel:        "DEBUG",
-			StoreAndForward: common.StoreAndForwardInfo{MaxRetryCount: 10}},
-	}
 
 	httpPost := transforms.NewHTTPSender("http://nowhere", "", true).HTTPPost
-	successTransform := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	successTransform := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		return false, nil
 	}
-	transformPassthru := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		return true, params[0]
+	transformPassthru := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		return true, data
 	}
 
 	tests := []struct {
 		Name                string
-		TargetTransform     appcontext.AppFunction
+		TargetTransform     interfaces.AppFunction
 		RetryCount          int
 		ExpectedRetryCount  int
 		ExpectedObjectCount int
@@ -142,8 +155,8 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			runtime := GolangRuntime{ServiceKey: serviceKey}
-			runtime.Initialize(creatMockStoreClient(), nil)
-			runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, test.TargetTransform})
+			runtime.Initialize(updateDicWithMockStoreClient())
+			runtime.SetTransforms([]interfaces.AppFunction{transformPassthru, test.TargetTransform})
 
 			object := contracts.NewStoredObject(serviceKey, payload, 1, runtime.storeForward.calculatePipelineHash())
 			object.CorrelationID = "CorrelationID"
@@ -152,7 +165,7 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 			_, _ = mockStoreObject(object)
 
 			// Target of this test
-			runtime.storeForward.retryStoredData(serviceKey, &config, common.EdgeXClients{LoggingClient: lc})
+			runtime.storeForward.retryStoredData(serviceKey)
 
 			objects := mockRetrieveObjects(serviceKey)
 			if assert.Equal(t, test.ExpectedObjectCount, len(objects)) && test.ExpectedObjectCount > 0 {
@@ -166,7 +179,7 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 
 var mockObjectStore map[string]contracts.StoredObject
 
-func creatMockStoreClient() interfaces.StoreClient {
+func updateDicWithMockStoreClient() *di.Container {
 	mockObjectStore = make(map[string]contracts.StoredObject)
 	storeClient := &mocks.StoreClient{}
 	storeClient.Mock.On("Store", mock.Anything).Return(mockStoreObject)
@@ -174,7 +187,13 @@ func creatMockStoreClient() interfaces.StoreClient {
 	storeClient.Mock.On("Update", mock.Anything).Return(mockUpdateObject)
 	storeClient.Mock.On("RetrieveFromStore", mock.Anything).Return(mockRetrieveObjects, nil)
 
-	return storeClient
+	dic.Update(di.ServiceConstructorMap{
+		container.StoreClientName: func(get di.Get) interface{} {
+			return storeClient
+		},
+	})
+
+	return dic
 }
 
 func mockStoreObject(object contracts.StoredObject) (string, error) {

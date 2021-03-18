@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,6 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
@@ -50,10 +47,6 @@ var allTagsAdded = map[string]string{
 }
 
 func TestTags_AddTags(t *testing.T) {
-	appContext := appcontext.Context{
-		LoggingClient: logger.NewMockClient(),
-	}
-
 	tests := []struct {
 		Name          string
 		FunctionInput interface{}
@@ -77,9 +70,9 @@ func TestTags_AddTags(t *testing.T) {
 			target := NewTags(testCase.TagsToAdd)
 
 			if testCase.FunctionInput != nil {
-				continuePipeline, result = target.AddTags(&appContext, testCase.FunctionInput)
+				continuePipeline, result = target.AddTags(context, testCase.FunctionInput)
 			} else {
-				continuePipeline, result = target.AddTags(&appContext)
+				continuePipeline, result = target.AddTags(context, nil)
 			}
 
 			if testCase.ErrorExpected {

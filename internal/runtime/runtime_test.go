@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,15 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
@@ -39,8 +41,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var lc logger.LoggingClient
-
 const (
 	serviceKey = "AppService-UnitTest"
 )
@@ -50,7 +50,7 @@ var testV2Event = testAddEventRequest.Event
 
 func createAddEventRequest() requests.AddEventRequest {
 	event := dtos.NewEvent("Thermostat", "FamilyRoomThermostat", "Temperature")
-	event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
+	_ = event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
 	request := requests.NewAddEventRequest(event)
 	return request
 }
@@ -74,11 +74,7 @@ var testV1Event = models.Event{
 	Tags: nil,
 }
 
-func init() {
-	lc = logger.NewMockClient()
-}
-
-func TestProcessMessageBasRequest(t *testing.T) {
+func TestProcessMessageBusRequest(t *testing.T) {
 	expected := http.StatusBadRequest
 
 	badRequest := testAddEventRequest
@@ -92,17 +88,15 @@ func TestProcessMessageBasRequest(t *testing.T) {
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
-	context := &appcontext.Context{
-		LoggingClient: lc,
-	}
+	context := appfunction.NewContext("testId", dic, "")
 
-	dummyTransform := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	dummyTransform := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		return true, "Hello"
 	}
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{dummyTransform})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{dummyTransform})
 	result := runtime.ProcessMessage(context, envelope)
 	require.NotNil(t, result)
 	assert.Equal(t, expected, result.ErrorCode)
@@ -118,12 +112,10 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
-	context := &appcontext.Context{
-		LoggingClient: lc,
-	}
+	context := appfunction.NewContext("testId", dic, "")
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
+	runtime.Initialize(nil)
 
 	result := runtime.ProcessMessage(context, envelope)
 	require.NotNil(t, result)
@@ -139,13 +131,12 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
-	context := &appcontext.Context{
-		LoggingClient: lc,
-	}
+	context := appfunction.NewContext("testId", dic, "")
+
 	transform1WasCalled := false
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
-		if result, ok := params[0].(*dtos.Event); ok {
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		require.NotNil(t, data, "should have been passed the first event from CoreData")
+		if result, ok := data.(*dtos.Event); ok {
 			require.True(t, ok, "Should have received EdgeX event")
 			require.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected EdgeX event")
 		}
@@ -153,8 +144,8 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{transform1})
 	result := runtime.ProcessMessage(context, envelope)
 	require.Nil(t, result)
 	require.True(t, transform1WasCalled, "transform1 should have been called")
@@ -169,32 +160,30 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
-	context := &appcontext.Context{
-		LoggingClient: lc,
-	}
+	context := appfunction.NewContext("testId", dic, "")
 	transform1WasCalled := false
 	transform2WasCalled := false
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform1WasCalled = true
-		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
-		if result, ok := params[0].(dtos.Event); ok {
+		require.NotNil(t, data, "should have been passed the first event from CoreData")
+		if result, ok := data.(dtos.Event); ok {
 			require.True(t, ok, "Should have received Event")
 			assert.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected Event")
 		}
 
 		return true, "Transform1Result"
 	}
-	transform2 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform2 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform2WasCalled = true
 
-		require.Equal(t, "Transform1Result", params[0], "Did not receive result from previous transform")
+		require.Equal(t, "Transform1Result", data, "Did not receive result from previous transform")
 
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{transform1, transform2})
 
 	result := runtime.ProcessMessage(context, envelope)
 	require.Nil(t, result)
@@ -211,37 +200,36 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
-	context := &appcontext.Context{
-		LoggingClient: lc,
-	}
+	context := appfunction.NewContext("testId", dic, "")
+
 	transform1WasCalled := false
 	transform2WasCalled := false
 	transform3WasCalled := false
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform1WasCalled = true
-		require.True(t, len(params) > 0, "should have been passed the first event from CoreData")
+		require.NotNil(t, data, "should have been passed the first event from CoreData")
 
-		if result, ok := params[0].(*dtos.Event); ok {
+		if result, ok := data.(*dtos.Event); ok {
 			require.True(t, ok, "Should have received EdgeX event")
 			require.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected EdgeX event")
 		}
 
 		return false, "Transform1Result"
 	}
-	transform2 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform2 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform2WasCalled = true
-		require.Equal(t, "Transform1Result", params[0], "Did not receive result from previous transform")
+		require.Equal(t, "Transform1Result", data, "Did not receive result from previous transform")
 		return true, "Hello"
 	}
-	transform3 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform3 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform3WasCalled = true
-		require.Equal(t, "Transform1Result", params[0], "Did not receive result from previous transform")
+		require.Equal(t, "Transform1Result", data, "Did not receive result from previous transform")
 		return true, "Hello"
 	}
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1, transform2, transform3})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{transform1, transform2, transform3})
 
 	result := runtime.ProcessMessage(context, envelope)
 	require.Nil(t, result)
@@ -265,14 +253,13 @@ func TestProcessMessageTransformError(t *testing.T) {
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
 	}
-	context := &appcontext.Context{
-		LoggingClient: lc,
-	}
+	context := appfunction.NewContext("testId", dic, "")
+
 	// Let the Runtime know we are sending a RegistryInfo so it passes it to the first function
 	runtime := GolangRuntime{TargetType: &config.RegistryInfo{}}
-	runtime.Initialize(nil, nil)
+	runtime.Initialize(nil)
 	// FilterByDeviceName with return an error if it doesn't receive and Event
-	runtime.SetTransforms([]appcontext.AppFunction{transforms.NewFilterFor([]string{"SomeDevice"}).FilterByDeviceName})
+	runtime.SetTransforms([]interfaces.AppFunction{transforms.NewFilterFor([]string{"SomeDevice"}).FilterByDeviceName})
 	err := runtime.ProcessMessage(context, envelope)
 
 	require.NotNil(t, err, "Expected an error")
@@ -295,17 +282,14 @@ func TestProcessMessageJSON(t *testing.T) {
 		ContentType:   clients.ContentTypeJSON,
 	}
 
-	context := &appcontext.Context{
-		LoggingClient: lc,
-		CorrelationID: expectedCorrelationID,
-	}
+	context := appfunction.NewContext("testing", dic, "")
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
+		require.Equal(t, expectedCorrelationID, appContext.CorrelationID(), "Context doesn't contain expected CorrelationID")
 
-		if result, ok := params[0].(*dtos.Event); ok {
+		if result, ok := data.(*dtos.Event); ok {
 			require.True(t, ok, "Should have received EdgeX event")
 			assert.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
 			assert.Equal(t, testV2Event.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
@@ -315,8 +299,8 @@ func TestProcessMessageJSON(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
 	assert.Nilf(t, result, "result should be null. Got %v", result)
@@ -337,17 +321,14 @@ func TestProcessMessageCBOR(t *testing.T) {
 		ContentType:   clients.ContentTypeCBOR,
 	}
 
-	context := &appcontext.Context{
-		LoggingClient: lc,
-		CorrelationID: expectedCorrelationID,
-	}
+	context := appfunction.NewContext("testing", dic, "")
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
+		require.Equal(t, expectedCorrelationID, appContext.CorrelationID(), "Context doesn't contain expected CorrelationID")
 
-		if result, ok := params[0].(*dtos.Event); ok {
+		if result, ok := data.(*dtos.Event); ok {
 			require.True(t, ok, "Should have received EdgeX event")
 			assert.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
 			assert.Equal(t, testV2Event.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
@@ -357,8 +338,8 @@ func TestProcessMessageCBOR(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
 	assert.Nil(t, result, "result should be null")
@@ -369,7 +350,7 @@ type CustomType struct {
 	ID string `json:"id"`
 }
 
-// Must implement the Marshaller interface so SetOutputData will marshal it to JSON
+// Must implement the Marshaller interface so SetResponseData will marshal it to JSON
 func (custom CustomType) MarshalJSON() ([]byte, error) {
 	test := struct {
 		ID string `json:"id"`
@@ -424,13 +405,11 @@ func TestProcessMessageTargetType(t *testing.T) {
 				ContentType:   currentTest.ContentType,
 			}
 
-			context := &appcontext.Context{
-				LoggingClient: lc,
-			}
+			context := appfunction.NewContext("testing", dic, "")
 
 			runtime := GolangRuntime{TargetType: currentTest.TargetType}
-			runtime.Initialize(nil, nil)
-			runtime.SetTransforms([]appcontext.AppFunction{transforms.NewOutputData().SetOutputData})
+			runtime.Initialize(nil)
+			runtime.SetTransforms([]interfaces.AppFunction{transforms.NewResponseData().SetResponseData})
 
 			err := runtime.ProcessMessage(context, envelope)
 			if currentTest.ErrorExpected {
@@ -440,49 +419,36 @@ func TestProcessMessageTargetType(t *testing.T) {
 				assert.Nil(t, err, fmt.Sprintf("unexpected error for test '%s'", currentTest.Name))
 			}
 
-			// OutputData will be nil if an error occurred in the pipeline processing the data
-			assert.Equal(t, currentTest.ExpectedOutputData, context.OutputData, fmt.Sprintf("'%s' test failed", currentTest.Name))
+			// ResponseData will be nil if an error occurred in the pipeline processing the data
+			assert.Equal(t, currentTest.ExpectedOutputData, context.ResponseData(), fmt.Sprintf("'%s' test failed", currentTest.Name))
 		})
 	}
 }
 
 func TestExecutePipelinePersist(t *testing.T) {
 	expectedItemCount := 1
-	configuration := common.ConfigurationStruct{
-		Writable: common.WritableInfo{
-			LogLevel: "DEBUG",
-			StoreAndForward: common.StoreAndForwardInfo{
-				Enabled:       true,
-				MaxRetryCount: 10},
-		},
-	}
 
-	ctx := appcontext.Context{
-		Configuration: &configuration,
-		LoggingClient: lc,
-		CorrelationID: "CorrelationID",
-	}
-
-	transformPassthru := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		return true, params[0]
+	context := appfunction.NewContext("testing", dic, "")
+	transformPassthru := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		return true, data
 	}
 
 	runtime := GolangRuntime{ServiceKey: serviceKey}
-	runtime.Initialize(creatMockStoreClient(), nil)
+	runtime.Initialize(updateDicWithMockStoreClient())
 
 	httpPost := transforms.NewHTTPSender("http://nowhere", "", true).HTTPPost
-	runtime.SetTransforms([]appcontext.AppFunction{transformPassthru, httpPost})
+	runtime.SetTransforms([]interfaces.AppFunction{transformPassthru, httpPost})
 	payload := []byte("My Payload")
 
 	// Target of this test
-	actual := runtime.ExecutePipeline(payload, "", &ctx, runtime.transforms, 0, false)
+	actual := runtime.ExecutePipeline(payload, "", context, runtime.transforms, 0, false)
 
 	require.NotNil(t, actual)
 	require.Error(t, actual.Err, "Error expected from export function")
 	storedObjects := mockRetrieveObjects(serviceKey)
 	require.Equal(t, expectedItemCount, len(storedObjects), "unexpected item count")
 	assert.Equal(t, serviceKey, storedObjects[0].AppServiceKey, "AppServiceKey not as expected")
-	assert.Equal(t, ctx.CorrelationID, storedObjects[0].CorrelationID, "CorrelationID not as expected")
+	assert.Equal(t, context.CorrelationID(), storedObjects[0].CorrelationID, "CorrelationID not as expected")
 }
 
 // TODO: Remove once switch completely to V2 Event DTOs
@@ -498,17 +464,14 @@ func TestProcessMessageJSONWithV1Event(t *testing.T) {
 		ContentType:   clients.ContentTypeJSON,
 	}
 
-	context := &appcontext.Context{
-		LoggingClient: lc,
-		CorrelationID: expectedCorrelationID,
-	}
+	context := appfunction.NewContext(expectedCorrelationID, dic, "")
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		transform1WasCalled = true
 
-		require.Equal(t, expectedCorrelationID, edgexcontext.CorrelationID, "Context doesn't contain expected CorrelationID")
+		require.Equal(t, expectedCorrelationID, appContext.CorrelationID(), "Context doesn't contain expected CorrelationID")
 
-		if result, ok := params[0].(*dtos.Event); ok {
+		if result, ok := data.(*dtos.Event); ok {
 			require.True(t, ok, "Should have received EdgeX event")
 			assert.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
 			assert.Equal(t, testV2Event.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
@@ -518,8 +481,8 @@ func TestProcessMessageJSONWithV1Event(t *testing.T) {
 	}
 
 	runtime := GolangRuntime{}
-	runtime.Initialize(nil, nil)
-	runtime.SetTransforms([]appcontext.AppFunction{transform1})
+	runtime.Initialize(nil)
+	runtime.SetTransforms([]interfaces.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope)
 	assert.Nil(t, result, "result should be null")
@@ -573,7 +536,7 @@ func TestGolangRuntime_processEventPayload(t *testing.T) {
 			envelope.Payload = testCase.Payload
 			envelope.ContentType = testCase.ContentType
 
-			actual, err := target.processEventPayload(envelope, lc)
+			actual, err := target.processEventPayload(envelope, logger.NewMockClient())
 			if testCase.ExpectError {
 				require.Error(t, err)
 				return
@@ -611,7 +574,7 @@ func TestGolangRuntime_unmarshalV1EventToV2Event(t *testing.T) {
 			envelope.Payload = testCase.Payload
 			envelope.ContentType = testCase.ContentType
 
-			actual, err := target.unmarshalV1EventToV2Event(envelope, lc)
+			actual, err := target.unmarshalV1EventToV2Event(envelope, logger.NewMockClient())
 			require.NoError(t, err)
 			require.Equal(t, expectedEvent, *actual)
 		})

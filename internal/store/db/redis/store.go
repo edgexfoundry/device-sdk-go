@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright 2019 Dell Inc.
+ * Copyright (c) 2021 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -25,6 +26,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/redis/models"
+
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 
 	"github.com/gomodule/redigo/redis"
@@ -43,7 +45,7 @@ type Client struct {
 
 // Store persists a stored object to the data store. Three ("Three shall be the number thou shalt
 // count, and the number of the counting shall be three") keys are used:
-// * the object id to point to a STRING which is the marshal'ed JSON.
+// * the object id to point to a STRING which is the marshalled JSON.
 // * the object AppServiceKey to point to a SET containing all object ids associated with this
 //   app service. Note the key is prefixed to avoid key collisions.
 // * the object id to point to a HASH which contains the object AppServiceKey.
@@ -54,7 +56,7 @@ func (c Client) Store(o contracts.StoredObject) (string, error) {
 	}
 
 	conn := c.Pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	exists, err := redis.Bool(conn.Do("EXISTS", o.ID))
 	if err != nil {
@@ -95,7 +97,7 @@ func (c Client) RetrieveFromStore(appServiceKey string) (objects []contracts.Sto
 	}
 
 	conn := c.Pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	ids, err := redis.Values(conn.Do("SMEMBERS", nameSpace+":idl:"+appServiceKey))
 	if err != nil {
@@ -132,7 +134,7 @@ func (c Client) Update(o contracts.StoredObject) error {
 	}
 
 	conn := c.Pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	// retrieve the current AppServiceKey for this store object
 	currentASK, err := redis.String(conn.Do("HGET", nameSpace+":ask:"+o.ID, "ASK"))
@@ -174,7 +176,7 @@ func (c Client) RemoveFromStore(o contracts.StoredObject) error {
 	}
 
 	conn := c.Pool.Get()
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_ = conn.Send("MULTI")
 	// remove the object's representation

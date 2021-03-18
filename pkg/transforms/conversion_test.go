@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,52 +37,24 @@ func TestTransformToXML(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
-	assert.Equal(t, clients.ContentTypeXML, context.ResponseContentType)
+	assert.Equal(t, clients.ContentTypeXML, context.ResponseContentType())
 	assert.Equal(t, expectedResult, result.(string))
 }
-func TestTransformToXMLNoParameters(t *testing.T) {
+
+func TestTransformToXMLNoData(t *testing.T) {
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToXML(context)
+	continuePipeline, result := conv.TransformToXML(context, nil)
 
 	assert.Equal(t, "No Event Received", result.(error).Error())
 	assert.False(t, continuePipeline)
 }
+
 func TestTransformToXMLNotAnEvent(t *testing.T) {
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToXML(context, "")
 
 	assert.Equal(t, "Unexpected type received", result.(error).Error())
 	assert.False(t, continuePipeline)
-
-}
-func TestTransformToXMLMultipleParametersValid(t *testing.T) {
-	// Event from device 1
-	eventIn := dtos.Event{
-		DeviceName: deviceName1,
-	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Created>0</Created><Origin>0</Origin></Event>`
-	conv := NewConversion()
-	continuePipeline, result := conv.TransformToXML(context, eventIn, "", "", "")
-	require.NotNil(t, result)
-	assert.True(t, continuePipeline)
-	assert.Equal(t, expectedResult, result.(string))
-}
-func TestTransformToXMLMultipleParametersTwoEvents(t *testing.T) {
-	// Event from device 1
-	eventIn1 := dtos.Event{
-		DeviceName: deviceName1,
-	}
-	// Event from device 1
-	eventIn2 := dtos.Event{
-		DeviceName: deviceName2,
-	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device2</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Created>0</Created><Origin>0</Origin></Event>`
-	conv := NewConversion()
-	continuePipeline, result := conv.TransformToXML(context, eventIn2, eventIn1, "", "")
-
-	assert.NotNil(t, result)
-	assert.True(t, continuePipeline)
-	assert.Equal(t, expectedResult, result.(string))
 
 }
 
@@ -97,52 +69,22 @@ func TestTransformToJSON(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
-	assert.Equal(t, clients.ContentTypeJSON, context.ResponseContentType)
+	assert.Equal(t, clients.ContentTypeJSON, context.ResponseContentType())
 	assert.Equal(t, expectedResult, result.(string))
 }
+
 func TestTransformToJSONNoEvent(t *testing.T) {
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToJSON(context)
+	continuePipeline, result := conv.TransformToJSON(context, nil)
 
 	assert.Equal(t, "No Event Received", result.(error).Error())
 	assert.False(t, continuePipeline)
 
 }
+
 func TestTransformToJSONNotAnEvent(t *testing.T) {
 	conv := NewConversion()
 	continuePipeline, result := conv.TransformToJSON(context, "")
 	require.EqualError(t, result.(error), "Unexpected type received")
 	assert.False(t, continuePipeline)
-
-}
-func TestTransformToJSONMultipleParametersValid(t *testing.T) {
-	// Event from device 1
-	eventIn := dtos.Event{
-		DeviceName: deviceName1,
-	}
-	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","sourceName":"","origin":0,"readings":null}`
-	conv := NewConversion()
-	continuePipeline, result := conv.TransformToJSON(context, eventIn, "", "", "")
-	assert.NotNil(t, result)
-	assert.True(t, continuePipeline)
-	assert.Equal(t, expectedResult, result.(string))
-
-}
-func TestTransformToJSONMultipleParametersTwoEvents(t *testing.T) {
-	// Event from device 1
-	eventIn1 := dtos.Event{
-		DeviceName: deviceName1,
-	}
-	// Event from device 2
-	eventIn2 := dtos.Event{
-		DeviceName: deviceName2,
-	}
-	expectedResult := `{"apiVersion":"","id":"","deviceName":"device2","profileName":"","sourceName":"","origin":0,"readings":null}`
-	conv := NewConversion()
-	continuePipeline, result := conv.TransformToJSON(context, eventIn2, eventIn1, "", "")
-
-	assert.NotNil(t, result)
-	assert.True(t, continuePipeline)
-	assert.Equal(t, expectedResult, result.(string))
-
 }

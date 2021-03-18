@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,11 @@ import (
 	"testing"
 	"time"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
@@ -45,9 +49,18 @@ import (
 )
 
 var expectedCorrelationId = uuid.New().String()
+var dic *di.Container
+
+func TestMain(m *testing.M) {
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+	})
+}
 
 func TestPingRequest(t *testing.T) {
-	target := NewController(nil, logger.NewMockClient(), nil, nil)
+	target := NewController(nil, dic)
 
 	recorder := doRequest(t, http.MethodGet, contracts.ApiPingRoute, target.Ping, nil)
 
@@ -68,7 +81,7 @@ func TestVersionRequest(t *testing.T) {
 	internal.ApplicationVersion = expectedAppVersion
 	internal.SDKVersion = expectedSdkVersion
 
-	target := NewController(nil, logger.NewMockClient(), nil, nil)
+	target := NewController(nil, dic)
 
 	recorder := doRequest(t, http.MethodGet, contracts.ApiVersion, target.Version, nil)
 
@@ -82,7 +95,7 @@ func TestVersionRequest(t *testing.T) {
 }
 
 func TestMetricsRequest(t *testing.T) {
-	target := NewController(nil, logger.NewMockClient(), nil, nil)
+	target := NewController(nil, dic)
 
 	recorder := doRequest(t, http.MethodGet, contracts.ApiMetricsRoute, target.Metrics, nil)
 
@@ -112,7 +125,13 @@ func TestConfigRequest(t *testing.T) {
 		},
 	}
 
-	target := NewController(nil, logger.NewMockClient(), &expectedConfig, nil)
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &expectedConfig
+		},
+	})
+
+	target := NewController(nil, dic)
 
 	recorder := doRequest(t, http.MethodGet, contracts.ApiConfigRoute, target.Config, nil)
 
@@ -136,15 +155,18 @@ func TestConfigRequest(t *testing.T) {
 
 func TestAddSecretRequest(t *testing.T) {
 	expectedRequestId := "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc"
-	config := &sdkCommon.ConfigurationStruct{}
 
-	lc := logger.NewMockClient()
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &sdkCommon.ConfigurationStruct{}
+		},
+	})
 
 	mockProvider := &mocks.SecretProvider{}
 	mockProvider.On("StoreSecrets", "/mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
 	mockProvider.On("StoreSecrets", "/no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
 
-	target := NewController(nil, lc, config, mockProvider)
+	target := NewController(nil, dic)
 	assert.NotNil(t, target)
 
 	validRequest := common.SecretRequest{

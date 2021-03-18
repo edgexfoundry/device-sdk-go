@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,11 @@ import (
 	"net/http"
 	"strings"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/telemetry"
 
@@ -46,16 +50,12 @@ type Controller struct {
 }
 
 // NewController creates and initializes an Controller
-func NewController(
-	router *mux.Router,
-	lc logger.LoggingClient,
-	config *sdkCommon.ConfigurationStruct,
-	secretProvider interfaces.SecretProvider) *Controller {
+func NewController(router *mux.Router, dic *di.Container) *Controller {
 	return &Controller{
 		router:         router,
-		secretProvider: secretProvider,
-		lc:             lc,
-		config:         config,
+		secretProvider: bootstrapContainer.SecretProviderFrom(dic.Get),
+		lc:             bootstrapContainer.LoggingClientFrom(dic.Get),
+		config:         container.ConfigurationFrom(dic.Get),
 	}
 }
 

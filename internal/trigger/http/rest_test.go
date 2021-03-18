@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2020 Technotects
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +20,9 @@ package http
 import (
 	"testing"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +30,12 @@ import (
 
 func TestTriggerInitializeWitBackgroundChannel(t *testing.T) {
 	background := make(chan types.MessageEnvelope)
-	trigger := Trigger{}
+	dic := di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+	})
+	trigger := NewTrigger(dic, nil, nil)
 
 	deferred, err := trigger.Initialize(nil, nil, background)
 

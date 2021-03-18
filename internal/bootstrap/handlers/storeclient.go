@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ func NewDatabase() *Database {
 
 // BootstrapHandler creates the new interfaces.StoreClient use for database access by Store & Forward capability
 func (_ *Database) BootstrapHandler(
-	ctx context.Context,
+	_ context.Context,
 	_ *sync.WaitGroup,
 	startupTimer startup.Timer,
 	dic *di.Container) bool {
@@ -62,12 +62,12 @@ func (_ *Database) BootstrapHandler(
 		return true
 	}
 
-	logger := bootstrapContainer.LoggingClientFrom(dic.Get)
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
 
-	storeClient, err := InitializeStoreClient(secretProvider, config, startupTimer, logger)
+	storeClient, err := InitializeStoreClient(secretProvider, config, startupTimer, lc)
 	if err != nil {
-		logger.Error(err.Error())
+		lc.Error(err.Error())
 		return false
 	}
 

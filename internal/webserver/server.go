@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/controller/rest"
 
@@ -35,11 +37,10 @@ import (
 
 // WebServer handles the webserver configuration
 type WebServer struct {
-	Config         *common.ConfigurationStruct
-	lc             logger.LoggingClient
-	router         *mux.Router
-	secretProvider interfaces.SecretProvider
-	controller     *rest.Controller
+	config     *common.ConfigurationStruct
+	lc         logger.LoggingClient
+	router     *mux.Router
+	controller *rest.Controller
 }
 
 // swagger:model
@@ -49,13 +50,12 @@ type Version struct {
 }
 
 // NewWebserver returns a new instance of *WebServer
-func NewWebServer(config *common.ConfigurationStruct, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, router *mux.Router) *WebServer {
+func NewWebServer(dic *di.Container, router *mux.Router) *WebServer {
 	ws := &WebServer{
-		Config:         config,
-		lc:             lc,
-		router:         router,
-		secretProvider: secretProvider,
-		controller:     rest.NewController(router, lc, config, secretProvider),
+		lc:         bootstrapContainer.LoggingClientFrom(dic.Get),
+		config:     container.ConfigurationFrom(dic.Get),
+		router:     router,
+		controller: rest.NewController(router, dic),
 	}
 
 	return ws
@@ -95,7 +95,7 @@ func (webserver *WebServer) SetupTriggerRoute(path string, handlerForTrigger fun
 // StartWebServer starts the web server
 func (webserver *WebServer) StartWebServer(errChannel chan error) {
 	go func() {
-		if serviceTimeout, err := time.ParseDuration(webserver.Config.Service.Timeout); err != nil {
+		if serviceTimeout, err := time.ParseDuration(webserver.config.Service.Timeout); err != nil {
 			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
 		} else {
 			listenAndServe(webserver, serviceTimeout, errChannel)
@@ -108,11 +108,11 @@ func listenAndServe(webserver *WebServer, serviceTimeout time.Duration, errChann
 
 	// this allows env overrides to explicitly set the value used
 	// for ListenAndServe, as needed for different deployments
-	addr := fmt.Sprintf("%v:%d", webserver.Config.Service.ServerBindAddr, webserver.Config.Service.Port)
+	addr := fmt.Sprintf("%v:%d", webserver.config.Service.ServerBindAddr, webserver.config.Service.Port)
 
-	if webserver.Config.Service.Protocol == "https" {
+	if webserver.config.Service.Protocol == "https" {
 		webserver.lc.Infof("Starting HTTPS Web Server on address %v", addr)
-		errChannel <- http.ListenAndServeTLS(addr, webserver.Config.Service.HTTPSCert, webserver.Config.Service.HTTPSKey, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+		errChannel <- http.ListenAndServeTLS(addr, webserver.config.Service.HTTPSCert, webserver.config.Service.HTTPSKey, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
 	} else {
 		webserver.lc.Infof("Starting HTTP Web Server on address %v", addr)
 		errChannel <- http.ListenAndServe(addr, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))

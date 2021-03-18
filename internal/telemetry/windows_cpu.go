@@ -1,7 +1,7 @@
 // +build windows
 
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,8 @@ import (
 )
 
 var (
-	modkernel32        = syscall.NewLazyDLL("kernel32.dll")
-	procGetSystemTimes = modkernel32.NewProc("GetSystemTimes")
+	modKernel32        = syscall.NewLazyDLL("kernel32.dll")
+	procGetSystemTimes = modKernel32.NewProc("GetSystemTimes")
 )
 
 func PollCpu() (cpuSnapshot CpuUsage) {
@@ -69,7 +69,7 @@ func getSystemTimes(idleTime, kernelTime, userTime *FileTime) bool {
 	return ret != 0
 }
 
-// FILETIME Struct from: http://msdn.microsoft.com/en-us/library/windows/desktop/ms724284.aspx
+// FileTime Struct from: http://msdn.microsoft.com/en-us/library/windows/desktop/ms724284.aspx
 type FileTime struct {
 	// DwLowDateTime from Windows API
 	LowDateTime uint32

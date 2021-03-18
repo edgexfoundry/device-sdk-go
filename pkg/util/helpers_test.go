@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ func TestSplitCommaEmpty(t *testing.T) {
 }
 
 func TestDeleteEmptyAndTrim(t *testing.T) {
-	strings := []string{" Hel lo", "test ", " "}
-	results := DeleteEmptyAndTrim(strings)
+	target := []string{" Hel lo", "test ", " "}
+	results := DeleteEmptyAndTrim(target)
 	// Should have 4 elements (space counts as an element)
 	assert.Equal(t, 2, len(results))
 	assert.Equal(t, "Hel lo", results[0])

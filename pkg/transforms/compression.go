@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 Cavium
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ import (
 	"compress/zlib"
 	"encoding/base64"
 	"errors"
+	"fmt"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 )
 
@@ -39,15 +41,15 @@ func NewCompression() Compression {
 	return Compression{}
 }
 
-// CompressWithGZIP compresses data received as either a string,[]byte, or json.Marshaler using gzip algorithm
+// CompressWithGZIP compresses data received as either a string,[]byte, or json.Marshaller using gzip algorithm
 // and returns a base64 encoded string as a []byte.
-func (compression *Compression) CompressWithGZIP(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
+func (compression *Compression) CompressWithGZIP(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
-	edgexcontext.LoggingClient.Debug("Compression with GZIP")
-	data, err := util.CoerceType(params[0])
+	ctx.LoggingClient().Debug("Compression with GZIP")
+	rawData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
@@ -59,25 +61,32 @@ func (compression *Compression) CompressWithGZIP(edgexcontext *appcontext.Contex
 		compression.gzipWriter.Reset(&buf)
 	}
 
-	compression.gzipWriter.Write([]byte(data))
-	compression.gzipWriter.Close()
+	_, err = compression.gzipWriter.Write(rawData)
+	if err != nil {
+		return false, fmt.Errorf("unable to write GZIP data: %s", err.Error())
+	}
+
+	err = compression.gzipWriter.Close()
+	if err != nil {
+		return false, fmt.Errorf("unable to close GZIP data: %s", err.Error())
+	}
 
 	// Set response "content-type" header to "text/plain"
-	edgexcontext.ResponseContentType = clients.ContentTypeText
+	ctx.SetResponseContentType(clients.ContentTypeText)
 
 	return true, bytesBufferToBase64(buf)
 
 }
 
-// CompressWithZLIB compresses data received as either a string,[]byte, or json.Marshaler using zlib algorithm
+// CompressWithZLIB compresses data received as either a string,[]byte, or json.Marshaller using zlib algorithm
 // and returns a base64 encoded string as a []byte.
-func (compression *Compression) CompressWithZLIB(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
+func (compression *Compression) CompressWithZLIB(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
-	edgexcontext.LoggingClient.Debug("Compression with ZLIB")
-	data, err := util.CoerceType(params[0])
+	ctx.LoggingClient().Debug("Compression with ZLIB")
+	byteData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
@@ -89,11 +98,18 @@ func (compression *Compression) CompressWithZLIB(edgexcontext *appcontext.Contex
 		compression.zlibWriter.Reset(&buf)
 	}
 
-	compression.zlibWriter.Write([]byte(data))
-	compression.zlibWriter.Close()
+	_, err = compression.zlibWriter.Write(byteData)
+	if err != nil {
+		return false, fmt.Errorf("unable to write ZLIB data: %s", err.Error())
+	}
+
+	err = compression.zlibWriter.Close()
+	if err != nil {
+		return false, fmt.Errorf("unable to close ZLIB data: %s", err.Error())
+	}
 
 	// Set response "content-type" header to "text/plain"
-	edgexcontext.ResponseContentType = clients.ContentTypeText
+	ctx.SetResponseContentType(clients.ContentTypeText)
 
 	return true, bytesBufferToBase64(buf)
 

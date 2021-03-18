@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,43 +17,42 @@
 package transforms
 
 import (
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 )
 
-// OutputData houses transform for outputting data to configured trigger response, i.e. message bus
-type OutputData struct {
+// ResponseData houses transform for outputting data to configured trigger response, i.e. message bus
+type ResponseData struct {
 	ResponseContentType string
 }
 
-// NewOutputData creates, initializes and returns a new instance of OutputData
-func NewOutputData() OutputData {
-	return OutputData{}
+// NewResponseData creates, initializes and returns a new instance of ResponseData
+func NewResponseData() ResponseData {
+	return ResponseData{}
 }
 
-// SetOutputData sets the output data to that passed in from the previous function.
-// It will return an error and stop the pipeline if the input data is not of type []byte, string or json.Mashaler
-func (f OutputData) SetOutputData(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+// SetResponseData sets the response data to that passed in from the previous function.
+// It will return an error and stop the pipeline if the input data is not of type []byte, string or json.Marshaller
+func (f ResponseData) SetResponseData(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 
-	edgexcontext.LoggingClient.Debug("Setting output data")
+	ctx.LoggingClient().Debug("Setting response data")
 
-	if len(params) < 1 {
+	if data == nil {
 		// We didn't receive a result
 		return false, nil
 	}
 
-	data, err := util.CoerceType(params[0])
+	byteData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
 
 	if len(f.ResponseContentType) > 0 {
-		edgexcontext.ResponseContentType = f.ResponseContentType
+		ctx.SetResponseContentType(f.ResponseContentType)
 	}
 
 	// By setting this the data will be posted back to to configured trigger response, i.e. message bus
-	edgexcontext.OutputData = data
+	ctx.SetResponseData(byteData)
 
-	return true, params[0]
+	return true, data
 }

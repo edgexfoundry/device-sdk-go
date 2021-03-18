@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,70 +24,71 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
 )
 
 // Trigger implements Trigger to support Triggers
 type Trigger struct {
-	Configuration *common.ConfigurationStruct
-	Runtime       *runtime.GolangRuntime
-	outputData    []byte
-	Webserver     *webserver.WebServer
-	EdgeXClients  common.EdgeXClients
+	dic        *di.Container
+	Runtime    *runtime.GolangRuntime
+	Webserver  *webserver.WebServer
+	outputData []byte
+}
+
+func NewTrigger(dic *di.Container, runtime *runtime.GolangRuntime, webserver *webserver.WebServer) *Trigger {
+	return &Trigger{
+		dic:       dic,
+		Runtime:   runtime,
+		Webserver: webserver,
+	}
 }
 
 // Initialize initializes the Trigger for logging and REST route
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
-	logger := trigger.EdgeXClients.LoggingClient
+func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
+	lc := bootstrapContainer.LoggingClientFrom(trigger.dic.Get)
 
 	if background != nil {
 		return nil, errors.New("background publishing not supported for services using HTTP trigger")
 	}
 
-	logger.Info("Initializing HTTP Trigger")
+	lc.Info("Initializing HTTP Trigger")
 	trigger.Webserver.SetupTriggerRoute(internal.ApiTriggerRoute, trigger.requestHandler)
-	logger.Info("HTTP Trigger Initialized")
+	lc.Info("HTTP Trigger Initialized")
 
 	return nil, nil
 }
 
 func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	lc := bootstrapContainer.LoggingClientFrom(trigger.dic.Get)
+	defer func() { _ = r.Body.Close() }()
 
-	logger := trigger.EdgeXClients.LoggingClient
 	contentType := r.Header.Get(clients.ContentType)
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		logger.Error("Error reading HTTP Body", "error", err)
+		lc.Error("Error reading HTTP Body", "error", err)
 		writer.WriteHeader(http.StatusBadRequest)
-		writer.Write([]byte(fmt.Sprintf("Error reading HTTP Body: %s", err.Error())))
+		_, _ = writer.Write([]byte(fmt.Sprintf("Error reading HTTP Body: %s", err.Error())))
 		return
 	}
 
-	logger.Debug("Request Body read", "byte count", len(data))
+	lc.Debug("Request Body read", "byte count", len(data))
 
 	correlationID := r.Header.Get(internal.CorrelationHeaderKey)
-	edgexContext := &appcontext.Context{
-		CorrelationID:         correlationID,
-		Configuration:         trigger.Configuration,
-		LoggingClient:         trigger.EdgeXClients.LoggingClient,
-		EventClient:           trigger.EdgeXClients.EventClient,
-		ValueDescriptorClient: trigger.EdgeXClients.ValueDescriptorClient,
-		CommandClient:         trigger.EdgeXClients.CommandClient,
-		NotificationsClient:   trigger.EdgeXClients.NotificationsClient,
-	}
 
-	logger.Trace("Received message from http", clients.CorrelationHeader, correlationID)
-	logger.Debug("Received message from http", clients.ContentType, contentType)
+	appContext := appfunction.NewContext(correlationID, trigger.dic, contentType)
+
+	lc.Trace("Received message from http", clients.CorrelationHeader, correlationID)
+	lc.Debug("Received message from http", clients.ContentType, contentType)
 
 	envelope := types.MessageEnvelope{
 		CorrelationID: correlationID,
@@ -95,21 +96,26 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 		Payload:       data,
 	}
 
-	messageError := trigger.Runtime.ProcessMessage(edgexContext, envelope)
+	messageError := trigger.Runtime.ProcessMessage(appContext, envelope)
 	if messageError != nil {
 		// ProcessMessage logs the error, so no need to log it here.
 		writer.WriteHeader(messageError.ErrorCode)
-		writer.Write([]byte(messageError.Err.Error()))
+		_, _ = writer.Write([]byte(messageError.Err.Error()))
 		return
 	}
 
-	if len(edgexContext.ResponseContentType) > 0 {
-		writer.Header().Set(clients.ContentType, edgexContext.ResponseContentType)
+	if len(appContext.ResponseContentType()) > 0 {
+		writer.Header().Set(clients.ContentType, appContext.ResponseContentType())
 	}
-	writer.Write(edgexContext.OutputData)
 
-	if edgexContext.OutputData != nil {
-		logger.Trace("Sent http response message", clients.CorrelationHeader, correlationID)
+	_, err = writer.Write(appContext.ResponseData())
+	if err != nil {
+		lc.Errorf("unable to write ResponseData as HTTP response: %s", err.Error())
+		return
+	}
+
+	if appContext.ResponseData() != nil {
+		lc.Trace("Sent http response message", clients.CorrelationHeader, correlationID)
 	}
 
 	trigger.outputData = nil

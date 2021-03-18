@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 Cavium
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ import (
 
 const (
 	clearString = "This is the test string used for testing"
-	gzipString  = "H4sIAAAJbogA/wrJyCxWyCxWKMlIVShJLS5RKC4pysxLVygtTk1RSMsvAgtm5qUDAgAA//8tdaMdKAAAAA=="
-	zlibString  = "eJwKycgsVsgsVijJSFUoSS0uUSguKcrMS1coLU5NUUjLLwILZualAwIAAP//KucO4w=="
 )
 
 func TestGzip(t *testing.T) {
@@ -59,7 +57,7 @@ func TestGzip(t *testing.T) {
 	continuePipeline2, result2 := comp.CompressWithGZIP(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
 	assert.Equal(t, result.([]byte), result2.([]byte))
-	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
+	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
 }
 
 func TestZlib(t *testing.T) {
@@ -85,7 +83,7 @@ func TestZlib(t *testing.T) {
 	continuePipeline2, result2 := comp.CompressWithZLIB(context, []byte(clearString))
 	assert.True(t, continuePipeline2)
 	assert.Equal(t, result.([]byte), result2.([]byte))
-	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
+	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
 }
 
 var result []byte

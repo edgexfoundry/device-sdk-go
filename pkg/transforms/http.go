@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
@@ -63,21 +63,21 @@ func NewHTTPSenderWithSecretHeader(url string, mimeType string, persistOnError b
 // HTTPPost will send data from the previous function to the specified Endpoint via http POST.
 // If no previous function exists, then the event that triggered the pipeline will be used.
 // An empty string for the mimetype will default to application/json.
-func (sender HTTPSender) HTTPPost(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	return sender.httpSend(edgexcontext, params, http.MethodPost)
+func (sender HTTPSender) HTTPPost(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	return sender.httpSend(ctx, data, http.MethodPost)
 }
 
 // HTTPPut will send data from the previous function to the specified Endpoint via http PUT.
 // If no previous function exists, then the event that triggered the pipeline will be used.
 // An empty string for the mimetype will default to application/json.
-func (sender HTTPSender) HTTPPut(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	return sender.httpSend(edgexcontext, params, http.MethodPut)
+func (sender HTTPSender) HTTPPut(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	return sender.httpSend(ctx, data, http.MethodPut)
 }
 
-func (sender HTTPSender) httpSend(edgexcontext *appcontext.Context, params []interface{}, method string) (bool, interface{}) {
-	lc := edgexcontext.LoggingClient
+func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interface{}, method string) (bool, interface{}) {
+	lc := ctx.LoggingClient()
 
-	if len(params) < 1 {
+	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
@@ -86,7 +86,7 @@ func (sender HTTPSender) httpSend(edgexcontext *appcontext.Context, params []int
 		sender.MimeType = "application/json"
 	}
 
-	exportData, err := util.CoerceType(params[0])
+	exportData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
@@ -103,7 +103,7 @@ func (sender HTTPSender) httpSend(edgexcontext *appcontext.Context, params []int
 	}
 	var theSecrets map[string]string
 	if usingSecrets {
-		theSecrets, err = edgexcontext.GetSecrets(sender.SecretPath, sender.SecretName)
+		theSecrets, err = ctx.GetSecret(sender.SecretPath, sender.SecretName)
 		if err != nil {
 			return false, err
 		}
@@ -118,26 +118,26 @@ func (sender HTTPSender) httpSend(edgexcontext *appcontext.Context, params []int
 
 	req.Header.Set("Content-Type", sender.MimeType)
 
-	edgexcontext.LoggingClient.Debug("POSTing data")
+	ctx.LoggingClient().Debug("POSTing data")
 	response, err := client.Do(req)
 	if err != nil {
-		sender.setRetryData(edgexcontext, exportData)
+		sender.setRetryData(ctx, exportData)
 		return false, err
 	}
 	defer func() { _ = response.Body.Close() }()
-	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Response: %s", response.Status))
-	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Sent data: %s", string(exportData)))
+	ctx.LoggingClient().Debugf("Response: %s", response.Status)
+	ctx.LoggingClient().Debugf("Sent data: %s", string(exportData))
 	bodyBytes, errReadingBody := ioutil.ReadAll(response.Body)
 	if errReadingBody != nil {
-		sender.setRetryData(edgexcontext, exportData)
+		sender.setRetryData(ctx, exportData)
 		return false, errReadingBody
 	}
 
-	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, edgexcontext.CorrelationID)
+	ctx.LoggingClient().Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, ctx.CorrelationID)
 
 	// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		sender.setRetryData(edgexcontext, exportData)
+		sender.setRetryData(ctx, exportData)
 		return false, fmt.Errorf("export failed with %d HTTP status code", response.StatusCode)
 	}
 
@@ -170,8 +170,8 @@ func (sender HTTPSender) determineIfUsingSecrets() (bool, error) {
 	return true, nil
 }
 
-func (sender HTTPSender) setRetryData(ctx *appcontext.Context, exportData []byte) {
+func (sender HTTPSender) setRetryData(ctx interfaces.AppFunctionContext, exportData []byte) {
 	if sender.PersistOnError {
-		ctx.RetryData = exportData
+		ctx.SetRetryData(exportData)
 	}
 }

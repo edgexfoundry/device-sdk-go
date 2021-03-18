@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 
 const (
 	ConfigRegistryStem   = "edgex/appservices/1.0/"
-	DatabaseName         = "application-service"
 	CorrelationHeaderKey = "X-Correlation-ID"
 
 	ApiTriggerRoute   = contracts.ApiBase + "/trigger"
@@ -30,7 +29,7 @@ const (
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build
-var SDKVersion string = "0.0.0"
+var SDKVersion = "0.0.0"
 
 // ApplicationVersion indicates the version of the application itself, not the SDK - will be overwritten by build
-var ApplicationVersion string = "0.0.0"
+var ApplicationVersion = "0.0.0"

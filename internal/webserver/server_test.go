@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,32 +19,45 @@ package webserver
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 )
 
-var logClient logger.LoggingClient
-var config *common.ConfigurationStruct
+var dic *di.Container
 
 func TestMain(m *testing.M) {
-	logClient = logger.NewMockClient()
-	config = &common.ConfigurationStruct{}
-	m.Run()
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &common.ConfigurationStruct{}
+		},
+		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
+			return &mocks.SecretProvider{}
+		},
+	})
+
+	os.Exit(m.Run())
 }
 
 func TestAddRoute(t *testing.T) {
 	routePath := "/testRoute"
 	testHandler := func(_ http.ResponseWriter, _ *http.Request) {}
-	sp := &mocks.SecretProvider{}
 
-	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
+	webserver := NewWebServer(dic, mux.NewRouter())
 	err := webserver.AddRoute(routePath, testHandler)
 	assert.NoError(t, err, "Not expecting an error")
 
@@ -55,13 +68,13 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	sp := &mocks.SecretProvider{}
-	webserver := NewWebServer(config, sp, logClient, mux.NewRouter())
+	webserver := NewWebServer(dic, mux.NewRouter())
 
 	handlerFunctionNotCalled := true
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("test"))
+		_, err := w.Write([]byte("test"))
+		require.NoError(t, err)
 		handlerFunctionNotCalled = false
 	}
 

@@ -173,3 +173,6 @@ https://github.com/mattn/go-isatty/blob/master/LICENSE
 
 golang.org/x/sys (Unspecified) https://github.com/golang/sys
 https://github.com/golang/sys/blob/master/LICENSE
+
+stretchr/objx (MIT) https://github.com/stretchr/objx
+https://github.com/stretchr/objx/blob/master/LICENSE

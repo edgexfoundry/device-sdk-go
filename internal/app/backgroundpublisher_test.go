@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2020 Technotects
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,12 +15,13 @@
 // limitations under the License.
 //
 
-package appsdk
+package app
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewBackgroundPublisherAndPublish(t *testing.T) {

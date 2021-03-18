@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
@@ -102,15 +102,15 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			configuration.Clients = make(map[string]config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
-				configuration.Clients[common.CoreDataClientName] = coreDataClientInfo
+				configuration.Clients[CoreDataClientName] = coreDataClientInfo
 			}
 
 			if test.CommandClientInfo != nil {
-				configuration.Clients[common.CoreCommandClientName] = commandClientInfo
+				configuration.Clients[CoreCommandClientName] = commandClientInfo
 			}
 
 			if test.NotificationsClientInfo != nil {
-				configuration.Clients[common.NotificationsClientName] = notificationsClientInfo
+				configuration.Clients[NotificationsClientName] = notificationsClientInfo
 			}
 
 			dic.Update(di.ServiceConstructorMap{

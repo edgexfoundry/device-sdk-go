@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
 
@@ -75,7 +75,7 @@ type BatchConfig struct {
 	batchThreshold              int
 	batchMode                   BatchMode
 	batchData                   atomicBatchData
-	continuedPipelineTransforms []appcontext.AppFunction
+	continuedPipelineTransforms []interfaces.AppFunction
 	timerActive                 common.AtomicBool
 	done                        chan bool
 }
@@ -124,32 +124,29 @@ func NewBatchByTimeAndCount(timeInterval string, batchThreshold int) (*BatchConf
 }
 
 // Batch ...
-func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
+func (batch *BatchConfig) Batch(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
 
-	edgexcontext.LoggingClient.Debug("Batching Data")
-	data, err := util.CoerceType(params[0])
+	ctx.LoggingClient().Debug("Batching Data")
+	byteData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
 	// always append data
-	batch.batchData.append(data)
+	batch.batchData.append(byteData)
 
 	// If its time only or time and count
 	if batch.batchMode != BatchByCountOnly {
 		if !batch.timerActive.Value() {
 			batch.timerActive.Set(true)
-			for {
-				select {
-				case <-batch.done:
-					edgexcontext.LoggingClient.Debug("Batch count has been reached")
-				case <-time.After(batch.parsedDuration):
-					edgexcontext.LoggingClient.Debug("Timer has elapsed")
-				}
-				break
+			select {
+			case <-batch.done:
+				ctx.LoggingClient().Debug("Batch count has been reached")
+			case <-time.After(batch.parsedDuration):
+				ctx.LoggingClient().Debug("Timer has elapsed")
 			}
 			batch.timerActive.Set(false)
 		} else {
@@ -174,12 +171,12 @@ func (batch *BatchConfig) Batch(edgexcontext *appcontext.Context, params ...inte
 		}
 	}
 
-	edgexcontext.LoggingClient.Debug("Forwarding Batched Data...")
+	ctx.LoggingClient().Debug("Forwarding Batched Data...")
 	// we've met the threshold, lets clear out the buffer and send it forward in the pipeline
 	if batch.batchData.length() > 0 {
-		copy := batch.batchData.all()
+		copyOfData := batch.batchData.all()
 		batch.batchData.removeAll()
-		return true, copy
+		return true, copyOfData
 	}
 	return false, nil
 }

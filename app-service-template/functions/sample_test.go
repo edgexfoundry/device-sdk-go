@@ -19,11 +19,14 @@ package functions
 import (
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/stretchr/testify/require"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -32,12 +35,28 @@ import (
 // This file contains example of how to unit test pipeline functions
 // TODO: Change these sample unit tests to test your custom type and function(s)
 
+var appContext interfaces.AppFunctionContext
+
+func TestMain(m *testing.M) {
+	//
+	// This can be changed to a real logger when needing more debug information output to the console
+	// lc := logger.NewClient("testing", "DEBUG")
+	//
+	lc := logger.NewMockClient()
+	correlationId := uuid.New().String()
+
+	// NewAppFuncContextForTest creates a context with basic dependencies for unit testing with the passed in logger
+	// If more additional dependencies (such as mock clients) are required, then use
+	// NewAppFuncContext(correlationID string, dic *di.Container) and pass in an initialized DIC (dependency injection container)
+	appContext = pkg.NewAppFuncContextForTest(correlationId, lc)
+}
+
 func TestSample_LogEventDetails(t *testing.T) {
 	expectedEvent := createTestEvent(t)
 	expectedContinuePipeline := true
 
 	target := NewSample()
-	actualContinuePipeline, actualEvent := target.LogEventDetails(createTestAppSdkContext(), expectedEvent)
+	actualContinuePipeline, actualEvent := target.LogEventDetails(appContext, expectedEvent)
 
 	assert.Equal(t, expectedContinuePipeline, actualContinuePipeline)
 	assert.Equal(t, expectedEvent, actualEvent)
@@ -49,7 +68,7 @@ func TestSample_ConvertEventToXML(t *testing.T) {
 	expectedContinuePipeline := true
 
 	target := NewSample()
-	actualContinuePipeline, actualXml := target.ConvertEventToXML(createTestAppSdkContext(), event)
+	actualContinuePipeline, actualXml := target.ConvertEventToXML(appContext, event)
 
 	assert.Equal(t, expectedContinuePipeline, actualContinuePipeline)
 	assert.Equal(t, expectedXml, actualXml)
@@ -58,17 +77,17 @@ func TestSample_ConvertEventToXML(t *testing.T) {
 
 func TestSample_OutputXML(t *testing.T) {
 	testEvent := createTestEvent(t)
-	expectedXml, _ := testEvent.ToXML()
+	xml, _ := testEvent.ToXML()
 	expectedContinuePipeline := false
-	appContext := createTestAppSdkContext()
+	expectedContentType := clients.ContentTypeXML
 
 	target := NewSample()
-	actualContinuePipeline, result := target.OutputXML(appContext, expectedXml)
-	actualXml := string(appContext.OutputData)
+	actualContinuePipeline, result := target.OutputXML(appContext, xml)
+	actualContentType := appContext.ResponseContentType()
 
 	assert.Equal(t, expectedContinuePipeline, actualContinuePipeline)
 	assert.Nil(t, result)
-	assert.Equal(t, expectedXml, actualXml)
+	assert.Equal(t, expectedContentType, actualContentType)
 }
 
 func createTestEvent(t *testing.T) dtos.Event {
@@ -86,11 +105,4 @@ func createTestEvent(t *testing.T) dtos.Event {
 	}
 
 	return event
-}
-
-func createTestAppSdkContext() *appcontext.Context {
-	return &appcontext.Context{
-		CorrelationID: uuid.New().String(),
-		LoggingClient: logger.NewMockClient(),
-	}
 }

@@ -18,10 +18,12 @@ package functions
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 )
@@ -39,27 +41,28 @@ type Sample struct {
 
 // LogEventDetails is example of processing an Event and passing the original Event to to next function in the pipeline
 // For more details on the Context API got here: https://docs.edgexfoundry.org/1.3/microservices/application/ContextAPI/
-func (s *Sample) LogEventDetails(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	edgexcontext.LoggingClient.Debug("LogEventDetails called")
+func (s *Sample) LogEventDetails(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	lc := ctx.LoggingClient()
+	lc.Debug("LogEventDetails called")
 
-	if len(params) < 1 {
+	if data == nil {
 		// Go here for details on Error Handle: https://docs.edgexfoundry.org/1.3/microservices/application/ErrorHandling/
 		return false, errors.New("no Event Received")
 	}
 
-	event, ok := params[0].(dtos.Event)
+	event, ok := data.(dtos.Event)
 	if !ok {
 		return false, errors.New("type received is not an Event")
 	}
 
-	edgexcontext.LoggingClient.Infof("Event received: ID=%s, Device=%s, and ReadingCount=%d",
+	lc.Infof("Event received: ID=%s, Device=%s, and ReadingCount=%d",
 		event.Id,
 		event.DeviceName,
 		len(event.Readings))
 	for index, reading := range event.Readings {
 		switch strings.ToLower(reading.ValueType) {
 		case strings.ToLower(v2.ValueTypeBinary):
-			edgexcontext.LoggingClient.Infof(
+			lc.Infof(
 				"Reading #%d received with ID=%s, Resource=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
 				index+1,
 				reading.Id,
@@ -68,7 +71,7 @@ func (s *Sample) LogEventDetails(edgexcontext *appcontext.Context, params ...int
 				reading.MediaType,
 				len(reading.BinaryValue))
 		default:
-			edgexcontext.LoggingClient.Infof("Reading #%d received with ID=%s, Resource=%s, ValueType=%s, Value=`%s`",
+			lc.Infof("Reading #%d received with ID=%s, Resource=%s, ValueType=%s, Value=`%s`",
 				index+1,
 				reading.Id,
 				reading.ResourceName,
@@ -83,14 +86,15 @@ func (s *Sample) LogEventDetails(edgexcontext *appcontext.Context, params ...int
 }
 
 // ConvertEventToXML is example of transforming an Event and passing the transformed data to to next function in the pipeline
-func (s *Sample) ConvertEventToXML(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	edgexcontext.LoggingClient.Debug("ConvertEventToXML called")
+func (s *Sample) ConvertEventToXML(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	lc := ctx.LoggingClient()
+	lc.Debug("ConvertEventToXML called")
 
-	if len(params) < 1 {
+	if data == nil {
 		return false, errors.New("no Event Received")
 	}
 
-	event, ok := params[0].(dtos.Event)
+	event, ok := data.(dtos.Event)
 	if !ok {
 		return false, errors.New("type received is not an Event")
 	}
@@ -103,7 +107,7 @@ func (s *Sample) ConvertEventToXML(edgexcontext *appcontext.Context, params ...i
 	// Example of DEBUG message which by default you don't want to be logged.
 	//     To see debug log messages, Set WRITABLE_LOGLEVEL=DEBUG environment variable or
 	//     change LogLevel in configuration.toml before running app service.
-	edgexcontext.LoggingClient.Debug("Event converted to XML: " + xml)
+	lc.Debug("Event converted to XML: " + xml)
 
 	// Returning true indicates that the pipeline execution should continue with the next function
 	// using the event passed as input in this case.
@@ -111,26 +115,28 @@ func (s *Sample) ConvertEventToXML(edgexcontext *appcontext.Context, params ...i
 }
 
 // OutputXML is an example of processing transformed data
-func (s *Sample) OutputXML(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	edgexcontext.LoggingClient.Debug("OutputXML called")
+func (s *Sample) OutputXML(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	lc := ctx.LoggingClient()
+	lc.Debug("OutputXML called")
 
-	if len(params) < 1 {
+	if data == nil {
 		return false, errors.New("no XML Received")
 	}
 
-	xml, ok := params[0].(string)
+	xml, ok := data.(string)
 	if !ok {
 		return false, errors.New("type received is not an string")
 	}
 
-	edgexcontext.LoggingClient.Debug(fmt.Sprintf("Outputting the following XML: %s", xml))
+	lc.Debugf("Outputting the following XML: %s", xml)
 
 	// This sends the XML as a response. i.e. publish for MessageBus/MQTT triggers as configured or
 	// HTTP response to for the HTTP Trigger
-	// For more details on the Complete() function go here: https://docs.edgexfoundry.org/1.3/microservices/application/ContextAPI/#complete
-	edgexcontext.Complete([]byte(xml))
+	// For more details on the SetResponseData() function go here: https://docs.edgexfoundry.org/1.3/microservices/application/ContextAPI/#complete
+	ctx.SetResponseData([]byte(xml))
+	ctx.SetResponseContentType(clients.ContentTypeXML)
 
 	// Returning false terminates the pipeline execution, so this should be last function specified in the pipeline,
-	// which is typical in conjunction with usage of .Complete() function.
+	// which is typical in conjunction with usage of .SetResponseData() function.
 	return false, nil
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ func TestValidateVersionMatch(t *testing.T) {
 	startupTimer := startup.NewStartUpTimer("unit-test")
 
 	clients := make(map[string]config.ClientInfo)
-	clients[common.CoreDataClientName] = config.ClientInfo{
+	clients[CoreDataClientName] = config.ClientInfo{
 		Protocol: "http",
 		Host:     "localhost",
 		Port:     0, // Will be replaced by local test webserver's port
@@ -115,9 +115,9 @@ func TestValidateVersionMatch(t *testing.T) {
 
 			testServerUrl, _ := url.Parse(testServer.URL)
 			port, _ := strconv.Atoi(testServerUrl.Port())
-			coreService := configuration.Clients[common.CoreDataClientName]
+			coreService := configuration.Clients[CoreDataClientName]
 			coreService.Port = port
-			configuration.Clients[common.CoreDataClientName] = coreService
+			configuration.Clients[CoreDataClientName] = coreService
 
 			validator := NewVersionValidator(test.skipVersionCheck, test.SdkVersion)
 			result := validator.BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)

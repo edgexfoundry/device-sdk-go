@@ -1,16 +1,33 @@
+//
+// Copyright (c) 2021 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package transforms
 
 import (
+	"fmt"
 	"testing"
 
-	jlogic "github.com/diegoholiveira/jsonlogic"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJSONLogicSimple(t *testing.T) {
-	jsonlogic := NewJSONLogic(`{"==": [1, 1]}`)
+	jsonLogic := NewJSONLogic(`{"==": [1, 1]}`)
 
-	continuePipeline, result := jsonlogic.Evaluate(context, "{}")
+	continuePipeline, result := jsonLogic.Evaluate(context, "{}")
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
@@ -18,13 +35,13 @@ func TestJSONLogicSimple(t *testing.T) {
 }
 
 func TestJSONLogicAdvanced(t *testing.T) {
-	jsonlogic := NewJSONLogic(`{ "and" : [
+	jsonLogic := NewJSONLogic(`{ "and" : [
 		{"<" : [ { "var" : "temp" }, 110 ]},
 		{"==" : [ { "var" : "sensor.type" }, "temperature" ] }
 	  ] }`)
 
 	data := `{ "temp" : 100, "sensor" : { "type" : "temperature" } }`
-	continuePipeline, result := jsonlogic.Evaluate(context, data)
+	continuePipeline, result := jsonLogic.Evaluate(context, data)
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
@@ -33,9 +50,9 @@ func TestJSONLogicAdvanced(t *testing.T) {
 
 func TestJSONLogicMalformedJSONRule(t *testing.T) {
 	//missing quote
-	jsonlogic := NewJSONLogic(`{"==: [1, 1]}`)
+	jsonLogic := NewJSONLogic(`{"==: [1, 1]}`)
 
-	continuePipeline, result := jsonlogic.Evaluate(context, `{}`)
+	continuePipeline, result := jsonLogic.Evaluate(context, `{}`)
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
@@ -44,20 +61,21 @@ func TestJSONLogicMalformedJSONRule(t *testing.T) {
 
 func TestJSONLogicValidJSONBadRule(t *testing.T) {
 	//missing quote
-	jsonlogic := NewJSONLogic(`{"notanoperator": [1, 1]}`)
+	jsonLogic := NewJSONLogic(`{"notAnOperator": [1, 1]}`)
 
-	continuePipeline, result := jsonlogic.Evaluate(context, `{}`)
+	continuePipeline, result := jsonLogic.Evaluate(context, `{}`)
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
-	assert.Equal(t, "The operator \"notanoperator\" is not supported", result.(jlogic.ErrInvalidOperator).Error())
+	require.IsType(t, fmt.Errorf(""), result)
+	assert.Equal(t, "unable to apply JSONLogic rule: The operator \"notAnOperator\" is not supported", result.(error).Error())
 }
 
 func TestJSONLogicNoData(t *testing.T) {
 	//missing quote
-	jsonlogic := NewJSONLogic(`{"notanoperator": [1, 1]}`)
+	jsonLogic := NewJSONLogic(`{"notAnOperator": [1, 1]}`)
 
-	continuePipeline, result := jsonlogic.Evaluate(context)
+	continuePipeline, result := jsonLogic.Evaluate(context, nil)
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
@@ -66,9 +84,9 @@ func TestJSONLogicNoData(t *testing.T) {
 
 func TestJSONLogicNonJSONData(t *testing.T) {
 	//missing quote
-	jsonlogic := NewJSONLogic(`{"==": [1, 1]}`)
+	jsonLogic := NewJSONLogic(`{"==": [1, 1]}`)
 
-	continuePipeline, result := jsonlogic.Evaluate(context, "iamnotjson")
+	continuePipeline, result := jsonLogic.Evaluate(context, "iAmNotJson")
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,13 +21,18 @@ package secure
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 )
 
 const testCACert = `-----BEGIN CERTIFICATE-----
@@ -102,8 +107,25 @@ CR6KVnoNdMwJZM3ARpBYNlhFTzDyew2WYLitZsN/uV8t+XxJFDyJQA==
 -----END RSA PRIVATE KEY-----
 `
 
+var lc logger.LoggingClient
+var dic *di.Container
+var context *appfunction.Context
+
+func TestMain(m *testing.M) {
+	lc = logger.NewMockClient()
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+	})
+
+	context = appfunction.NewContext("123", dic, "")
+
+	os.Exit(m.Run())
+}
+
 func TestValidateSecrets(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	tests := []struct {
 		Name             string
 		AuthMode         string
@@ -162,12 +184,19 @@ func TestGetSecrets(t *testing.T) {
 		"username": "TEST_USER",
 		"password": "TEST_PASS",
 	}
+
 	mockSecretProvider := &mocks.SecretProvider{}
 	mockSecretProvider.On("GetSecrets", "").Return(nil)
 	mockSecretProvider.On("GetSecrets", "/notfound").Return(nil, errors.New("Not Found"))
 	mockSecretProvider.On("GetSecrets", "/mqtt").Return(expectedMqttSecrets, nil)
 
-	target := NewMqttFactory(logger.NewMockClient(), mockSecretProvider, "", "", false)
+	dic.Update(di.ServiceConstructorMap{
+		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
+			return mockSecretProvider
+		},
+	})
+
+	target := NewMqttFactory(context, "", "", false)
 	tests := []struct {
 		Name            string
 		AuthMode        string
@@ -201,7 +230,7 @@ func TestGetSecrets(t *testing.T) {
 }
 
 func TestConfigureMQTTClientForAuth(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	tests := []struct {
 		Name             string
@@ -229,7 +258,7 @@ func TestConfigureMQTTClientForAuth(t *testing.T) {
 	}
 }
 func TestConfigureMQTTClientForAuthWithUsernamePassword(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = AuthModeUsernamePassword
 	err := target.configureMQTTClientForAuth(mqttSecrets{
@@ -244,7 +273,7 @@ func TestConfigureMQTTClientForAuthWithUsernamePassword(t *testing.T) {
 
 }
 func TestConfigureMQTTClientForAuthWithUsernamePasswordAndCA(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = AuthModeUsernamePassword
 	err := target.configureMQTTClientForAuth(mqttSecrets{
@@ -260,7 +289,7 @@ func TestConfigureMQTTClientForAuthWithUsernamePasswordAndCA(t *testing.T) {
 }
 
 func TestConfigureMQTTClientForAuthWithCACert(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = AuthModeCA
 	err := target.configureMQTTClientForAuth(mqttSecrets{
@@ -276,7 +305,7 @@ func TestConfigureMQTTClientForAuthWithCACert(t *testing.T) {
 	assert.Nil(t, target.opts.TLSConfig.Certificates)
 }
 func TestConfigureMQTTClientForAuthWithClientCert(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = AuthModeCert
 	err := target.configureMQTTClientForAuth(mqttSecrets{
@@ -294,7 +323,7 @@ func TestConfigureMQTTClientForAuthWithClientCert(t *testing.T) {
 }
 
 func TestConfigureMQTTClientForAuthWithClientCertNoCA(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = AuthModeCert
 	err := target.configureMQTTClientForAuth(mqttSecrets{
@@ -311,7 +340,7 @@ func TestConfigureMQTTClientForAuthWithClientCertNoCA(t *testing.T) {
 	assert.Nil(t, target.opts.TLSConfig.ClientCAs)
 }
 func TestConfigureMQTTClientForAuthWithNone(t *testing.T) {
-	target := NewMqttFactory(logger.NewMockClient(), nil, "", "", false)
+	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = AuthModeNone
 	err := target.configureMQTTClientForAuth(mqttSecrets{})

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,25 +27,25 @@ import (
 )
 
 func TestSetRetryDataPersistFalse(t *testing.T) {
-	context.RetryData = nil
+	context.SetRetryData(nil)
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, false)
 	sender.mqttConfig = MQTTSecretConfig{}
 	sender.setRetryData(context, []byte("data"))
-	assert.Nil(t, context.RetryData)
+	assert.Nil(t, context.RetryData())
 }
 
 func TestSetRetryDataPersistTrue(t *testing.T) {
-	context.RetryData = nil
+	context.SetRetryData(nil)
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
 	sender.setRetryData(context, []byte("data"))
-	assert.Equal(t, []byte("data"), context.RetryData)
+	assert.Equal(t, []byte("data"), context.RetryData())
 }
 
-func TestMQTTSendNoParams(t *testing.T) {
+func TestMQTTSendNodata(t *testing.T) {
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
-	continuePipeline, result := sender.MQTTSend(context)
+	continuePipeline, result := sender.MQTTSend(context, nil)
 	require.False(t, continuePipeline)
 	require.Error(t, result.(error))
 }

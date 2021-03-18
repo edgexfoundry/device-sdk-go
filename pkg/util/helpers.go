@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ func DeleteEmptyAndTrim(s []string) []string {
 	return r
 }
 
-//CoerceType will accept a string, []byte, or json.Marshaler type and convert it to a []byte for use and consistency in the SDK
+//CoerceType will accept a string, []byte, or json.Marshaller type and convert it to a []byte for use and consistency in the SDK
 func CoerceType(param interface{}) ([]byte, error) {
 	var data []byte
 	var err error

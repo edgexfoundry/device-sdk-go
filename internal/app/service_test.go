@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-package appsdk
+package app
 
 import (
 	"fmt"
@@ -23,13 +23,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	triggerHttp "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/gorilla/mux"
@@ -38,10 +41,20 @@ import (
 )
 
 var lc logger.LoggingClient
+var dic *di.Container
 
 func TestMain(m *testing.M) {
 	// No remote and no file results in STDOUT logging only
 	lc = logger.NewMockClient()
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return lc
+		},
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &common.ConfigurationStruct{}
+		},
+	})
+
 	m.Run()
 }
 
@@ -51,9 +64,10 @@ func IsInstanceOf(objectPtr, typePtr interface{}) bool {
 
 func TestAddRoute(t *testing.T) {
 	router := mux.NewRouter()
-	ws := webserver.NewWebServer(&common.ConfigurationStruct{}, nil, lc, router)
 
-	sdk := AppFunctionsSDK{
+	ws := webserver.NewWebServer(dic, router)
+
+	sdk := Service{
 		webserver: ws,
 	}
 	_ = sdk.AddRoute("/test", func(http.ResponseWriter, *http.Request) {}, http.MethodGet)
@@ -69,7 +83,7 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestAddBackgroundPublisher(t *testing.T) {
-	sdk := AppFunctionsSDK{}
+	sdk := Service{}
 	pub, ok := sdk.AddBackgroundPublisher(1).(*backgroundPublisher)
 
 	if !ok {
@@ -77,16 +91,16 @@ func TestAddBackgroundPublisher(t *testing.T) {
 	}
 
 	require.NotNil(t, pub.output, "publisher should have an output channel set")
-	require.NotNil(t, sdk.backgroundChannel, "sdk should have a background channel set for passing to trigger initialization")
+	require.NotNil(t, sdk.backgroundPublishChannel, "svc should have a background channel set for passing to trigger initialization")
 
 	// compare addresses since types will not match
-	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundChannel), fmt.Sprintf("%p", pub.output),
+	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundPublishChannel), fmt.Sprintf("%p", pub.output),
 		"same channel should be referenced by the BackgroundPublisher and the SDK.")
 }
 
 func TestSetupHTTPTrigger(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Trigger: common.TriggerInfo{
 				Type: "htTp",
@@ -94,7 +108,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 		},
 	}
 	testRuntime := &runtime.GolangRuntime{}
-	testRuntime.Initialize(nil, nil)
+	testRuntime.Initialize(dic)
 	testRuntime.SetTransforms(sdk.transforms)
 	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
@@ -102,8 +116,8 @@ func TestSetupHTTPTrigger(t *testing.T) {
 }
 
 func TestSetupMessageBusTrigger(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Trigger: common.TriggerInfo{
 				Type: TriggerTypeMessageBus,
@@ -111,7 +125,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 		},
 	}
 	testRuntime := &runtime.GolangRuntime{}
-	testRuntime.Initialize(nil, nil)
+	testRuntime.Initialize(dic)
 	testRuntime.SetTransforms(sdk.transforms)
 	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
@@ -119,8 +133,8 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 }
 
 func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Trigger: common.TriggerInfo{
 				Type: TriggerTypeMessageBus,
@@ -133,20 +147,20 @@ func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 }
 
 func TestSetFunctionsPipelineOneTransform(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		runtime:       &runtime.GolangRuntime{},
+	sdk := Service{
+		lc:      lc,
+		runtime: &runtime.GolangRuntime{},
 		config: &common.ConfigurationStruct{
 			Trigger: common.TriggerInfo{
 				Type: TriggerTypeMessageBus,
 			},
 		},
 	}
-	function := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
+	function := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		return true, nil
 	}
 
-	sdk.runtime.Initialize(nil, nil)
+	sdk.runtime.Initialize(dic)
 	err := sdk.SetFunctionsPipeline(function)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(sdk.transforms))
@@ -156,7 +170,7 @@ func TestApplicationSettings(t *testing.T) {
 	expectedSettingKey := "ApplicationName"
 	expectedSettingValue := "simple-filter-xml"
 
-	sdk := AppFunctionsSDK{
+	sdk := Service{
 		config: &common.ConfigurationStruct{
 			ApplicationSettings: map[string]string{
 				"ApplicationName": "simple-filter-xml",
@@ -173,7 +187,7 @@ func TestApplicationSettings(t *testing.T) {
 }
 
 func TestApplicationSettingsNil(t *testing.T) {
-	sdk := AppFunctionsSDK{
+	sdk := Service{
 		config: &common.ConfigurationStruct{},
 	}
 
@@ -185,7 +199,7 @@ func TestGetAppSettingStrings(t *testing.T) {
 	setting := "DeviceNames"
 	expected := []string{"dev1", "dev2"}
 
-	sdk := AppFunctionsSDK{
+	sdk := Service{
 		config: &common.ConfigurationStruct{
 			ApplicationSettings: map[string]string{
 				"DeviceNames": "dev1,   dev2",
@@ -202,7 +216,7 @@ func TestGetAppSettingStringsSettingMissing(t *testing.T) {
 	setting := "DeviceNames"
 	expected := "setting not found in ApplicationSettings"
 
-	sdk := AppFunctionsSDK{
+	sdk := Service{
 		config: &common.ConfigurationStruct{
 			ApplicationSettings: map[string]string{},
 		},
@@ -217,7 +231,7 @@ func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
 	setting := "DeviceNames"
 	expected := "ApplicationSettings section is missing"
 
-	sdk := AppFunctionsSDK{
+	sdk := Service{
 		config: &common.ConfigurationStruct{},
 	}
 
@@ -227,8 +241,8 @@ func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
 }
 
 func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
@@ -249,8 +263,8 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 	functions := make(map[string]common.PipelineFunction)
 	functions["Bogus"] = common.PipelineFunction{}
 
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
@@ -275,14 +289,14 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 	functions["Transform"] = common.PipelineFunction{
 		Parameters: map[string]string{TransformType: TransformXml},
 	}
-	functions["SetOutputData"] = common.PipelineFunction{}
+	functions["SetResponseData"] = common.PipelineFunction{}
 
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder: "FilterByDeviceName, Transform, SetOutputData",
+					ExecutionOrder: "FilterByDeviceName, Transform, SetResponseData",
 					Functions:      functions,
 				},
 			},
@@ -300,14 +314,14 @@ func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 	functions["Compress"] = common.PipelineFunction{
 		Parameters: map[string]string{Algorithm: CompressGZIP},
 	}
-	functions["SetOutputData"] = common.PipelineFunction{}
+	functions["SetResponseData"] = common.PipelineFunction{}
 
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder:           "Compress, SetOutputData",
+					ExecutionOrder:           "Compress, SetResponseData",
 					UseTargetTypeOfByteArray: true,
 					Functions:                functions,
 				},
@@ -317,9 +331,9 @@ func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
 
 	_, err := sdk.LoadConfigurablePipeline()
 	require.NoError(t, err)
-	require.NotNil(t, sdk.TargetType)
-	assert.Equal(t, reflect.Ptr, reflect.TypeOf(sdk.TargetType).Kind())
-	assert.Equal(t, reflect.TypeOf([]byte{}).Kind(), reflect.TypeOf(sdk.TargetType).Elem().Kind())
+	require.NotNil(t, sdk.targetType)
+	assert.Equal(t, reflect.Ptr, reflect.TypeOf(sdk.targetType).Kind())
+	assert.Equal(t, reflect.TypeOf([]byte{}).Kind(), reflect.TypeOf(sdk.targetType).Elem().Kind())
 }
 
 func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
@@ -327,14 +341,14 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 	functions["Compress"] = common.PipelineFunction{
 		Parameters: map[string]string{Algorithm: CompressGZIP},
 	}
-	functions["SetOutputData"] = common.PipelineFunction{}
+	functions["SetResponseData"] = common.PipelineFunction{}
 
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
+	sdk := Service{
+		lc: lc,
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder:           "Compress, SetOutputData",
+					ExecutionOrder:           "Compress, SetResponseData",
 					UseTargetTypeOfByteArray: false,
 					Functions:                functions,
 				},
@@ -344,13 +358,14 @@ func TestUseTargetTypeOfByteArrayFalse(t *testing.T) {
 
 	_, err := sdk.LoadConfigurablePipeline()
 	require.NoError(t, err)
-	assert.Nil(t, sdk.TargetType)
+	assert.Nil(t, sdk.targetType)
 }
 
 func TestSetServiceKey(t *testing.T) {
-	sdk := AppFunctionsSDK{
-		LoggingClient: lc,
-		ServiceKey:    "MyAppService",
+	sdk := Service{
+		lc:                       lc,
+		serviceKey:               "MyAppService",
+		profileSuffixPlaceholder: interfaces.ProfileSuffixPlaceholder,
 	}
 
 	tests := []struct {
@@ -365,13 +380,13 @@ func TestSetServiceKey(t *testing.T) {
 	}{
 		{
 			name:               "No profile",
-			originalServiceKey: "MyAppService" + ProfileSuffixPlaceholder,
+			originalServiceKey: "MyAppService" + interfaces.ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService",
 		},
 		{
 			name:               "Profile specified, no override",
 			profile:            "mqtt-export",
-			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			originalServiceKey: "MyAppService-" + interfaces.ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-mqtt-export",
 		},
 		{
@@ -379,14 +394,14 @@ func TestSetServiceKey(t *testing.T) {
 			profile:            "rules-engine",
 			profileEnvVar:      envProfile,
 			profileEnvValue:    "rules-engine-redis",
-			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			originalServiceKey: "MyAppService-" + interfaces.ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-rules-engine-redis",
 		},
 		{
 			name:               "No profile specified with V2 override",
 			profileEnvVar:      envProfile,
 			profileEnvValue:    "http-export",
-			originalServiceKey: "MyAppService-" + ProfileSuffixPlaceholder,
+			originalServiceKey: "MyAppService-" + interfaces.ProfileSuffixPlaceholder,
 			expectedServiceKey: "MyAppService-http-export",
 		},
 		{
@@ -446,13 +461,13 @@ func TestSetServiceKey(t *testing.T) {
 			defer os.Clearenv()
 
 			if len(test.serviceKeyCommandLineOverride) > 0 {
-				sdk.serviceKeyOverride = test.serviceKeyCommandLineOverride
+				sdk.commandLine.serviceKeyOverride = test.serviceKeyCommandLineOverride
 			}
 
-			sdk.ServiceKey = test.originalServiceKey
+			sdk.serviceKey = test.originalServiceKey
 			sdk.setServiceKey(test.profile)
 
-			assert.Equal(t, test.expectedServiceKey, sdk.ServiceKey)
+			assert.Equal(t, test.expectedServiceKey, sdk.serviceKey)
 		})
 	}
 }
@@ -460,16 +475,18 @@ func TestSetServiceKey(t *testing.T) {
 func TestMakeItStop(t *testing.T) {
 	stopCalled := false
 
-	sdk := AppFunctionsSDK{
-		stop: func() {
-			stopCalled = true
+	sdk := Service{
+		ctx: contextGroup{
+			stop: func() {
+				stopCalled = true
+			},
 		},
-		LoggingClient: logger.NewMockClient(),
+		lc: logger.NewMockClient(),
 	}
 
 	sdk.MakeItStop()
-	require.True(t, stopCalled, "Cancel function set at sdk.stop should be called if set")
+	require.True(t, stopCalled, "Cancel function set at svc.stop should be called if set")
 
-	sdk.stop = nil
+	sdk.ctx.stop = nil
 	sdk.MakeItStop() //should avoid nil pointer
 }

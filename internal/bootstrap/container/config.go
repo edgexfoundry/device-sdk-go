@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,14 +16,15 @@
 package container
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 )
 
 // ConfigurationName contains the name of data's common.ConfigurationStruct implementation in the DIC.
 var ConfigurationName = di.TypeInstanceToName(common.ConfigurationStruct{})
 
-// ConfigurationFrom helper function queries the DIC and returns datas's common.ConfigurationStruct implementation.
+// ConfigurationFrom helper function queries the DIC and returns service's common.ConfigurationStruct implementation.
 func ConfigurationFrom(get di.Get) *common.ConfigurationStruct {
 	return get(ConfigurationName).(*common.ConfigurationStruct)
 }

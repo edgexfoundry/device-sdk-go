@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,16 +25,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
-
+	mocks2 "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,28 +39,7 @@ const (
 	badPath = "/some-path/bad"
 )
 
-var lc logger.LoggingClient
-var config *common.ConfigurationStruct
-var context *appcontext.Context
-
-func TestMain(m *testing.M) {
-	lc = logger.NewMockClient()
-	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
-
-	config = &common.ConfigurationStruct{}
-
-	context = &appcontext.Context{
-		LoggingClient: lc,
-		EventClient:   eventClient,
-		Configuration: config,
-	}
-
-	m.Run()
-}
-
 func TestHTTPPostPut(t *testing.T) {
-	context.CorrelationID = "123"
-
 	var methodUsed string
 
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +91,7 @@ func TestHTTPPostPut(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			context.RetryData = nil
+			context.SetRetryData(nil)
 			methodUsed = ""
 			sender := NewHTTPSender(`http://`+targetUrl.Host+test.Path, "", test.PersistOnFail)
 
@@ -128,7 +101,7 @@ func TestHTTPPostPut(t *testing.T) {
 				sender.HTTPPut(context, msgStr)
 			}
 
-			assert.Equal(t, test.RetryDataSet, context.RetryData != nil)
+			assert.Equal(t, test.RetryDataSet, context.RetryData() != nil)
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
 		})
 	}
@@ -139,10 +112,15 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 
 	expectedValue := "my-API-key"
 
-	mockSP := &mocks.SecretProvider{}
+	mockSP := &mocks2.SecretProvider{}
 	mockSP.On("GetSecrets", "/path", "header").Return(map[string]string{"Secret-Header-Name": expectedValue}, nil)
 	mockSP.On("GetSecrets", "/path", "bogus").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
-	context.SecretProvider = mockSP
+
+	dic.Update(di.ServiceConstructorMap{
+		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
+			return mockSP
+		},
+	})
 
 	// create test server with handler
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -221,7 +199,7 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
-	continuePipeline, result := sender.HTTPPost(context)
+	continuePipeline, result := sender.HTTPPost(context, nil)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
@@ -230,7 +208,7 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 
 func TestHTTPPutNoParameterPassed(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
-	continuePipeline, result := sender.HTTPPut(context)
+	continuePipeline, result := sender.HTTPPut(context, nil)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")

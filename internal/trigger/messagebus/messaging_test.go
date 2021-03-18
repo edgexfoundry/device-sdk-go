@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,11 +23,14 @@ import (
 	"testing"
 	"time"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -44,8 +47,6 @@ import (
 // Note the constant TriggerTypeMessageBus can not be used due to cyclic imports
 const TriggerTypeMessageBus = "EDGEX-MESSAGEBUS"
 
-var lc logger.LoggingClient
-
 var addEventRequest = createTestEventRequest()
 var expectedEvent = addEventRequest.Event
 
@@ -56,8 +57,14 @@ func createTestEventRequest() requests.AddEventRequest {
 	return request
 }
 
+var dic *di.Container
+
 func TestMain(m *testing.M) {
-	lc = logger.NewMockClient()
+	dic = di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+	})
 	m.Run()
 }
 
@@ -85,10 +92,18 @@ func TestInitialize(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	goRuntime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
-	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	trigger := NewTrigger(dic, goRuntime)
+
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
 	assert.NotNil(t, trigger.client, "Expected client to be set")
 	assert.Equal(t, 1, len(trigger.topics))
 	assert.Equal(t, "events", trigger.topics[0].Topic)
@@ -119,9 +134,15 @@ func TestInitializeBadConfiguration(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	goRuntime := &runtime.GolangRuntime{}
 
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
+	trigger := NewTrigger(dic, goRuntime)
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	assert.Error(t, err)
 }
@@ -149,21 +170,28 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	expectedCorrelationID := "123"
 
-	transformWasCalled := common.AtomicBool{}
+	transformWasCalled := make(chan bool, 1)
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		transformWasCalled.Set(true)
-		assert.Equal(t, expectedEvent, params[0])
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		assert.Equal(t, expectedEvent, data)
+		transformWasCalled <- true
 		return false, nil
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(nil, nil)
-	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
-	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	goRuntime.Initialize(dic)
+	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	trigger := NewTrigger(dic, goRuntime)
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
 
 	payload, err := json.Marshal(addEventRequest)
 	require.NoError(t, err)
@@ -185,13 +213,16 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	testClient, err := messaging.NewMessageClient(testClientConfig)
 	require.NoError(t, err, "Unable to create to publisher")
-	assert.False(t, transformWasCalled.Value())
 
 	err = testClient.Publish(message, "") //transform1 should be called after this executes
 	require.NoError(t, err, "Failed to publish message")
 
-	time.Sleep(3 * time.Second)
-	assert.True(t, transformWasCalled.Value(), "Transform never called")
+	select {
+	case <-transformWasCalled:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
 }
 
 func TestInitializeAndProcessEventWithOutput(t *testing.T) {
@@ -217,25 +248,31 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	responseContentType := uuid.New().String()
 
 	expectedCorrelationID := "123"
 
-	transformWasCalled := common.AtomicBool{}
+	transformWasCalled := make(chan bool, 1)
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		transformWasCalled.Set(true)
-		assert.Equal(t, expectedEvent, params[0])
-		edgexcontext.ResponseContentType = responseContentType
-		edgexcontext.Complete([]byte("Transformed")) //transformed message published to message bus
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		assert.Equal(t, expectedEvent, data)
+		appContext.SetResponseContentType(responseContentType)
+		appContext.SetResponseData([]byte("Transformed")) //transformed message published to message bus
+		transformWasCalled <- true
 		return false, nil
 
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(nil, nil)
-	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
+	goRuntime.Initialize(dic)
+	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -253,7 +290,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -270,13 +307,15 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 		ContentType:   clients.ContentTypeJSON,
 	}
 
-	assert.False(t, transformWasCalled.Value())
 	err = testClient.Publish(message, "SubscribeTopic")
 	require.NoError(t, err, "Failed to publish message")
 
-	time.Sleep(3 * time.Second)
-	require.True(t, transformWasCalled.Value(), "Transform never called")
-
+	select {
+	case <-transformWasCalled:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
 	receiveMessage := true
 
 	for receiveMessage {
@@ -315,22 +354,28 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	expectedCorrelationID := "123"
 
-	transformWasCalled := common.AtomicBool{}
+	transformWasCalled := make(chan bool, 1)
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		transformWasCalled.Set(true)
-		assert.Equal(t, expectedEvent, params[0])
-		edgexcontext.Complete([]byte("{;)Transformed")) //transformed message published to message bus
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		assert.Equal(t, expectedEvent, data)
+		appContext.SetResponseData([]byte("{;)Transformed")) //transformed message published to message bus
+		transformWasCalled <- true
 		return false, nil
 
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(nil, nil)
-	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
+	goRuntime.Initialize(dic)
+	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -348,7 +393,7 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -365,12 +410,15 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 		ContentType:   clients.ContentTypeJSON,
 	}
 
-	assert.False(t, transformWasCalled.Value())
 	err = testClient.Publish(message, "SubscribeTopic")
 	require.NoError(t, err, "Failed to publish message")
 
-	time.Sleep(3 * time.Second)
-	require.True(t, transformWasCalled.Value(), "Transform never called")
+	select {
+	case <-transformWasCalled:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
 
 	receiveMessage := true
 
@@ -410,22 +458,27 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	expectedCorrelationID := "123"
 
-	transformWasCalled := common.AtomicBool{}
+	transformWasCalled := make(chan bool, 1)
 
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		transformWasCalled.Set(true)
-		assert.Equal(t, expectedEvent, params[0])
-		edgexcontext.Complete([]byte("Transformed")) //transformed message published to message bus
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		assert.Equal(t, expectedEvent, data)
+		appContext.SetResponseData([]byte("Transformed")) //transformed message published to message bus
+		transformWasCalled <- true
 		return false, nil
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(nil, nil)
-	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
-
+	goRuntime.Initialize(dic)
+	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	trigger := NewTrigger(dic, goRuntime)
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
 			Host:     "localhost",
@@ -442,12 +495,13 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
 	require.NoError(t, err)
-	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
 
 	payload, _ := json.Marshal(addEventRequest)
 
@@ -457,12 +511,15 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 		ContentType:   clients.ContentTypeJSON,
 	}
 
-	assert.False(t, transformWasCalled.Value())
 	err = testClient.Publish(message, "SubscribeTopic")
 	require.NoError(t, err, "Failed to publish message")
 
-	time.Sleep(3 * time.Second)
-	require.True(t, transformWasCalled.Value(), "Transform never called")
+	select {
+	case <-transformWasCalled:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
 
 	receiveMessage := true
 
@@ -502,13 +559,19 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	expectedCorrelationID := "123"
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 
 	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(nil, nil)
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
+	goRuntime.Initialize(dic)
+	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -526,7 +589,7 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: trigger.Configuration.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -534,7 +597,8 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	background := make(chan types.MessageEnvelope)
 
-	_, _ = trigger.Initialize(&sync.WaitGroup{}, context.Background(), background)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), background)
+	require.NoError(t, err)
 
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
@@ -580,19 +644,25 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 		},
 	}
 
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
 	expectedCorrelationID := "123"
 
-	done := make(chan bool)
-	transform1 := func(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-		require.Equal(t, expectedEvent, params[0])
-		done <- true
+	transformWasCalled := make(chan bool, 1)
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		require.Equal(t, expectedEvent, data)
+		transformWasCalled <- true
 		return false, nil
 	}
 
 	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(nil, nil)
-	goRuntime.SetTransforms([]appcontext.AppFunction{transform1})
-	trigger := Trigger{Configuration: &config, Runtime: goRuntime, EdgeXClients: common.EdgeXClients{LoggingClient: lc}}
+	goRuntime.Initialize(dic)
+	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	trigger := NewTrigger(dic, goRuntime)
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
@@ -620,7 +690,7 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	require.NoError(t, err, "Failed to publish message")
 
 	select {
-	case <-done:
+	case <-transformWasCalled:
 		// do nothing, just need to fall out.
 	case <-time.After(3 * time.Second):
 		require.Fail(t, "Transform never called for t1")
@@ -630,7 +700,7 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	require.NoError(t, err, "Failed to publish message")
 
 	select {
-	case <-done:
+	case <-transformWasCalled:
 		// do nothing, just need to fall out.
 	case <-time.After(3 * time.Second):
 		require.Fail(t, "Transform never called t2")

@@ -50,19 +50,18 @@ func TestFilter_FilterByProfileName(t *testing.T) {
 		FilterOut         bool
 		EventIn           *dtos.Event
 		ExpectedNilResult bool
-		ExtraParam        bool
 	}{
-		{"filter for - no event", []string{profileName1}, true, nil, true, false},
-		{"filter for - no filter values", []string{}, false, &profile1Event, false, false},
-		{"filter for with extra params - found", []string{profileName1}, false, &profile1Event, false, true},
-		{"filter for - found", []string{profileName1}, false, &profile1Event, false, false},
-		{"filter for - not found", []string{profileName2}, false, &profile1Event, true, false},
+		{"filter for - no event", []string{profileName1}, true, nil, true},
+		{"filter for - no filter values", []string{}, false, &profile1Event, false},
+		{"filter for with extra data - found", []string{profileName1}, false, &profile1Event, false},
+		{"filter for - found", []string{profileName1}, false, &profile1Event, false},
+		{"filter for - not found", []string{profileName2}, false, &profile1Event, true},
 
-		{"filter out - no event", []string{profileName1}, true, nil, true, false},
-		{"filter out - no filter values", []string{}, true, &profile1Event, false, false},
-		{"filter out extra param - found", []string{profileName1}, true, &profile1Event, true, true},
-		{"filter out - found", []string{profileName1}, true, &profile1Event, true, false},
-		{"filter out - not found", []string{profileName2}, true, &profile1Event, false, false},
+		{"filter out - no event", []string{profileName1}, true, nil, true},
+		{"filter out - no filter values", []string{}, true, &profile1Event, false},
+		{"filter out extra param - found", []string{profileName1}, true, &profile1Event, true},
+		{"filter out - found", []string{profileName1}, true, &profile1Event, true},
+		{"filter out - not found", []string{profileName2}, true, &profile1Event, false},
 	}
 
 	for _, test := range tests {
@@ -77,17 +76,11 @@ func TestFilter_FilterByProfileName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterByProfileName(context)
+				continuePipeline, result := filter.FilterByProfileName(context, nil)
 				assert.EqualError(t, result.(error), "FilterByProfileName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				var continuePipeline bool
-				var result interface{}
-				if test.ExtraParam {
-					continuePipeline, result = filter.FilterByProfileName(context, *test.EventIn, "application/event")
-				} else {
-					continuePipeline, result = filter.FilterByProfileName(context, *test.EventIn)
-				}
+				continuePipeline, result := filter.FilterByProfileName(context, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil && test.EventIn != nil {
@@ -107,19 +100,18 @@ func TestFilter_FilterByDeviceName(t *testing.T) {
 		FilterOut         bool
 		EventIn           *dtos.Event
 		ExpectedNilResult bool
-		ExtraParams       bool
 	}{
-		{"filter for - no event", []string{deviceName1}, false, nil, true, false},
-		{"filter for - no filter values", []string{}, false, &device1Event, false, false},
-		{"filter for with extra params - found", []string{deviceName1}, false, &device1Event, false, true},
-		{"filter for - found", []string{deviceName1}, false, &device1Event, false, false},
-		{"filter for - not found", []string{deviceName2}, false, &device1Event, true, false},
+		{"filter for - no event", []string{deviceName1}, false, nil, true},
+		{"filter for - no filter values", []string{}, false, &device1Event, false},
+		{"filter for with extra data - found", []string{deviceName1}, false, &device1Event, false},
+		{"filter for - found", []string{deviceName1}, false, &device1Event, false},
+		{"filter for - not found", []string{deviceName2}, false, &device1Event, true},
 
-		{"filter out - no event", []string{deviceName1}, true, nil, true, false},
-		{"filter out - no filter values", []string{}, true, &device1Event, false, false},
-		{"filter out extra param - found", []string{deviceName1}, true, &device1Event, true, true},
-		{"filter out - found", []string{deviceName1}, true, &device1Event, true, false},
-		{"filter out - not found", []string{deviceName2}, true, &device1Event, false, false},
+		{"filter out - no event", []string{deviceName1}, true, nil, true},
+		{"filter out - no filter values", []string{}, true, &device1Event, false},
+		{"filter out extra param - found", []string{deviceName1}, true, &device1Event, true},
+		{"filter out - found", []string{deviceName1}, true, &device1Event, true},
+		{"filter out - not found", []string{deviceName2}, true, &device1Event, false},
 	}
 
 	for _, test := range tests {
@@ -134,17 +126,11 @@ func TestFilter_FilterByDeviceName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterByDeviceName(context)
+				continuePipeline, result := filter.FilterByDeviceName(context, nil)
 				assert.EqualError(t, result.(error), "FilterByDeviceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				var continuePipeline bool
-				var result interface{}
-				if test.ExtraParams {
-					continuePipeline, result = filter.FilterByDeviceName(context, *test.EventIn, "application/event")
-				} else {
-					continuePipeline, result = filter.FilterByDeviceName(context, *test.EventIn)
-				}
+				continuePipeline, result := filter.FilterByDeviceName(context, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil && test.EventIn != nil {
@@ -164,19 +150,18 @@ func TestFilter_FilterBySourceName(t *testing.T) {
 		FilterOut         bool
 		EventIn           *dtos.Event
 		ExpectedNilResult bool
-		ExtraParam        bool
 	}{
-		{"filter for - no event", []string{sourceName1}, true, nil, true, false},
-		{"filter for - no filter values", []string{}, false, &source1Event, false, false},
-		{"filter for with extra params - found", []string{sourceName1}, false, &source1Event, false, true},
-		{"filter for - found", []string{sourceName1}, false, &source1Event, false, false},
-		{"filter for - not found", []string{sourceName2}, false, &source1Event, true, false},
+		{"filter for - no event", []string{sourceName1}, true, nil, true},
+		{"filter for - no filter values", []string{}, false, &source1Event, false},
+		{"filter for with extra data - found", []string{sourceName1}, false, &source1Event, false},
+		{"filter for - found", []string{sourceName1}, false, &source1Event, false},
+		{"filter for - not found", []string{sourceName2}, false, &source1Event, true},
 
-		{"filter out - no event", []string{sourceName1}, true, nil, true, false},
-		{"filter out - no filter values", []string{}, true, &source1Event, false, false},
-		{"filter out extra param - found", []string{sourceName1}, true, &source1Event, true, true},
-		{"filter out - found", []string{sourceName1}, true, &source1Event, true, false},
-		{"filter out - not found", []string{sourceName2}, true, &source1Event, false, false},
+		{"filter out - no event", []string{sourceName1}, true, nil, true},
+		{"filter out - no filter values", []string{}, true, &source1Event, false},
+		{"filter out extra param - found", []string{sourceName1}, true, &source1Event, true},
+		{"filter out - found", []string{sourceName1}, true, &source1Event, true},
+		{"filter out - not found", []string{sourceName2}, true, &source1Event, false},
 	}
 
 	for _, test := range tests {
@@ -191,17 +176,11 @@ func TestFilter_FilterBySourceName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterBySourceName(context)
+				continuePipeline, result := filter.FilterBySourceName(context, nil)
 				assert.EqualError(t, result.(error), "FilterBySourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				var continuePipeline bool
-				var result interface{}
-				if test.ExtraParam {
-					continuePipeline, result = filter.FilterBySourceName(context, *test.EventIn, "application/event")
-				} else {
-					continuePipeline, result = filter.FilterBySourceName(context, *test.EventIn)
-				}
+				continuePipeline, result := filter.FilterBySourceName(context, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil && test.EventIn != nil {
@@ -241,29 +220,28 @@ func TestFilter_FilterByResourceName(t *testing.T) {
 		FilterOut            bool
 		EventIn              *dtos.Event
 		ExpectedNilResult    bool
-		ExtraParams          bool
 		ExpectedReadingCount int
 	}{
-		{"filter for - no event", []string{resource1}, false, nil, true, false, 0},
-		{"filter for extra param - found", []string{resource1}, false, &resource1Event, false, true, 1},
-		{"filter for 0 in R1 - no change", []string{}, false, &resource1Event, false, false, 1},
-		{"filter for 1 in R1 - 1 of 1 found", []string{resource1}, false, &resource1Event, false, false, 1},
-		{"filter for 1 in 2R - 1 of 2 found", []string{resource1}, false, &twoResourceEvent, false, false, 1},
-		{"filter for 2 in R1 - 1 of 1 found", []string{resource1, resource2}, false, &resource1Event, false, false, 1},
-		{"filter for 2 in 2R - 2 of 2 found", []string{resource1, resource2}, false, &twoResourceEvent, false, false, 2},
-		{"filter for 2 in R2 - 1 of 2 found", []string{resource1, resource2}, false, &resource2Event, false, false, 1},
-		{"filter for 1 in R2 - not found", []string{resource1}, false, &resource2Event, true, false, 0},
+		{"filter for - no event", []string{resource1}, false, nil, true, 0},
+		{"filter for extra param - found", []string{resource1}, false, &resource1Event, false, 1},
+		{"filter for 0 in R1 - no change", []string{}, false, &resource1Event, false, 1},
+		{"filter for 1 in R1 - 1 of 1 found", []string{resource1}, false, &resource1Event, false, 1},
+		{"filter for 1 in 2R - 1 of 2 found", []string{resource1}, false, &twoResourceEvent, false, 1},
+		{"filter for 2 in R1 - 1 of 1 found", []string{resource1, resource2}, false, &resource1Event, false, 1},
+		{"filter for 2 in 2R - 2 of 2 found", []string{resource1, resource2}, false, &twoResourceEvent, false, 2},
+		{"filter for 2 in R2 - 1 of 2 found", []string{resource1, resource2}, false, &resource2Event, false, 1},
+		{"filter for 1 in R2 - not found", []string{resource1}, false, &resource2Event, true, 0},
 
-		{"filter out - no event", []string{resource1}, true, nil, true, false, 0},
-		{"filter out extra param - found", []string{resource1}, true, &resource1Event, true, true, 0},
-		{"filter out 0 in R1 - no change", []string{}, true, &resource1Event, false, false, 1},
-		{"filter out 1 in R1 - 1 of 1 found", []string{resource1}, true, &resource1Event, true, false, 0},
-		{"filter out 1 in R2 - not found", []string{resource1}, true, &resource2Event, false, false, 1},
-		{"filter out 1 in 2R - 1 of 2 found", []string{resource1}, true, &twoResourceEvent, false, false, 1},
-		{"filter out 2 in R1 - 1 of 1 found", []string{resource1, resource2}, true, &resource1Event, true, false, 0},
-		{"filter out 2 in R2 - 1 of 1 found", []string{resource1, resource2}, true, &resource2Event, true, false, 0},
-		{"filter out 2 in 2R - 2 of 2 found", []string{resource1, resource2}, true, &twoResourceEvent, true, false, 0},
-		{"filter out 2 in R3 - not found", []string{resource1, resource2}, true, &resource3Event, false, false, 1},
+		{"filter out - no event", []string{resource1}, true, nil, true, 0},
+		{"filter out extra param - found", []string{resource1}, true, &resource1Event, true, 0},
+		{"filter out 0 in R1 - no change", []string{}, true, &resource1Event, false, 1},
+		{"filter out 1 in R1 - 1 of 1 found", []string{resource1}, true, &resource1Event, true, 0},
+		{"filter out 1 in R2 - not found", []string{resource1}, true, &resource2Event, false, 1},
+		{"filter out 1 in 2R - 1 of 2 found", []string{resource1}, true, &twoResourceEvent, false, 1},
+		{"filter out 2 in R1 - 1 of 1 found", []string{resource1, resource2}, true, &resource1Event, true, 0},
+		{"filter out 2 in R2 - 1 of 1 found", []string{resource1, resource2}, true, &resource2Event, true, 0},
+		{"filter out 2 in 2R - 2 of 2 found", []string{resource1, resource2}, true, &twoResourceEvent, true, 0},
+		{"filter out 2 in R3 - not found", []string{resource1, resource2}, true, &resource3Event, false, 1},
 	}
 
 	for _, test := range tests {
@@ -278,17 +256,11 @@ func TestFilter_FilterByResourceName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterByResourceName(context)
+				continuePipeline, result := filter.FilterByResourceName(context, nil)
 				assert.EqualError(t, result.(error), "FilterByResourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				var continuePipeline bool
-				var result interface{}
-				if test.ExtraParams {
-					continuePipeline, result = filter.FilterByResourceName(context, *test.EventIn, "application/event")
-				} else {
-					continuePipeline, result = filter.FilterByResourceName(context, *test.EventIn)
-				}
+				continuePipeline, result := filter.FilterByResourceName(context, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil {

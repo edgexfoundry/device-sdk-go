@@ -1,3 +1,19 @@
+//
+// Copyright (c) 2021 Intel Corporation
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 package transforms
 
 import (
@@ -13,7 +29,7 @@ var dataToBatch = [3]string{"Test1", "Test2", "Test3"}
 func TestBatchNoData(t *testing.T) {
 
 	bs, _ := NewBatchByCount(1)
-	continuePipeline, err := bs.Batch(context)
+	continuePipeline, err := bs.Batch(context, nil)
 	assert.False(t, continuePipeline)
 	assert.Equal(t, "No Data Received", err.(error).Error())
 

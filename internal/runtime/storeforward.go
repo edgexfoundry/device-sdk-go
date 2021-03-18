@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,20 +24,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 )
 
 const (
-	defaultMinRetryInterval = time.Duration(1 * time.Second)
+	defaultMinRetryInterval = 1 * time.Second
 )
 
 type storeForwardInfo struct {
 	runtime      *GolangRuntime
-	storeClient  interfaces.StoreClient
+	dic          *di.Container
 	pipelineHash string
 }
 
@@ -46,12 +49,13 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 	appCtx context.Context,
 	enabledWg *sync.WaitGroup,
 	enabledCtx context.Context,
-	serviceKey string,
-	config *common.ConfigurationStruct,
-	edgeXClients common.EdgeXClients) {
+	serviceKey string) {
 
 	appWg.Add(1)
 	enabledWg.Add(1)
+
+	config := container.ConfigurationFrom(sf.dic.Get)
+	lc := bootstrapContainer.LoggingClientFrom(sf.dic.Get)
 
 	go func() {
 		defer appWg.Done()
@@ -59,24 +63,24 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 
 		retryInterval, err := time.ParseDuration(config.Writable.StoreAndForward.RetryInterval)
 		if err != nil {
-			edgeXClients.LoggingClient.Warn(
+			lc.Warn(
 				fmt.Sprintf("StoreAndForward RetryInterval failed to parse, defaulting to %s",
 					defaultMinRetryInterval.String()))
 			retryInterval = defaultMinRetryInterval
 		} else if retryInterval < defaultMinRetryInterval {
-			edgeXClients.LoggingClient.Warn(
+			lc.Warn(
 				fmt.Sprintf("StoreAndForward RetryInterval value %s is less than the allowed minimum value, defaulting to %s",
 					retryInterval.String(), defaultMinRetryInterval.String()))
 			retryInterval = defaultMinRetryInterval
 		}
 
 		if config.Writable.StoreAndForward.MaxRetryCount < 0 {
-			edgeXClients.LoggingClient.Warn(
+			lc.Warn(
 				fmt.Sprintf("StoreAndForward MaxRetryCount can not be less than 0, defaulting to 1"))
 			config.Writable.StoreAndForward.MaxRetryCount = 1
 		}
 
-		edgeXClients.LoggingClient.Info(
+		lc.Info(
 			fmt.Sprintf("Starting StoreAndForward Retry Loop with %s RetryInterval and %d max retries",
 				retryInterval.String(), config.Writable.StoreAndForward.MaxRetryCount))
 
@@ -93,61 +97,66 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 				break exit
 
 			case <-time.After(retryInterval):
-				sf.retryStoredData(serviceKey, config, edgeXClients)
+				sf.retryStoredData(serviceKey)
 			}
 		}
 
-		edgeXClients.LoggingClient.Info("Exiting StoreAndForward Retry Loop")
+		lc.Info("Exiting StoreAndForward Retry Loop")
 	}()
 }
 
-func (sf *storeForwardInfo) storeForLaterRetry(payload []byte,
-	edgexcontext *appcontext.Context,
+func (sf *storeForwardInfo) storeForLaterRetry(
+	payload []byte,
+	appContext interfaces.AppFunctionContext,
 	pipelinePosition int) {
 
 	item := contracts.NewStoredObject(sf.runtime.ServiceKey, payload, pipelinePosition, sf.pipelineHash)
-	item.CorrelationID = edgexcontext.CorrelationID
+	item.CorrelationID = appContext.CorrelationID()
 
-	edgexcontext.LoggingClient.Trace("Storing data for later retry",
-		clients.CorrelationHeader, edgexcontext.CorrelationID)
+	appContext.LoggingClient().Trace("Storing data for later retry",
+		clients.CorrelationHeader, appContext.CorrelationID)
 
-	if !edgexcontext.Configuration.Writable.StoreAndForward.Enabled {
-		edgexcontext.LoggingClient.Error(
+	config := container.ConfigurationFrom(sf.dic.Get)
+	if !config.Writable.StoreAndForward.Enabled {
+		appContext.LoggingClient().Error(
 			"Failed to store item for later retry", "error", "StoreAndForward not enabled",
 			clients.CorrelationHeader, item.CorrelationID)
 		return
 	}
 
-	if _, err := sf.storeClient.Store(item); err != nil {
-		edgexcontext.LoggingClient.Error("Failed to store item for later retry",
+	storeClient := container.StoreClientFrom(sf.dic.Get)
+
+	if _, err := storeClient.Store(item); err != nil {
+		appContext.LoggingClient().Error("Failed to store item for later retry",
 			"error", err,
 			clients.CorrelationHeader, item.CorrelationID)
 	}
 }
 
-func (sf *storeForwardInfo) retryStoredData(serviceKey string,
-	config *common.ConfigurationStruct,
-	edgeXClients common.EdgeXClients) {
+func (sf *storeForwardInfo) retryStoredData(serviceKey string) {
 
-	items, err := sf.storeClient.RetrieveFromStore(serviceKey)
+	storeClient := container.StoreClientFrom(sf.dic.Get)
+	lc := bootstrapContainer.LoggingClientFrom(sf.dic.Get)
+
+	items, err := storeClient.RetrieveFromStore(serviceKey)
 	if err != nil {
-		edgeXClients.LoggingClient.Error("Unable to load store and forward items from DB", "error", err)
+		lc.Error("Unable to load store and forward items from DB", "error", err)
 		return
 	}
 
-	edgeXClients.LoggingClient.Debug(fmt.Sprintf(" %d stored data items found for retrying", len(items)))
+	lc.Debugf(" %d stored data items found for retrying", len(items))
 
 	if len(items) > 0 {
-		itemsToRemove, itemsToUpdate := sf.processRetryItems(items, config, edgeXClients)
+		itemsToRemove, itemsToUpdate := sf.processRetryItems(items)
 
-		edgeXClients.LoggingClient.Debug(
+		lc.Debug(
 			fmt.Sprintf(" %d stored data items will be removed post retry", len(itemsToRemove)))
-		edgeXClients.LoggingClient.Debug(
+		lc.Debug(
 			fmt.Sprintf(" %d stored data items will be update post retry", len(itemsToUpdate)))
 
 		for _, item := range itemsToRemove {
-			if err := sf.storeClient.RemoveFromStore(item); err != nil {
-				edgeXClients.LoggingClient.Error(
+			if err := storeClient.RemoveFromStore(item); err != nil {
+				lc.Error(
 					"Unable to remove stored data item from DB",
 					"error", err,
 					"objectID", item.ID,
@@ -156,8 +165,8 @@ func (sf *storeForwardInfo) retryStoredData(serviceKey string,
 		}
 
 		for _, item := range itemsToUpdate {
-			if err := sf.storeClient.Update(item); err != nil {
-				edgeXClients.LoggingClient.Error("Unable to update stored data item in DB",
+			if err := storeClient.Update(item); err != nil {
+				lc.Error("Unable to update stored data item in DB",
 					"error", err,
 					"objectID", item.ID,
 					clients.CorrelationHeader, item.CorrelationID)
@@ -166,20 +175,20 @@ func (sf *storeForwardInfo) retryStoredData(serviceKey string,
 	}
 }
 
-func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject,
-	config *common.ConfigurationStruct,
-	edgeXClients common.EdgeXClients) ([]contracts.StoredObject, []contracts.StoredObject) {
+func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject) ([]contracts.StoredObject, []contracts.StoredObject) {
+	lc := bootstrapContainer.LoggingClientFrom(sf.dic.Get)
+	config := container.ConfigurationFrom(sf.dic.Get)
 
 	var itemsToRemove []contracts.StoredObject
 	var itemsToUpdate []contracts.StoredObject
 
 	for _, item := range items {
 		if item.Version == sf.calculatePipelineHash() {
-			if !sf.retryExportFunction(item, config, edgeXClients) {
+			if !sf.retryExportFunction(item) {
 				item.RetryCount++
 				if config.Writable.StoreAndForward.MaxRetryCount == 0 ||
 					item.RetryCount < config.Writable.StoreAndForward.MaxRetryCount {
-					edgeXClients.LoggingClient.Trace("Export retry failed. Incrementing retry count",
+					lc.Trace("Export retry failed. Incrementing retry count",
 						"retries",
 						item.RetryCount,
 						clients.CorrelationHeader,
@@ -188,20 +197,20 @@ func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject,
 					continue
 				}
 
-				edgeXClients.LoggingClient.Trace(
+				lc.Trace(
 					"Max retries exceeded. Removing item from DB", "retries",
 					item.RetryCount,
 					clients.CorrelationHeader,
 					item.CorrelationID)
 				// Note that item will be removed for DB below.
 			} else {
-				edgeXClients.LoggingClient.Trace(
+				lc.Trace(
 					"Export retry successful. Removing item from DB",
 					clients.CorrelationHeader,
 					item.CorrelationID)
 			}
 		} else {
-			edgeXClients.LoggingClient.Error(
+			lc.Error(
 				"Stored data item's Function Pipeline Version doesn't match current Function Pipeline Version. Removing item from DB",
 				clients.CorrelationHeader,
 				item.CorrelationID)
@@ -218,24 +227,15 @@ func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject,
 	return itemsToRemove, itemsToUpdate
 }
 
-func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject, config *common.ConfigurationStruct,
-	edgeXClients common.EdgeXClients) bool {
-	edgexContext := &appcontext.Context{
-		CorrelationID:         item.CorrelationID,
-		Configuration:         config,
-		LoggingClient:         edgeXClients.LoggingClient,
-		EventClient:           edgeXClients.EventClient,
-		ValueDescriptorClient: edgeXClients.ValueDescriptorClient,
-		CommandClient:         edgeXClients.CommandClient,
-		NotificationsClient:   edgeXClients.NotificationsClient,
-	}
+func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject) bool {
+	appContext := appfunction.NewContext(item.CorrelationID, sf.dic, "")
 
-	edgexContext.LoggingClient.Trace("Retrying stored data", clients.CorrelationHeader, edgexContext.CorrelationID)
+	appContext.LoggingClient().Trace("Retrying stored data", clients.CorrelationHeader, appContext.CorrelationID)
 
 	return sf.runtime.ExecutePipeline(
 		item.Payload,
 		"",
-		edgexContext,
+		appContext,
 		sf.runtime.transforms,
 		item.PipelinePosition,
 		true) == nil

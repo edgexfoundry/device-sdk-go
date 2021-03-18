@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,7 +28,12 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+)
+
+const (
+	CoreCommandClientName   = "Command"
+	CoreDataClientName      = "CoreData"
+	NotificationsClientName = "Notifications"
 )
 
 // Clients contains references to dependencies required by the Clients bootstrap implementation.
@@ -42,9 +47,9 @@ func NewClients() *Clients {
 
 // BootstrapHandler setups all the clients that have be specified in the configuration
 func (_ *Clients) BootstrapHandler(
-	ctx context.Context,
-	wg *sync.WaitGroup,
-	startupTimer startup.Timer,
+	_ context.Context,
+	_ *sync.WaitGroup,
+	_ startup.Timer,
 	dic *di.Container) bool {
 
 	config := container.ConfigurationFrom(dic.Get)
@@ -56,22 +61,22 @@ func (_ *Clients) BootstrapHandler(
 
 	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
 	// sending commands, then don't need to have the Command client in the configuration.
-	if _, ok := config.Clients[common.CoreDataClientName]; ok {
+	if _, ok := config.Clients[CoreDataClientName]; ok {
 		eventClient = coredata.NewEventClient(
-			local.New(config.Clients[common.CoreDataClientName].Url() + clients.ApiEventRoute))
+			local.New(config.Clients[CoreDataClientName].Url() + clients.ApiEventRoute))
 
 		valueDescriptorClient = coredata.NewValueDescriptorClient(
-			local.New(config.Clients[common.CoreDataClientName].Url() + clients.ApiValueDescriptorRoute))
+			local.New(config.Clients[CoreDataClientName].Url() + clients.ApiValueDescriptorRoute))
 	}
 
-	if _, ok := config.Clients[common.CoreCommandClientName]; ok {
+	if _, ok := config.Clients[CoreCommandClientName]; ok {
 		commandClient = command.NewCommandClient(
-			local.New(config.Clients[common.CoreCommandClientName].Url() + clients.ApiDeviceRoute))
+			local.New(config.Clients[CoreCommandClientName].Url() + clients.ApiDeviceRoute))
 	}
 
-	if _, ok := config.Clients[common.NotificationsClientName]; ok {
+	if _, ok := config.Clients[NotificationsClientName]; ok {
 		notificationsClient = notifications.NewNotificationsClient(
-			local.New(config.Clients[common.NotificationsClientName].Url() + clients.ApiNotificationRoute))
+			local.New(config.Clients[NotificationsClientName].Url() + clients.ApiNotificationRoute))
 	}
 
 	// Note that all the clients are optional so some or all these clients may be nil

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package transforms
 import (
 	"errors"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
 
@@ -29,24 +29,26 @@ type CoreData struct {
 
 // NewCoreData Is provided to interact with CoreData
 func NewCoreData() *CoreData {
-	coredata := &CoreData{}
-	return coredata
+	coreData := &CoreData{}
+	return coreData
 }
 
 // PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
-func (cdc *CoreData) PushToCoreData(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
-		// We didn't receive a result
+func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	if data == nil {
 		return false, errors.New("No Data Received")
 	}
-	val, err := util.CoerceType(params[0])
+
+	val, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
-	result, err := edgexcontext.PushToCoreData(cdc.DeviceName, cdc.ReadingName, val)
+
+	result, err := ctx.PushToCoreData(cdc.DeviceName, cdc.ReadingName, val)
 	if err != nil {
 		return false, err
 	}
+
 	return true, result
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/diegoholiveira/jsonlogic"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
 
@@ -41,29 +43,35 @@ func NewJSONLogic(rule string) JSONLogic {
 }
 
 // Evaluate ...
-func (logic JSONLogic) Evaluate(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
+func (logic JSONLogic) Evaluate(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
 
-	coercedData, err := util.CoerceType(params[0])
+	coercedData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
 
-	data := strings.NewReader(string(coercedData))
+	reader := strings.NewReader(string(coercedData))
 	rule := strings.NewReader(logic.Rule)
-	var logicresult bytes.Buffer
-	edgexcontext.LoggingClient.Debug("Applying JSONLogic Rule")
-	err = jsonlogic.Apply(rule, data, &logicresult)
-	if err != nil {
-		return false, err
-	}
-	var result bool
-	decoder := json.NewDecoder(&logicresult)
-	decoder.Decode(&result)
-	edgexcontext.LoggingClient.Debug("Condition met: " + strconv.FormatBool(result))
 
-	return result, params[0]
+	var logicResult bytes.Buffer
+	ctx.LoggingClient().Debug("Applying JSONLogic Rule")
+	err = jsonlogic.Apply(rule, reader, &logicResult)
+	if err != nil {
+		return false, fmt.Errorf("unable to apply JSONLogic rule: %s", err.Error())
+	}
+
+	var result bool
+	decoder := json.NewDecoder(&logicResult)
+	err = decoder.Decode(&result)
+	if err != nil {
+		return false, fmt.Errorf("unable to decode JSONLogic result: %s", err.Error())
+	}
+
+	ctx.LoggingClient().Debug("Condition met: " + strconv.FormatBool(result))
+
+	return result, data
 }

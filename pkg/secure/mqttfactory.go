@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,9 @@ import (
 	"errors"
 
 	"github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 )
 
 type mqttSecrets struct {
@@ -48,18 +49,17 @@ const (
 )
 
 type MqttFactory struct {
+	appContext     interfaces.AppFunctionContext
 	logger         logger.LoggingClient
-	secretProvider interfaces.SecretProvider
 	authMode       string
 	secretPath     string
 	opts           *mqtt.ClientOptions
 	skipCertVerify bool
 }
 
-func NewMqttFactory(lc logger.LoggingClient, sp interfaces.SecretProvider, mode string, path string, skipVerify bool) MqttFactory {
+func NewMqttFactory(appContext interfaces.AppFunctionContext, mode string, path string, skipVerify bool) MqttFactory {
 	return MqttFactory{
-		logger:         lc,
-		secretProvider: sp,
+		appContext:     appContext,
 		authMode:       mode,
 		secretPath:     path,
 		skipCertVerify: skipVerify,
@@ -101,7 +101,7 @@ func (factory MqttFactory) getSecrets() (*mqttSecrets, error) {
 		return nil, nil
 	}
 
-	secrets, err := factory.secretProvider.GetSecrets(factory.secretPath)
+	secrets, err := factory.appContext.GetSecret(factory.secretPath)
 	if err != nil {
 		return nil, err
 	}

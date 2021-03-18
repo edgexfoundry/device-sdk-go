@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ import (
 	"strings"
 	"sync"
 
-	edgexErrors "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/google/uuid"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	edgexErrors "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
@@ -40,21 +40,18 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	dbInterfaces "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db/interfaces"
-
 	"github.com/fxamacker/cbor/v2"
+	"github.com/google/uuid"
 )
 
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
-	TargetType     interface{}
-	ServiceKey     string
-	transforms     []appcontext.AppFunction
-	isBusyCopying  sync.Mutex
-	storeForward   storeForwardInfo
-	secretProvider interfaces.SecretProvider
+	TargetType    interface{}
+	ServiceKey    string
+	transforms    []interfaces.AppFunction
+	isBusyCopying sync.Mutex
+	storeForward  storeForwardInfo
+	dic           *di.Container
 }
 
 type MessageError struct {
@@ -63,14 +60,14 @@ type MessageError struct {
 }
 
 // Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
-func (gr *GolangRuntime) Initialize(storeClient dbInterfaces.StoreClient, secretProvider interfaces.SecretProvider) {
-	gr.storeForward.storeClient = storeClient
+func (gr *GolangRuntime) Initialize(dic *di.Container) {
+	gr.dic = dic
 	gr.storeForward.runtime = gr
-	gr.secretProvider = secretProvider
+	gr.storeForward.dic = dic
 }
 
 // SetTransforms is thread safe to set transforms
-func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
+func (gr *GolangRuntime) SetTransforms(transforms []interfaces.AppFunction) {
 	gr.isBusyCopying.Lock()
 	gr.transforms = transforms
 	gr.storeForward.pipelineHash = gr.storeForward.calculatePipelineHash() // Only need to calculate hash when the pipeline changes.
@@ -78,8 +75,8 @@ func (gr *GolangRuntime) SetTransforms(transforms []appcontext.AppFunction) {
 }
 
 // ProcessMessage sends the contents of the message thru the functions pipeline
-func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelope types.MessageEnvelope) *MessageError {
-	lc := edgexcontext.LoggingClient
+func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelope types.MessageEnvelope) *MessageError {
+	lc := appContext.LoggingClient()
 
 	if len(gr.transforms) == 0 {
 		err := errors.New("No transforms configured. Please check log for errors loading pipeline")
@@ -145,7 +142,7 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 		}
 	}
 
-	edgexcontext.CorrelationID = envelope.CorrelationID
+	appContext.SetCorrelationID(envelope.CorrelationID)
 
 	// All functions expect an object, not a pointer to an object, so must use reflection to
 	// dereference to pointer to the object
@@ -153,42 +150,46 @@ func (gr *GolangRuntime) ProcessMessage(edgexcontext *appcontext.Context, envelo
 
 	// Make copy of transform functions to avoid disruption of pipeline when updating the pipeline from registry
 	gr.isBusyCopying.Lock()
-	transforms := make([]appcontext.AppFunction, len(gr.transforms))
+	transforms := make([]interfaces.AppFunction, len(gr.transforms))
 	copy(transforms, gr.transforms)
 	gr.isBusyCopying.Unlock()
 
-	return gr.ExecutePipeline(target, envelope.ContentType, edgexcontext, transforms, 0, false)
+	return gr.ExecutePipeline(target, envelope.ContentType, appContext, transforms, 0, false)
 }
 
-func (gr *GolangRuntime) ExecutePipeline(target interface{}, contentType string, edgexcontext *appcontext.Context,
-	transforms []appcontext.AppFunction, startPosition int, isRetry bool) *MessageError {
+func (gr *GolangRuntime) ExecutePipeline(
+	target interface{},
+	contentType string,
+	appContext *appfunction.Context,
+	transforms []interfaces.AppFunction,
+	startPosition int,
+	isRetry bool) *MessageError {
 
 	var result interface{}
-	var continuePipeline = true
-
-	edgexcontext.SecretProvider = gr.secretProvider
+	var continuePipeline bool
 
 	for functionIndex, trxFunc := range transforms {
 		if functionIndex < startPosition {
 			continue
 		}
 
-		edgexcontext.RetryData = nil
+		appContext.SetRetryData(nil)
 
 		if result == nil {
-			continuePipeline, result = trxFunc(edgexcontext, target, contentType)
+			appContext.SetInputContentType(contentType)
+			continuePipeline, result = trxFunc(appContext, target)
 		} else {
-			continuePipeline, result = trxFunc(edgexcontext, result)
+			continuePipeline, result = trxFunc(appContext, result)
 		}
 
 		if continuePipeline != true {
 			if result != nil {
 				if err, ok := result.(error); ok {
-					edgexcontext.LoggingClient.Error(
+					appContext.LoggingClient().Error(
 						fmt.Sprintf("Pipeline function #%d resulted in error", functionIndex),
-						"error", err.Error(), clients.CorrelationHeader, edgexcontext.CorrelationID)
-					if edgexcontext.RetryData != nil && !isRetry {
-						gr.storeForward.storeForLaterRetry(edgexcontext.RetryData, edgexcontext, functionIndex)
+						"error", err.Error(), clients.CorrelationHeader, appContext.CorrelationID)
+					if appContext.RetryData() != nil && !isRetry {
+						gr.storeForward.storeForLaterRetry(appContext.RetryData(), appContext, functionIndex)
 					}
 
 					return &MessageError{Err: err, ErrorCode: http.StatusUnprocessableEntity}
@@ -206,11 +207,9 @@ func (gr *GolangRuntime) StartStoreAndForward(
 	appCtx context.Context,
 	enabledWg *sync.WaitGroup,
 	enabledCtx context.Context,
-	serviceKey string,
-	config *common.ConfigurationStruct,
-	edgeXClients common.EdgeXClients) {
+	serviceKey string) {
 
-	gr.storeForward.startStoreAndForwardRetryLoop(appWg, appCtx, enabledWg, enabledCtx, serviceKey, config, edgeXClients)
+	gr.storeForward.startStoreAndForwardRetryLoop(appWg, appCtx, enabledWg, enabledCtx, serviceKey)
 }
 
 func (gr *GolangRuntime) processEventPayload(envelope types.MessageEnvelope, lc logger.LoggingClient) (*dtos.Event, error) {

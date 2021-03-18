@@ -30,11 +30,12 @@ func TestPushToCore_ShouldFailPipelineOnError(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
 }
+
 func TestPushToCore_NoData(t *testing.T) {
 	coreData := NewCoreData()
 	coreData.DeviceName = "my-device"
 	coreData.ReadingName = "my-device-resource"
-	continuePipeline, result := coreData.PushToCoreData(context)
+	continuePipeline, result := coreData.PushToCoreData(context, nil)
 
 	assert.NotNil(t, result)
 	assert.Equal(t, "No Data Received", result.(error).Error())

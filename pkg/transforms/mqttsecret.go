@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	MQTT "github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/secure"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
@@ -83,23 +83,18 @@ func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTT
 	return sender
 }
 
-func (sender *MQTTSecretSender) initializeMQTTClient(edgexcontext *appcontext.Context) error {
+func (sender *MQTTSecretSender) initializeMQTTClient(ctx interfaces.AppFunctionContext) error {
 	sender.lock.Lock()
 	defer sender.lock.Unlock()
 
 	// If the conditions changed while waiting for the lock, i.e. other thread completed the initialization,
 	// then skip doing anything
-	if sender.client != nil && !sender.secretsLastRetrieved.Before(edgexcontext.SecretProvider.SecretsLastUpdated()) {
+	if sender.client != nil && !sender.secretsLastRetrieved.Before(ctx.SecretsLastUpdated()) {
 		return nil
 	}
 
-	mqttFactory := secure.NewMqttFactory(
-		edgexcontext.LoggingClient,
-		edgexcontext.SecretProvider,
-		sender.mqttConfig.AuthMode,
-		sender.mqttConfig.SecretPath,
-		sender.mqttConfig.SkipCertVerify,
-	)
+	config := sender.mqttConfig
+	mqttFactory := secure.NewMqttFactory(ctx, config.AuthMode, config.SecretPath, config.SkipCertVerify)
 
 	client, err := mqttFactory.Create(sender.opts)
 	if err != nil {
@@ -112,7 +107,7 @@ func (sender *MQTTSecretSender) initializeMQTTClient(edgexcontext *appcontext.Co
 	return nil
 }
 
-func (sender *MQTTSecretSender) connectToBroker(edgexcontext *appcontext.Context, exportData []byte) error {
+func (sender *MQTTSecretSender) connectToBroker(ctx interfaces.AppFunctionContext, exportData []byte) error {
 	sender.lock.Lock()
 	defer sender.lock.Unlock()
 
@@ -122,40 +117,40 @@ func (sender *MQTTSecretSender) connectToBroker(edgexcontext *appcontext.Context
 		return nil
 	}
 
-	edgexcontext.LoggingClient.Info("Connecting to mqtt server for export")
+	ctx.LoggingClient().Info("Connecting to mqtt server for export")
 	if token := sender.client.Connect(); token.Wait() && token.Error() != nil {
-		sender.setRetryData(edgexcontext, exportData)
+		sender.setRetryData(ctx, exportData)
 		subMessage := "dropping event"
 		if sender.persistOnError {
 			subMessage = "persisting Event for later retry"
 		}
 		return fmt.Errorf("Could not connect to mqtt server for export, %s. Error: %s", subMessage, token.Error().Error())
 	}
-	edgexcontext.LoggingClient.Info("Connected to mqtt server for export")
+	ctx.LoggingClient().Info("Connected to mqtt server for export")
 	return nil
 }
 
 // MQTTSend sends data from the previous function to the specified MQTT broker.
 // If no previous function exists, then the event that triggered the pipeline will be used.
-func (sender *MQTTSecretSender) MQTTSend(edgexcontext *appcontext.Context, params ...interface{}) (bool, interface{}) {
-	if len(params) < 1 {
+func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
 	}
 
-	exportData, err := util.CoerceType(params[0])
+	exportData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
 	}
 	// if we havent initialized the client yet OR the cache has been invalidated (due to new/updated secrets) we need to (re)initialize the client
-	if sender.client == nil || sender.secretsLastRetrieved.Before(edgexcontext.SecretProvider.SecretsLastUpdated()) {
-		err := sender.initializeMQTTClient(edgexcontext)
+	if sender.client == nil || sender.secretsLastRetrieved.Before(ctx.SecretsLastUpdated()) {
+		err := sender.initializeMQTTClient(ctx)
 		if err != nil {
 			return false, err
 		}
 	}
 	if !sender.client.IsConnected() {
-		err := sender.connectToBroker(edgexcontext, exportData)
+		err := sender.connectToBroker(ctx, exportData)
 		if err != nil {
 			return false, err
 		}
@@ -164,18 +159,18 @@ func (sender *MQTTSecretSender) MQTTSend(edgexcontext *appcontext.Context, param
 	token := sender.client.Publish(sender.mqttConfig.Topic, sender.mqttConfig.QoS, sender.mqttConfig.Retain, exportData)
 	token.Wait()
 	if token.Error() != nil {
-		sender.setRetryData(edgexcontext, exportData)
+		sender.setRetryData(ctx, exportData)
 		return false, token.Error()
 	}
 
-	edgexcontext.LoggingClient.Debug("Sent data to MQTT Broker")
-	edgexcontext.LoggingClient.Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, edgexcontext.CorrelationID)
+	ctx.LoggingClient().Debug("Sent data to MQTT Broker")
+	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, ctx.CorrelationID)
 
 	return true, nil
 }
 
-func (sender *MQTTSecretSender) setRetryData(ctx *appcontext.Context, exportData []byte) {
+func (sender *MQTTSecretSender) setRetryData(ctx interfaces.AppFunctionContext, exportData []byte) {
 	if sender.persistOnError {
-		ctx.RetryData = exportData
+		ctx.SetRetryData(exportData)
 	}
 }

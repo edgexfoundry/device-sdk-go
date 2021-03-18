@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/appcontext"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 )
@@ -47,13 +47,13 @@ func NewFilterOut(filterValues []string) Filter {
 // FilterByProfileName filters based on the specified Device Profile, aka Class of Device.
 // If FilterOut is false, it filters out those Events not associated with the specified Device Profile listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Profile listed in FilterValues.
-func (f Filter) FilterByProfileName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	event, err := f.setupForFiltering("FilterByProfileName", "ProfileName", edgexcontext.LoggingClient, params...)
+func (f Filter) FilterByProfileName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	event, err := f.setupForFiltering("FilterByProfileName", "ProfileName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
 	}
 
-	ok := f.doEventFilter("ProfileName", event.ProfileName, edgexcontext.LoggingClient)
+	ok := f.doEventFilter("ProfileName", event.ProfileName, ctx.LoggingClient())
 	if ok {
 		return true, *event
 	}
@@ -65,13 +65,13 @@ func (f Filter) FilterByProfileName(edgexcontext *appcontext.Context, params ...
 // FilterByDeviceName filters based on the specified Device Names, aka Instance of a Device.
 // If FilterOut is false, it filters out those Events not associated with the specified Device Names listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Names listed in FilterValues.
-func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	event, err := f.setupForFiltering("FilterByDeviceName", "DeviceName", edgexcontext.LoggingClient, params...)
+func (f Filter) FilterByDeviceName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	event, err := f.setupForFiltering("FilterByDeviceName", "DeviceName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
 	}
 
-	ok := f.doEventFilter("DeviceName", event.DeviceName, edgexcontext.LoggingClient)
+	ok := f.doEventFilter("DeviceName", event.DeviceName, ctx.LoggingClient())
 	if ok {
 		return true, *event
 	}
@@ -82,13 +82,13 @@ func (f Filter) FilterByDeviceName(edgexcontext *appcontext.Context, params ...i
 // FilterBySourceName filters based on the specified Source for the Event, aka resource or command name.
 // If FilterOut is false, it filters out those Events not associated with the specified Source listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Source listed in FilterValues.
-func (f Filter) FilterBySourceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	event, err := f.setupForFiltering("FilterBySourceName", "SourceName", edgexcontext.LoggingClient, params...)
+func (f Filter) FilterBySourceName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	event, err := f.setupForFiltering("FilterBySourceName", "SourceName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
 	}
 
-	ok := f.doEventFilter("SourceName", event.SourceName, edgexcontext.LoggingClient)
+	ok := f.doEventFilter("SourceName", event.SourceName, ctx.LoggingClient())
 	if ok {
 		return true, *event
 	}
@@ -100,8 +100,8 @@ func (f Filter) FilterBySourceName(edgexcontext *appcontext.Context, params ...i
 // If FilterOut is false, it filters out those Event Readings not associated with the specified Resource Names listed in FilterValues.
 // If FilterOut is true, it out those Event Readings that are associated with the specified Resource Names listed in FilterValues.
 // This function will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
-func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ...interface{}) (continuePipeline bool, result interface{}) {
-	existingEvent, err := f.setupForFiltering("FilterByResourceName", "ResourceName", edgexcontext.LoggingClient, params...)
+func (f Filter) FilterByResourceName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	existingEvent, err := f.setupForFiltering("FilterByResourceName", "ResourceName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
 	}
@@ -129,10 +129,10 @@ func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ..
 			}
 
 			if !readingFilteredOut {
-				edgexcontext.LoggingClient.Debugf("Reading accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading accepted: %s", reading.ResourceName)
 				auxEvent.Readings = append(auxEvent.Readings, reading)
 			} else {
-				edgexcontext.LoggingClient.Debugf("Reading not accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading not accepted: %s", reading.ResourceName)
 			}
 		}
 	} else {
@@ -146,35 +146,35 @@ func (f Filter) FilterByResourceName(edgexcontext *appcontext.Context, params ..
 			}
 
 			if readingFilteredFor {
-				edgexcontext.LoggingClient.Debugf("Reading accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading accepted: %s", reading.ResourceName)
 				auxEvent.Readings = append(auxEvent.Readings, reading)
 			} else {
-				edgexcontext.LoggingClient.Debugf("Reading not accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading not accepted: %s", reading.ResourceName)
 			}
 		}
 	}
 
 	if len(auxEvent.Readings) > 0 {
-		edgexcontext.LoggingClient.Debugf("Event accepted: %d remaining reading(s)", len(auxEvent.Readings))
+		ctx.LoggingClient().Debugf("Event accepted: %d remaining reading(s)", len(auxEvent.Readings))
 		return true, auxEvent
 	}
 
-	edgexcontext.LoggingClient.Debug("Event not accepted: 0 remaining readings")
+	ctx.LoggingClient().Debug("Event not accepted: 0 remaining readings")
 	return false, nil
 }
 
-func (f Filter) setupForFiltering(funcName string, filterProperty string, lc logger.LoggingClient, params ...interface{}) (*dtos.Event, error) {
+func (f Filter) setupForFiltering(funcName string, filterProperty string, lc logger.LoggingClient, data interface{}) (*dtos.Event, error) {
 	mode := "For"
 	if f.FilterOut {
 		mode = "Out"
 	}
 	lc.Debugf("Filtering %s by %s. FilterValues are: '[%v]'", mode, filterProperty, f.FilterValues)
 
-	if len(params) < 1 {
+	if data == nil {
 		return nil, fmt.Errorf("%s: no Event Received", funcName)
 	}
 
-	event, ok := params[0].(dtos.Event)
+	event, ok := data.(dtos.Event)
 	if !ok {
 		return nil, fmt.Errorf("%s: type received is not an Event", funcName)
 	}

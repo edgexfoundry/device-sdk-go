@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 Cavium
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,7 +24,9 @@ import (
 	"encoding/base64"
 	"testing"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/stretchr/testify/assert"
@@ -82,7 +84,7 @@ func TestNewEncryption(t *testing.T) {
 	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
 	assert.Equal(t, plainString, string(decrypted))
-	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
+	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
 }
 
 func TestNewEncryptionWithSecrets(t *testing.T) {
@@ -91,7 +93,12 @@ func TestNewEncryptionWithSecrets(t *testing.T) {
 
 	mockSP := &mocks.SecretProvider{}
 	mockSP.On("GetSecrets", secretPath, secretName).Return(map[string]string{secretName: key}, nil)
-	context.SecretProvider = mockSP
+
+	dic.Update(di.ServiceConstructorMap{
+		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
+			return mockSP
+		},
+	})
 
 	enc := NewEncryptionWithSecrets(secretPath, secretName, aesData.InitVector)
 
@@ -101,7 +108,7 @@ func TestNewEncryptionWithSecrets(t *testing.T) {
 	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
 	assert.Equal(t, plainString, string(decrypted))
-	assert.Equal(t, context.ResponseContentType, clients.ContentTypeText)
+	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
 }
 
 func TestAESNoData(t *testing.T) {
@@ -113,7 +120,7 @@ func TestAESNoData(t *testing.T) {
 
 	enc := NewEncryption(aesData.Key, aesData.InitVector)
 
-	continuePipeline, result := enc.EncryptWithAES(context)
+	continuePipeline, result := enc.EncryptWithAES(context, nil)
 	assert.False(t, continuePipeline)
 	assert.Error(t, result.(error), "expect an error")
 }
