@@ -219,12 +219,7 @@ func (gr *GolangRuntime) processEventPayload(envelope types.MessageEnvelope, lc 
 
 	// Note that DTO validation is called during the unmarshaling
 	// which results in a KindContractInvalid error
-	// TODO: Remove Validate() call once the CBOR unmarshalling calls validation like JSON does
 	requestDtoErr := gr.unmarshalPayload(envelope, &requestDto)
-	if requestDtoErr == nil && envelope.ContentType == clients.ContentTypeCBOR {
-		requestDtoErr = requestDto.Validate()
-	}
-
 	if requestDtoErr == nil {
 		lc.Debug("Using Event DTO from AddEventRequest DTO")
 
