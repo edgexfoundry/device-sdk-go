@@ -20,6 +20,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -102,15 +103,15 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			configuration.Clients = make(map[string]config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
-				configuration.Clients[CoreDataClientName] = coreDataClientInfo
+				configuration.Clients[clients.CoreDataServiceKey] = coreDataClientInfo
 			}
 
 			if test.CommandClientInfo != nil {
-				configuration.Clients[CoreCommandClientName] = commandClientInfo
+				configuration.Clients[clients.CoreCommandServiceKey] = commandClientInfo
 			}
 
 			if test.NotificationsClientInfo != nil {
-				configuration.Clients[NotificationsClientName] = notificationsClientInfo
+				configuration.Clients[clients.SupportNotificationsServiceKey] = notificationsClientInfo
 			}
 
 			dic.Update(di.ServiceConstructorMap{

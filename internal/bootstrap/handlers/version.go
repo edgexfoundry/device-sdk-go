@@ -84,7 +84,7 @@ func (vv *VersionValidator) BootstrapHandler(
 		return true
 	}
 
-	url := config.Clients[CoreDataClientName].Url() + clients.ApiVersionRoute
+	url := config.Clients[clients.CoreDataServiceKey].Url() + clients.ApiVersionRoute
 	var data []byte
 	var err error
 	for startupTimer.HasNotElapsed() {

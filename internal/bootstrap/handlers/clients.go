@@ -30,12 +30,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 )
 
-const (
-	CoreCommandClientName   = "Command"
-	CoreDataClientName      = "CoreData"
-	NotificationsClientName = "Notifications"
-)
-
 // Clients contains references to dependencies required by the Clients bootstrap implementation.
 type Clients struct {
 }
@@ -61,22 +55,22 @@ func (_ *Clients) BootstrapHandler(
 
 	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
 	// sending commands, then don't need to have the Command client in the configuration.
-	if _, ok := config.Clients[CoreDataClientName]; ok {
+	if _, ok := config.Clients[clients.CoreDataServiceKey]; ok {
 		eventClient = coredata.NewEventClient(
-			local.New(config.Clients[CoreDataClientName].Url() + clients.ApiEventRoute))
+			local.New(config.Clients[clients.CoreDataServiceKey].Url() + clients.ApiEventRoute))
 
 		valueDescriptorClient = coredata.NewValueDescriptorClient(
-			local.New(config.Clients[CoreDataClientName].Url() + clients.ApiValueDescriptorRoute))
+			local.New(config.Clients[clients.CoreDataServiceKey].Url() + clients.ApiValueDescriptorRoute))
 	}
 
-	if _, ok := config.Clients[CoreCommandClientName]; ok {
+	if _, ok := config.Clients[clients.CoreCommandServiceKey]; ok {
 		commandClient = command.NewCommandClient(
-			local.New(config.Clients[CoreCommandClientName].Url() + clients.ApiDeviceRoute))
+			local.New(config.Clients[clients.CoreCommandServiceKey].Url() + clients.ApiDeviceRoute))
 	}
 
-	if _, ok := config.Clients[NotificationsClientName]; ok {
+	if _, ok := config.Clients[clients.SupportNotificationsServiceKey]; ok {
 		notificationsClient = notifications.NewNotificationsClient(
-			local.New(config.Clients[NotificationsClientName].Url() + clients.ApiNotificationRoute))
+			local.New(config.Clients[clients.SupportNotificationsServiceKey].Url() + clients.ApiNotificationRoute))
 	}
 
 	// Note that all the clients are optional so some or all these clients may be nil

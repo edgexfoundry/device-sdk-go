@@ -29,7 +29,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/handlers"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
@@ -124,7 +123,7 @@ func (appContext *Context) PushToCoreData(deviceName string, readingName string,
 	lc.Debug("Pushing to CoreData")
 
 	if appContext.EventClient() == nil {
-		return nil, fmt.Errorf("unable to Push To CoreData: '%s' is missing from Clients configuration", handlers.CoreDataClientName)
+		return nil, fmt.Errorf("unable to Push To CoreData: '%s' is missing from Clients configuration", clients.CoreDataServiceKey)
 	}
 
 	now := time.Now().UnixNano()

@@ -29,6 +29,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	"github.com/stretchr/testify/assert"
@@ -40,8 +41,8 @@ import (
 func TestValidateVersionMatch(t *testing.T) {
 	startupTimer := startup.NewStartUpTimer("unit-test")
 
-	clients := make(map[string]config.ClientInfo)
-	clients[CoreDataClientName] = config.ClientInfo{
+	clientConfigs := make(map[string]config.ClientInfo)
+	clientConfigs[clients.CoreDataServiceKey] = config.ClientInfo{
 		Protocol: "http",
 		Host:     "localhost",
 		Port:     0, // Will be replaced by local test webserver's port
@@ -51,7 +52,7 @@ func TestValidateVersionMatch(t *testing.T) {
 		Writable: common.WritableInfo{
 			LogLevel: "DEBUG",
 		},
-		Clients: clients,
+		Clients: clientConfigs,
 	}
 
 	lc := logger.NewMockClient()
@@ -115,9 +116,9 @@ func TestValidateVersionMatch(t *testing.T) {
 
 			testServerUrl, _ := url.Parse(testServer.URL)
 			port, _ := strconv.Atoi(testServerUrl.Port())
-			coreService := configuration.Clients[CoreDataClientName]
+			coreService := configuration.Clients[clients.CoreDataServiceKey]
 			coreService.Port = port
-			configuration.Clients[CoreDataClientName] = coreService
+			configuration.Clients[clients.CoreDataServiceKey] = coreService
 
 			validator := NewVersionValidator(test.skipVersionCheck, test.SdkVersion)
 			result := validator.BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
