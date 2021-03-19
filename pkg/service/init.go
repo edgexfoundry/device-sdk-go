@@ -8,19 +8,15 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"sync"
-	"time"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/gorilla/mux"
 
-	v2cache "github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/provision"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 // Bootstrap contains references to dependencies required by the BootstrapHandler.
@@ -37,63 +33,49 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 
 func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
 	ds.UpdateFromContainer(b.router, dic)
+	ds.controller.InitRestRoutes()
 
-	err := ds.selfRegister()
+	err := cache.InitV2Cache(ds.ServiceName, dic)
 	if err != nil {
-		ds.LoggingClient.Error(fmt.Sprintf("Couldn't register to metadata service: %v\n", err))
-		return false
-	}
-
-	err = v2cache.InitV2Cache(ds.ServiceName, dic)
-	if err != nil {
-		ds.LoggingClient.Errorf("failed to init cache: %v", err)
+		ds.LoggingClient.Errorf("Failed to init cache: %v", err)
 		return false
 	}
 
 	if ds.AsyncReadings() {
-		ds.asyncCh = make(chan *dsModels.AsyncValues, ds.config.Service.AsyncBufferSize)
+		ds.asyncCh = make(chan *models.AsyncValues, ds.config.Service.AsyncBufferSize)
 		go ds.processAsyncResults(ctx, wg, dic)
 	}
 	if ds.DeviceDiscovery() {
-		ds.deviceCh = make(chan []dsModels.DiscoveredDevice, 1)
+		ds.deviceCh = make(chan []models.DiscoveredDevice, 1)
 		go ds.processAsyncFilterAndAdd(ctx, wg)
 	}
 
-	err = ds.driver.Initialize(ds.LoggingClient, ds.asyncCh, ds.deviceCh)
-	if err != nil {
-		ds.LoggingClient.Error(fmt.Sprintf("Driver.Initialize failed: %v\n", err))
+	e := ds.driver.Initialize(ds.LoggingClient, ds.asyncCh, ds.deviceCh)
+	if e != nil {
+		ds.LoggingClient.Errorf("Failed to init ProtocolDriver: %v", e)
 		return false
 	}
 	ds.initialized = true
 
-	dic.Update(di.ServiceConstructorMap{
-		container.DeviceServiceName: func(get di.Get) interface{} {
-			return ds.deviceService
-		},
-		container.ProtocolDiscoveryName: func(get di.Get) interface{} {
-			return ds.discovery
-		},
-		container.ProtocolDriverName: func(get di.Get) interface{} {
-			return ds.driver
-		},
-	})
-
-	ds.controller.InitRestRoutes()
+	err = ds.selfRegister()
+	if err != nil {
+		ds.LoggingClient.Errorf("Failed to register service on Metadata: %v", err)
+		return false
+	}
 
 	err = provision.LoadProfiles(ds.config.Device.ProfilesDir, dic)
 	if err != nil {
-		ds.LoggingClient.Error(fmt.Sprintf("Failed to create the pre-defined device profiles: %v\n", err))
+		ds.LoggingClient.Errorf("Failed to create the pre-defined device profiles: %v", err)
 		return false
 	}
 
 	err = provision.LoadDevices(ds.config.DeviceList, dic)
 	if err != nil {
-		ds.LoggingClient.Error(fmt.Sprintf("Failed to create the pre-defined devices: %v\n", err))
+		ds.LoggingClient.Errorf("Failed to create the pre-defined devices: %v", err)
 		return false
 	}
 
 	ds.manager.StartAutoEvents()
-	http.TimeoutHandler(nil, time.Millisecond*time.Duration(ds.config.Service.Timeout), "Request timed out")
 
 	return true
 }
