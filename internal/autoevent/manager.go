@@ -63,18 +63,6 @@ func (m *manager) StartAutoEvents() {
 	}
 }
 
-func (m *manager) StopAutoEvents() {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	for deviceName, executors := range m.executorMap {
-		for _, executor := range executors {
-			executor.Stop()
-		}
-		delete(m.executorMap, deviceName)
-	}
-}
-
 func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEvent, dic *di.Container) []*Executor {
 	var executors []*Executor
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)

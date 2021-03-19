@@ -47,6 +47,15 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return ds.config
 		},
+		container.DeviceServiceName: func(get di.Get) interface{} {
+			return ds.deviceService
+		},
+		container.ProtocolDriverName: func(get di.Get) interface{} {
+			return ds.driver
+		},
+		container.ProtocolDiscoveryName: func(get di.Get) interface{} {
+			return ds.discovery
+		},
 	})
 
 	httpServer := handlers.NewHttpServer(router, true)
