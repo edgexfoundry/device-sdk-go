@@ -121,20 +121,22 @@ func (s *DeviceService) DeviceDiscovery() bool {
 }
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-func (s *DeviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+func (s *DeviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) errors.EdgeX {
 	return s.controller.AddRoute(route, handler, methods...)
 }
 
 // Stop shuts down the Service
 func (s *DeviceService) Stop(force bool) {
 	if s.initialized {
-		_ = s.driver.Stop(false)
+		err := s.driver.Stop(force)
+		if err != nil {
+			s.LoggingClient.Error(err.Error())
+		}
 	}
-	s.manager.StopAutoEvents()
 }
 
 // selfRegister register device service itself onto metadata.
-func (s *DeviceService) selfRegister() error {
+func (s *DeviceService) selfRegister() errors.EdgeX {
 	newDeviceService := models.DeviceService{
 		Name:        s.ServiceName,
 		Labels:      s.config.Service.Labels,
