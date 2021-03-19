@@ -164,7 +164,6 @@ func (appContext *Context) PushToCoreData(deviceName string, readingName string,
 
 	// TODO: Remove once V2 EventClient is available
 	v2Reading := dtos.BaseReading{
-		Versionable:   commonDTO.NewVersionable(),
 		Id:            v1Reading.Id,
 		Created:       v1Reading.Created,
 		Origin:        v1Reading.Origin,

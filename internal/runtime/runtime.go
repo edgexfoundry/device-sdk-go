@@ -297,7 +297,6 @@ func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelop
 
 	for _, v1Reading := range v1Event.Readings {
 		v2Reading := dtos.BaseReading{
-			Versionable:  commonDTO.NewVersionable(),
 			Id:           v1Reading.Id,
 			Created:      v1Reading.Created,
 			Origin:       v1Reading.Origin,

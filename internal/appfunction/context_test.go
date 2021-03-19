@@ -94,7 +94,6 @@ func TestContext_PushToCoreData(t *testing.T) {
 		DeviceName:  "device-name",
 		Readings: []dtos.BaseReading{
 			{
-				Versionable:  common.NewVersionable(),
 				DeviceName:   "device-name",
 				ResourceName: "device-resource",
 				ValueType:    v2.ValueTypeString,
@@ -115,7 +114,6 @@ func TestContext_PushToCoreData(t *testing.T) {
 	assert.Equal(t, expectedEvent.Readings[0].ResourceName, actualEvent.Readings[0].ResourceName)
 	assert.Equal(t, expectedEvent.Readings[0].Value, actualEvent.Readings[0].Value)
 	assert.Equal(t, expectedEvent.Readings[0].ValueType, actualEvent.Readings[0].ValueType)
-	assert.Equal(t, expectedEvent.Readings[0].ApiVersion, actualEvent.Readings[0].ApiVersion)
 }
 
 func TestContext_CommandClient(t *testing.T) {
