@@ -7,13 +7,14 @@
 package clients
 
 import (
-	"net"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 )
 
 func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
@@ -24,11 +25,9 @@ func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 			Protocol: "http",
 		},
 	}
-	config := &common.ConfigurationStruct{Clients: clientConfig}
+	config := &config.ConfigurationStruct{Service: config.ServiceInfo{Timeout: 1000}, Clients: clientConfig}
 	lc := logger.NewMockClient()
 
-	err := checkServiceAvailableByPing(clients.CoreDataServiceKey, config, lc)
-	if err, ok := err.(net.Error); ok && !err.Timeout() {
-		test.Fatal("Should be timeout error")
-	}
+	res := checkServiceAvailableByPing(clients.CoreDataServiceKey, config, lc)
+	assert.Equal(test, res, false, "request should be timeout and return false")
 }
