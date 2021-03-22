@@ -1,10 +1,10 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package config
 
 import (
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
@@ -28,6 +28,8 @@ type ConfigurationStruct struct {
 	Driver map[string]string
 	// SecretStore contains information for connecting to the secure SecretStore (Vault) to retrieve or store secrets
 	SecretStore bootstrapConfig.SecretStoreInfo
+	// MessageQueue contains information for connecting to MessageBus which provides alternative way to publish event
+	MessageQueue MessageQueueInfo
 }
 
 // UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is

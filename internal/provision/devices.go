@@ -20,10 +20,11 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
-func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) errors.EdgeX {
+func LoadDevices(deviceList []config.DeviceConfig, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
 	var addDevicesReq []requests.AddDeviceRequest
@@ -53,7 +54,7 @@ func LoadDevices(deviceList []common.DeviceConfig, dic *di.Container) errors.Edg
 	return err
 }
 
-func createDeviceDTO(name string, dc common.DeviceConfig, dic *di.Container) (deviceDTO dtos.Device, err errors.EdgeX) {
+func createDeviceDTO(name string, dc config.DeviceConfig, dic *di.Container) (deviceDTO dtos.Device, err errors.EdgeX) {
 	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
 	_, err = dpc.DeviceProfileByName(context.Background(), dc.Profile)
 	if err != nil {

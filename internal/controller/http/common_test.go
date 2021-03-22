@@ -30,7 +30,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -42,6 +42,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
@@ -120,11 +121,11 @@ func TestMetricsRequest(t *testing.T) {
 }
 
 func TestConfigRequest(t *testing.T) {
-	expectedConfig := sdkCommon.ConfigurationStruct{
-		Writable: sdkCommon.WritableInfo{
+	expectedConfig := config.ConfigurationStruct{
+		Writable: config.WritableInfo{
 			LogLevel: "DEBUG",
 		},
-		Registry: config.RegistryInfo{
+		Registry: bootstrapConfig.RegistryInfo{
 			Host: "localhost",
 			Port: 8500,
 			Type: "consul",
@@ -155,7 +156,7 @@ func TestConfigRequest(t *testing.T) {
 	require.NoError(t, err)
 	require.Less(t, 0, len(configJson))
 
-	actualConfig := sdkCommon.ConfigurationStruct{}
+	actualConfig := config.ConfigurationStruct{}
 	err = json.Unmarshal(configJson, &actualConfig)
 	require.NoError(t, err)
 
@@ -164,7 +165,7 @@ func TestConfigRequest(t *testing.T) {
 
 func TestSecretRequest(t *testing.T) {
 	expectedRequestId := "82eb2e26-0f24-48aa-ae4c-de9dac3fb9bc"
-	config := &sdkCommon.ConfigurationStruct{}
+	config := &config.ConfigurationStruct{}
 
 	mockProvider := &mocks.SecretProvider{}
 	mockProvider.On("StoreSecrets", "/mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
