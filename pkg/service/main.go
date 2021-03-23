@@ -43,7 +43,9 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	ds = &DeviceService{}
 	ds.Initialize(serviceName, serviceVersion, proto)
 
-	dic := di.NewContainer(di.ServiceConstructorMap{
+	ds.flags = sdkFlags
+
+	ds.dic = di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return ds.config
 		},
@@ -68,7 +70,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		common.ConfigStemDevice+common.ConfigMajorVersion,
 		ds.config,
 		startupTimer,
-		dic,
+		ds.dic,
 		[]interfaces.BootstrapHandler{
 			handlers.SecureProviderBootstrapHandler,
 			httpServer.BootstrapHandler,

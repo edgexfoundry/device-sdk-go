@@ -33,6 +33,8 @@ func NewBootstrap(router *mux.Router) *Bootstrap {
 
 func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
 	ds.UpdateFromContainer(b.router, dic)
+	ds.ctx = ctx
+	ds.wg = wg
 	ds.controller.InitRestRoutes()
 
 	err := cache.InitV2Cache(ds.ServiceName, dic)

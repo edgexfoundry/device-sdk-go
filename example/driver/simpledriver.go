@@ -17,23 +17,27 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"reflect"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/example/config"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
 )
 
 type SimpleDriver struct {
-	lc           logger.LoggingClient
-	asyncCh      chan<- *dsModels.AsyncValues
-	deviceCh     chan<- []dsModels.DiscoveredDevice
-	switchButton bool
-	xRotation    int32
-	yRotation    int32
-	zRotation    int32
+	lc            logger.LoggingClient
+	asyncCh       chan<- *dsModels.AsyncValues
+	deviceCh      chan<- []dsModels.DiscoveredDevice
+	switchButton  bool
+	xRotation     int32
+	yRotation     int32
+	zRotation     int32
+	serviceConfig *config.ServiceConfig
 }
 
 func getImageBytes(imgFile string, buf *bytes.Buffer) error {
@@ -74,11 +78,55 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsMod
 	s.lc = lc
 	s.asyncCh = asyncCh
 	s.deviceCh = deviceCh
+	s.serviceConfig = &config.ServiceConfig{}
+
+	ds := service.RunningService()
+
+	if err := ds.LoadCustomConfig(s.serviceConfig, "SimpleCustom"); err != nil {
+		return fmt.Errorf("unable to load 'SimpleCustom' custom configuration: %s", err.Error())
+	}
+
+	lc.Infof("Custom config is: %v", s.serviceConfig.SimpleCustom)
+
+	if err := s.serviceConfig.SimpleCustom.Validate(); err != nil {
+		return fmt.Errorf("'SimpleCustom' custom configuration validation failed: %s", err.Error())
+	}
+
+	if err := ds.ListenForCustomConfigChanges(
+		&s.serviceConfig.SimpleCustom.Writable,
+		"SimpleCustom/Writable", s.ProcessCustomConfigChanges); err != nil {
+		return fmt.Errorf("unable to listen for changes for 'SimpleCustom.Writable' custom configuration: %s", err.Error())
+	}
+
 	return nil
 }
 
+// ProcessCustomConfigChanges ...
+func (s *SimpleDriver) ProcessCustomConfigChanges(rawWritableConfig interface{}) {
+	updated, ok := rawWritableConfig.(*config.SimpleWritable)
+	if !ok {
+		s.lc.Error("unable to process custom config updates: Can not cast raw config to type 'SimpleWritable'")
+		return
+	}
+
+	s.lc.Info("Received configuration updates for 'SimpleCustom.Writable' section")
+
+	previous := s.serviceConfig.SimpleCustom.Writable
+	s.serviceConfig.SimpleCustom.Writable = *updated
+
+	if reflect.DeepEqual(previous, *updated) {
+		s.lc.Info("No changes detected")
+		return
+	}
+
+	if previous.DiscoverSleepDurationSecs != updated.DiscoverSleepDurationSecs {
+		s.lc.Infof("DiscoverSleepDurationSecs changed to: %d", updated.DiscoverSleepDurationSecs)
+	}
+}
+
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
+func (s *SimpleDriver) HandleReadCommands(
+	deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 	s.lc.Debugf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes)
 
 	if len(reqs) == 1 {
@@ -99,9 +147,9 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			// Show a binary/image representation of the switch's on/off value
 			buf := new(bytes.Buffer)
 			if s.switchButton == true {
-				err = getImageBytes("./res/on.png", buf)
+				err = getImageBytes(s.serviceConfig.SimpleCustom.OnImageLocation, buf)
 			} else {
-				err = getImageBytes("./res/off.jpg", buf)
+				err = getImageBytes(s.serviceConfig.SimpleCustom.OffImageLocation, buf)
 			}
 			cvb, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeBinary, buf.Bytes())
 			res[0] = cvb
@@ -230,6 +278,6 @@ func (s *SimpleDriver) Discover() {
 
 	res := []dsModels.DiscoveredDevice{device2, device3}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	s.deviceCh <- res
 }
