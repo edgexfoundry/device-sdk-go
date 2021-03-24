@@ -88,8 +88,7 @@ func (appContext *Context) SetResponseData(output []byte) {
 	appContext.responseData = output
 }
 
-// ResponseData returns the context's responseData. This function is not part of the AppFunctionContext interface,
-// so it is internal SDK use only
+// ResponseData returns the context's responseData.
 func (appContext *Context) ResponseData() []byte {
 	return appContext.responseData
 }

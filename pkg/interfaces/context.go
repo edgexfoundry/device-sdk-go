@@ -43,6 +43,8 @@ type AppFunctionContext interface {
 	InputContentType() string
 	// SetResponseData sets the response data that will be returned to the trigger when pipeline execution is complete.
 	SetResponseData(data []byte)
+	// ResponseData returns the data that will be returned to the trigger when pipeline execution is complete.
+	ResponseData() []byte
 	// SetResponseContentType sets the content type that will be returned to the trigger when pipeline
 	// execution is complete.
 	SetResponseContentType(string)
