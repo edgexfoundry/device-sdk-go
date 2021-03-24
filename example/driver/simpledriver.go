@@ -119,14 +119,19 @@ func (s *SimpleDriver) ProcessCustomConfigChanges(rawWritableConfig interface{})
 		return
 	}
 
+	// Now check to determine what changed.
+	// In this example we only have the one writable setting,
+	// so the check is not really need but left here as an example.
+	// Since this setting is pulled from configuration each time it is need, no extra processing is required.
+	// This may not be true for all settings, such as external host connection info, which
+	// may require re-establishing the connection to the external host for example.
 	if previous.DiscoverSleepDurationSecs != updated.DiscoverSleepDurationSecs {
 		s.lc.Infof("DiscoverSleepDurationSecs changed to: %d", updated.DiscoverSleepDurationSecs)
 	}
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (s *SimpleDriver) HandleReadCommands(
-	deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
+func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
 	s.lc.Debugf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes)
 
 	if len(reqs) == 1 {

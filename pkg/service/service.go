@@ -47,7 +47,7 @@ var (
 // UpdatableConfig interface allows services to have custom configuration populated from configuration stored
 // in the Configuration Provider (aka Consul). Services using custom configuration must implement this interface
 // on their custom configuration, even if they do not use Configuration Provider. If they do not use the
-// Configuration Provider they can have dummy implementation of this interface.
+// Configuration Provider they can have a dummy implementation of this interface.
 // This wraps the actual interface from go-mod-bootstrap so device service code doesn't have to have the additional
 // direct import of go-mod-bootstrap.
 type UpdatableConfig interface {
