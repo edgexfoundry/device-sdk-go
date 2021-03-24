@@ -176,3 +176,6 @@ https://github.com/golang/sys/blob/master/LICENSE
 
 stretchr/objx (MIT) https://github.com/stretchr/objx
 https://github.com/stretchr/objx/blob/master/LICENSE
+
+github.com/gorilla/websocket (BSD-2) https://github.com/gorilla/websocket
+https://github.com/gorilla/websocket/blob/master/LICENSE

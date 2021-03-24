@@ -28,10 +28,14 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
+	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
@@ -49,13 +53,10 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	bootstrapHandlers "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+
 	"github.com/gorilla/mux"
 )
 
@@ -94,6 +95,8 @@ type Service struct {
 	customTriggerFactories    map[string]func(sdk *Service) (interfaces.Trigger, error)
 	profileSuffixPlaceholder  string
 	commandLine               commandLineFlags
+	flags                     *flags.Default
+	configProcessor           *config.Processor
 }
 
 type commandLineFlags struct {
@@ -346,18 +349,18 @@ func (svc *Service) Initialize() error {
 			"                                    If the name provided contains the text `<profile>`, this text will be replaced with\n" +
 			"                                    the name of the profile used."
 
-	sdkFlags := flags.NewWithUsage(additionalUsage)
-	sdkFlags.FlagSet.BoolVar(&svc.commandLine.skipVersionCheck, "skipVersionCheck", false, "")
-	sdkFlags.FlagSet.BoolVar(&svc.commandLine.skipVersionCheck, "s", false, "")
-	sdkFlags.FlagSet.StringVar(&svc.commandLine.serviceKeyOverride, "serviceKey", "", "")
-	sdkFlags.FlagSet.StringVar(&svc.commandLine.serviceKeyOverride, "sk", "", "")
+	svc.flags = flags.NewWithUsage(additionalUsage)
+	svc.flags.FlagSet.BoolVar(&svc.commandLine.skipVersionCheck, "skipVersionCheck", false, "")
+	svc.flags.FlagSet.BoolVar(&svc.commandLine.skipVersionCheck, "s", false, "")
+	svc.flags.FlagSet.StringVar(&svc.commandLine.serviceKeyOverride, "serviceKey", "", "")
+	svc.flags.FlagSet.StringVar(&svc.commandLine.serviceKeyOverride, "sk", "", "")
 
-	sdkFlags.Parse(os.Args[1:])
+	svc.flags.Parse(os.Args[1:])
 
 	// Temporarily setup logging to STDOUT so the client can be used before bootstrapping is completed
 	svc.lc = logger.NewClient(svc.serviceKey, models.InfoLog)
 
-	svc.setServiceKey(sdkFlags.Profile())
+	svc.setServiceKey(svc.flags.Profile())
 
 	svc.lc.Info(fmt.Sprintf("Starting %s %s ", svc.serviceKey, internal.ApplicationVersion))
 
@@ -378,7 +381,7 @@ func (svc *Service) Initialize() error {
 	svc.ctx.appWg, deferred, successful = bootstrap.RunAndReturnWaitGroup(
 		svc.ctx.appCtx,
 		svc.ctx.appCancelCtx,
-		sdkFlags,
+		svc.flags,
 		svc.serviceKey,
 		internal.ConfigRegistryStem,
 		svc.config,
@@ -427,6 +430,30 @@ func (svc *Service) Initialize() error {
 
 	svc.lc.Info("Service started in: " + startupTimer.SinceAsString())
 
+	return nil
+}
+
+// LoadCustomConfig uses the Config Processor from go-mod-bootstrap to attempt to load service's
+// custom configuration. It uses the same command line flags to process the custom config in the same manner
+// as the standard configuration.
+func (svc *Service) LoadCustomConfig(customConfig interfaces.UpdatableConfig, sectionName string) error {
+	if svc.configProcessor == nil {
+		svc.configProcessor = config.NewProcessorForCustomConfig(svc.lc, svc.flags, svc.ctx.appCtx, svc.ctx.appWg, svc.dic)
+	}
+	return svc.configProcessor.LoadCustomConfigSection(customConfig, sectionName)
+}
+
+// ListenForCustomConfigChanges uses the Config Processor from go-mod-bootstrap to attempt to listen for
+// changes to the specified custom configuration section. LoadCustomConfig must be called previously so that
+// the instance of svc.configProcessor has already been set.
+func (svc *Service) ListenForCustomConfigChanges(configToWatch interface{}, sectionName string, changedCallback func(interface{})) error {
+	if svc.configProcessor == nil {
+		return fmt.Errorf(
+			"custom configuration must be loaded before '%s' section can be watched for changes",
+			sectionName)
+	}
+
+	svc.configProcessor.ListenForCustomConfigChanges(configToWatch, sectionName, changedCallback)
 	return nil
 }
 

@@ -162,6 +162,20 @@ func (_m *ApplicationService) GetSecret(path string, keys ...string) (map[string
 	return r0, r1
 }
 
+// ListenForCustomConfigChanges provides a mock function with given fields: configToWatch, sectionName, changedCallback
+func (_m *ApplicationService) ListenForCustomConfigChanges(configToWatch interface{}, sectionName string, changedCallback func(interface{})) error {
+	ret := _m.Called(configToWatch, sectionName, changedCallback)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interface{}, string, func(interface{})) error); ok {
+		r0 = rf(configToWatch, sectionName, changedCallback)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // LoadConfigurablePipeline provides a mock function with given fields:
 func (_m *ApplicationService) LoadConfigurablePipeline() ([]func(interfaces.AppFunctionContext, interface{}) (bool, interface{}), error) {
 	ret := _m.Called()
@@ -183,6 +197,20 @@ func (_m *ApplicationService) LoadConfigurablePipeline() ([]func(interfaces.AppF
 	}
 
 	return r0, r1
+}
+
+// LoadCustomConfig provides a mock function with given fields: config, sectionName
+func (_m *ApplicationService) LoadCustomConfig(config interfaces.UpdatableConfig, sectionName string) error {
+	ret := _m.Called(config, sectionName)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(interfaces.UpdatableConfig, string) error); ok {
+		r0 = rf(config, sectionName)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // LoggingClient provides a mock function with given fields:

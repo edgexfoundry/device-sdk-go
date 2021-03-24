@@ -57,7 +57,7 @@ RetryWaitPeriod = "1s"
   AuthType = 'X-Vault-Token'
 
 [Clients]
-  [Clients.CoreData]
+  [Clients.edgex-core-data]
   Protocol = 'http'
   Host = 'localhost'
   Port = 48080
@@ -102,10 +102,21 @@ PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the
 #    ConnectTimeout = "30" # Seconds
 #    SkipCertVerify = "false"
 
-
-[ApplicationSettings]
-# TODO: Add custom settings needed by your app service
+# TODO: Add custom settings needed by your app service or remove if you don't have any settings.
 # This can be any Key/Value pair you need.
 # For more details see: https://docs.edgexfoundry.org/1.3/microservices/application/GeneralAppServiceConfig/#application-settings
 # Example that works with devices from the Virtual Device service:
+[ApplicationSettings]
 DeviceNames = "Random-Boolean-Device, Random-Integer-Device, Random-UnsignedInteger-Device, Random-Float-Device, Random-Binary-Device"
+
+# TODO: Replace this section with your actual structured custom configuration section
+#       or remove if you don't have a need for structured custom configuration
+# This can be any structure you need, but it can not contain slices. Use a maps instead of slices.
+# For more details see: https://docs.edgexfoundry.org/2.0/microservices/application/GeneralAppServiceConfig/#custom-configuration
+[AppCustom]
+ResourceNames = "Boolean, Int32, Uint32, Float32, Binary"
+SomeValue = 123
+  [AppCustom.SomeService]
+  Host = "localhost"
+  Port = 9080
+  Protocol = "http"

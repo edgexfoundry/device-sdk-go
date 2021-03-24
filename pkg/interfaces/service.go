@@ -23,6 +23,8 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
+
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 )
 
 const (
@@ -39,6 +41,16 @@ const (
 	//	  )
 	ProfileSuffixPlaceholder = "<profile>"
 )
+
+// UpdatableConfig interface allows services to have custom configuration populated from configuration stored
+// in the Configuration Provider (aka Consul). Services using custom configuration must implement this interface
+// on their custom configuration, even if they do not use Configuration Provider. If they do not use the
+// Configuration Provider they can have dummy implementation of this interface.
+// This wraps the actual interface from go-mod-bootstrap so app service code doesn't have to have the additional
+// direct import of go-mod-bootstrap.
+type UpdatableConfig interface {
+	bootstrapInterfaces.UpdatableConfig
+}
 
 // ApplicationService defines the interface for an edgex Application Service
 type ApplicationService interface {
@@ -99,4 +111,14 @@ type ApplicationService interface {
 	// invalid function name, etc.
 	// Only useful if pipeline from configuration is always defined in configuration as in App Service Configurable.
 	LoadConfigurablePipeline() ([]AppFunction, error)
+	// LoadCustomConfig loads the service's custom configuration from local file or the Configuration Provider (if enabled)
+	// Configuration Provider will also be seeded with the custom configuration if service is using the Configuration Provider.
+	// UpdateFromRaw interface will be called on the custom configuration when the configuration is loaded from the
+	// Configuration Provider.
+	LoadCustomConfig(config UpdatableConfig, sectionName string) error
+	// ListenForCustomConfigChanges starts a listener on the Configuration Provider for changes to the specified
+	// section of the custom configuration. When changes are received from the Configuration Provider the
+	// UpdateWritableFromRaw interface will be called on the custom configuration to apply the updates and then signal
+	// that the changes occurred via writableChanged.
+	ListenForCustomConfigChanges(configToWatch interface{}, sectionName string, changedCallback func(interface{})) error
 }
