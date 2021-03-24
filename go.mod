@@ -7,7 +7,7 @@ require (
 	github.com/diegoholiveira/jsonlogic v1.0.1-0.20200220175622-ab7989be08b9
 	github.com/eclipse/paho.mqtt.golang v1.3.2
 	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.0-dev.21
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.54
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.56
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.0.0-dev.6
 	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0-dev.3
 	github.com/fxamacker/cbor/v2 v2.2.0
