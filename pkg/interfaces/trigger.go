@@ -27,10 +27,10 @@ import (
 
 // TriggerConfig provides a container to pass context needed for user defined triggers
 type TriggerConfig struct {
-	Config           types.MessageBusConfig
 	Logger           logger.LoggingClient
 	ContextBuilder   TriggerContextBuilder
 	MessageProcessor TriggerMessageProcessor
+	ConfigLoader     TriggerConfigLoader
 }
 
 // Trigger provides an abstract means to pass messages to the function pipeline
@@ -44,3 +44,5 @@ type TriggerMessageProcessor func(ctx AppFunctionContext, envelope types.Message
 
 // TriggerContextBuilder provides an interface to construct an AppFunctionContext for message
 type TriggerContextBuilder func(env types.MessageEnvelope) AppFunctionContext
+
+type TriggerConfigLoader func(config UpdatableConfig, sectionName string) error

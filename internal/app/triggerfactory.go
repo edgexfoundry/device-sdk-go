@@ -58,10 +58,10 @@ func (svc *Service) RegisterCustomTriggerFactory(name string,
 
 	svc.customTriggerFactories[nu] = func(sdk *Service) (interfaces.Trigger, error) {
 		return factory(interfaces.TriggerConfig{
-			Config:           sdk.config.Trigger.EdgexMessageBus,
 			Logger:           sdk.lc,
 			ContextBuilder:   sdk.defaultTriggerContextBuilder,
 			MessageProcessor: sdk.defaultTriggerMessageProcessor,
+			ConfigLoader:     sdk.defaultConfigLoader,
 		})
 	}
 
@@ -85,6 +85,10 @@ func (svc *Service) defaultTriggerMessageProcessor(appContext interfaces.AppFunc
 
 func (svc *Service) defaultTriggerContextBuilder(env types.MessageEnvelope) interfaces.AppFunctionContext {
 	return appfunction.NewContext(env.CorrelationID, svc.dic, env.ContentType)
+}
+
+func (svc *Service) defaultConfigLoader(updatableConfig interfaces.UpdatableConfig, name string) error {
+	return svc.LoadCustomConfig(updatableConfig, name)
 }
 
 func (svc *Service) setupTrigger(configuration *common.ConfigurationStruct, runtime *runtime.GolangRuntime) interfaces.Trigger {
