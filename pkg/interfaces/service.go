@@ -60,9 +60,13 @@ type ApplicationService interface {
 	AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error
 	// ApplicationSettings returns the key/value map of custom settings
 	ApplicationSettings() map[string]string
+	// GetAppSetting is a convenience function return a setting from the ApplicationSetting
+	// section of the service configuration.
+	// An error is returned if the specified setting is not found.
+	GetAppSetting(setting string) (string, error)
 	// GetAppSettingStrings is a convenience function that parses the value for the specified custom
 	// application setting as a comma separated list. It returns the list of strings.
-	// An error is returned if the specified setting is no found.
+	// An error is returned if the specified setting is not found.
 	GetAppSettingStrings(setting string) ([]string, error)
 	// SetFunctionsPipeline set the functions pipeline with the specified list of Application Functions.
 	// Note that the functions are executed in the order provided in the list.

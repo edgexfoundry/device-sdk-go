@@ -195,6 +195,33 @@ func TestApplicationSettingsNil(t *testing.T) {
 	require.Nil(t, appSettings, "returned application settings expected to be nil")
 }
 
+func TestGetAppSetting(t *testing.T) {
+	goodSettingName := "ExportUrl"
+	expectedGoodValue := "http:/somewhere.com"
+	badSettingName := "DeviceName"
+
+	svc := Service{
+		config: &common.ConfigurationStruct{
+			ApplicationSettings: map[string]string{
+				goodSettingName: expectedGoodValue,
+			},
+		},
+	}
+
+	actual, err := svc.GetAppSetting(goodSettingName)
+	require.NoError(t, err)
+	assert.EqualValues(t, expectedGoodValue, actual, "actual application setting values not as expected")
+
+	_, err = svc.GetAppSetting(badSettingName)
+	require.Error(t, err)
+	assert.EqualError(t, err, fmt.Sprintf("%s setting not found in ApplicationSettings section", badSettingName))
+
+	svc.config.ApplicationSettings = nil
+	_, err = svc.GetAppSetting(goodSettingName)
+	require.Error(t, err)
+	assert.EqualError(t, err, fmt.Sprintf("%s setting not found: ApplicationSettings section is missing", goodSettingName))
+}
+
 func TestGetAppSettingStrings(t *testing.T) {
 	setting := "DeviceNames"
 	expected := []string{"dev1", "dev2"}

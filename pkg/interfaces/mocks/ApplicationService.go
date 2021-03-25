@@ -109,6 +109,27 @@ func (_m *ApplicationService) EventClient() coredata.EventClient {
 	return r0
 }
 
+// GetAppSetting provides a mock function with given fields: setting
+func (_m *ApplicationService) GetAppSetting(setting string) (string, error) {
+	ret := _m.Called(setting)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(setting)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(setting)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetAppSettingStrings provides a mock function with given fields: setting
 func (_m *ApplicationService) GetAppSettingStrings(setting string) ([]string, error) {
 	ret := _m.Called(setting)

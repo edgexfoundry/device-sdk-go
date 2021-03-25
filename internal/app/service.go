@@ -323,6 +323,20 @@ func (svc *Service) ApplicationSettings() map[string]string {
 	return svc.config.ApplicationSettings
 }
 
+// GetAppSettingStrings returns the string for the specified App Setting.
+func (svc *Service) GetAppSetting(setting string) (string, error) {
+	if svc.config.ApplicationSettings == nil {
+		return "", fmt.Errorf("%s setting not found: ApplicationSettings section is missing", setting)
+	}
+
+	settingValue, ok := svc.config.ApplicationSettings[setting]
+	if !ok {
+		return "", fmt.Errorf("%s setting not found in ApplicationSettings section", setting)
+	}
+
+	return settingValue, nil
+}
+
 // GetAppSettingStrings returns the strings slice for the specified App Setting.
 func (svc *Service) GetAppSettingStrings(setting string) ([]string, error) {
 	if svc.config.ApplicationSettings == nil {
@@ -331,7 +345,7 @@ func (svc *Service) GetAppSettingStrings(setting string) ([]string, error) {
 
 	settingValue, ok := svc.config.ApplicationSettings[setting]
 	if !ok {
-		return nil, fmt.Errorf("%s setting not found in ApplicationSettings", setting)
+		return nil, fmt.Errorf("%s setting not found in ApplicationSettings section", setting)
 	}
 
 	valueStrings := util.DeleteEmptyAndTrim(strings.FieldsFunc(settingValue, util.SplitComma))
