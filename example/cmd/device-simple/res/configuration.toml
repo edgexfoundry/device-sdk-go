@@ -86,3 +86,10 @@ RetryWaitPeriod = "1s"
     Frequency = '30s'
     OnChange = false
     SourceName = 'Image'
+
+# Example structured custom configuration
+[SimpleCustom]
+OnImageLocation = "./res/on.png"
+OffImageLocation = "./res/off.jpg"
+  [SimpleCustom.Writable]
+  DiscoverSleepDurationSecs = 10
