@@ -30,7 +30,7 @@ func TestTransformToXML(t *testing.T) {
 	eventIn := dtos.Event{
 		DeviceName: deviceName1,
 	}
-	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Created>0</Created><Origin>0</Origin></Event>`
+	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Origin>0</Origin></Event>`
 	conv := NewConversion()
 
 	continuePipeline, result := conv.TransformToXML(context, eventIn)

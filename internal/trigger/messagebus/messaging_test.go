@@ -567,7 +567,7 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	expectedCorrelationID := "123"
 
-	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","created":1485364897029,"modified":1485364897029,"origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
+	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 
 	goRuntime := &runtime.GolangRuntime{}
 	goRuntime.Initialize(dic)

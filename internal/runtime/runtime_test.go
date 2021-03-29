@@ -56,14 +56,12 @@ func createAddEventRequest() requests.AddEventRequest {
 }
 
 var testV1Event = models.Event{
-	ID:      testV2Event.Id,
-	Device:  "FamilyRoomThermostat",
-	Created: testV2Event.Created,
-	Origin:  testV2Event.Origin,
+	ID:     testV2Event.Id,
+	Device: "FamilyRoomThermostat",
+	Origin: testV2Event.Origin,
 	Readings: []models.Reading{
 		{
 			Id:        testV2Event.Readings[0].Id,
-			Created:   testV2Event.Readings[0].Created,
 			Origin:    testV2Event.Readings[0].Origin,
 			Device:    "FamilyRoomThermostat",
 			Name:      "Temperature",

@@ -285,7 +285,6 @@ func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelop
 		ProfileName: "Unknown",
 		DeviceName:  v1Event.Device,
 		SourceName:  "Unknown",
-		Created:     v1Event.Created,
 		Origin:      v1Event.Origin,
 		Tags:        v1Event.Tags,
 	}
@@ -298,7 +297,6 @@ func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelop
 	for _, v1Reading := range v1Event.Readings {
 		v2Reading := dtos.BaseReading{
 			Id:           v1Reading.Id,
-			Created:      v1Reading.Created,
 			Origin:       v1Reading.Origin,
 			DeviceName:   v1Reading.Device,
 			ResourceName: v1Reading.Name,

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
@@ -27,7 +28,7 @@ import (
 )
 
 func TestSetResponseDataString(t *testing.T) {
-	expected := `<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`
+	expected := getExpectedEventXml(t)
 	target := NewResponseData()
 
 	continuePipeline, result := target.SetResponseData(context, expected)
@@ -40,8 +41,7 @@ func TestSetResponseDataString(t *testing.T) {
 }
 
 func TestSetResponseDataBytes(t *testing.T) {
-	var expected []byte
-	expected = []byte(`<Event><ID></ID><Pushed>0</Pushed><Device>id1</Device><Created>0</Created><Modified>0</Modified><Origin>0</Origin></Event>`)
+	expected := []byte(getExpectedEventXml(t))
 	target := NewResponseData()
 
 	continuePipeline, result := target.SetResponseData(context, expected)
@@ -84,4 +84,13 @@ func TestSetResponseDataBadType(t *testing.T) {
 	assert.False(t, continuePipeline)
 	require.NotNil(t, result)
 	assert.Contains(t, result.(error).Error(), "passed in data must be of type")
+}
+
+func getExpectedEventXml(t *testing.T) string {
+	event := dtos.NewEvent("profile1", "dev1", "source1")
+	event.AddSimpleReading("resource1", v2.ValueTypeInt32, int32(32))
+
+	xml, err := event.ToXML()
+	require.NoError(t, err)
+	return xml
 }

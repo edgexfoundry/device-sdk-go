@@ -113,7 +113,6 @@ func (f Filter) FilterByResourceName(ctx interfaces.AppFunctionContext, data int
 
 	auxEvent := dtos.Event{
 		DeviceName: existingEvent.DeviceName,
-		Created:    existingEvent.Created,
 		Origin:     existingEvent.Origin,
 		Readings:   []dtos.BaseReading{},
 	}
