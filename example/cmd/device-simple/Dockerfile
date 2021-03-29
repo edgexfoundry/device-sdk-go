@@ -17,8 +17,6 @@
 ARG BASE=golang:1.15-alpine3.12
 FROM ${BASE} AS builder
 
-ARG MAKE='make build'
-
 WORKDIR /device-sdk-go
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
@@ -26,29 +24,29 @@ LABEL license='SPDX-License-Identifier: Apache-2.0' \
 
 RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
 
-# add git for go modules
-RUN apk add --update --no-cache make git
+RUN apk add --update --no-cache make git gcc libc-dev zeromq-dev libsodium-dev
 
 COPY . .
 
-RUN ${MAKE}
+RUN go mod download
+
+RUN make build
 
 # Next image - Copy built Go binary into new workspace
-FROM scratch
-
+FROM alpine:3.12
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2020: Intel'
 
-ENV APP_PORT=49990
-#expose command data port
-EXPOSE $APP_PORT
+RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
+
+RUN apk add --update --no-cache zeromq
 
 WORKDIR /
-COPY --from=builder /device-sdk-go/example/cmd/device-simple/device-simple /usr/local/bin/device-simple
-COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/configuration.toml /res/configuration.toml
-COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/Simple-Driver.yaml /res/Simple-Driver.yaml
-COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/on.png /res/on.png
-COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/off.jpg /res/off.jpg
+COPY --from=builder /device-sdk-go/example/cmd/device-simple/Attribution.txt /Attribution.txt
+COPY --from=builder /device-sdk-go/example/cmd/device-simple/device-simple /device-simple
+COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/ /res
 
-ENTRYPOINT ["/usr/local/bin/device-simple"]
+EXPOSE 49990
+
+ENTRYPOINT ["/device-simple"]
 CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
