@@ -61,17 +61,18 @@ type ConfigurationStruct struct {
 
 // ServiceInfo is used to hold and configure various settings related to the hosting of this service
 type ServiceInfo struct {
-	BootTimeout    string
-	CheckInterval  string
-	Host           string
-	HTTPSCert      string
-	HTTPSKey       string
-	ServerBindAddr string
-	Port           int
-	Protocol       string
-	StartupMsg     string
-	ReadMaxLimit   int
-	Timeout        string
+	BootTimeout           string
+	CheckInterval         string
+	Host                  string
+	HTTPSCert             string
+	HTTPSKey              string
+	ServerBindAddr        string
+	Port                  int
+	Protocol              string
+	StartupMsg            string
+	ReadMaxLimit          int
+	Timeout               string
+	ConfigAccessTokenFile string
 }
 
 // TriggerInfo contains Metadata associated with each Trigger
@@ -196,14 +197,15 @@ func (c *ConfigurationStruct) GetInsecureSecrets() bootstrapConfig.InsecureSecre
 // transformToBootstrapServiceInfo transforms the SDK's ServiceInfo to the bootstrap's version of ServiceInfo
 func (c *ConfigurationStruct) transformToBootstrapServiceInfo() bootstrapConfig.ServiceInfo {
 	return bootstrapConfig.ServiceInfo{
-		BootTimeout:    durationToMill(c.Service.BootTimeout),
-		CheckInterval:  c.Service.CheckInterval,
-		Host:           c.Service.Host,
-		Port:           c.Service.Port,
-		Protocol:       c.Service.Protocol,
-		StartupMsg:     c.Service.StartupMsg,
-		MaxResultCount: c.Service.ReadMaxLimit,
-		Timeout:        durationToMill(c.Service.Timeout),
+		BootTimeout:           durationToMill(c.Service.BootTimeout),
+		CheckInterval:         c.Service.CheckInterval,
+		Host:                  c.Service.Host,
+		Port:                  c.Service.Port,
+		Protocol:              c.Service.Protocol,
+		StartupMsg:            c.Service.StartupMsg,
+		MaxResultCount:        c.Service.ReadMaxLimit,
+		Timeout:               durationToMill(c.Service.Timeout),
+		ConfigAccessTokenFile: c.Service.ConfigAccessTokenFile,
 	}
 }
 

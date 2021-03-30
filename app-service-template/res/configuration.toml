@@ -26,11 +26,13 @@ Protocol = 'http'
 ReadMaxLimit = 100
 StartupMsg = 'new-app-service Application Service has started'
 Timeout = '30s'
+ConfigAccessTokenFile = '/tmp/edgex/secrets/new-app-service/consul-token' # ignored in non-secure mode
 
 [Registry]
 Host = 'localhost'
 Port = 8500
 Type = 'consul'
+AccessTokenFile = '/tmp/edgex/secrets/new-app-service/consul-token' # ignored in non-secure mode
 
 [Database]
 Type = "redisdb"
