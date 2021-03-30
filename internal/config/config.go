@@ -22,8 +22,6 @@ type ConfigurationStruct struct {
 	Service ServiceInfo
 	// Device contains device-specific configuration settings.
 	Device DeviceInfo
-	// DeviceList is the list of pre-define Devices
-	DeviceList []DeviceConfig `consul:"-"`
 	// Driver is a string map contains customized configuration for the protocol driver implemented based on Device SDK
 	Driver map[string]string
 	// SecretStore contains information for connecting to the secure SecretStore (Vault) to retrieve or store secrets

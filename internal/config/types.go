@@ -12,7 +12,6 @@ import (
 	"fmt"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 )
 
 // WritableInfo is a struct which contains configuration settings that can be changed in the Registry .
@@ -84,6 +83,8 @@ type DeviceInfo struct {
 	// ProfilesDir specifies a directory which contains device profiles
 	// files which should be imported on startup.
 	ProfilesDir string
+	// DevicesDir specifies a directory contains devices files which should be imported on startup.
+	DevicesDir string
 	// UpdateLastConnected specifies whether to update device's LastConnected
 	// timestamp in metadata.
 	UpdateLastConnected bool
@@ -98,22 +99,6 @@ type DiscoveryInfo struct {
 	// Interval indicates how often the discovery process will be triggered.
 	// It represents as a duration string.
 	Interval string
-}
-
-// DeviceConfig is the definition of Devices which will be auto created when the Device Service starts up
-type DeviceConfig struct {
-	// Name is the Device name
-	Name string
-	// Profile is the profile name of the Device
-	Profile string
-	// Description describes the device
-	Description string
-	// Other labels applied to the device to help with searching
-	Labels []string
-	// Protocols for the device - stores protocol properties
-	Protocols map[string]models.ProtocolProperties
-	// AutoEvent supports auto-generated events sourced from a device service
-	AutoEvents []models.AutoEvent
 }
 
 // MessageQueueInfo provides parameters related to connecting to a message queue

@@ -9,7 +9,12 @@ package provision
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 
+	"github.com/BurntSushi/toml"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
@@ -20,28 +25,72 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
-func LoadDevices(deviceList []config.DeviceConfig, dic *di.Container) errors.EdgeX {
+func LoadDevices(path string, dic *di.Container) errors.EdgeX {
+	if path == "" {
+		return nil
+	}
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	serviceName := container.DeviceServiceFrom(dic.Get).Name
-	var addDevicesReq []requests.AddDeviceRequest
 
-	lc.Debug("loading pre-defined devices from configuration")
-	for _, d := range deviceList {
-		if _, ok := cache.Devices().ForName(d.Name); ok {
-			lc.Debugf("device %s exists, using the existing one", d.Name)
-			continue
-		} else {
-			lc.Debugf("device %s doesn't exist, creating a new one", d.Name)
-			deviceDTO, err := createDeviceDTO(serviceName, d, dic)
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
+	}
+
+	fileInfo, err := ioutil.ReadDir(absPath)
+	if err != nil {
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
+	}
+
+	var addDevicesReq []requests.AddDeviceRequest
+	serviceName := container.DeviceServiceFrom(dic.Get).Name
+	lc.Infof("Loading pre-defined devices from %s", absPath)
+	for _, file := range fileInfo {
+		var devices []dtos.Device
+		fullPath := filepath.Join(absPath, file.Name())
+		if strings.HasSuffix(fullPath, ".toml") {
+			content, err := ioutil.ReadFile(fullPath)
 			if err != nil {
-				return err
+				lc.Errorf("Failed to read %s: %v", fullPath, err)
+				continue
 			}
-			req := requests.NewAddDeviceRequest(deviceDTO)
-			addDevicesReq = append(addDevicesReq, req)
+			d := struct {
+				DeviceList []dtos.Device
+			}{}
+			err = toml.Unmarshal(content, &d)
+			if err != nil {
+				lc.Errorf("Failed to decode %s: %v", fullPath, err)
+				continue
+			}
+			devices = d.DeviceList
+		} else if strings.HasSuffix(fullPath, ".json") {
+			content, err := ioutil.ReadFile(fullPath)
+			if err != nil {
+				lc.Errorf("Failed to read %s: %v", fullPath, err)
+				continue
+			}
+			err = json.Unmarshal(content, &devices)
+			if err != nil {
+				lc.Errorf("Failed to decode %s: %v", fullPath, err)
+				continue
+			}
+		} else {
+			continue
+		}
+
+		for _, device := range devices {
+			if _, ok := cache.Devices().ForName(device.Name); ok {
+				lc.Infof("Device %s exists, using the existing one", device.Name)
+			} else {
+				lc.Infof("Device %s not found in Metadata, adding it ...", device.Name)
+				device.ServiceName = serviceName
+				device.AdminState = models.Unlocked
+				device.OperatingState = models.Up
+				req := requests.NewAddDeviceRequest(device)
+				addDevicesReq = append(addDevicesReq, req)
+			}
 		}
 	}
 
@@ -50,28 +99,6 @@ func LoadDevices(deviceList []config.DeviceConfig, dic *di.Container) errors.Edg
 	}
 	dc := container.MetadataDeviceClientFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
-	_, err := dc.Add(ctx, addDevicesReq)
-	return err
-}
-
-func createDeviceDTO(name string, dc config.DeviceConfig, dic *di.Container) (deviceDTO dtos.Device, err errors.EdgeX) {
-	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
-	_, err = dpc.DeviceProfileByName(context.Background(), dc.Profile)
-	if err != nil {
-		return
-	}
-
-	device := models.Device{
-		Name:           dc.Name,
-		Description:    dc.Description,
-		Protocols:      dc.Protocols,
-		Labels:         dc.Labels,
-		ProfileName:    dc.Profile,
-		ServiceName:    name,
-		AdminState:     models.Unlocked,
-		OperatingState: models.Up,
-		AutoEvents:     dc.AutoEvents,
-	}
-
-	return dtos.FromDeviceModelToDTO(device), nil
+	_, edgexErr := dc.Add(ctx, addDevicesReq)
+	return edgexErr
 }

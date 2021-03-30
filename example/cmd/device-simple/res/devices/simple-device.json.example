@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Simple-Device01",
+    "profileName": "Simple-Device",
+    "description": "Example of Simple Device",
+    "labels": ["industrial"],
+    "protocols": {
+      "other": {
+        "address": "simple01",
+        "port": "300"
+      }
+    },
+    "autoEvents": [
+      {"frequency": "10s", "onChange": false, "sourceName": "Switch"},
+      {"frequency": "30s", "onChange": false, "sourceName": "Image"}
+    ]
+  }
+]

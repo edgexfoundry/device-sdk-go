@@ -1,0 +1,17 @@
+[[DeviceList]]
+  Name = 'Simple-Device01'
+  ProfileName = 'Simple-Device'
+  Description = 'Example of Simple Device'
+  Labels = [ 'industrial' ]
+  [DeviceList.Protocols]
+  [DeviceList.Protocols.other]
+    Address = 'simple01'
+    Port = '300'
+  [[DeviceList.AutoEvents]]
+    Frequency = '10s'
+    OnChange = false
+    SourceName = 'Switch'
+  [[DeviceList.AutoEvents]]
+    Frequency = '30s'
+    OnChange = false
+    SourceName = 'Image'
