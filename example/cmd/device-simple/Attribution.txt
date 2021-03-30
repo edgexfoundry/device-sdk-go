@@ -33,12 +33,6 @@ https://github.com/hashicorp/go-immutable-radix/blob/master/LICENSE
 hashicorp/golang-lru (Mozilla Public License 2.0) https://github.com/hashicorp/golang-lru
 https://github.com/hashicorp/golang-lru/blob/master/LICENSE
 
-robfig/cron (MIT) https://github.com/robfig/cron
-https://github.com/robfig/cron/blob/master/LICENSE
-
-globalsign/mgo (unspecified) https://github.com/globalsign/mgo
-https://github.com/globalsign/mgo/blob/master/LICENSE
-
 gopkg.in/yaml v2 (Apache 2.0) https://github.com/go-yaml/yaml/tree/v2
 https://github.com/go-yaml/yaml/blob/v2/LICENSE
 
@@ -47,12 +41,6 @@ https://github.com/go-yaml/yaml/blob/v3/LICENSE
 
 google/uuid (BSD-3) https://github.com/google/uuid
 https://github.com/google/uuid/blob/master/LICENSE
-
-edgexfoundry/edgex-go (Apache 2.0) https://github.com/edgexfoundry/edgex-go
-https://github.com/edgexfoundry/edgex-go/blob/master/LICENSE
-
-jessevdk/go-flags (BSD-3) https://github.com/jessevdk/go-flags
-https://github.com/jessevdk/go-flags/blob/master/LICENSE
 
 OneOfOne/xxhash (Apache 2.0) https://github.com/OneOfOne/xxhash
 https://github.com/OneOfOne/xxhash/blob/master/LICENSE
@@ -74,9 +62,6 @@ https://github.com/go-kit/kit/blob/master/LICENSE
 
 go-logfmt/logfmt (MIT) https://github.com/go-logfmt/logfmt
 https://github.com/go-logfmt/logfmt/blob/master/LICENSE
-
-gorilla/context (BSD-3) https://github.com/gorilla/context
-https://github.com/gorilla/context/blob/master/LICENSE
 
 mitchellh/consulstructure (MIT) https://github.com/mitchellh/consulstructure
 https://github.com/mitchellh/consulstructure/blob/master/LICENSE
@@ -149,3 +134,21 @@ https://github.com/mattn/go-isatty/blob/master/LICENSE
 
 golang.org/x/sys (BSD-3) https://github.com/golang/sys
 https://github.com/golang/sys/blob/master/LICENSE
+
+eclipse/paho.mqtt.golang (Eclipse Distribution License) https://github.com/eclipse/paho.mqtt.golang
+https://github.com/eclipse/paho.mqtt.golang/blob/master/LICENSE
+
+edgexfoundry/go-mod-messaging (Apache 2.0) https://github.com/edgexfoundry/go-mod-messaging/v2
+https://github.com/edgexfoundry/go-mod-messaging/blob/master/LICENSE
+
+go-redis/redis (BSD-2) https://github.com/go-redis/redis/v7
+https://github.com/go-redis/redis/blob/master/LICENSE
+
+gorilla/websocket (BSD-2) https://github.com/gorilla/websocket
+https://github.com/gorilla/websocket/blob/master/LICENSE
+
+pebbe/zmq4 (BSD-2) https://github.com/pebbe/zmq4
+https://github.com/pebbe/zmq4/blob/master/LICENSE.txt
+
+golang.org/x/net (Unspecified) https://github.com/golang/net
+https://github.com/golang/net/blob/master/LICENSE

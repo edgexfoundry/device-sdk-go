@@ -15,10 +15,10 @@ GOTESTFLAGS?=-race
 GIT_SHA=$(shell git rev-parse HEAD)
 
 build: $(MICROSERVICES)
-	$(GO) install -tags=safe
+	$(GOCGO) install -tags=safe
 
 example/cmd/device-simple/device-simple:
-	$(GO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
+	$(GOCGO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
 
 docker:
 	docker build \

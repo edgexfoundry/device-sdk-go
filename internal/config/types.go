@@ -1,15 +1,17 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2020 IOTech Ltd
+// Copyright (C) 2018-2021 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package common
+package config
 
 import (
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"fmt"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
 )
 
@@ -17,7 +19,7 @@ import (
 type WritableInfo struct {
 	// Level is the logging level of writing log message
 	LogLevel        string
-	InsecureSecrets bootstrapConfig.InsecureSecrets
+	InsecureSecrets config.InsecureSecrets
 }
 
 // ServiceInfo is a struct which contains service related configuration
@@ -112,8 +114,33 @@ type DeviceConfig struct {
 	AutoEvents []models.AutoEvent
 }
 
-func (s ServiceInfo) GetBootstrapServiceInfo() bootstrapConfig.ServiceInfo {
-	return bootstrapConfig.ServiceInfo{
+// MessageQueueInfo provides parameters related to connecting to a message queue
+type MessageQueueInfo struct {
+	Enabled bool
+	// Protocol indicates the protocol to use when accessing the message queue.
+	Protocol string
+	// Host is the hostname or IP address of the broker, if applicable.
+	Host string
+	// Port defines the port on which to access the message queue.
+	Port int
+	// Indicates the message queue platform being used.
+	Type string
+	// Indicates the topic prefix the data is published to. Note that /<device-profile-name>/<device-name> will be
+	// added to this Publish Topic prefix as the complete publish topic
+	PublishTopicPrefix string
+	// Provides additional configuration properties which do not fit within the existing field.
+	// Typically the key is the name of the configuration property and the value is a string representation of the
+	// desired value for the configuration property.
+	Optional map[string]string
+}
+
+// URL constructs a URL from the protocol, host and port and returns that as a string.
+func (m MessageQueueInfo) URL() string {
+	return fmt.Sprintf("%s://%s:%v", m.Protocol, m.Host, m.Port)
+}
+
+func (s ServiceInfo) GetBootstrapServiceInfo() config.ServiceInfo {
+	return config.ServiceInfo{
 		BootTimeout:    s.BootTimeout,
 		CheckInterval:  s.CheckInterval,
 		Host:           s.Host,

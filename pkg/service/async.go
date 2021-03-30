@@ -76,7 +76,7 @@ func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan 
 		return
 	}
 
-	common.SendEvent(event, "", s.LoggingClient, s.edgexClients.EventClient)
+	common.SendEvent(event, "", dic)
 }
 
 // processAsyncFilterAndAdd filter and add devices discovered by

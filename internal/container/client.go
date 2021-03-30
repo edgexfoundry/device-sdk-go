@@ -9,6 +9,7 @@ package container
 import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 )
 
 var MetadataDeviceClientName = di.TypeInstanceToName((*interfaces.DeviceClient)(nil))
@@ -16,6 +17,7 @@ var MetadataDeviceServiceClientName = di.TypeInstanceToName((*interfaces.DeviceS
 var MetadataDeviceProfileClientName = di.TypeInstanceToName((*interfaces.DeviceProfileClient)(nil))
 var MetadataProvisionWatcherClientName = di.TypeInstanceToName((*interfaces.ProvisionWatcherClient)(nil))
 var CoredataEventClientName = di.TypeInstanceToName((*interfaces.EventClient)(nil))
+var MessagingClientName = di.TypeInstanceToName((*messaging.MessageClient)(nil))
 
 func MetadataDeviceClientFrom(get di.Get) interfaces.DeviceClient {
 	return get(MetadataDeviceClientName).(interfaces.DeviceClient)
@@ -35,4 +37,8 @@ func MetadataProvisionWatcherClientFrom(get di.Get) interfaces.ProvisionWatcherC
 
 func CoredataEventClientFrom(get di.Get) interfaces.EventClient {
 	return get(CoredataEventClientName).(interfaces.EventClient)
+}
+
+func MessagingClientFrom(get di.Get) messaging.MessageClient {
+	return get(MessagingClientName).(messaging.MessageClient)
 }

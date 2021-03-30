@@ -19,7 +19,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
@@ -35,6 +35,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
@@ -61,7 +62,7 @@ type DeviceService struct {
 	SecretProvider  interfaces.SecretProvider
 	edgexClients    clients.EdgeXClients
 	controller      *restController.RestController
-	config          *common.ConfigurationStruct
+	config          *config.ConfigurationStruct
 	deviceService   *models.DeviceService
 	driver          dsModels.ProtocolDriver
 	discovery       dsModels.ProtocolDiscovery
@@ -71,7 +72,7 @@ type DeviceService struct {
 	initialized     bool
 	dic             *di.Container
 	flags           flags.Common
-	configProcessor *config.Processor
+	configProcessor *bootstrapConfig.Processor
 	ctx             context.Context
 	wg              *sync.WaitGroup
 }
@@ -102,7 +103,7 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 		s.discovery = nil
 	}
 
-	s.config = &common.ConfigurationStruct{}
+	s.config = &config.ConfigurationStruct{}
 }
 
 func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
@@ -159,7 +160,7 @@ func (s *DeviceService) Stop(force bool) {
 func (s *DeviceService) LoadCustomConfig(customConfig UpdatableConfig, sectionName string) error {
 	lc := bootstrapContainer.LoggingClientFrom(s.dic.Get)
 	if s.configProcessor == nil {
-		s.configProcessor = config.NewProcessorForCustomConfig(lc, s.flags, s.ctx, s.wg, s.dic)
+		s.configProcessor = bootstrapConfig.NewProcessorForCustomConfig(lc, s.flags, s.ctx, s.wg, s.dic)
 	}
 	return s.configProcessor.LoadCustomConfigSection(customConfig, sectionName)
 

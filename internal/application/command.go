@@ -88,9 +88,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 		}
 
 		if res != nil && sendEvent {
-			ec := container.CoredataEventClientFrom(dic.Get)
-			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-			go common.SendEvent(res, correlationID, lc, ec)
+			go common.SendEvent(res, correlationID, dic)
 		}
 	}()
 
