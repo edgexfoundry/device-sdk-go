@@ -26,6 +26,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
@@ -84,7 +85,7 @@ func (vv *VersionValidator) BootstrapHandler(
 		return true
 	}
 
-	url := config.Clients[clients.CoreDataServiceKey].Url() + clients.ApiVersionRoute
+	url := config.Clients[clients.CoreDataServiceKey].Url() + v2.ApiVersionRoute
 	var data []byte
 	var err error
 	for startupTimer.HasNotElapsed() {
