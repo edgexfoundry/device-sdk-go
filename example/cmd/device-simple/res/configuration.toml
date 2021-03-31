@@ -20,11 +20,13 @@ Timeout = 20000
 Labels = []
 EnableAsyncReadings = true
 AsyncBufferSize = 1
+ConfigAccessTokenFile = '/tmp/edgex/secrets/device-simple/consul-token' # ignored in non-secure mode
 
 [Registry]
 Host = 'localhost'
 Port = 8500
 Type = 'consul'
+AccessTokenFile = '/tmp/edgex/secrets/device-simple/consul-token' # ignored in non-secure mode
 
 [Clients]
   [Clients.edgex-core-data]

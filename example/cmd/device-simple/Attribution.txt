@@ -152,3 +152,6 @@ https://github.com/pebbe/zmq4/blob/master/LICENSE.txt
 
 golang.org/x/net (Unspecified) https://github.com/golang/net
 https://github.com/golang/net/blob/master/LICENSE
+
+golang.org/x/crypto (Unspecified) https://github.com/golang/crypto
+https://github.com/golang/crypto/blob/master/LICENSE
