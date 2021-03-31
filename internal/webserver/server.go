@@ -105,10 +105,14 @@ func (webserver *WebServer) StartWebServer(errChannel chan error) {
 
 // Helper function to handle HTTPs or HTTP connection based on the configured protocol
 func listenAndServe(webserver *WebServer, serviceTimeout time.Duration, errChannel chan error) {
-
-	// this allows env overrides to explicitly set the value used
-	// for ListenAndServe, as needed for different deployments
-	addr := fmt.Sprintf("%v:%d", webserver.config.Service.ServerBindAddr, webserver.config.Service.Port)
+	// The Host value is the default bind address value if the ServerBindAddr value is not specified
+	// this allows env overrides to explicitly set the value used for ListenAndServe,
+	// as needed for different deployments
+	bindAddress := webserver.config.Service.Host
+	if len(webserver.config.Service.ServerBindAddr) != 0 {
+		bindAddress = webserver.config.Service.ServerBindAddr
+	}
+	addr := fmt.Sprintf("%s:%d", bindAddress, webserver.config.Service.Port)
 
 	if webserver.config.Service.Protocol == "https" {
 		webserver.lc.Infof("Starting HTTPS Web Server on address %v", addr)

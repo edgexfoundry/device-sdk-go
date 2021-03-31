@@ -21,6 +21,7 @@ BootTimeout = '30s'
 ClientMonitor = '15s'
 CheckInterval = '10s'
 Host = 'localhost'
+ServerBindAddr = '' # Leave blank so default to Host value unless different value is needed.
 Port = 49600  # TODO: set this port appropriately
 Protocol = 'http'
 ReadMaxLimit = 100
