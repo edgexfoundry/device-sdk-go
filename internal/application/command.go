@@ -74,6 +74,10 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	if device.AdminState == models.Locked {
 		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
 	}
+	// check device's OperatingState
+	if device.OperatingState == models.Down {
+		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s OperatingState is DOWN", device.Name), nil)
+	}
 	// the device service will perform some operations(e.g. update LastConnected timestamp,
 	// push returning event to core-data) after a device is successfully interacted with if
 	// it has been configured to do so, and those operation apply to every protocol and

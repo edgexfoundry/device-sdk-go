@@ -22,7 +22,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 type Executor struct {
@@ -49,12 +48,6 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 			if e.stop {
 				return
 			}
-			ds := container.DeviceServiceFrom(dic.Get)
-			if ds.AdminState == models.Locked {
-				lc.Info("AutoEvent - stopped for locked device service")
-				return
-			}
-
 			lc.Debugf("AutoEvent - reading %s", e.sourceName)
 			evt, err := readResource(e, dic)
 			if err != nil {
