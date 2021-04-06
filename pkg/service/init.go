@@ -71,7 +71,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		return false
 	}
 
-	err = provision.LoadDevices(ds.config.DeviceList, dic)
+	err = provision.LoadDevices(ds.config.Device.DevicesDir, dic)
 	if err != nil {
 		ds.LoggingClient.Errorf("Failed to create the pre-defined devices: %v", err)
 		return false

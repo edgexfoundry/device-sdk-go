@@ -17,11 +17,10 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
@@ -41,23 +40,17 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
 	}
-	lc.Debugf("created absolute path for loading pre-defined device profiles: %s", absPath)
-
-	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
-	res, edgexErr := dpc.AllDeviceProfiles(ctx, nil, 0, -1)
-	if edgexErr != nil {
-		return edgexErr
-	}
-	profileMap := profileDTOSliceToMap(res.Profiles)
 
 	fileInfo, err := ioutil.ReadDir(absPath)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
 	}
 
+	var addProfilesReq []requests.DeviceProfileRequest
+	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
+	lc.Infof("Loading pre-defined profiles from %s", absPath)
 	for _, file := range fileInfo {
-		var profile models.DeviceProfile
+		var profile dtos.DeviceProfile
 
 		fName := file.Name()
 		lfName := strings.ToLower(fName)
@@ -65,38 +58,30 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 			fullPath := filepath.Join(absPath, fName)
 			yamlFile, err := ioutil.ReadFile(fullPath)
 			if err != nil {
-				lc.Errorf("failed to read %s: %v", fullPath, err)
+				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue
 			}
 
 			err = yaml.Unmarshal(yamlFile, &profile)
 			if err != nil {
-				lc.Errorf("filed to decode profile %s: %v", fullPath, err)
-				continue
-			}
-			// if profile already exists in metadata, skip it
-			if p, ok := profileMap[profile.Name]; ok {
-				_ = cache.Profiles().Add(p)
+				lc.Errorf("Failed to decode profile %s: %v", fullPath, err)
 				continue
 			}
 
-			// add profile to metadata
-			ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
-			_, err = dpc.AddByYaml(ctx, fullPath)
-			if err != nil {
-				lc.Errorf("failed to add profile %s to metadata: %v", fullPath, err)
-				continue
+			_, err = dpc.DeviceProfileByName(context.Background(), profile.Name)
+			if err == nil {
+				lc.Infof("Profile %s exists, using the existing one", profile.Name)
+			} else {
+				lc.Infof("Profile %s not found in Metadata, adding it ...", profile.Name)
+				req := requests.NewDeviceProfileRequest(profile)
+				addProfilesReq = append(addProfilesReq, req)
 			}
 		}
 	}
-	return nil
-}
-
-func profileDTOSliceToMap(profiles []dtos.DeviceProfile) map[string]models.DeviceProfile {
-	result := make(map[string]models.DeviceProfile, len(profiles))
-	for _, p := range profiles {
-		result[p.Name] = dtos.ToDeviceProfileModel(p)
+	if len(addProfilesReq) == 0 {
+		return nil
 	}
-
-	return result
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	_, edgexErr := dpc.Add(ctx, addProfilesReq)
+	return edgexErr
 }
