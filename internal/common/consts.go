@@ -16,9 +16,7 @@ import (
 const (
 	EnvInstanceName = "EDGEX_INSTANCE_NAME"
 
-	ConfigStemDevice   = "edgex/devices/"
-	ConfigMajorVersion = "1.0/"
-
+	ConfigStemDevice = "edgex/devices/"
 	APIV2SecretRoute = v2.ApiBase + "/secret"
 
 	GetCmdMethod = "get"
