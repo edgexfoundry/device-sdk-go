@@ -14,6 +14,7 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
@@ -58,10 +59,11 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 
 	if configuration.MessageQueue.Enabled {
 		mc := container.MessagingClientFrom(dic.Get)
-		bytes, _, err := req.Encode()
+		bytes, encoding, err := req.Encode()
 		if err != nil {
 			lc.Error(err.Error())
 		}
+		ctx = context.WithValue(ctx, clients.ContentType, encoding)
 		envelope := types.NewMessageEnvelope(bytes, ctx)
 		publishTopic := fmt.Sprintf("%s/%s/%s/%s", configuration.MessageQueue.PublishTopicPrefix, event.ProfileName, event.DeviceName, event.SourceName)
 		err = mc.Publish(envelope, publishTopic)
