@@ -105,21 +105,20 @@ func (s *DeviceService) UpdateDeviceProfile(profile models.DeviceProfile) errors
 	return err
 }
 
-// ResourceOperation retrieves the first matched ResourceOperation instance from cache according to
-// the Device name, Device Resource name, and the method (get or set).
-func (s *DeviceService) ResourceOperation(deviceName string, deviceResource string, method string) (models.ResourceOperation, bool) {
+// DeviceCommand retrieves the specific DeviceCommand instance from cache according to
+// the Device name and Command name
+func (s *DeviceService) DeviceCommand(deviceName string, commandName string) (models.DeviceCommand, bool) {
 	device, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		s.LoggingClient.Errorf("failed to find device %s in cache", deviceName)
-		return models.ResourceOperation{}, false
+		return models.DeviceCommand{}, false
 	}
 
-	ro, err := cache.Profiles().ResourceOperation(device.ProfileName, deviceResource, method)
-	if err != nil {
-		s.LoggingClient.Error(err.Error())
-		return ro, false
+	dc, ok := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
+	if !ok {
+		return dc, false
 	}
-	return ro, true
+	return dc, true
 }
 
 // DeviceResource retrieves the specific DeviceResource instance from cache according to
