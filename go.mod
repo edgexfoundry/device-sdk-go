@@ -6,7 +6,7 @@ require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
 	github.com/diegoholiveira/jsonlogic v1.0.1-0.20200220175622-ab7989be08b9
 	github.com/eclipse/paho.mqtt.golang v1.3.2
-	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.0-dev.28
+	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.0-dev.29
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.62
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.0.0-dev.7
 	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0-dev.4
@@ -16,3 +16,4 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.7.0
 )
+

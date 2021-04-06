@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	ConfigRegistryStem   = "edgex/appservices/1.0/"
+	ConfigRegistryStem   = "edgex/appservices/"
 	CorrelationHeaderKey = "X-Correlation-ID"
 
 	ApiTriggerRoute   = contracts.ApiBase + "/trigger"
