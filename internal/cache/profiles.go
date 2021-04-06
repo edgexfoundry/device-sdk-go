@@ -8,14 +8,10 @@ package cache
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
-
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 )
 
 var (
@@ -29,36 +25,32 @@ type ProfileCache interface {
 	Update(profile models.DeviceProfile) errors.EdgeX
 	RemoveByName(name string) errors.EdgeX
 	DeviceResource(profileName string, resourceName string) (models.DeviceResource, bool)
-	CommandExists(profileName string, cmd string, method string) (bool, errors.EdgeX)
-	ResourceOperations(profileName string, cmd string, method string) ([]models.ResourceOperation, errors.EdgeX)
-	ResourceOperation(profileName string, deviceResource string, method string) (models.ResourceOperation, errors.EdgeX)
+	DeviceCommand(profileName string, commandName string) (models.DeviceCommand, bool)
+	ResourceOperation(profileName string, deviceResource string) (models.ResourceOperation, errors.EdgeX)
 }
 
 type profileCache struct {
-	deviceProfileMap         map[string]*models.DeviceProfile // key is DeviceProfile name
-	deviceResourceMap        map[string]map[string]models.DeviceResource
-	getResourceOperationsMap map[string]map[string][]models.ResourceOperation
-	setResourceOperationsMap map[string]map[string][]models.ResourceOperation
-	mutex                    sync.RWMutex
+	deviceProfileMap  map[string]*models.DeviceProfile // key is DeviceProfile name
+	deviceResourceMap map[string]map[string]models.DeviceResource
+	deviceCommandMap  map[string]map[string]models.DeviceCommand
+	mutex             sync.RWMutex
 }
 
 func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 	defaultSize := len(profiles)
 	dpMap := make(map[string]*models.DeviceProfile, defaultSize)
 	drMap := make(map[string]map[string]models.DeviceResource, defaultSize)
-	getRoMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
-	setRoMap := make(map[string]map[string][]models.ResourceOperation, defaultSize)
+	dcMap := make(map[string]map[string]models.DeviceCommand, defaultSize)
 	for _, dp := range profiles {
 		dpMap[dp.Name] = &dp
 		drMap[dp.Name] = deviceResourceSliceToMap(dp.DeviceResources)
-		getRoMap[dp.Name], setRoMap[dp.Name] = deviceCommandSliceToMap(dp.DeviceCommands)
+		dcMap[dp.Name] = deviceCommandSliceToMap(dp.DeviceCommands)
 	}
 
 	pc = &profileCache{
-		deviceProfileMap:         dpMap,
-		deviceResourceMap:        drMap,
-		getResourceOperationsMap: getRoMap,
-		setResourceOperationsMap: setRoMap,
+		deviceProfileMap:  dpMap,
+		deviceResourceMap: drMap,
+		deviceCommandMap:  dcMap,
 	}
 	return pc
 }
@@ -106,7 +98,7 @@ func (p *profileCache) add(profile models.DeviceProfile) errors.EdgeX {
 
 	p.deviceProfileMap[profile.Name] = &profile
 	p.deviceResourceMap[profile.Name] = deviceResourceSliceToMap(profile.DeviceResources)
-	p.getResourceOperationsMap[profile.Name], p.setResourceOperationsMap[profile.Name] = deviceCommandSliceToMap(profile.DeviceCommands)
+	p.deviceCommandMap[profile.Name] = deviceCommandSliceToMap(profile.DeviceCommands)
 	return nil
 }
 
@@ -119,19 +111,13 @@ func deviceResourceSliceToMap(deviceResources []models.DeviceResource) map[strin
 	return result
 }
 
-func deviceCommandSliceToMap(deviceCommands []models.DeviceCommand) (map[string][]models.ResourceOperation, map[string][]models.ResourceOperation) {
-	getResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
-	setResult := make(map[string][]models.ResourceOperation, len(deviceCommands))
-	for _, deviceCommand := range deviceCommands {
-		if strings.Contains(deviceCommand.ReadWrite, v2.ReadWrite_R) {
-			getResult[deviceCommand.Name] = deviceCommand.ResourceOperations
-		}
-		if strings.Contains(deviceCommand.ReadWrite, v2.ReadWrite_W) {
-			setResult[deviceCommand.Name] = deviceCommand.ResourceOperations
-		}
+func deviceCommandSliceToMap(deviceCommands []models.DeviceCommand) map[string]models.DeviceCommand {
+	result := make(map[string]models.DeviceCommand, len(deviceCommands))
+	for _, dc := range deviceCommands {
+		result[dc.Name] = dc
 	}
 
-	return getResult, setResult
+	return result
 }
 
 // Update updates the profile in the cache
@@ -163,8 +149,7 @@ func (p *profileCache) removeByName(name string) errors.EdgeX {
 
 	delete(p.deviceProfileMap, name)
 	delete(p.deviceResourceMap, name)
-	delete(p.getResourceOperationsMap, name)
-	delete(p.setResourceOperationsMap, name)
+	delete(p.deviceCommandMap, name)
 	return nil
 }
 
@@ -175,65 +160,29 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 
 	drs, ok := p.deviceResourceMap[profileName]
 	if !ok {
-		return models.DeviceResource{}, ok
+		return models.DeviceResource{}, false
 	}
 
 	dr, ok := drs[resourceName]
 	return dr, ok
 }
 
-// CommandExists returns a bool indicating whether the specified command exists for the
-// specified (by name) profile. If the specified profile doesn't exist, an error is returned.
-func (p *profileCache) CommandExists(profileName string, cmd string, method string) (bool, errors.EdgeX) {
+// DeviceCommand returns the DeviceCommand with given profileName and commandName
+func (p *profileCache) DeviceCommand(profileName string, commandName string) (models.DeviceCommand, bool) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
-	_, ok := p.deviceProfileMap[profileName]
+	dcs, ok := p.deviceCommandMap[profileName]
 	if !ok {
-		errMsg := fmt.Sprintf("failed to find Profile %s in cache", profileName)
-		return false, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
-	}
-	// Check whether cmd exists in deviceCommands.
-	var deviceCommands map[string][]models.ResourceOperation
-	if strings.ToLower(method) == common.GetCmdMethod {
-		deviceCommands, _ = p.getResourceOperationsMap[profileName]
-	} else {
-		deviceCommands, _ = p.setResourceOperationsMap[profileName]
+		return models.DeviceCommand{}, false
 	}
 
-	if _, ok := deviceCommands[cmd]; !ok {
-		return false, nil
-	}
-
-	return true, nil
+	dc, ok := dcs[commandName]
+	return dc, ok
 }
 
-// ResourceOperations returns the ResourceOperations with given command and method.
-func (p *profileCache) ResourceOperations(profileName string, cmd string, method string) ([]models.ResourceOperation, errors.EdgeX) {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-
-	if err := p.verifyProfileExists(profileName); err != nil {
-		return nil, err
-	}
-
-	rosMap, err := p.verifyResourceOperationsExists(method, profileName)
-	if err != nil {
-		return nil, err
-	}
-
-	var ok bool
-	var ros []models.ResourceOperation
-	if ros, ok = rosMap[cmd]; !ok {
-		errMsg := fmt.Sprintf("failed to find DeviceCommand %s in Profile %s", cmd, profileName)
-		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
-	}
-
-	return ros, nil
-}
-
-// ResourceOperation returns the first matched ResourceOperation with given deviceResource and method
-func (p *profileCache) ResourceOperation(profileName string, deviceResource string, method string) (models.ResourceOperation, errors.EdgeX) {
+// ResourceOperation returns the first matched ResourceOperation with given resourceName
+func (p *profileCache) ResourceOperation(profileName string, resourceName string) (models.ResourceOperation, errors.EdgeX) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
@@ -241,20 +190,16 @@ func (p *profileCache) ResourceOperation(profileName string, deviceResource stri
 		return models.ResourceOperation{}, err
 	}
 
-	rosMap, err := p.verifyResourceOperationsExists(method, profileName)
-	if err != nil {
-		return models.ResourceOperation{}, err
-	}
-
-	for _, ros := range rosMap {
-		for _, ro := range ros {
-			if ro.DeviceResource == deviceResource {
+	deviceCommandMap := p.deviceCommandMap[profileName]
+	for _, dc := range deviceCommandMap {
+		for _, ro := range dc.ResourceOperations {
+			if ro.DeviceResource == resourceName {
 				return ro, nil
 			}
 		}
 	}
 
-	errMsg := fmt.Sprintf("failed to find ResourceOpertaion with DeviceResource %s in Profile %s", deviceResource, profileName)
+	errMsg := fmt.Sprintf("failed to find ResourceOpertaion with DeviceResource %s in Profile %s", resourceName, profileName)
 	return models.ResourceOperation{}, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 }
 
@@ -264,24 +209,6 @@ func (p *profileCache) verifyProfileExists(profileName string) errors.EdgeX {
 		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	return nil
-}
-
-func (p *profileCache) verifyResourceOperationsExists(method string, profileName string) (map[string][]models.ResourceOperation, errors.EdgeX) {
-	var ok bool
-	var rosMap map[string][]models.ResourceOperation
-
-	if strings.ToLower(method) == common.GetCmdMethod {
-		rosMap, ok = p.getResourceOperationsMap[profileName]
-	} else if strings.ToLower(method) == common.SetCmdMethod {
-		rosMap, ok = p.setResourceOperationsMap[profileName]
-	}
-
-	if !ok {
-		errMsg := fmt.Sprintf("failed to find %s ResourceOperations in Profile %s", method, profileName)
-		return rosMap, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
-	}
-
-	return rosMap, nil
 }
 
 func Profiles() ProfileCache {

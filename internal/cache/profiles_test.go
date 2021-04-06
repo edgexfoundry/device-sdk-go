@@ -141,56 +141,25 @@ func Test_profileCache_DeviceResource(t *testing.T) {
 	}
 }
 
-func Test_profileCache_CommandExists(t *testing.T) {
-	newProfileCache([]models.DeviceProfile{testProfile})
-
-	tests := []struct {
-		name     string
-		profile  string
-		cmd      string
-		method   string
-		expected bool
-	}{
-		{"Invalid - nonexistent Profile name", "nil", TestDeviceCommand, "GET", false},
-		{"Invalid - nonexistent Command name", TestProfile, "nil", "GET", false},
-		{"Invalid - invalid method", TestProfile, TestDeviceCommand, "INVALID", false},
-		{"Invalid - nonexistent method", TestProfile, TestDeviceCommand, "SET", false},
-		{"Valid", TestProfile, TestDeviceCommand, "gEt", true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ok, _ := pc.CommandExists(tt.profile, tt.cmd, tt.method)
-			assert.Equal(t, ok, tt.expected)
-		})
-	}
-}
-
-func Test_profileCache_ResourceOperations(t *testing.T) {
+func Test_profileCache_DeviceCommand(t *testing.T) {
 	newProfileCache([]models.DeviceProfile{testProfile})
 
 	tests := []struct {
 		name          string
-		profile       string
-		cmd           string
-		method        string
-		res           []models.ResourceOperation
-		expectedError bool
+		profileName   string
+		commandName   string
+		deviceCommand models.DeviceCommand
+		expected      bool
 	}{
-		{"Invalid - nonexistent Profile name", "nil", TestDeviceCommand, "GET", nil, true},
-		{"Invalid - nonexistent Command name", TestProfile, "nil", "GET", nil, true},
-		{"Invalid - invalid method", TestProfile, TestDeviceCommand, "INVALID", nil, true},
-		{"Valid", TestProfile, TestDeviceCommand, "GET", testProfile.DeviceCommands[0].ResourceOperations, false},
+		{"Invalid - nonexistent Profile name", "nil", TestDeviceCommand, models.DeviceCommand{}, false},
+		{"Invalid - nonexistent Command name", TestProfile, "nil", models.DeviceCommand{}, false},
+		{"Valid", TestProfile, TestDeviceCommand, testProfile.DeviceCommands[0], true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := pc.ResourceOperations(tt.profile, tt.cmd, tt.method)
-			if tt.expectedError {
-				assert.NotNil(t, err)
-				assert.Nil(t, res)
-			} else {
-				assert.Nil(t, err)
-				assert.Equal(t, res, tt.res)
-			}
+			res, ok := pc.DeviceCommand(tt.profileName, tt.commandName)
+			assert.Equal(t, res, tt.deviceCommand, "DeviceResource returns wrong deviceResource")
+			assert.Equal(t, ok, tt.expected, "DeviceResource returns opposite result")
 		})
 	}
 }
@@ -202,18 +171,16 @@ func Test_profileCache_ResourceOperation(t *testing.T) {
 		name          string
 		profile       string
 		resource      string
-		method        string
 		res           models.ResourceOperation
 		expectedError bool
 	}{
-		{"Invalid - nonexistent Profile name", "nil", TestDeviceResource, "GET", models.ResourceOperation{}, true},
-		{"Invalid - nonexistent DeviceResource name", TestProfile, "nil", "GET", models.ResourceOperation{}, true},
-		{"Invalid - invalid method", TestProfile, TestDeviceResource, "INVALID", models.ResourceOperation{}, true},
-		{"Valid", TestProfile, TestDeviceResource, "Get", testProfile.DeviceCommands[0].ResourceOperations[0], false},
+		{"Invalid - nonexistent Profile name", "nil", TestDeviceResource, models.ResourceOperation{}, true},
+		{"Invalid - nonexistent DeviceResource name", TestProfile, "nil", models.ResourceOperation{}, true},
+		{"Valid", TestProfile, TestDeviceResource, testProfile.DeviceCommands[0].ResourceOperations[0], false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ro, err := pc.ResourceOperation(tt.profile, tt.resource, tt.method)
+			ro, err := pc.ResourceOperation(tt.profile, tt.resource)
 			if tt.expectedError {
 				assert.NotNil(t, err)
 				assert.Equal(t, ro, tt.res)
