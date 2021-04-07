@@ -51,7 +51,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
-	bootstrapHandlers "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
@@ -402,8 +401,8 @@ func (svc *Service) Initialize() error {
 		configUpdated,
 		startupTimer,
 		svc.dic,
+		true,
 		[]bootstrapInterfaces.BootstrapHandler{
-			bootstrapHandlers.SecureProviderBootstrapHandler,
 			handlers.NewDatabase().BootstrapHandler,
 			handlers.NewClients().BootstrapHandler,
 			handlers.NewTelemetry().BootstrapHandler,
@@ -430,7 +429,7 @@ func (svc *Service) Initialize() error {
 		secretProvider := bootstrapContainer.SecretProviderFrom(svc.dic.Get)
 		credentials, err := secretProvider.GetSecrets(svc.config.Database.Type)
 		if err != nil {
-			return fmt.Errorf("unable to set RedisStreams password from DB credentials")
+			return fmt.Errorf("unable to set RedisStreams password from DB credentials: %w", err)
 		}
 		svc.config.Trigger.EdgexMessageBus.Optional[optionalPasswordKey] = credentials[secret.PasswordKey]
 	}
@@ -452,7 +451,7 @@ func (svc *Service) Initialize() error {
 // as the standard configuration.
 func (svc *Service) LoadCustomConfig(customConfig interfaces.UpdatableConfig, sectionName string) error {
 	if svc.configProcessor == nil {
-		svc.configProcessor = config.NewProcessorForCustomConfig(svc.lc, svc.flags, svc.ctx.appCtx, svc.ctx.appWg, svc.dic)
+		svc.configProcessor = config.NewProcessorForCustomConfig(svc.flags, svc.ctx.appCtx, svc.ctx.appWg, svc.dic)
 	}
 	return svc.configProcessor.LoadCustomConfigSection(customConfig, sectionName)
 }

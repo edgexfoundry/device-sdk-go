@@ -27,13 +27,11 @@ Protocol = 'http'
 ReadMaxLimit = 100
 StartupMsg = 'new-app-service Application Service has started'
 Timeout = '30s'
-ConfigAccessTokenFile = '/tmp/edgex/secrets/new-app-service/consul-token' # ignored in non-secure mode
 
 [Registry]
 Host = 'localhost'
 Port = 8500
 Type = 'consul'
-AccessTokenFile = '/tmp/edgex/secrets/new-app-service/consul-token' # ignored in non-secure mode
 
 [Database]
 Type = "redisdb"
@@ -47,13 +45,14 @@ Timeout = "30s"
 #       service in secure mode.
 #       For more deatils about SecretStore: https://docs.edgexfoundry.org/1.3/microservices/security/Ch-SecretStore/
 [SecretStore]
+Type = 'vault'
 Host = 'localhost'
 Port = 8200
 Path = '/v1/secret/edgex/appservice/'
 Protocol = 'http'
 RootCaCertPath = ''
 ServerName = ''
-TokenFile = '/vault/config/assets/resp-init.json'
+TokenFile = '/tmp/edgex/secrets/new-app-service/secrets-token.json'
 AdditionalRetryAttempts = 10
 RetryWaitPeriod = "1s"
   [SecretStore.Authentication]
