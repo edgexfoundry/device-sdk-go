@@ -71,8 +71,8 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		ds.config,
 		startupTimer,
 		ds.dic,
+		true,
 		[]interfaces.BootstrapHandler{
-			handlers.SecureProviderBootstrapHandler,
 			httpServer.BootstrapHandler,
 			clients.BootstrapHandler,
 			autoevent.BootstrapHandler,

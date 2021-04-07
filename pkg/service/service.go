@@ -158,12 +158,10 @@ func (s *DeviceService) Stop(force bool) {
 // custom configuration. It uses the same command line flags to process the custom config in the same manner
 // as the standard configuration.
 func (s *DeviceService) LoadCustomConfig(customConfig UpdatableConfig, sectionName string) error {
-	lc := bootstrapContainer.LoggingClientFrom(s.dic.Get)
 	if s.configProcessor == nil {
-		s.configProcessor = bootstrapConfig.NewProcessorForCustomConfig(lc, s.flags, s.ctx, s.wg, s.dic)
+		s.configProcessor = bootstrapConfig.NewProcessorForCustomConfig(s.flags, s.ctx, s.wg, s.dic)
 	}
 	return s.configProcessor.LoadCustomConfigSection(customConfig, sectionName)
-
 }
 
 // ListenForCustomConfigChanges uses the Config Processor from go-mod-bootstrap to attempt to listen for
