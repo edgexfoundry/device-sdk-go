@@ -67,7 +67,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		cancel,
 		sdkFlags,
 		ds.ServiceName,
-		common.ConfigStemDevice+common.ConfigMajorVersion,
+		common.ConfigStemDevice,
 		ds.config,
 		startupTimer,
 		ds.dic,
