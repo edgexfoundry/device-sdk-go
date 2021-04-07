@@ -5,7 +5,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.0-dev.29
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.62
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.64
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.0.0-dev.8
 	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0-dev.4
 	github.com/google/uuid v1.2.0
