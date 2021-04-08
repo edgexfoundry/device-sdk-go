@@ -32,6 +32,10 @@ type CommandValue struct {
 	// Value holds value returned by a ProtocolDriver instance.
 	// The value can be converted to its native type by referring to ValueType.
 	Value interface{}
+	// Origin is an int64 value which indicates the time the reading
+	// contained in the CommandValue was read by the ProtocolDriver
+	// instance.
+	Origin int64
 }
 
 // NewCommandValue create a CommandValue according to the valueType supplied.

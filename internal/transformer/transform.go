@@ -7,6 +7,8 @@ package transformer
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -17,6 +19,11 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+)
+
+var (
+	previousOrigin int64
+	originMutex    sync.Mutex
 )
 
 func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sourceName string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
@@ -35,6 +42,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 	}
 
 	var transformsOK = true
+	origin := getUniqueOrigin()
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
 	readings := make([]dtos.BaseReading, 0, config.Device.MaxCmdOps)
@@ -93,7 +101,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			}
 		}
 
-		reading, err := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType)
+		reading, err := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType, origin)
 		if err != nil {
 			return nil, errors.NewCommonEdgeXWrapper(err)
 		}
@@ -113,6 +121,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 	if len(readings) > 0 {
 		eventDTO := dtos.NewEvent(device.ProfileName, device.Name, sourceName)
 		eventDTO.Readings = readings
+		eventDTO.Origin = origin
 
 		return &eventDTO, nil
 	} else {
@@ -120,7 +129,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 	}
 }
 
-func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType string) (dtos.BaseReading, errors.EdgeX) {
+func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType string, eventOrigin int64) (dtos.BaseReading, errors.EdgeX) {
 	var err errors.EdgeX
 	var reading dtos.BaseReading
 
@@ -135,6 +144,24 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 			err = errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to transform CommandValue (%s) to Reading", cv.String()), err)
 		}
 	}
+	// use the Origin if it was already set by ProtocolDriver implementation
+	// otherwise use the same Origin of the upstream Event
+	if cv.Origin != 0 {
+		reading.Origin = cv.Origin
+	} else {
+		reading.Origin = eventOrigin
+	}
 
 	return reading, err
+}
+
+func getUniqueOrigin() int64 {
+	originMutex.Lock()
+	defer originMutex.Unlock()
+	now := time.Now().UnixNano()
+	if now <= previousOrigin {
+		now = previousOrigin + 1
+	}
+	previousOrigin = now
+	return now
 }
