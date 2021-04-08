@@ -20,13 +20,11 @@ Timeout = 20000
 Labels = []
 EnableAsyncReadings = true
 AsyncBufferSize = 1
-ConfigAccessTokenFile = '/tmp/edgex/secrets/device-simple/consul-token' # ignored in non-secure mode
 
 [Registry]
 Host = 'localhost'
 Port = 8500
 Type = 'consul'
-AccessTokenFile = '/tmp/edgex/secrets/device-simple/consul-token' # ignored in non-secure mode
 
 [Clients]
   [Clients.edgex-core-data]
@@ -65,6 +63,7 @@ PublishTopicPrefix = 'edgex/events' # /<device-profile-name>/<device-name>/<sour
 # Must also add `ADD_SECRETSTORE_TOKENS: "device-simple"` to vault-worker environment so it generates
 # the token and secret store in vault for 'device-simple'
 [SecretStore]
+Type = 'vault'
 Host = 'localhost'
 Port = 8200
 Path = '/v1/secret/edgex/device-simple/'

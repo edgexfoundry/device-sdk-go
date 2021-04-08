@@ -54,8 +54,6 @@ type ServiceInfo struct {
 	EnableAsyncReadings bool
 	// AsyncBufferSize defines the size of asynchronous channel
 	AsyncBufferSize int
-	// ConfigAccessTokenFile is the location of the access token to use with the Configuration Provider client
-	ConfigAccessTokenFile string
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.
@@ -128,16 +126,15 @@ func (m MessageQueueInfo) URL() string {
 
 func (s ServiceInfo) GetBootstrapServiceInfo() config.ServiceInfo {
 	return config.ServiceInfo{
-		BootTimeout:           s.BootTimeout,
-		CheckInterval:         s.CheckInterval,
-		Host:                  s.Host,
-		Port:                  s.Port,
-		ServerBindAddr:        s.ServerBindAddr,
-		Protocol:              s.Protocol,
-		StartupMsg:            s.StartupMsg,
-		MaxResultCount:        s.MaxResultCount,
-		Timeout:               s.Timeout,
-		ConfigAccessTokenFile: s.ConfigAccessTokenFile,
+		BootTimeout:    s.BootTimeout,
+		CheckInterval:  s.CheckInterval,
+		Host:           s.Host,
+		Port:           s.Port,
+		ServerBindAddr: s.ServerBindAddr,
+		Protocol:       s.Protocol,
+		StartupMsg:     s.StartupMsg,
+		MaxResultCount: s.MaxResultCount,
+		Timeout:        s.Timeout,
 	}
 }
 
