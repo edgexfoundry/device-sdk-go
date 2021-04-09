@@ -343,12 +343,17 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 		}
 
 		// write value mapping
+		var match bool
 		if len(ro.Mappings) > 0 {
-			newValue, ok := ro.Mappings[value]
-			if ok {
-				value = newValue
-			} else {
-				lc.Warn(fmt.Sprintf("ResourceOperation %s mapping value (%s) failed with the mapping table: %v", ro.DeviceResource, value, ro.Mappings))
+			for k, v := range ro.Mappings {
+				if v == value {
+					value = k
+					match = true
+					break
+				}
+			}
+			if !match {
+				lc.Warnf("ResourceOperation %s mapping value (%s) failed with the mapping table: %v", ro.DeviceResource, value, ro.Mappings)
 			}
 		}
 
