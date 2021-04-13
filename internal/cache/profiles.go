@@ -41,8 +41,8 @@ func newProfileCache(profiles []models.DeviceProfile) ProfileCache {
 	dpMap := make(map[string]*models.DeviceProfile, defaultSize)
 	drMap := make(map[string]map[string]models.DeviceResource, defaultSize)
 	dcMap := make(map[string]map[string]models.DeviceCommand, defaultSize)
-	for _, dp := range profiles {
-		dpMap[dp.Name] = &dp
+	for i, dp := range profiles {
+		dpMap[dp.Name] = &profiles[i]
 		drMap[dp.Name] = deviceResourceSliceToMap(dp.DeviceResources)
 		dcMap[dp.Name] = deviceCommandSliceToMap(dp.DeviceCommands)
 	}
@@ -76,7 +76,7 @@ func (p *profileCache) All() []models.DeviceProfile {
 	ps := make([]models.DeviceProfile, len(p.deviceProfileMap))
 	for _, profile := range p.deviceProfileMap {
 		ps[i] = *profile
-		i++
+		i += 1
 	}
 	return ps
 }
