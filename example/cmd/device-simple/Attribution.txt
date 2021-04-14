@@ -1,8 +1,5 @@
 The following open source projects are referenced by Device Service SDK Go:
 
-BurntSushi/toml (MIT) https://github.com/BurntSushi/toml
-https://github.com/BurntSushi/toml/blob/master/COPYING
-
 gorilla/mux 1.6.2 (BSD-3) https://github.com/gorilla/mux
 https://github.com/gorilla/mux/blob/master/LICENSE
 
