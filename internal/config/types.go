@@ -54,6 +54,8 @@ type ServiceInfo struct {
 	EnableAsyncReadings bool
 	// AsyncBufferSize defines the size of asynchronous channel
 	AsyncBufferSize int
+	// MaxRequestSize defines the maximum size of http request body in bytes
+	MaxRequestSize int64
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.

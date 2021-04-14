@@ -23,6 +23,7 @@ import (
 	"github.com/gorilla/mux"
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http/correlation"
 )
 
@@ -66,6 +67,7 @@ func (c *RestController) InitRestRoutes() {
 	c.addReservedRoute(v2.ApiWatcherCallbackNameRoute, c.DeleteProvisionWatcher).Methods(http.MethodDelete)
 	c.addReservedRoute(v2.ApiServiceCallbackRoute, c.UpdateDeviceService).Methods(http.MethodPut)
 
+	c.router.Use(correlation.RequestLimitMiddleware(container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize))
 	c.router.Use(correlation.ManageHeader)
 	c.router.Use(correlation.LoggingMiddleware(c.lc))
 }
