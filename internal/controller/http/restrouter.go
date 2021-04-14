@@ -9,12 +9,11 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -35,7 +34,7 @@ type RestController struct {
 }
 
 func NewRestController(r *mux.Router, dic *di.Container) *RestController {
-	lc := container.LoggingClientFrom(dic.Get)
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	return &RestController{
 		lc:             lc,
 		router:         r,
@@ -68,20 +67,12 @@ func (c *RestController) InitRestRoutes() {
 	c.addReservedRoute(v2.ApiServiceCallbackRoute, c.UpdateDeviceService).Methods(http.MethodPut)
 
 	c.router.Use(correlation.ManageHeader)
-	c.router.Use(correlation.OnResponseComplete)
-	c.router.Use(correlation.OnRequestBegin)
+	c.router.Use(correlation.LoggingMiddleware(c.lc))
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
 	c.reservedRoutes[route] = true
-	return c.router.HandleFunc(
-		route,
-		func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), container.LoggingClientInterfaceName, c.lc)
-			handler(
-				w,
-				r.WithContext(ctx))
-		})
+	return c.router.HandleFunc(route, handler)
 }
 
 func (c *RestController) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) errors.EdgeX {
@@ -89,14 +80,7 @@ func (c *RestController) AddRoute(route string, handler func(http.ResponseWriter
 		return errors.NewCommonEdgeX(errors.KindServerError, "route is reserved", nil)
 	}
 
-	c.router.HandleFunc(
-		route,
-		func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), container.LoggingClientInterfaceName, c.lc)
-			handler(
-				w,
-				r.WithContext(ctx))
-		}).Methods(methods...)
+	c.router.HandleFunc(route, handler).Methods(methods...)
 	c.lc.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
 
 	return nil

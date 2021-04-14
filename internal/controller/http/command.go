@@ -31,6 +31,9 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 	var reserved url.Values
 	vars := mux.Vars(request)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
+	if correlationID == "" {
+		correlationID, _ = request.Context().Value(sdkCommon.CorrelationHeader).(string)
+	}
 
 	// read request body for SET command
 	if request.Method == http.MethodPut {
