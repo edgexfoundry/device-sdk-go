@@ -20,6 +20,9 @@ Timeout = 20000
 Labels = []
 EnableAsyncReadings = true
 AsyncBufferSize = 1
+# MaxRequestSize limit the request body size in byte of put command
+# value 0 unlimit the request size.
+MaxRequestSize = 0
 
 [Registry]
 Host = 'localhost'

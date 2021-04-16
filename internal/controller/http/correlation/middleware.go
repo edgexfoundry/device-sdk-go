@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2020 IOTech Ltd
+// Copyright (C) 2019-2021 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/google/uuid"
 )
 
@@ -27,25 +29,29 @@ func ManageHeader(next http.Handler) http.Handler {
 	})
 }
 
-func OnResponseComplete(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		begin := time.Now()
-		next.ServeHTTP(w, r)
-		correlationId := IdFromContext(r.Context())
-		lc := LoggingClientFromContext(r.Context())
-		if lc != nil {
-			lc.Trace("Response complete", clients.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
-		}
-	})
+func LoggingMiddleware(lc logger.LoggingClient) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if lc.LogLevel() == models.TraceLog {
+				begin := time.Now()
+				correlationId := IdFromContext(r.Context())
+				lc.Trace("Begin request", clients.CorrelationHeader, correlationId, "path", r.URL.Path)
+				next.ServeHTTP(w, r)
+				lc.Trace("Response complete", clients.CorrelationHeader, correlationId, "duration", time.Since(begin).String())
+			} else {
+				next.ServeHTTP(w, r)
+			}
+		})
+	}
 }
 
-func OnRequestBegin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		correlationId := IdFromContext(r.Context())
-		lc := LoggingClientFromContext(r.Context())
-		if lc != nil {
-			lc.Trace("Begin request", clients.CorrelationHeader, correlationId, "path", r.URL.Path)
-		}
-		next.ServeHTTP(w, r)
-	})
+func RequestLimitMiddleware(n int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if n > 0 {
+				r.Body = http.MaxBytesReader(w, r.Body, n)
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

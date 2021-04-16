@@ -7,6 +7,7 @@
 package http
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 func (c *RestController) Command(writer http.ResponseWriter, request *http.Request) {
@@ -31,10 +33,17 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 	var reserved url.Values
 	vars := mux.Vars(request)
 	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
+	if correlationID == "" {
+		correlationID, _ = request.Context().Value(sdkCommon.CorrelationHeader).(string)
+	}
 
 	// read request body for SET command
 	if request.Method == http.MethodPut {
-		requestBody, err = readBodyAsString(request)
+		requestBody, err = readBodyAsString(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
+		if err != nil {
+			c.sendEdgexError(writer, request, err, v2.ApiDeviceNameCommandNameRoute)
+			return
+		}
 	}
 	// parse query parameter
 	queryParams, reserved, err = filterQueryParams(request.URL.RawQuery)
@@ -64,15 +73,18 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 
 	// return event in http response if specified (default yes)
 	if ok, exist := reserved[v2.ReturnEvent]; !exist || ok[0] == v2.ValueYes {
-		// TODO: the usage of CBOR encoding for binary reading is under discussion
 		c.sendResponse(writer, request, v2.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
 	}
 }
 
-func readBodyAsString(req *http.Request) (string, errors.EdgeX) {
+func readBodyAsString(req *http.Request, maxRequestSize int64) (string, errors.EdgeX) {
 	defer req.Body.Close()
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
+		if err.Error() == "http: request body too large" {
+			errMsg := fmt.Sprintf("request size exceed Service.MaxRequestSize(%d)", maxRequestSize)
+			return "", errors.NewCommonEdgeX(errors.KindLimitExceeded, errMsg, err)
+		}
 		return "", errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
 	}
 
