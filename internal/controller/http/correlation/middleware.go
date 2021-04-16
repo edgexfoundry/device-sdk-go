@@ -9,13 +9,11 @@ package correlation
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/google/uuid"
 )
 
@@ -50,7 +48,7 @@ func LoggingMiddleware(lc logger.LoggingClient) func(http.Handler) http.Handler 
 func RequestLimitMiddleware(n int64) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, v2.ApiDeviceRoute) && n > 0 {
+			if n > 0 {
 				r.Body = http.MaxBytesReader(w, r.Body, n)
 			}
 			next.ServeHTTP(w, r)
