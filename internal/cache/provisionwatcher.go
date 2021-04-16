@@ -20,10 +20,10 @@ var (
 type ProvisionWatcherCache interface {
 	ForName(name string) (models.ProvisionWatcher, bool)
 	All() []models.ProvisionWatcher
-	Add(device models.ProvisionWatcher) error
-	Update(device models.ProvisionWatcher) error
-	RemoveByName(name string) error
-	UpdateAdminState(name string, state models.AdminState) error
+	Add(device models.ProvisionWatcher) errors.EdgeX
+	Update(device models.ProvisionWatcher) errors.EdgeX
+	RemoveByName(name string) errors.EdgeX
+	UpdateAdminState(name string, state models.AdminState) errors.EdgeX
 }
 
 type provisionWatcherCache struct {
@@ -69,14 +69,14 @@ func (p *provisionWatcherCache) All() []models.ProvisionWatcher {
 }
 
 // Add adds a new provision watcher to the cache.
-func (p *provisionWatcherCache) Add(watcher models.ProvisionWatcher) error {
+func (p *provisionWatcherCache) Add(watcher models.ProvisionWatcher) errors.EdgeX {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	return p.add(watcher)
 }
 
-func (p *provisionWatcherCache) add(watcher models.ProvisionWatcher) error {
+func (p *provisionWatcherCache) add(watcher models.ProvisionWatcher) errors.EdgeX {
 	if _, ok := p.pwMap[watcher.Name]; ok {
 		errMsg := fmt.Sprintf("ProvisionWatcher %s has already existed in cache", watcher.Name)
 		return errors.NewCommonEdgeX(errors.KindDuplicateName, errMsg, nil)
@@ -87,7 +87,7 @@ func (p *provisionWatcherCache) add(watcher models.ProvisionWatcher) error {
 }
 
 // Update updates the provision watcher in the cache
-func (p *provisionWatcherCache) Update(watcher models.ProvisionWatcher) error {
+func (p *provisionWatcherCache) Update(watcher models.ProvisionWatcher) errors.EdgeX {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -98,14 +98,14 @@ func (p *provisionWatcherCache) Update(watcher models.ProvisionWatcher) error {
 }
 
 // RemoveByName removes the specified provision watcher by name from the cache.
-func (p *provisionWatcherCache) RemoveByName(name string) error {
+func (p *provisionWatcherCache) RemoveByName(name string) errors.EdgeX {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	return p.removeByName(name)
 }
 
-func (p *provisionWatcherCache) removeByName(name string) error {
+func (p *provisionWatcherCache) removeByName(name string) errors.EdgeX {
 	_, ok := p.pwMap[name]
 	if !ok {
 		errMsg := fmt.Sprintf("failed to find ProvisionWatcher %s in cache", name)
@@ -117,7 +117,7 @@ func (p *provisionWatcherCache) removeByName(name string) error {
 }
 
 // UpdateAdminState updates the ProvisionWatcher admin state in cache by name.
-func (p *provisionWatcherCache) UpdateAdminState(name string, state models.AdminState) error {
+func (p *provisionWatcherCache) UpdateAdminState(name string, state models.AdminState) errors.EdgeX {
 	if state != models.Locked && state != models.Unlocked {
 		return errors.NewCommonEdgeX(errors.KindContractInvalid, "invalid AdminState", nil)
 	}
