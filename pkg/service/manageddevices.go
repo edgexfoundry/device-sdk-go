@@ -24,7 +24,7 @@ import (
 
 // AddDevice adds a new Device to the Device Service and Core Metadata
 // Returns new Device id or non-nil error.
-func (s *DeviceService) AddDevice(device models.Device) (string, errors.EdgeX) {
+func (s *DeviceService) AddDevice(device models.Device) (string, error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
 		return d.Id, errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, Device %s exists", device.Name), nil)
 	}
@@ -58,7 +58,7 @@ func (s *DeviceService) Devices() []models.Device {
 }
 
 // GetDeviceByName returns the Device by its name if it exists in the cache, or returns an error.
-func (s *DeviceService) GetDeviceByName(name string) (models.Device, errors.EdgeX) {
+func (s *DeviceService) GetDeviceByName(name string) (models.Device, error) {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find Device %s in cache", name)
@@ -70,7 +70,7 @@ func (s *DeviceService) GetDeviceByName(name string) (models.Device, errors.Edge
 
 // RemoveDeviceByName removes the specified Device by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceService) RemoveDeviceByName(name string) errors.EdgeX {
+func (s *DeviceService) RemoveDeviceByName(name string) error {
 	device, ok := cache.Devices().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find device %s in cache", name)
@@ -90,7 +90,7 @@ func (s *DeviceService) RemoveDeviceByName(name string) errors.EdgeX {
 
 // UpdateDevice updates the Device in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceService) UpdateDevice(device models.Device) errors.EdgeX {
+func (s *DeviceService) UpdateDevice(device models.Device) error {
 	_, ok := cache.Devices().ForName(device.Name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find Device %s in cache", device.Name)
@@ -111,7 +111,7 @@ func (s *DeviceService) UpdateDevice(device models.Device) errors.EdgeX {
 
 // UpdateDeviceOperatingState updates the Device's OperatingState with given name
 // in Core Metadata and device service cache.
-func (s *DeviceService) UpdateDeviceOperatingState(deviceName string, state string) errors.EdgeX {
+func (s *DeviceService) UpdateDeviceOperatingState(deviceName string, state string) error {
 	d, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		msg := fmt.Sprintf("failed to find Device %s in cache", deviceName)

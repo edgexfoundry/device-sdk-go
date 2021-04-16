@@ -39,7 +39,7 @@ type CommandValue struct {
 }
 
 // NewCommandValue create a CommandValue according to the valueType supplied.
-func NewCommandValue(deviceResourceName string, valueType string, value interface{}) (*CommandValue, errors.EdgeX) {
+func NewCommandValue(deviceResourceName string, valueType string, value interface{}) (*CommandValue, error) {
 	err := validate(valueType, value)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", err)
@@ -66,7 +66,7 @@ func (cv *CommandValue) String() string {
 }
 
 // BoolValue returns the value in bool data type, and returns error if the Type is not Bool.
-func (cv *CommandValue) BoolValue() (bool, errors.EdgeX) {
+func (cv *CommandValue) BoolValue() (bool, error) {
 	var value bool
 	if cv.Type != v2.ValueTypeBool {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeBool)
@@ -81,7 +81,7 @@ func (cv *CommandValue) BoolValue() (bool, errors.EdgeX) {
 }
 
 // BoolArrayValue returns the value in an array of bool type, and returns error if the Type is not BoolArray.
-func (cv *CommandValue) BoolArrayValue() ([]bool, errors.EdgeX) {
+func (cv *CommandValue) BoolArrayValue() ([]bool, error) {
 	var value []bool
 	if cv.Type != v2.ValueTypeBoolArray {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeBoolArray)
@@ -96,7 +96,7 @@ func (cv *CommandValue) BoolArrayValue() ([]bool, errors.EdgeX) {
 }
 
 // StringValue returns the value in string data type, and returns error if the Type is not String.
-func (cv *CommandValue) StringValue() (string, errors.EdgeX) {
+func (cv *CommandValue) StringValue() (string, error) {
 	var value string
 	if cv.Type != v2.ValueTypeString {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeString)
@@ -111,7 +111,7 @@ func (cv *CommandValue) StringValue() (string, errors.EdgeX) {
 }
 
 // Uint8Value returns the value in uint8 data type, and returns error if the Type is not Uint8.
-func (cv *CommandValue) Uint8Value() (uint8, errors.EdgeX) {
+func (cv *CommandValue) Uint8Value() (uint8, error) {
 	var value uint8
 	if cv.Type != v2.ValueTypeUint8 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeUint8)
@@ -126,7 +126,7 @@ func (cv *CommandValue) Uint8Value() (uint8, errors.EdgeX) {
 }
 
 // Uint8ArrayValue returns the value in an array of uint8 type, and returns error if the Type is not Uint8Array.
-func (cv *CommandValue) Uint8ArrayValue() ([]uint8, errors.EdgeX) {
+func (cv *CommandValue) Uint8ArrayValue() ([]uint8, error) {
 	var value []uint8
 	if cv.Type != v2.ValueTypeUint8Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeUint8Array)
@@ -141,7 +141,7 @@ func (cv *CommandValue) Uint8ArrayValue() ([]uint8, errors.EdgeX) {
 }
 
 // Uint16Value returns the value in uint16 data type, and returns error if the Type is not Uint16.
-func (cv *CommandValue) Uint16Value() (uint16, errors.EdgeX) {
+func (cv *CommandValue) Uint16Value() (uint16, error) {
 	var value uint16
 	if cv.Type != v2.ValueTypeUint16 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeUint16)
@@ -156,7 +156,7 @@ func (cv *CommandValue) Uint16Value() (uint16, errors.EdgeX) {
 }
 
 // Uint16ArrayValue returns the value in an array of uint16 type, and returns error if the Type is not Uint16Array.
-func (cv *CommandValue) Uint16ArrayValue() ([]uint16, errors.EdgeX) {
+func (cv *CommandValue) Uint16ArrayValue() ([]uint16, error) {
 	var value []uint16
 	if cv.Type != v2.ValueTypeUint16Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeUint16Array)
@@ -171,7 +171,7 @@ func (cv *CommandValue) Uint16ArrayValue() ([]uint16, errors.EdgeX) {
 }
 
 // Uint32Value returns the value in uint32 data type, and returns error if the Type is not Uint32.
-func (cv *CommandValue) Uint32Value() (uint32, errors.EdgeX) {
+func (cv *CommandValue) Uint32Value() (uint32, error) {
 	var value uint32
 	if cv.Type != v2.ValueTypeUint32 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeUint32)
@@ -186,7 +186,7 @@ func (cv *CommandValue) Uint32Value() (uint32, errors.EdgeX) {
 }
 
 // Uint32ArrayValue returns the value in an array of uint32 type, and returns error if the Type is not Uint32Array.
-func (cv *CommandValue) Uint32ArrayValue() ([]uint32, errors.EdgeX) {
+func (cv *CommandValue) Uint32ArrayValue() ([]uint32, error) {
 	var value []uint32
 	if cv.Type != v2.ValueTypeUint32Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeUint32Array)
@@ -201,7 +201,7 @@ func (cv *CommandValue) Uint32ArrayValue() ([]uint32, errors.EdgeX) {
 }
 
 // Uint64Value returns the value in uint64 data type, and returns error if the Type is not Uint64.
-func (cv *CommandValue) Uint64Value() (uint64, errors.EdgeX) {
+func (cv *CommandValue) Uint64Value() (uint64, error) {
 	var value uint64
 	if cv.Type != v2.ValueTypeUint64 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeUint64)
@@ -216,7 +216,7 @@ func (cv *CommandValue) Uint64Value() (uint64, errors.EdgeX) {
 }
 
 // Uint64ArrayValue returns the value in an array of uint64 type, and returns error if the Type is not Uint64Array.
-func (cv *CommandValue) Uint64ArrayValue() ([]uint64, errors.EdgeX) {
+func (cv *CommandValue) Uint64ArrayValue() ([]uint64, error) {
 	var value []uint64
 	if cv.Type != v2.ValueTypeUint64Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeUint64Array)
@@ -231,7 +231,7 @@ func (cv *CommandValue) Uint64ArrayValue() ([]uint64, errors.EdgeX) {
 }
 
 // Int8Value returns the value in int8 data type, and returns error if the Type is not Int8.
-func (cv *CommandValue) Int8Value() (int8, errors.EdgeX) {
+func (cv *CommandValue) Int8Value() (int8, error) {
 	var value int8
 	if cv.Type != v2.ValueTypeInt8 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeInt8)
@@ -246,7 +246,7 @@ func (cv *CommandValue) Int8Value() (int8, errors.EdgeX) {
 }
 
 // Int8ArrayValue returns the value in an array of int8 type, and returns error if the Type is not Int8Array.
-func (cv *CommandValue) Int8ArrayValue() ([]int8, errors.EdgeX) {
+func (cv *CommandValue) Int8ArrayValue() ([]int8, error) {
 	var value []int8
 	if cv.Type != v2.ValueTypeInt8Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeInt8Array)
@@ -261,7 +261,7 @@ func (cv *CommandValue) Int8ArrayValue() ([]int8, errors.EdgeX) {
 }
 
 // Int16Value returns the value in int16 data type, and returns error if the Type is not Int16.
-func (cv *CommandValue) Int16Value() (int16, errors.EdgeX) {
+func (cv *CommandValue) Int16Value() (int16, error) {
 	var value int16
 	if cv.Type != v2.ValueTypeInt16 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeInt16)
@@ -276,7 +276,7 @@ func (cv *CommandValue) Int16Value() (int16, errors.EdgeX) {
 }
 
 // Int16ArrayValue returns the value in an array of int16 type, and returns error if the Type is not Int16Array.
-func (cv *CommandValue) Int16ArrayValue() ([]int16, errors.EdgeX) {
+func (cv *CommandValue) Int16ArrayValue() ([]int16, error) {
 	var value []int16
 	if cv.Type != v2.ValueTypeInt16Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeInt16Array)
@@ -291,7 +291,7 @@ func (cv *CommandValue) Int16ArrayValue() ([]int16, errors.EdgeX) {
 }
 
 // Int32Value returns the value in int32 data type, and returns error if the Type is not Int32.
-func (cv *CommandValue) Int32Value() (int32, errors.EdgeX) {
+func (cv *CommandValue) Int32Value() (int32, error) {
 	var value int32
 	if cv.Type != v2.ValueTypeInt32 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeInt32)
@@ -306,7 +306,7 @@ func (cv *CommandValue) Int32Value() (int32, errors.EdgeX) {
 }
 
 // Int32ArrayValue returns the value in an array of int32 type, and returns error if the Type is not Int32Array.
-func (cv *CommandValue) Int32ArrayValue() ([]int32, errors.EdgeX) {
+func (cv *CommandValue) Int32ArrayValue() ([]int32, error) {
 	var value []int32
 	if cv.Type != v2.ValueTypeInt32Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeInt32Array)
@@ -321,7 +321,7 @@ func (cv *CommandValue) Int32ArrayValue() ([]int32, errors.EdgeX) {
 }
 
 // Int64Value returns the value in int64 data type, and returns error if the Type is not Int64.
-func (cv *CommandValue) Int64Value() (int64, errors.EdgeX) {
+func (cv *CommandValue) Int64Value() (int64, error) {
 	var value int64
 	if cv.Type != v2.ValueTypeInt64 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeInt64)
@@ -336,7 +336,7 @@ func (cv *CommandValue) Int64Value() (int64, errors.EdgeX) {
 }
 
 // Int64ArrayValue returns the value in an array of int64 type, and returns error if the Type is not Int64Array.
-func (cv *CommandValue) Int64ArrayValue() ([]int64, errors.EdgeX) {
+func (cv *CommandValue) Int64ArrayValue() ([]int64, error) {
 	var value []int64
 	if cv.Type != v2.ValueTypeInt64Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeInt64Array)
@@ -351,7 +351,7 @@ func (cv *CommandValue) Int64ArrayValue() ([]int64, errors.EdgeX) {
 }
 
 // Float32Value returns the value in float32 data type, and returns error if the Type is not Float32.
-func (cv *CommandValue) Float32Value() (float32, errors.EdgeX) {
+func (cv *CommandValue) Float32Value() (float32, error) {
 	var value float32
 	if cv.Type != v2.ValueTypeFloat32 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeFloat32)
@@ -366,7 +366,7 @@ func (cv *CommandValue) Float32Value() (float32, errors.EdgeX) {
 }
 
 // Float32ArrayValue returns the value in an array of float32 type, and returns error if the Type is not Float32Array.
-func (cv *CommandValue) Float32ArrayValue() ([]float32, errors.EdgeX) {
+func (cv *CommandValue) Float32ArrayValue() ([]float32, error) {
 	var value []float32
 	if cv.Type != v2.ValueTypeFloat32Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeFloat32Array)
@@ -381,7 +381,7 @@ func (cv *CommandValue) Float32ArrayValue() ([]float32, errors.EdgeX) {
 }
 
 // Float64Value returns the value in float64 data type, and returns error if the Type is not Float64.
-func (cv *CommandValue) Float64Value() (float64, errors.EdgeX) {
+func (cv *CommandValue) Float64Value() (float64, error) {
 	var value float64
 	if cv.Type != v2.ValueTypeFloat64 {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, v2.ValueTypeFloat64)
@@ -396,7 +396,7 @@ func (cv *CommandValue) Float64Value() (float64, errors.EdgeX) {
 }
 
 // Float64ArrayValue returns the value in an array of float64 type, and returns error if the Type is not Float64Array.
-func (cv *CommandValue) Float64ArrayValue() ([]float64, errors.EdgeX) {
+func (cv *CommandValue) Float64ArrayValue() ([]float64, error) {
 	var value []float64
 	if cv.Type != v2.ValueTypeFloat64Array {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeFloat64Array)
@@ -411,7 +411,7 @@ func (cv *CommandValue) Float64ArrayValue() ([]float64, errors.EdgeX) {
 }
 
 // BinaryValue returns the value in []byte data type, and returns error if the Type is not Binary.
-func (cv *CommandValue) BinaryValue() ([]byte, errors.EdgeX) {
+func (cv *CommandValue) BinaryValue() ([]byte, error) {
 	var value []byte
 	if cv.Type != v2.ValueTypeBinary {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, v2.ValueTypeBinary)
@@ -427,7 +427,7 @@ func (cv *CommandValue) BinaryValue() ([]byte, errors.EdgeX) {
 
 // validate checks if the given value can be converted to specified valueType by
 // performing type assertion
-func validate(valueType string, value interface{}) errors.EdgeX {
+func validate(valueType string, value interface{}) error {
 	var ok bool
 	switch valueType {
 	case v2.ValueTypeString:

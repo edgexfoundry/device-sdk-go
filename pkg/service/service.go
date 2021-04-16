@@ -140,7 +140,7 @@ func (s *DeviceService) DeviceDiscovery() bool {
 }
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-func (s *DeviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) errors.EdgeX {
+func (s *DeviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
 	return s.controller.AddRoute(route, handler, methods...)
 }
 
