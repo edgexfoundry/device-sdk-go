@@ -9,7 +9,6 @@ package clients
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
@@ -64,21 +64,21 @@ func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer
 	return true
 }
 
-func validateClientConfig(configuration *config.ConfigurationStruct) error {
+func validateClientConfig(configuration *config.ConfigurationStruct) errors.EdgeX {
 	if len(configuration.Clients[clients.CoreMetaDataServiceKey].Host) == 0 {
-		return fmt.Errorf("fatal error; Host setting for Core Metadata client not configured")
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Host setting for Core Metadata client not configured", nil)
 	}
 
 	if configuration.Clients[clients.CoreMetaDataServiceKey].Port == 0 {
-		return fmt.Errorf("fatal error; Port setting for Core Metadata client not configured")
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Port setting for Core Metadata client not configured", nil)
 	}
 
 	if len(configuration.Clients[clients.CoreDataServiceKey].Host) == 0 {
-		return fmt.Errorf("fatal error; Host setting for Core Data client not configured")
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Host setting for Core Data client not configured", nil)
 	}
 
 	if configuration.Clients[clients.CoreDataServiceKey].Port == 0 {
-		return fmt.Errorf("fatal error; Port setting for Core Data client not configured")
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Port setting for Core Data client not configured", nil)
 	}
 
 	// TODO: validate other settings for sanity: maxcmdops, ...

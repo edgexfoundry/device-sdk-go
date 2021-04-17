@@ -60,16 +60,17 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 
 		// perform data transformation
 		if config.Device.DataTransform {
-			err := TransformReadResult(cv, dr.Properties)
-			if err != nil {
-				lc.Errorf("failed to transform CommandValue (%s): %v", cv.String(), err)
+			edgexErr := TransformReadResult(cv, dr.Properties)
+			if edgexErr != nil {
+				lc.Errorf("failed to transform CommandValue (%s): %v", cv.String(), edgexErr)
 
-				if errors.Kind(err) == errors.KindOverflowError {
+				var err error
+				if errors.Kind(edgexErr) == errors.KindOverflowError {
 					cv, err = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, Overflow)
 					if err != nil {
 						return nil, errors.NewCommonEdgeXWrapper(err)
 					}
-				} else if errors.Kind(err) == errors.KindNaNError {
+				} else if errors.Kind(edgexErr) == errors.KindNaNError {
 					cv, err = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, NaN)
 					if err != nil {
 						return nil, errors.NewCommonEdgeXWrapper(err)
@@ -130,18 +131,20 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 }
 
 func commandValueToReading(cv *models.CommandValue, deviceName, profileName, mediaType string, eventOrigin int64) (dtos.BaseReading, errors.EdgeX) {
-	var err errors.EdgeX
+	var err error
 	var reading dtos.BaseReading
 
 	if cv.Type == v2.ValueTypeBinary {
 		var binary []byte
 		binary, err = cv.BinaryValue()
+		if err != nil {
+			return reading, errors.NewCommonEdgeXWrapper(err)
+		}
 		reading = dtos.NewBinaryReading(profileName, deviceName, cv.DeviceResourceName, binary, mediaType)
 	} else {
-		var e error
-		reading, e = dtos.NewSimpleReading(profileName, deviceName, cv.DeviceResourceName, cv.Type, cv.Value)
-		if e != nil {
-			err = errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to transform CommandValue (%s) to Reading", cv.String()), err)
+		reading, err = dtos.NewSimpleReading(profileName, deviceName, cv.DeviceResourceName, cv.Type, cv.Value)
+		if err != nil {
+			return reading, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to transform CommandValue (%s) to Reading", cv.String()), err)
 		}
 	}
 	// use the Origin if it was already set by ProtocolDriver implementation
@@ -152,7 +155,7 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 		reading.Origin = eventOrigin
 	}
 
-	return reading, err
+	return reading, nil
 }
 
 func getUniqueOrigin() int64 {

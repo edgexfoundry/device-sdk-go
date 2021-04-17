@@ -453,7 +453,9 @@ func transformReadShift(value interface{}, shift string) (interface{}, errors.Ed
 	return value, nil
 }
 
-func commandValueForTransform(cv *dsModels.CommandValue) (v interface{}, err errors.EdgeX) {
+func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, errors.EdgeX) {
+	var v interface{}
+	var err error
 	switch cv.Type {
 	case v2.ValueTypeUint8:
 		v, err = cv.Uint8Value()
@@ -526,7 +528,7 @@ func checkAssertion(
 }
 
 func mapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
-	var err errors.EdgeX
+	var err error
 	var result *dsModels.CommandValue
 
 	newValue, ok := mappings[value.ValueToString()]

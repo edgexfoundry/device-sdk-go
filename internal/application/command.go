@@ -18,7 +18,7 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
@@ -50,27 +50,27 @@ func NewCommandProcessor(device models.Device, sourceName string, correlationID 
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, attributes string, dic *di.Container) (res *dtos.Event, err edgexErr.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
 	// check device service AdminState
 	ds := container.DeviceServiceFrom(dic.Get)
 	if ds.AdminState == models.Locked {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, "service locked", nil)
+		return res, errors.NewCommonEdgeX(errors.KindServiceLocked, "service locked", nil)
 	}
 
 	// check provided device exists
 	deviceKey := vars[v2.Name]
 	device, ok := cache.Devices().ForName(deviceKey)
 	if !ok {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceKey), nil)
+		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceKey), nil)
 	}
 
 	// check device's AdminState
 	if device.AdminState == models.Locked {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
+		return res, errors.NewCommonEdgeX(errors.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
 	}
 	// check device's OperatingState
 	if device.OperatingState == models.Down {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServiceLocked, fmt.Sprintf("device %s OperatingState is DOWN", device.Name), nil)
+		return res, errors.NewCommonEdgeX(errors.KindServiceLocked, fmt.Sprintf("device %s OperatingState is DOWN", device.Name), nil)
 	}
 	// the device service will perform some operations(e.g. update LastConnected timestamp,
 	// push returning event to core-data) after a device is successfully interacted with if
@@ -108,16 +108,16 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	}
 }
 
-func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e edgexErr.EdgeX) {
+func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, c.sourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceResource %s not found", c.sourceName)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, errMsg, nil)
+		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not write-only
 	if dr.Properties.ReadWrite == v2.ReadWrite_W {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", dr.Name)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
+		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
@@ -143,34 +143,34 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e edgexErr.Edg
 	results, err := driver.HandleReadCommands(c.device.Name, c.device.Protocols, reqs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error reading DeviceResourece %s for %s", dr.Name, c.device.Name)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
 	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, dr.Name, c.dic)
 	if e != nil {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to convert CommandValue to Event", e)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", e)
 	}
 
 	return
 }
 
-func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e edgexErr.EdgeX) {
+func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX) {
 	dc, ok := cache.Profiles().DeviceCommand(c.device.ProfileName, c.sourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceCommand %s not found", c.sourceName)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, errMsg, nil)
+		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not write-only
 	if dc.ReadWrite == v2.ReadWrite_W {
 		errMsg := fmt.Sprintf("deviceCommand %s is marked as write-only", dc.Name)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
+		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
 	configuration := container.ConfigurationFrom(c.dic.Get)
 	if len(dc.ResourceOperations) > configuration.Device.MaxCmdOps {
 		errMsg := fmt.Sprintf("GET command %s exceed device %s MaxCmdOps (%d)", dc.Name, c.device.Name, configuration.Device.MaxCmdOps)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
@@ -184,7 +184,7 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e edgexErr.Edge
 		dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, drName)
 		if !ok {
 			errMsg := fmt.Sprintf("deviceResource %s in GET commnd %s for %s not defined", drName, dc.Name, c.device.Name)
-			return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
+			return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
 		reqs[i].DeviceResourceName = dr.Name
@@ -203,28 +203,28 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e edgexErr.Edge
 	results, err := driver.HandleReadCommands(c.device.Name, c.device.Protocols, reqs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error reading DeviceCommand %s for %s", dc.Name, c.device.Name)
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
 	res, e = transformer.CommandValuesToEventDTO(results, c.device.Name, dc.Name, c.dic)
 	if e != nil {
-		return res, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to transform CommandValue to Event", e)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to transform CommandValue to Event", e)
 	}
 
 	return
 }
 
-func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
+func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 	dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, c.sourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceResource %s not found", c.sourceName)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, errMsg, nil)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not read-only
 	if dr.Properties.ReadWrite == v2.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", dr.Name)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
+		return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
@@ -233,7 +233,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	// parse request body string
 	paramMap, err := parseParams(c.body)
 	if err != nil {
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse SET command parameters", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse SET command parameters", err)
 	}
 
 	// check request body contains provided deviceResource
@@ -243,14 +243,14 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 			v = dr.Properties.DefaultValue
 		} else {
 			errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
-			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
+			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 	}
 
 	// create CommandValue
 	cv, err := createCommandValueFromDeviceResource(dr, v)
 	if err != nil {
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to create CommandValue", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", err)
 	}
 
 	// prepare CommandRequest
@@ -270,7 +270,7 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	if configuration.Device.DataTransform {
 		err = transformer.TransformWriteParameter(cv, dr.Properties)
 		if err != nil {
-			return edgexErr.NewCommonEdgeX(edgexErr.KindContractInvalid, "failed to transform set parameter", err)
+			return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", err)
 		}
 	}
 
@@ -279,28 +279,28 @@ func (c *CommandProcessor) WriteDeviceResource() edgexErr.EdgeX {
 	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*dsModels.CommandValue{cv})
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s", dr.Name, c.device.Name)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	return nil
 }
 
-func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
+func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	dc, ok := cache.Profiles().DeviceCommand(c.device.ProfileName, c.sourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceCommand %s not found", c.sourceName)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindEntityDoesNotExist, errMsg, nil)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not read-only
 	if dc.ReadWrite == v2.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceCommand %s is marked as read-only", dc.Name)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
+		return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
 	configuration := container.ConfigurationFrom(c.dic.Get)
 	if len(dc.ResourceOperations) > configuration.Device.MaxCmdOps {
 		errMsg := fmt.Sprintf("SET command %s exceed device %s MaxCmdOps (%d)", dc.Name, c.device.Name, configuration.Device.MaxCmdOps)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
@@ -309,7 +309,7 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 	// parse request body
 	paramMap, err := parseParams(c.body)
 	if err != nil {
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to parse SET command parameters", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse SET command parameters", err)
 	}
 
 	// create CommandValues
@@ -320,13 +320,13 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 		dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, drName)
 		if !ok {
 			errMsg := fmt.Sprintf("deviceResource %s in SET commnd %s for %s not defined", drName, dc.Name, c.device.Name)
-			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
+			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
 		// check the deviceResource isn't read-only
 		if dr.Properties.ReadWrite == v2.ReadWrite_R {
 			errMsg := fmt.Sprintf("deviceResource %s in SET command %s is marked as read-only", drName, dc.Name)
-			return edgexErr.NewCommonEdgeX(edgexErr.KindNotAllowed, errMsg, nil)
+			return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 		}
 
 		// check request body contains the deviceResource
@@ -338,7 +338,7 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 				value = dr.Properties.DefaultValue
 			} else {
 				errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
-				return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, nil)
+				return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 			}
 		}
 
@@ -362,7 +362,7 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 		if err == nil {
 			cvs = append(cvs, cv)
 		} else {
-			return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "failed to create CommandValue", err)
+			return errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", err)
 		}
 	}
 
@@ -385,7 +385,7 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 		if configuration.Device.DataTransform {
 			err = transformer.TransformWriteParameter(cv, dr.Properties)
 			if err != nil {
-				return edgexErr.NewCommonEdgeX(edgexErr.KindContractInvalid, "failed to transform set parameter", err)
+				return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", err)
 			}
 		}
 	}
@@ -395,7 +395,7 @@ func (c *CommandProcessor) WriteDeviceCommand() edgexErr.EdgeX {
 	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, cvs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceCommand %s for %s", dc.Name, c.device.Name)
-		return edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	return nil
@@ -415,8 +415,8 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*dsModels.CommandValue, edgexErr.EdgeX) {
-	var err edgexErr.EdgeX
+func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*dsModels.CommandValue, errors.EdgeX) {
+	var err error
 	var result *dsModels.CommandValue
 
 	switch dr.Properties.ValueType {
@@ -426,7 +426,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		value, err := strconv.ParseBool(v)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeBool, value)
 	case v2.ValueTypeBoolArray:
@@ -434,14 +434,14 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeBoolArray, arr)
 	case v2.ValueTypeUint8:
 		n, err := strconv.ParseUint(v, 10, 8)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint8, uint8(n))
 	case v2.ValueTypeUint8Array:
@@ -451,7 +451,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 8)
 			if err != nil {
 				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+				return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 			}
 			arr = append(arr, uint8(n))
 		}
@@ -460,7 +460,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		n, err := strconv.ParseUint(v, 10, 16)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint16, uint16(n))
 	case v2.ValueTypeUint16Array:
@@ -470,7 +470,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 16)
 			if err != nil {
 				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+				return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 			}
 			arr = append(arr, uint16(n))
 		}
@@ -479,7 +479,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		n, err := strconv.ParseUint(v, 10, 32)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint32, uint32(n))
 	case v2.ValueTypeUint32Array:
@@ -489,7 +489,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 32)
 			if err != nil {
 				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+				return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 			}
 			arr = append(arr, uint32(n))
 		}
@@ -498,7 +498,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		n, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint64, n)
 	case v2.ValueTypeUint64Array:
@@ -508,7 +508,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			n, err := strconv.ParseUint(strings.Trim(u, " "), 10, 64)
 			if err != nil {
 				errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-				return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+				return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 			}
 			arr = append(arr, n)
 		}
@@ -517,7 +517,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		n, err := strconv.ParseInt(v, 10, 8)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt8, int8(n))
 	case v2.ValueTypeInt8Array:
@@ -525,14 +525,14 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt8Array, arr)
 	case v2.ValueTypeInt16:
 		n, err := strconv.ParseInt(v, 10, 16)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt16, int16(n))
 	case v2.ValueTypeInt16Array:
@@ -540,14 +540,14 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt16Array, arr)
 	case v2.ValueTypeInt32:
 		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt32, int32(n))
 	case v2.ValueTypeInt32Array:
@@ -555,14 +555,14 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt32Array, arr)
 	case v2.ValueTypeInt64:
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt64, n)
 	case v2.ValueTypeInt64Array:
@@ -570,7 +570,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt64Array, arr)
 	case v2.ValueTypeFloat32:
@@ -581,7 +581,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 		if numError, ok := err.(*strconv.NumError); ok {
 			if numError.Err == strconv.ErrRange {
-				err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "NumError", err)
+				err = errors.NewCommonEdgeX(errors.KindServerError, "NumError", err)
 				break
 			}
 		}
@@ -603,7 +603,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32Array, arr)
 	case v2.ValueTypeFloat64:
@@ -615,7 +615,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 		if numError, ok := err.(*strconv.NumError); ok {
 			if numError.Err == strconv.ErrRange {
-				err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "NumError", err)
+				err = errors.NewCommonEdgeX(errors.KindServerError, "NumError", err)
 				break
 			}
 		}
@@ -636,14 +636,17 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
-			return result, edgexErr.NewCommonEdgeX(edgexErr.KindServerError, errMsg, err)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64Array, arr)
 	default:
-		err = edgexErr.NewCommonEdgeX(edgexErr.KindServerError, "unrecognized value type", nil)
+		err = errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}
 
-	return result, err
+	if err != nil {
+		return nil, errors.NewCommonEdgeXWrapper(err)
+	}
+	return result, nil
 }
 
 func float32FromBytes(numericValue []byte) (res float32, err error) {
