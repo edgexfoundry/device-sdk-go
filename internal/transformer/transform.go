@@ -97,8 +97,6 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			newCV, ok := mapCommandValue(cv, ro.Mappings)
 			if ok {
 				cv = newCV
-			} else {
-				lc.Warnf("ResourceOperation (%s) mapping value (%s) failed with the mapping table: %v", ro.DeviceResource, cv.String(), ro.Mappings)
 			}
 		}
 
