@@ -323,12 +323,6 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
-		// check the deviceResource isn't read-only
-		if dr.Properties.ReadWrite == v2.ReadWrite_R {
-			errMsg := fmt.Sprintf("deviceResource %s in SET command %s is marked as read-only", drName, dc.Name)
-			return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
-		}
-
 		// check request body contains the deviceResource
 		value, ok := paramMap[ro.DeviceResource]
 		if !ok {
@@ -342,7 +336,8 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 			}
 		}
 
-		// write value mapping
+		// ResourceOperation mapping, notice that the order is opposite to get command mapping
+		// i.e. the mapping value is actually the key for set command.
 		if len(ro.Mappings) > 0 {
 			for k, v := range ro.Mappings {
 				if v == value {
