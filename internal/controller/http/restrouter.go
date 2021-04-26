@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/responses"
 	"github.com/gorilla/mux"
 
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
@@ -120,6 +121,33 @@ func (c *RestController) sendResponse(
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+// sendEventResponse puts together the EventResponse packet for the V2 API
+func (c *RestController) sendEventResponse(
+	writer http.ResponseWriter,
+	request *http.Request,
+	response responses.EventResponse,
+	statusCode int) {
+
+	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
+	data, encoding, err := response.Encode()
+	if err != nil {
+		c.lc.Errorf("Unable to marshal EventResponse: %s; %s: %s", err.Error(), clients.CorrelationHeader, correlationID)
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set(sdkCommon.CorrelationHeader, correlationID)
+	writer.Header().Set(clients.ContentType, encoding)
+	writer.WriteHeader(statusCode)
+
+	_, err = writer.Write(data)
+	if err != nil {
+		c.lc.Errorf("Unable to write DeviceCommand response: %s; %s: %s", err.Error(), clients.CorrelationHeader, correlationID)
+		http.Error(writer, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
