@@ -12,7 +12,7 @@ type CommandRequest struct {
 	// DeviceResourceName is the name of Device Resource for this command
 	DeviceResourceName string
 	// Attributes is a key/value map to represent the attributes of the Device Resource
-	Attributes map[string]string
+	Attributes map[string]interface{}
 	// Type is the data type of the Device Resource
 	Type string
 }

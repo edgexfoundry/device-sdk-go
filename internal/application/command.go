@@ -131,7 +131,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e errors.EdgeX
 	req.Attributes = dr.Attributes
 	if c.attributes != "" {
 		if len(req.Attributes) <= 0 {
-			req.Attributes = make(map[string]string)
+			req.Attributes = make(map[string]interface{})
 		}
 		req.Attributes[common.URLRawQuery] = c.attributes
 	}
@@ -191,7 +191,7 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 		reqs[i].Attributes = dr.Attributes
 		if c.attributes != "" {
 			if len(reqs[i].Attributes) <= 0 {
-				reqs[i].Attributes = make(map[string]string)
+				reqs[i].Attributes = make(map[string]interface{})
 			}
 			reqs[i].Attributes[common.URLRawQuery] = c.attributes
 		}
@@ -259,7 +259,7 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 	reqs[0].Attributes = dr.Attributes
 	if c.attributes != "" {
 		if len(reqs[0].Attributes) <= 0 {
-			reqs[0].Attributes = make(map[string]string)
+			reqs[0].Attributes = make(map[string]interface{})
 		}
 		reqs[0].Attributes[common.URLRawQuery] = c.attributes
 	}
@@ -365,7 +365,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 		reqs[i].Attributes = dr.Attributes
 		if c.attributes != "" {
 			if len(reqs[i].Attributes) <= 0 {
-				reqs[i].Attributes = make(map[string]string)
+				reqs[i].Attributes = make(map[string]interface{})
 			}
 			reqs[i].Attributes[common.URLRawQuery] = c.attributes
 		}
