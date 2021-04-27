@@ -58,22 +58,21 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
-	eventDTO, edgexErr := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
-	if edgexErr != nil {
-		c.sendEdgexError(writer, request, edgexErr, v2.ApiDeviceNameCommandNameRoute)
+	eventDTO, err := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
+	if err != nil {
+		c.sendEdgexError(writer, request, err, v2.ApiDeviceNameCommandNameRoute)
 		return
-	}
-
-	var res interface{}
-	if eventDTO != nil {
-		res = responses.NewEventResponse("", "", http.StatusOK, *eventDTO)
-	} else {
-		res = common.NewBaseResponse("", "", http.StatusOK)
 	}
 
 	// return event in http response if specified (default yes)
 	if ok, exist := reserved[v2.ReturnEvent]; !exist || ok[0] == v2.ValueYes {
-		c.sendResponse(writer, request, v2.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
+		if eventDTO != nil {
+			res := responses.NewEventResponse("", "", http.StatusOK, *eventDTO)
+			c.sendEventResponse(writer, request, res, http.StatusOK)
+		} else {
+			res := common.NewBaseResponse("", "", http.StatusOK)
+			c.sendResponse(writer, request, v2.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
+		}
 	}
 }
 
