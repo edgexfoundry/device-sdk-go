@@ -17,8 +17,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
-// Init basic state for cache
-func InitV2Cache(name string, dic *di.Container) errors.EdgeX {
+// InitCache Init basic state for cache
+func InitCache(name string, dic *di.Container) errors.EdgeX {
 	dc := container.MetadataDeviceClientFrom(dic.Get)
 	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
 	pwc := container.MetadataProvisionWatcherClientFrom(dic.Get)

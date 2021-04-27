@@ -37,7 +37,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	ds.wg = wg
 	ds.controller.InitRestRoutes()
 
-	err := cache.InitV2Cache(ds.ServiceName, dic)
+	err := cache.InitCache(ds.ServiceName, dic)
 	if err != nil {
 		ds.LoggingClient.Errorf("Failed to init cache: %v", err)
 		return false
