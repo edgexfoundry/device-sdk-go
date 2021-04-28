@@ -255,3 +255,40 @@ func Test_commandValueForTransform(t *testing.T) {
 		})
 	}
 }
+
+func Test_mapCommandValue(t *testing.T) {
+	numericValue, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat32, float32(123.456))
+	require.NoError(t, err)
+	stringValue, err := models.NewCommandValue("test-resource", v2.ValueTypeString, "key")
+	require.NoError(t, err)
+	arrayValue, err := models.NewCommandValue("test-resource", v2.ValueTypeInt8Array, []int8{1, 2, 3})
+	require.NoError(t, err)
+	invalid, err := models.NewCommandValue("test-resource", v2.ValueTypeString, "invalid")
+	require.NoError(t, err)
+
+	mappings := map[string]string{
+		"123.456": "value",
+		"key":     "value",
+		"[1 2 3]": "value",
+	}
+
+	tests := []struct {
+		name    string
+		cv      *models.CommandValue
+		success bool
+	}{
+		{"valid - CommandValue with numeric mapping", numericValue, true},
+		{"valid - CommandValue with string mapping", stringValue, true},
+		{"valid - CommandValue with array mapping", arrayValue, true},
+		{"invalid - mapping not found", invalid, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, ok := mapCommandValue(tt.cv, mappings)
+			require.Equal(t, ok, tt.success)
+			if ok {
+				assert.Equal(t, res.Value, "value")
+			}
+		})
+	}
+}
