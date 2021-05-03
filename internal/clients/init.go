@@ -43,7 +43,6 @@ func BootstrapHandler(
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
 func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	configuration := container.ConfigurationFrom(dic.Get)
 
 	err := validateClientConfig(container.ConfigurationFrom(dic.Get))
 	if err != nil {
@@ -55,10 +54,6 @@ func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer
 		return false
 	}
 	initCoreServiceClients(dic)
-
-	if configuration.MessageQueue.Enabled && initMessagingClient(ctx, wg, startupTimer, dic) == false {
-		return false
-	}
 
 	lc.Info("Service clients initialize successful.")
 	return true

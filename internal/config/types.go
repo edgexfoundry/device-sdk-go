@@ -56,6 +56,8 @@ type ServiceInfo struct {
 	AsyncBufferSize int
 	// MaxRequestSize defines the maximum size of http request body in bytes
 	MaxRequestSize int64
+	// UseMessageBus indicates whether or not the Event are published directly to the MessageBus
+	UseMessageBus bool
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.

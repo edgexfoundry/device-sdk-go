@@ -15,7 +15,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/handler"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
@@ -74,6 +74,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		true,
 		[]interfaces.BootstrapHandler{
 			httpServer.BootstrapHandler,
+			handler.MessagingBootstrapHandler,
 			clients.BootstrapHandler,
 			autoevent.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
