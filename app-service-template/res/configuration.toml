@@ -66,18 +66,18 @@ RetryWaitPeriod = "1s"
 
 [Trigger]
 Type="edgex-messagebus"
-SubscribeTopics="events, edgex/events"
+SubscribeTopics="edgex/events/#"
 PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the message bus
     [Trigger.EdgexMessageBus]
-    Type = 'zero'
+    Type = 'redisstreams'
         [Trigger.EdgexMessageBus.SubscribeHost]
         Host = 'localhost'
-        Port = 5563
-        Protocol = 'tcp'
+        Port = 6379
+        Protocol = 'redis'
         [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
-        Host = '*'
-        Port = 5564
-        Protocol = 'tcp'
+        Host = 'localhost'
+        Port = 6379
+        Protocol = 'redis'
 
 # TODO: If using mqtt messagebus, Uncomment this section and remove above [Trigger] section,
 #       Otherwise remove this commented out block
