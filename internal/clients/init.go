@@ -20,8 +20,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
@@ -188,56 +186,4 @@ func initCoreServiceClients(dic *di.Container) {
 			return ec
 		},
 	})
-}
-
-func initMessagingClient(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	configuration := container.ConfigurationFrom(dic.Get)
-
-	msgClient, err := messaging.NewMessageClient(
-		types.MessageBusConfig{
-			PublishHost: types.HostInfo{
-				Host:     configuration.MessageQueue.Host,
-				Port:     configuration.MessageQueue.Port,
-				Protocol: configuration.MessageQueue.Protocol,
-			},
-			Type:     configuration.MessageQueue.Type,
-			Optional: configuration.MessageQueue.Optional,
-		})
-	if err != nil {
-		lc.Errorf("Failed to create MessageClient: %v", err)
-		return false
-	}
-
-	for startupTimer.HasNotElapsed() {
-		select {
-		case <-ctx.Done():
-			return false
-		default:
-			err = msgClient.Connect()
-			if err != nil {
-				lc.Warnf("Unable to connect MessageBus: %v", err)
-			} else {
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					select {
-					case <-ctx.Done():
-						msgClient.Disconnect()
-						lc.Infof("Disconnecting from MessageBus")
-					}
-				}()
-				dic.Update(di.ServiceConstructorMap{
-					container.MessagingClientName: func(get di.Get) interface{} {
-						return msgClient
-					},
-				})
-				return true
-			}
-			startupTimer.SleepForInterval()
-		}
-	}
-
-	lc.Error("Connecting to MessageBus time out")
-	return false
 }
