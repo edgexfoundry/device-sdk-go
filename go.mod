@@ -5,7 +5,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.0-dev.34
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.77
-	github.com/edgexfoundry/go-mod-messaging/v2 v2.0.0-dev.11
+	github.com/edgexfoundry/go-mod-messaging/v2 v2.0.0-dev.12
 	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0-dev.4
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
