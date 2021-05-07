@@ -193,6 +193,11 @@ func (c *ConfigurationStruct) GetInsecureSecrets() bootstrapConfig.InsecureSecre
 	return c.Writable.InsecureSecrets
 }
 
+// GetMessageBusInfo returns dummy MessageBusInfo since SDK doesn't use MessageBusInfo
+func (c *ConfigurationStruct) GetMessageBusInfo() bootstrapConfig.MessageBusInfo {
+	return bootstrapConfig.MessageBusInfo{}
+}
+
 // transformToBootstrapServiceInfo transforms the SDK's ServiceInfo to the bootstrap's version of ServiceInfo
 func (c *ConfigurationStruct) transformToBootstrapServiceInfo() bootstrapConfig.ServiceInfo {
 	return bootstrapConfig.ServiceInfo{

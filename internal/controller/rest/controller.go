@@ -114,7 +114,7 @@ func (v2c *Controller) AddSecret(writer http.ResponseWriter, request *http.Reque
 
 	path, secret := v2c.prepareSecret(secretRequest)
 
-	if err := v2c.secretProvider.StoreSecrets(path, secret); err != nil {
+	if err := v2c.secretProvider.StoreSecret(path, secret); err != nil {
 		v2c.sendError(writer, request, errors.KindServerError, "Storing secret failed", err, secretRequest.RequestId)
 		return
 	}

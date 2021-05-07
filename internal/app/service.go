@@ -34,7 +34,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
@@ -52,7 +51,6 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
@@ -62,8 +60,6 @@ import (
 const (
 	envProfile    = "EDGEX_PROFILE"
 	envServiceKey = "EDGEX_SERVICE_KEY"
-
-	optionalPasswordKey = "Password"
 )
 
 // NewService create, initializes and returns new instance of app.Service which implements the
@@ -322,7 +318,7 @@ func (svc *Service) ApplicationSettings() map[string]string {
 	return svc.config.ApplicationSettings
 }
 
-// GetAppSettingStrings returns the string for the specified App Setting.
+// GetAppSetting returns the string for the specified App Setting.
 func (svc *Service) GetAppSetting(setting string) (string, error) {
 	if svc.config.ApplicationSettings == nil {
 		return "", fmt.Errorf("%s setting not found: ApplicationSettings section is missing", setting)
@@ -420,20 +416,6 @@ func (svc *Service) Initialize() error {
 	// Bootstrapping is complete, so now need to retrieve the needed objects from the containers.
 	svc.lc = bootstrapContainer.LoggingClientFrom(svc.dic.Get)
 
-	// If using the RedisStreams MessageBus implementation then need to make sure the
-	// password for the Redis DB is set in the MessageBus Optional properties.
-	triggerType := strings.ToUpper(svc.config.Trigger.Type)
-	if triggerType == TriggerTypeMessageBus &&
-		svc.config.Trigger.EdgexMessageBus.Type == messaging.RedisStreams {
-
-		secretProvider := bootstrapContainer.SecretProviderFrom(svc.dic.Get)
-		credentials, err := secretProvider.GetSecrets(svc.config.Database.Type)
-		if err != nil {
-			return fmt.Errorf("unable to set RedisStreams password from DB credentials: %w", err)
-		}
-		svc.config.Trigger.EdgexMessageBus.Optional[optionalPasswordKey] = credentials[secret.PasswordKey]
-	}
-
 	// We do special processing when the writeable section of the configuration changes, so have
 	// to wait to be signaled when the configuration has been updated and then process the changes
 	NewConfigUpdateProcessor(svc).WaitForConfigUpdates(configUpdated)
@@ -473,13 +455,13 @@ func (svc *Service) ListenForCustomConfigChanges(configToWatch interface{}, sect
 // GetSecret retrieves secret data from the secret store at the specified path.
 func (svc *Service) GetSecret(path string, keys ...string) (map[string]string, error) {
 	secretProvider := bootstrapContainer.SecretProviderFrom(svc.dic.Get)
-	return secretProvider.GetSecrets(path, keys...)
+	return secretProvider.GetSecret(path, keys...)
 }
 
 // StoreSecret stores the secret data to a secret store at the specified path.
 func (svc *Service) StoreSecret(path string, secretData map[string]string) error {
 	secretProvider := bootstrapContainer.SecretProviderFrom(svc.dic.Get)
-	return secretProvider.StoreSecrets(path, secretData)
+	return secretProvider.StoreSecret(path, secretData)
 }
 
 // LoggingClient returns the Logging client from the dependency injection container

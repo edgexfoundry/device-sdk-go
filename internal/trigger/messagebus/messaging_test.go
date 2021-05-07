@@ -24,6 +24,8 @@ import (
 	"time"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
+	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
@@ -68,7 +70,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func TestInitialize(t *testing.T) {
+func TestInitializeNotSecure(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
@@ -95,6 +97,62 @@ func TestInitialize(t *testing.T) {
 	dic.Update(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return &config
+		},
+	})
+
+	goRuntime := &runtime.GolangRuntime{}
+
+	trigger := NewTrigger(dic, goRuntime)
+
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
+	assert.NotNil(t, trigger.client, "Expected client to be set")
+	assert.Equal(t, 1, len(trigger.topics))
+	assert.Equal(t, "events", trigger.topics[0].Topic)
+	assert.NotNil(t, trigger.topics[0].Messages)
+}
+
+func TestInitializeSecure(t *testing.T) {
+	secretName := "redisdb"
+
+	config := common.ConfigurationStruct{
+		Trigger: common.TriggerInfo{
+			Type:            TriggerTypeMessageBus,
+			PublishTopic:    "publish",
+			SubscribeTopics: "events",
+			EdgexMessageBus: types.MessageBusConfig{
+				Type: "zero",
+
+				PublishHost: types.HostInfo{
+					Host:     "*",
+					Port:     5563,
+					Protocol: "tcp",
+				},
+				SubscribeHost: types.HostInfo{
+					Host:     "localhost",
+					Port:     5563,
+					Protocol: "tcp",
+				},
+				Optional: map[string]string{
+					bootstrapMessaging.AuthModeKey:   bootstrapMessaging.AuthModeUsernamePassword,
+					bootstrapMessaging.SecretNameKey: secretName,
+				},
+			},
+		},
+	}
+
+	mock := mocks.SecretProvider{}
+	mock.On("GetSecret", secretName).Return(map[string]string{
+		bootstrapMessaging.SecretUsernameKey: "user",
+		bootstrapMessaging.SecretPasswordKey: "password",
+	}, nil)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
+			return &mock
 		},
 	})
 

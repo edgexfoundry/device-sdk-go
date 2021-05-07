@@ -89,7 +89,7 @@ func InitializeStoreClient(
 	logger logger.LoggingClient) (interfaces.StoreClient, error) {
 	var err error
 
-	secrets, err := secretProvider.GetSecrets(config.Database.Type)
+	secrets, err := secretProvider.GetSecret(config.Database.Type)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get Database Credentials for Store and Forward: %s", err.Error())
 	}

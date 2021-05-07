@@ -185,7 +185,7 @@ func (appContext *Context) PushToCoreData(deviceName string, readingName string,
 // GetSecret returns the secret data from the secret store (secure or insecure) for the specified path.
 func (appContext *Context) GetSecret(path string, keys ...string) (map[string]string, error) {
 	secretProvider := bootstrapContainer.SecretProviderFrom(appContext.dic.Get)
-	return secretProvider.GetSecrets(path, keys...)
+	return secretProvider.GetSecret(path, keys...)
 }
 
 // SecretsLastUpdated returns that timestamp for when the secrets in the SecretStore where last updated.

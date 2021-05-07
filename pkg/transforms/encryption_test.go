@@ -92,7 +92,7 @@ func TestNewEncryptionWithSecrets(t *testing.T) {
 	secretName := "aesKey"
 
 	mockSP := &mocks.SecretProvider{}
-	mockSP.On("GetSecrets", secretPath, secretName).Return(map[string]string{secretName: key}, nil)
+	mockSP.On("GetSecret", secretPath, secretName).Return(map[string]string{secretName: key}, nil)
 
 	dic.Update(di.ServiceConstructorMap{
 		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {

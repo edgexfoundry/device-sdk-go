@@ -22,6 +22,7 @@ import (
 	"errors"
 
 	"github.com/eclipse/paho.mqtt.golang"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
@@ -34,19 +35,6 @@ type mqttSecrets struct {
 	certPemBlock []byte
 	caPemBlock   []byte
 }
-
-const (
-	AuthModeNone             = "none"
-	AuthModeUsernamePassword = "usernamepassword"
-	AuthModeCert             = "clientcert"
-	AuthModeCA               = "cacert"
-	// Name of the keys to look for in secret provider
-	MQTTSecretUsername   = "username"
-	MQTTSecretPassword   = "password"
-	MQTTSecretClientKey  = "clientkey"
-	MQTTSecretClientCert = AuthModeCert
-	MQTTSecretCACert     = AuthModeCA
-)
 
 type MqttFactory struct {
 	appContext     interfaces.AppFunctionContext
@@ -68,25 +56,25 @@ func NewMqttFactory(appContext interfaces.AppFunctionContext, mode string, path 
 
 func (factory MqttFactory) Create(opts *mqtt.ClientOptions) (mqtt.Client, error) {
 	if factory.authMode == "" {
-		factory.authMode = AuthModeNone
-		factory.logger.Warn("AuthMode not set, defaulting to \"" + AuthModeNone + "\"")
+		factory.authMode = messaging.AuthModeNone
+		factory.logger.Warn("AuthMode not set, defaulting to \"" + messaging.AuthModeNone + "\"")
 	}
 
 	factory.opts = opts
 
 	//get the secrets from the secret provider and populate the struct
-	secrets, err := factory.getSecrets()
+	secretData, err := messaging.GetSecretData(factory.authMode, factory.secretPath, factory.appContext)
 	if err != nil {
 		return nil, err
 	}
 	//ensure that the authmode selected has the required secret values
-	if secrets != nil {
-		err = factory.validateSecrets(*secrets)
+	if secretData != nil {
+		err = messaging.ValidateSecretData(factory.authMode, factory.secretPath, secretData)
 		if err != nil {
 			return nil, err
 		}
 		// configure the mqtt client with the retrieved secret values
-		err = factory.configureMQTTClientForAuth(*secrets)
+		err = factory.configureMQTTClientForAuth(secretData)
 		if err != nil {
 			return nil, err
 		}
@@ -95,58 +83,7 @@ func (factory MqttFactory) Create(opts *mqtt.ClientOptions) (mqtt.Client, error)
 	return mqtt.NewClient(factory.opts), nil
 }
 
-func (factory MqttFactory) getSecrets() (*mqttSecrets, error) {
-	// No Auth? No Problem!...No secrets required.
-	if factory.authMode == AuthModeNone {
-		return nil, nil
-	}
-
-	secrets, err := factory.appContext.GetSecret(factory.secretPath)
-	if err != nil {
-		return nil, err
-	}
-	mqttSecrets := &mqttSecrets{
-		username:     secrets[MQTTSecretUsername],
-		password:     secrets[MQTTSecretPassword],
-		keyPemBlock:  []byte(secrets[MQTTSecretClientKey]),
-		certPemBlock: []byte(secrets[MQTTSecretClientCert]),
-		caPemBlock:   []byte(secrets[MQTTSecretCACert]),
-	}
-
-	return mqttSecrets, nil
-}
-
-func (factory MqttFactory) validateSecrets(secrets mqttSecrets) error {
-	caCertPool := x509.NewCertPool()
-	if factory.authMode == AuthModeUsernamePassword {
-		if secrets.username == "" || secrets.password == "" {
-			return errors.New("AuthModeUsernamePassword selected however Username or Password was not found at secret path")
-		}
-
-	} else if factory.authMode == AuthModeCert {
-		// need both to make a successful connection
-		if len(secrets.keyPemBlock) <= 0 || len(secrets.certPemBlock) <= 0 {
-			return errors.New("AuthModeCert selected however the key or cert PEM block was not found at secret path")
-		}
-	} else if factory.authMode == AuthModeCA {
-		if len(secrets.caPemBlock) <= 0 {
-			return errors.New("AuthModeCA selected however no PEM Block was found at secret path")
-		}
-	} else if factory.authMode != AuthModeNone {
-		return errors.New("Invalid AuthMode selected")
-	}
-
-	if len(secrets.caPemBlock) > 0 {
-		ok := caCertPool.AppendCertsFromPEM(secrets.caPemBlock)
-		if !ok {
-			return errors.New("Error parsing CA Certificate")
-		}
-	}
-
-	return nil
-}
-
-func (factory MqttFactory) configureMQTTClientForAuth(secrets mqttSecrets) error {
+func (factory MqttFactory) configureMQTTClientForAuth(secretData *messaging.SecretData) error {
 	var cert tls.Certificate
 	var err error
 	caCertPool := x509.NewCertPool()
@@ -154,23 +91,23 @@ func (factory MqttFactory) configureMQTTClientForAuth(secrets mqttSecrets) error
 		InsecureSkipVerify: factory.skipCertVerify,
 	}
 	switch factory.authMode {
-	case AuthModeUsernamePassword:
-		factory.opts.SetUsername(secrets.username)
-		factory.opts.SetPassword(secrets.password)
-	case AuthModeCert:
-		cert, err = tls.X509KeyPair(secrets.certPemBlock, secrets.keyPemBlock)
+	case messaging.AuthModeUsernamePassword:
+		factory.opts.SetUsername(secretData.Username)
+		factory.opts.SetPassword(secretData.Password)
+	case messaging.AuthModeCert:
+		cert, err = tls.X509KeyPair(secretData.CertPemBlock, secretData.KeyPemBlock)
 		if err != nil {
 			return err
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
-	case AuthModeCA:
-		break
-	case AuthModeNone:
+	case messaging.AuthModeCA:
+		// Nothing to do here for this option
+	case messaging.AuthModeNone:
 		return nil
 	}
 
-	if len(secrets.caPemBlock) > 0 {
-		ok := caCertPool.AppendCertsFromPEM(secrets.caPemBlock)
+	if len(secretData.CaPemBlock) > 0 {
+		ok := caCertPool.AppendCertsFromPEM(secretData.CaPemBlock)
 		if !ok {
 			return errors.New("Error parsing CA PEM block")
 		}

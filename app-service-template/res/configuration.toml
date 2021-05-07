@@ -8,7 +8,6 @@ LogLevel = 'INFO'
   RetryInterval = '5m'
   MaxRetryCount = 10
 
-  # TODO: if not running in secure mode, but do have secrets then add them here.
   [Writable.InsecureSecrets]
     [Writable.InsecureSecrets.DB]
     path = "redisdb"
@@ -68,16 +67,19 @@ RetryWaitPeriod = "1s"
 Type="edgex-messagebus"
 SubscribeTopics="edgex/events/#"
 PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the message bus
-    [Trigger.EdgexMessageBus]
-    Type = 'redisstreams'
-        [Trigger.EdgexMessageBus.SubscribeHost]
-        Host = 'localhost'
-        Port = 6379
-        Protocol = 'redis'
-        [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
-        Host = 'localhost'
-        Port = 6379
-        Protocol = 'redis'
+  [Trigger.EdgexMessageBus]
+  Type = 'redisstreams'
+    [Trigger.EdgexMessageBus.SubscribeHost]
+    Host = 'localhost'
+    Port = 6379
+    Protocol = 'redis'
+    [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
+    Host = 'localhost'
+    Port = 6379
+    Protocol = 'redis'
+    [Trigger.EdgexMessageBus.Optional]
+    authmode = 'usernamepassword'  # requied for redis messagebus (secure or insecure).
+    secretname = 'redisdb'
 
 # TODO: If using mqtt messagebus, Uncomment this section and remove above [Trigger] section,
 #       Otherwise remove this commented out block
@@ -103,6 +105,9 @@ PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the
 #    AutoReconnect  = "true"
 #    ConnectTimeout = "30" # Seconds
 #    SkipCertVerify = "false"
+#    authmode = 'none'  # change to 'usernamepassword', 'clientcert', or 'cacert' for secure MQTT messagebus.
+#    secretname = 'mqtt-bus'
+
 
 # TODO: Add custom settings needed by your app service or remove if you don't have any settings.
 # This can be any Key/Value pair you need.

@@ -113,8 +113,8 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 	expectedValue := "my-API-key"
 
 	mockSP := &mocks2.SecretProvider{}
-	mockSP.On("GetSecrets", "/path", "header").Return(map[string]string{"Secret-Header-Name": expectedValue}, nil)
-	mockSP.On("GetSecrets", "/path", "bogus").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
+	mockSP.On("GetSecret", "/path", "header").Return(map[string]string{"Secret-Header-Name": expectedValue}, nil)
+	mockSP.On("GetSecret", "/path", "bogus").Return(nil, errors.New("FAKE NOT FOUND ERROR"))
 
 	dic.Update(di.ServiceConstructorMap{
 		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {

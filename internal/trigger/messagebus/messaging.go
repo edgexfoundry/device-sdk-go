@@ -18,6 +18,7 @@ package messagebus
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -58,6 +60,10 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	config := container.ConfigurationFrom(trigger.dic.Get)
 
 	lc.Infof("Initializing Message Bus Trigger for '%s'", config.Trigger.EdgexMessageBus.Type)
+
+	if err := trigger.setOptionalAuthData(&config.Trigger.EdgexMessageBus, lc); err != nil {
+		return nil, err
+	}
 
 	trigger.client, err = messaging.NewMessageClient(config.Trigger.EdgexMessageBus)
 	if err != nil {
@@ -197,4 +203,47 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 		logger.Debugf("Published message to bus on '%s' topic", config.Trigger.PublishTopic)
 		logger.Tracef("%s=%s", clients.CorrelationHeader, message.CorrelationID)
 	}
+}
+
+func (trigger *Trigger) setOptionalAuthData(messageBusConfig *types.MessageBusConfig, lc logger.LoggingClient) error {
+	authMode := strings.ToLower(strings.TrimSpace(messageBusConfig.Optional[bootstrapMessaging.AuthModeKey]))
+	if len(authMode) == 0 || authMode == bootstrapMessaging.AuthModeNone {
+		return nil
+	}
+
+	secretName := messageBusConfig.Optional[bootstrapMessaging.SecretNameKey]
+
+	lc.Infof("Setting options for secure MessageBus with AuthMode='%s' and SecretName='%s", authMode, secretName)
+
+	secretProvider := bootstrapContainer.SecretProviderFrom(trigger.dic.Get)
+	if secretProvider == nil {
+		return errors.New("secret provider is missing. Make sure it is specified to be used in bootstrap.Run()")
+	}
+
+	secretData, err := bootstrapMessaging.GetSecretData(authMode, secretName, secretProvider)
+	if err != nil {
+		return fmt.Errorf("Unable to get Secret Data for secure message bus: %w", err)
+	}
+
+	if err := bootstrapMessaging.ValidateSecretData(authMode, secretName, secretData); err != nil {
+		return fmt.Errorf("Secret Data for secure message bus invalid: %w", err)
+	}
+
+	if messageBusConfig.Optional == nil {
+		messageBusConfig.Optional = map[string]string{}
+	}
+
+	// Since already validated, these are the only modes that can be set at this point.
+	switch authMode {
+	case bootstrapMessaging.AuthModeUsernamePassword:
+		messageBusConfig.Optional[bootstrapMessaging.OptionsUsernameKey] = secretData.Username
+		messageBusConfig.Optional[bootstrapMessaging.OptionsPasswordKey] = secretData.Password
+	case bootstrapMessaging.AuthModeCert:
+		messageBusConfig.Optional[bootstrapMessaging.OptionsCertPEMBlockKey] = string(secretData.CertPemBlock)
+		messageBusConfig.Optional[bootstrapMessaging.OptionsKeyPEMBlockKey] = string(secretData.KeyPemBlock)
+	case bootstrapMessaging.AuthModeCA:
+		messageBusConfig.Optional[bootstrapMessaging.OptionsCaPEMBlockKey] = string(secretData.CaPemBlock)
+	}
+
+	return nil
 }

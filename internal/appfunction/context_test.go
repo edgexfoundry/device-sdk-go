@@ -234,7 +234,7 @@ func TestContext_GetSecret(t *testing.T) {
 	}
 
 	mockSecretProvider := &mocks.SecretProvider{}
-	mockSecretProvider.On("GetSecrets", "mqtt").Return(expected, nil)
+	mockSecretProvider.On("GetSecret", "mqtt").Return(expected, nil)
 
 	dic.Update(di.ServiceConstructorMap{
 		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
