@@ -103,6 +103,7 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 		s.discovery = nil
 	}
 
+	s.deviceService = &models.DeviceService{}
 	s.config = &config.ConfigurationStruct{}
 }
 
@@ -183,42 +184,43 @@ func (s *DeviceService) ListenForCustomConfigChanges(
 
 // selfRegister register device service itself onto metadata.
 func (s *DeviceService) selfRegister() errors.EdgeX {
-	newDeviceService := models.DeviceService{
+	localDeviceService := models.DeviceService{
 		Name:        s.ServiceName,
 		Labels:      s.config.Service.Labels,
 		BaseAddress: s.config.Service.Protocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
 		AdminState:  models.Unlocked,
 	}
+	*s.deviceService = localDeviceService
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 
-	s.LoggingClient.Debugf("trying to find device service %s", newDeviceService.Name)
-	res, err := s.edgexClients.DeviceServiceClient.DeviceServiceByName(ctx, newDeviceService.Name)
+	s.LoggingClient.Debugf("trying to find device service %s", localDeviceService.Name)
+	res, err := s.edgexClients.DeviceServiceClient.DeviceServiceByName(ctx, localDeviceService.Name)
 	if err != nil {
 		if errors.Kind(err) == errors.KindEntityDoesNotExist {
-			s.LoggingClient.Infof("device service %s doesn't exist, creating a new one", newDeviceService.Name)
-			req := requests.NewAddDeviceServiceRequest(dtos.FromDeviceServiceModelToDTO(newDeviceService))
+			s.LoggingClient.Infof("device service %s doesn't exist, creating a new one", localDeviceService.Name)
+			req := requests.NewAddDeviceServiceRequest(dtos.FromDeviceServiceModelToDTO(localDeviceService))
 			idRes, err := s.edgexClients.DeviceServiceClient.Add(ctx, []requests.AddDeviceServiceRequest{req})
 			if err != nil {
-				s.LoggingClient.Errorf("failed to add device service %s: %v", newDeviceService.Name, err)
+				s.LoggingClient.Errorf("failed to add device service %s: %v", localDeviceService.Name, err)
 				return err
 			}
-			newDeviceService.Id = idRes[0].Id
-			s.LoggingClient.Debugf("new device service id: %s", newDeviceService.Id)
+			s.deviceService.Id = idRes[0].Id
+			s.LoggingClient.Debugf("new device service id: %s", localDeviceService.Id)
 		} else {
-			s.LoggingClient.Errorf("failed to find device service %s", newDeviceService.Name)
+			s.LoggingClient.Errorf("failed to find device service %s", localDeviceService.Name)
 			return err
 		}
 	} else {
 		s.LoggingClient.Infof("device service %s exists, updating it", s.ServiceName)
-		req := requests.NewUpdateDeviceServiceRequest(dtos.FromDeviceServiceModelToUpdateDTO(newDeviceService))
+		req := requests.NewUpdateDeviceServiceRequest(dtos.FromDeviceServiceModelToUpdateDTO(localDeviceService))
 		_, err = s.edgexClients.DeviceServiceClient.Update(ctx, []requests.UpdateDeviceServiceRequest{req})
 		if err != nil {
-			s.LoggingClient.Errorf("failed to update device service %s with local config: %v", newDeviceService.Name, err)
-			newDeviceService = dtos.ToDeviceServiceModel(res.Service)
+			s.LoggingClient.Errorf("failed to update device service %s with local config: %v", localDeviceService.Name, err)
+			oldDeviceService := dtos.ToDeviceServiceModel(res.Service)
+			*s.deviceService = oldDeviceService
 		}
 	}
 
-	s.deviceService = &newDeviceService
 	return nil
 }
 
