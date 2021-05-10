@@ -74,21 +74,21 @@ func TestInitializeNotSecure(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "publish",
-			SubscribeTopics: "events",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
 
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5563,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5563,
+					Protocol:     "tcp",
+					PublishTopic: "publish",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5563,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5563,
+					Protocol:        "tcp",
+					SubscribeTopics: "events",
 				},
 			},
 		},
@@ -117,21 +117,21 @@ func TestInitializeSecure(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "publish",
-			SubscribeTopics: "events",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
 
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5563,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5563,
+					Protocol:     "tcp",
+					PublishTopic: "publish",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5563,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5563,
+					Protocol:        "tcp",
+					SubscribeTopics: "events",
 				},
 				Optional: map[string]string{
 					bootstrapMessaging.AuthModeKey:   bootstrapMessaging.AuthModeUsernamePassword,
@@ -172,21 +172,21 @@ func TestInitializeBadConfiguration(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "publish",
-			SubscribeTopics: "events",
+			Type: TriggerTypeMessageBus,
 
-			EdgexMessageBus: types.MessageBusConfig{
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "aaaa", //as type is not "zero", should return an error on client initialization
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5568,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5568,
+					Protocol:     "tcp",
+					PublishTopic: "publish",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5568,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5568,
+					Protocol:        "tcp",
+					SubscribeTopics: "events",
 				},
 			},
 		},
@@ -209,20 +209,20 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "",
-			SubscribeTopics: "",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5566,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5566,
+					Protocol:     "tcp",
+					PublishTopic: "",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5564,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5564,
+					Protocol:        "tcp",
+					SubscribeTopics: "",
 				},
 			},
 		},
@@ -287,20 +287,20 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "PublishTopic",
-			SubscribeTopics: "SubscribeTopic",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5586,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5586,
+					Protocol:     "tcp",
+					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5584,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5584,
+					Protocol:        "tcp",
+					SubscribeTopics: "SubscribeTopic",
 				},
 			},
 		},
@@ -348,7 +348,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -393,20 +393,20 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "PublishTopic",
-			SubscribeTopics: "SubscribeTopic",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5701,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5701,
+					Protocol:     "tcp",
+					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5702,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5702,
+					Protocol:        "tcp",
+					SubscribeTopics: "SubscribeTopic",
 				},
 			},
 		},
@@ -451,7 +451,7 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -497,20 +497,20 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "PublishTopic",
-			SubscribeTopics: "SubscribeTopic",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5703,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5703,
+					Protocol:     "tcp",
+					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5704,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5704,
+					Protocol:        "tcp",
+					SubscribeTopics: "SubscribeTopic",
 				},
 			},
 		},
@@ -553,7 +553,7 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -598,20 +598,20 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "PublishTopic",
-			SubscribeTopics: "SubscribeTopic",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5588,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5588,
+					Protocol:     "tcp",
+					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5590,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5590,
+					Protocol:        "tcp",
+					SubscribeTopics: "SubscribeTopic",
 				},
 			},
 		},
@@ -647,7 +647,7 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
@@ -683,20 +683,20 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	config := common.ConfigurationStruct{
 		Trigger: common.TriggerInfo{
-			Type:            TriggerTypeMessageBus,
-			PublishTopic:    "",
-			SubscribeTopics: "t1,t2",
-			EdgexMessageBus: types.MessageBusConfig{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: common.MessageBusConfig{
 				Type: "zero",
-				PublishHost: types.HostInfo{
-					Host:     "*",
-					Port:     5592,
-					Protocol: "tcp",
+				PublishHost: common.PublishHostInfo{
+					Host:         "*",
+					Port:         5592,
+					Protocol:     "tcp",
+					PublishTopic: "",
 				},
-				SubscribeHost: types.HostInfo{
-					Host:     "localhost",
-					Port:     5594,
-					Protocol: "tcp",
+				SubscribeHost: common.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            5594,
+					Protocol:        "tcp",
+					SubscribeTopics: "t1,t2",
 				},
 			},
 		},

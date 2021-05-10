@@ -12,3 +12,4 @@ require (
 )
 
 replace github.com/edgexfoundry/app-functions-sdk-go/v2 => ../
+

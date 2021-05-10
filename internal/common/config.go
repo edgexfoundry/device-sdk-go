@@ -19,10 +19,8 @@ package common
 import (
 	"time"
 
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 )
 
 // WritableInfo is used to hold configuration information that is considered "live" or can be changed on the fly without a restart of the service.
@@ -79,22 +77,58 @@ type TriggerInfo struct {
 	// Type of trigger to start pipeline
 	// enum: http, edgex-messagebus, or external-mqtt
 	Type string
-	// SubscribeTopics is a comma separated list of topics
-	// Used when Type=edgex-messagebus, or Type=external-mqtt
-	SubscribeTopics string
-	// PublishTopic is the topic to publish pipeline output (if any) to
-	// Used when Type=edgex-messagebus, or Type=external-mqtt
-	PublishTopic string
 	// Used when Type=edgex-messagebus
-	EdgexMessageBus types.MessageBusConfig
+	EdgexMessageBus MessageBusConfig
 	// Used when Type=external-mqtt
 	ExternalMqtt ExternalMqttConfig
+}
+
+// MessageBusConfig defines the messaging information need to connect to the MessageBus
+// in a publish-subscribe pattern
+type MessageBusConfig struct {
+	// SubscribeHost contains the connection information for subscribing to the MessageBus
+	SubscribeHost SubscribeHostInfo
+	// PublishHost contains the connection information for a publishing to the MessageBus
+	PublishHost PublishHostInfo
+	// Type indicates the message queue platform being used. eg. "redis", "mqtt" or "zero"
+	Type string
+	// Optional contains all other properties of MessageBus that is specific to
+	// certain concrete implementation like MQTT's QoS, for example
+	Optional map[string]string
+}
+
+// SubscribeHostInfo is the host information for connecting and subscribing to the MessageBus
+type SubscribeHostInfo struct {
+	// Host is the hostname or IP address of the messaging broker, if applicable.
+	Host string
+	// Port defines the port on which to access the message queue.
+	Port int
+	// Protocol indicates the protocol to use when accessing the message queue.
+	Protocol string
+	// SubscribeTopics is a comma separated list of topics in which to subscribe
+	SubscribeTopics string
+}
+
+// PublishHostInfo is the host information for connecting and publishing to the MessageBus
+type PublishHostInfo struct {
+	// Host is the hostname or IP address of the messaging broker, if applicable.
+	Host string
+	// Port defines the port on which to access the message queue.
+	Port int
+	// Protocol indicates the protocol to use when accessing the message queue.
+	Protocol string
+	// PublishTopic is the topic in which to publish pipeline output (if any)
+	PublishTopic string
 }
 
 // ExternalMqttConfig contains the MQTT broker configuration for MQTT Trigger
 type ExternalMqttConfig struct {
 	// Url contains the fully qualified URL to connect to the MQTT broker
 	Url string
+	// SubscribeTopics is a comma separated list of topics in which to subscribe
+	SubscribeTopics string
+	// PublishTopic is the topic to publish pipeline output (if any)
+	PublishTopic string
 	// ClientId to connect to the broker with.
 	ClientId string
 	// ConnectTimeout is a time duration indicating how long to wait timing out on the broker connection

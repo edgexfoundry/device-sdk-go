@@ -64,7 +64,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	lc := trigger.lc
 	config := container.ConfigurationFrom(trigger.dic.Get)
 	brokerConfig := config.Trigger.ExternalMqtt
-	topics := config.Trigger.SubscribeTopics
+	topics := config.Trigger.ExternalMqtt.SubscribeTopics
 
 	lc.Info("Initializing MQTT Trigger")
 
@@ -131,7 +131,7 @@ func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 	// Convenience short cuts
 	lc := trigger.lc
 	config := container.ConfigurationFrom(trigger.dic.Get)
-	topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(config.Trigger.SubscribeTopics, util.SplitComma))
+	topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(config.Trigger.ExternalMqtt.SubscribeTopics, util.SplitComma))
 	qos := config.Trigger.ExternalMqtt.QoS
 
 	for _, topic := range topics {
@@ -143,7 +143,7 @@ func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 		}
 	}
 
-	lc.Infof("Subscribed to topic(s) '%s' for MQTT trigger", config.Trigger.SubscribeTopics)
+	lc.Infof("Subscribed to topic(s) '%s' for MQTT trigger", config.Trigger.ExternalMqtt.SubscribeTopics)
 }
 
 func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.Message) {
@@ -151,7 +151,7 @@ func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.
 	lc := trigger.lc
 	config := container.ConfigurationFrom(trigger.dic.Get)
 	brokerConfig := config.Trigger.ExternalMqtt
-	topic := config.Trigger.PublishTopic
+	topic := config.Trigger.ExternalMqtt.PublishTopic
 
 	data := message.Payload()
 	contentType := clients.ContentTypeJSON

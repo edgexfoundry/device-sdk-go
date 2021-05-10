@@ -65,18 +65,18 @@ RetryWaitPeriod = "1s"
 
 [Trigger]
 Type="edgex-messagebus"
-SubscribeTopics="edgex/events/#"
-PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the message bus
   [Trigger.EdgexMessageBus]
   Type = 'redisstreams'
     [Trigger.EdgexMessageBus.SubscribeHost]
     Host = 'localhost'
     Port = 6379
     Protocol = 'redis'
+    SubscribeTopics="edgex/events/#"
     [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
     Host = 'localhost'
     Port = 6379
     Protocol = 'redis'
+    PublishTopic="event-xml"
     [Trigger.EdgexMessageBus.Optional]
     authmode = 'usernamepassword'  # requied for redis messagebus (secure or insecure).
     secretname = 'redisdb'
@@ -85,18 +85,18 @@ PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the
 #       Otherwise remove this commented out block
 #[Trigger]
 #Type="edgex-messagebus"
-#SubscribeTopics="events, edgex/events/#"
-#PublishTopic="event-xml"  # TODO: Remove if service is NOT publishing back to the message bus
 #  [Trigger.EdgexMessageBus]
 #  Type = 'mqtt'
 #    [Trigger.EdgexMessageBus.SubscribeHost]
 #    Host = 'localhost'
 #    Port = 1883
 #    Protocol = 'tcp'
+#    SubscribeTopics="events, edgex/events/#"
 #    [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
 #    Host = 'localhost'
 #    Port = 1883
 #    Protocol = 'tcp'
+#    PublishTopic="event-xml"
 #    [Trigger.EdgexMessageBus.Optional]
 #    ClientId ="new-app-service"
 #    Qos            = "0" # Quality of Sevice values are 0 (At most once), 1 (At least once) or 2 (Exactly once)
@@ -107,7 +107,6 @@ PublishTopic="event-xml"  #TODO: remove if service is NOT publishing back to the
 #    SkipCertVerify = "false"
 #    authmode = 'none'  # change to 'usernamepassword', 'clientcert', or 'cacert' for secure MQTT messagebus.
 #    secretname = 'mqtt-bus'
-
 
 # TODO: Add custom settings needed by your app service or remove if you don't have any settings.
 # This can be any Key/Value pair you need.
