@@ -9,7 +9,7 @@ package provision
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -41,7 +41,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
 	}
 
-	fileInfo, err := ioutil.ReadDir(absPath)
+	fileInfo, err := os.ReadDir(absPath)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
 	}
@@ -56,7 +56,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 		lfName := strings.ToLower(fName)
 		if strings.HasSuffix(lfName, yamlExt) || strings.HasSuffix(lfName, ymlExt) {
 			fullPath := filepath.Join(absPath, fName)
-			yamlFile, err := ioutil.ReadFile(fullPath)
+			yamlFile, err := os.ReadFile(fullPath)
 			if err != nil {
 				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue

@@ -24,8 +24,8 @@ docker:
 	docker build \
 		-f example/cmd/device-simple/Dockerfile \
 		--label "git_sha=$(GIT_SHA)" \
-		-t edgexfoundry/docker-device-sdk-simple:$(GIT_SHA) \
-		-t edgexfoundry/docker-device-sdk-simple:$(DOCKER_TAG) \
+		-t edgexfoundry/device-simple:$(GIT_SHA) \
+		-t edgexfoundry/device-simple:$(DOCKER_TAG) \
 		.
 
 test:
