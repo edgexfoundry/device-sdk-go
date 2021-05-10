@@ -8,7 +8,7 @@ package http
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -78,7 +78,7 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 
 func readBodyAsString(req *http.Request, maxRequestSize int64) (string, errors.EdgeX) {
 	defer req.Body.Close()
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		if err.Error() == "http: request body too large" {
 			errMsg := fmt.Sprintf("request size exceed Service.MaxRequestSize(%d)", maxRequestSize)

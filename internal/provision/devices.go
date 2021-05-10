@@ -10,7 +10,7 @@ package provision
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -39,7 +39,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
 	}
 
-	fileInfo, err := ioutil.ReadDir(absPath)
+	fileInfo, err := os.ReadDir(absPath)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
 	}
@@ -51,7 +51,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 		var devices []dtos.Device
 		fullPath := filepath.Join(absPath, file.Name())
 		if strings.HasSuffix(fullPath, ".toml") {
-			content, err := ioutil.ReadFile(fullPath)
+			content, err := os.ReadFile(fullPath)
 			if err != nil {
 				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue
@@ -66,7 +66,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 			}
 			devices = d.DeviceList
 		} else if strings.HasSuffix(fullPath, ".json") {
-			content, err := ioutil.ReadFile(fullPath)
+			content, err := os.ReadFile(fullPath)
 			if err != nil {
 				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue
