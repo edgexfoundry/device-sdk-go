@@ -78,7 +78,7 @@ func (c *RestController) Secret(writer http.ResponseWriter, request *http.Reques
 
 	path, secret := c.prepareSecret(secretRequest)
 
-	if err := provider.StoreSecrets(path, secret); err != nil {
+	if err := provider.StoreSecret(path, secret); err != nil {
 		edgexError := errors.NewCommonEdgeX(errors.KindServerError, "Storing secret failed", err)
 		c.sendEdgexError(writer, request, edgexError, sdkCommon.APIV2SecretRoute)
 		return

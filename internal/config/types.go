@@ -9,8 +9,6 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 )
 
@@ -56,6 +54,8 @@ type ServiceInfo struct {
 	AsyncBufferSize int
 	// MaxRequestSize defines the maximum size of http request body in bytes
 	MaxRequestSize int64
+	// UseMessageBus indicates whether or not the Event are published directly to the MessageBus
+	UseMessageBus bool
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.
@@ -99,31 +99,6 @@ type DiscoveryInfo struct {
 	// Interval indicates how often the discovery process will be triggered.
 	// It represents as a duration string.
 	Interval string
-}
-
-// MessageQueueInfo provides parameters related to connecting to a message queue
-type MessageQueueInfo struct {
-	Enabled bool
-	// Protocol indicates the protocol to use when accessing the message queue.
-	Protocol string
-	// Host is the hostname or IP address of the broker, if applicable.
-	Host string
-	// Port defines the port on which to access the message queue.
-	Port int
-	// Indicates the message queue platform being used.
-	Type string
-	// Indicates the topic prefix the data is published to. Note that /<device-profile-name>/<device-name> will be
-	// added to this Publish Topic prefix as the complete publish topic
-	PublishTopicPrefix string
-	// Provides additional configuration properties which do not fit within the existing field.
-	// Typically the key is the name of the configuration property and the value is a string representation of the
-	// desired value for the configuration property.
-	Optional map[string]string
-}
-
-// URL constructs a URL from the protocol, host and port and returns that as a string.
-func (m MessageQueueInfo) URL() string {
-	return fmt.Sprintf("%s://%s:%v", m.Protocol, m.Host, m.Port)
 }
 
 func (s ServiceInfo) GetBootstrapServiceInfo() config.ServiceInfo {

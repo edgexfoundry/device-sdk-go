@@ -27,7 +27,7 @@ type ConfigurationStruct struct {
 	// SecretStore contains information for connecting to the secure SecretStore (Vault) to retrieve or store secrets
 	SecretStore bootstrapConfig.SecretStoreInfo
 	// MessageQueue contains information for connecting to MessageBus which provides alternative way to publish event
-	MessageQueue MessageQueueInfo
+	MessageQueue bootstrapConfig.MessageBusInfo
 }
 
 // UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is
@@ -86,4 +86,9 @@ func (c *ConfigurationStruct) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 // GetInsecureSecrets returns the service's InsecureSecrets.
 func (c *ConfigurationStruct) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
 	return c.Writable.InsecureSecrets
+}
+
+// GetMessageBusInfo returns the MessageBus configuration
+func (c *ConfigurationStruct) GetMessageBusInfo() bootstrapConfig.MessageBusInfo {
+	return c.MessageQueue
 }
