@@ -40,5 +40,10 @@ func CoredataEventClientFrom(get di.Get) interfaces.EventClient {
 }
 
 func MessagingClientFrom(get di.Get) messaging.MessageClient {
-	return get(MessagingClientName).(messaging.MessageClient)
+	client, ok := get(MessagingClientName).(messaging.MessageClient)
+	if !ok {
+		return nil
+	}
+
+	return client
 }

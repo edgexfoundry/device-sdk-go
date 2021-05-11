@@ -1,10 +1,11 @@
 [Writable]
 LogLevel = 'INFO'
   # Example InsecureSecrets configuration that simulates SecretStore for when EDGEX_SECURITY_SECRET_STORE=false
+  # InsecureSecrets are required for when Redis is used for message bus
   [Writable.InsecureSecrets]
-    [Writable.InsecureSecrets.Sample]
-    path = "sample"
-      [Writable.InsecureSecrets.Sample.Secrets]
+    [Writable.InsecureSecrets.DB]
+    path = "redisdb"
+      [Writable.InsecureSecrets.DB.Secrets]
       username = ""
       password = ""
 
