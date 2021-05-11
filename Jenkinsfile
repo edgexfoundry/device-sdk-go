@@ -17,7 +17,7 @@
 
 edgeXBuildGoApp (
     project: 'device-sdk-go',
-    dockerImageName: 'docker-device-sdk-simple',
+    dockerImageName: 'device-sdk-simple',
     dockerFilePath: 'example/cmd/device-simple/Dockerfile',
     pushImage: false,
     publishSwaggerDocs: true,
