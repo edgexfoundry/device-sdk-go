@@ -65,20 +65,20 @@ parts:
       # armhf, etc.
       case "$(dpkg --print-architecture)" in
         amd64)
-          FILE_NAME=go1.15.2.linux-amd64.tar.gz
-          FILE_HASH=b49fda1ca29a1946d6bb2a5a6982cf07ccd2aba849289508ee0f9918f6bb4552
+          FILE_NAME=go1.16.4.linux-amd64.tar.gz
+          FILE_HASH=7154e88f5a8047aad4b80ebace58a059e36e7e2e4eb3b383127a28c711b4ff59
           ;;
         arm64)
-          FILE_NAME=go1.15.2.linux-arm64.tar.gz
-          FILE_HASH=c8ec460cc82d61604b048f9439c06bd591722efce5cd48f49e19b5f6226bd36d
+          FILE_NAME=go1.16.4.linux-arm64.tar.gz
+          FILE_HASH=8b18eb05ddda2652d69ab1b1dd1f40dd731799f43c6a58b512ad01ae5b5bba21
           ;;
         armhf)
-          FILE_NAME=go1.15.2.linux-armv6l.tar.gz
-          FILE_HASH=c12e2afdcb21e530d332d4994919f856dd2a676e9d67034c7d6fefcb241412d9
+          FILE_NAME=go1.16.4.linux-armv6l.tar.gz
+          FILE_HASH=a53391a800ddec749ee90d38992babb27b95cfb864027350c737b9aa8e069494
           ;;
         i386)
-          FILE_NAME=go1.15.2.linux-386.tar.gz
-          FILE_HASH=5a91080469df6b91f1022bdfb0ca75e01ca50387950b13518def3d0a7f6af9f1
+          FILE_NAME=go1.16.4.linux-386.tar.gz
+          FILE_HASH=cd1b146ef6e9006f27dd99e9687773e7fef30e8c985b7d41bff33e955a3bb53a
           ;;
       esac
       # Download the archive, failing on ssl cert problems.
