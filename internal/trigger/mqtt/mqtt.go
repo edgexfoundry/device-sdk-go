@@ -73,7 +73,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	}
 
 	if len(strings.TrimSpace(topics)) == 0 {
-		return nil, fmt.Errorf("missing SubscribeTopics for MQTT Trigger. Must be present in [Trigger] section.")
+		return nil, fmt.Errorf("missing SubscribeTopics for MQTT Trigger. Must be present in [Trigger.ExternalMqtt] section.")
 	}
 
 	brokerUrl, err := url.Parse(brokerConfig.Url)
