@@ -9,7 +9,7 @@ require (
 	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0-dev.7
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
-	github.com/pelletier/go-toml v1.9.0
+	github.com/pelletier/go-toml v1.9.1
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/yaml.v2 v2.4.0
 )
