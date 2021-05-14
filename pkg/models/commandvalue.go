@@ -36,6 +36,9 @@ type CommandValue struct {
 	// contained in the CommandValue was read by the ProtocolDriver
 	// instance.
 	Origin int64
+	// Tags allows device service to add custom information to the Event in order to
+	// help identify its origin or otherwise label it before it is send to north side.
+	Tags map[string]string
 }
 
 // NewCommandValue create a CommandValue according to the valueType supplied.
@@ -48,7 +51,8 @@ func NewCommandValue(deviceResourceName string, valueType string, value interfac
 	return &CommandValue{
 		DeviceResourceName: deviceResourceName,
 		Type:               valueType,
-		Value:              value}, nil
+		Value:              value,
+		Tags:               make(map[string]string)}, nil
 }
 
 // ValueToString returns the string format of the value.

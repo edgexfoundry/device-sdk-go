@@ -49,6 +49,7 @@ func mockDic() *di.Container {
 		DeviceResourceName: "test-resource",
 		Type:               "String",
 		Value:              "test-value",
+		Tags:               make(map[string]string),
 	}
 	driverMock.On("HandleReadCommands", "test-device", testProtocols, []sdkModels.CommandRequest{cr}).Return(nil, nil)
 	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{cr}, []*sdkModels.CommandValue{cv}).Return(nil)
