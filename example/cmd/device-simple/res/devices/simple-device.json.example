@@ -11,8 +11,8 @@
       }
     },
     "autoEvents": [
-      {"frequency": "10s", "onChange": false, "sourceName": "Switch"},
-      {"frequency": "30s", "onChange": false, "sourceName": "Image"}
+      {"interval": "10s", "onChange": false, "sourceName": "Switch"},
+      {"interval": "30s", "onChange": false, "sourceName": "Image"}
     ]
   }
 ]

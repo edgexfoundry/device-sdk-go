@@ -29,7 +29,7 @@ func (s *DeviceService) AddDeviceAutoEvent(deviceName string, event models.AutoE
 	for _, e := range device.AutoEvents {
 		if e.SourceName == event.SourceName {
 			s.LoggingClient.Debugf("Updating existing AutoEvent %s for device %s", e.SourceName, deviceName)
-			e.Frequency = event.Frequency
+			e.Interval = event.Interval
 			e.OnChange = event.OnChange
 			found = true
 			break
