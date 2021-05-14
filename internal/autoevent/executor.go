@@ -142,7 +142,7 @@ func (e *Executor) Stop() {
 // NewExecutor creates an Executor for an AutoEvent
 func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, errors.EdgeX) {
 	// check Frequency
-	duration, err := time.ParseDuration(ae.Frequency)
+	duration, err := time.ParseDuration(ae.Interval)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to parse AutoEvent %s duration", ae.SourceName), err)
 	}
