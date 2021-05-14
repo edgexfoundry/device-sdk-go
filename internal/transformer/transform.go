@@ -43,6 +43,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 
 	var transformsOK = true
 	origin := getUniqueOrigin()
+	tags := make(map[string]string)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
 	readings := make([]dtos.BaseReading, 0, config.Device.MaxCmdOps)
@@ -100,6 +101,10 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			}
 		}
 
+		for key, value := range cv.Tags {
+			tags[key] = value
+		}
+
 		reading, err := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType, origin)
 		if err != nil {
 			return nil, errors.NewCommonEdgeXWrapper(err)
@@ -121,6 +126,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		eventDTO := dtos.NewEvent(device.ProfileName, device.Name, sourceName)
 		eventDTO.Readings = readings
 		eventDTO.Origin = origin
+		eventDTO.Tags = tags
 
 		return &eventDTO, nil
 	} else {
