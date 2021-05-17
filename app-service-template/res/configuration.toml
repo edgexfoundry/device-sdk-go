@@ -58,7 +58,7 @@ RetryWaitPeriod = "1s"
   AuthType = 'X-Vault-Token'
 
 [Clients]
-  [Clients.edgex-core-data]
+  [Clients.core-data]
   Protocol = 'http'
   Host = 'localhost'
   Port = 48080

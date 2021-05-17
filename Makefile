@@ -25,6 +25,7 @@ test-template:
 	make -C ./app-service-template test
 
 test-sdk:
+	go mod tidy
 	$(GO) test ./... -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l .
