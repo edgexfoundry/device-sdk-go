@@ -18,6 +18,7 @@ build: $(MICROSERVICES)
 	$(GOCGO) install -tags=safe
 
 example/cmd/device-simple/device-simple:
+	go mod tidy
 	$(GOCGO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
 
 docker:
@@ -29,6 +30,7 @@ docker:
 		.
 
 test:
+	go mod tidy
 	GO111MODULE=on go test $(GOTESTFLAGS) -coverprofile=coverage.out ./...
 	GO111MODULE=on go vet ./...
 	gofmt -l .
