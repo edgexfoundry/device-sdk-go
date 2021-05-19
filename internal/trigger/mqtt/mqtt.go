@@ -181,7 +181,7 @@ func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.
 	}
 
 	if len(appContext.ResponseData()) > 0 && len(topic) > 0 {
-		if token := client.Publish(topic, brokerConfig.QoS, brokerConfig.Retain, appContext.ResponseData); token.Wait() && token.Error() != nil {
+		if token := client.Publish(topic, brokerConfig.QoS, brokerConfig.Retain, appContext.ResponseData()); token.Wait() && token.Error() != nil {
 			lc.Errorf("could not publish to topic '%s' for MQTT trigger: %s", topic, token.Error().Error())
 		} else {
 			lc.Trace("Sent MQTT Trigger response message", clients.CorrelationHeader, correlationID)
