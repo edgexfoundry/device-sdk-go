@@ -3,8 +3,8 @@
 package mocks
 
 import (
-	command "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
 	coredata "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	interfaces2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 
 	http "net/http"
 
@@ -78,15 +78,15 @@ func (_m *ApplicationService) ApplicationSettings() map[string]string {
 }
 
 // CommandClient provides a mock function with given fields:
-func (_m *ApplicationService) CommandClient() command.CommandClient {
+func (_m *ApplicationService) CommandClient() interfaces2.CommandClient {
 	ret := _m.Called()
 
-	var r0 command.CommandClient
-	if rf, ok := ret.Get(0).(func() command.CommandClient); ok {
+	var r0 interfaces2.CommandClient
+	if rf, ok := ret.Get(0).(func() interfaces2.CommandClient); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(command.CommandClient)
+			r0 = ret.Get(0).(interfaces2.CommandClient)
 		}
 	}
 

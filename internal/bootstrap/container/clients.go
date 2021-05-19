@@ -17,10 +17,9 @@ package container
 
 import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 )
 
 // ValueDescriptorClientName contains the name of the ValueDescriptorClient's implementation in the DIC.
@@ -60,13 +59,13 @@ func NotificationsClientFrom(get di.Get) notifications.NotificationsClient {
 }
 
 // CommandClientName contains the name of the CommandClientInfo's implementation in the DIC.
-var CommandClientName = di.TypeInstanceToName((*command.CommandClient)(nil))
+var CommandClientName = di.TypeInstanceToName((*interfaces.CommandClient)(nil))
 
 // NotificationsClientFrom helper function queries the DIC and returns the NotificationsClientInfo's implementation.
-func CommandClientFrom(get di.Get) command.CommandClient {
+func CommandClientFrom(get di.Get) interfaces.CommandClient {
 	if get(CommandClientName) == nil {
 		return nil
 	}
 
-	return get(CommandClientName).(command.CommandClient)
+	return get(CommandClientName).(interfaces.CommandClient)
 }

@@ -27,12 +27,12 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 
@@ -55,11 +55,10 @@ func TestMain(m *testing.M) {
 			return notifications.NewNotificationsClient(local.New(clients.ApiNotificationRoute))
 		},
 		container.CommandClientName: func(get di.Get) interface{} {
-			return command.NewCommandClient(local.New(clients.ApiCommandRoute))
+			return v2clients.NewCommandClient(clients.ApiCommandRoute)
 		},
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return logger.NewMockClient()
-
 		},
 	})
 	target = NewContext("", dic, "")

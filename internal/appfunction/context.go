@@ -23,10 +23,10 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
@@ -205,7 +205,7 @@ func (appContext *Context) EventClient() coredata.EventClient {
 }
 
 // CommandClient returns the Command client, which may be nil, from the dependency injection container
-func (appContext *Context) CommandClient() command.CommandClient {
+func (appContext *Context) CommandClient() interfaces.CommandClient {
 	return container.CommandClientFrom(appContext.dic.Get)
 }
 

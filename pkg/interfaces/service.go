@@ -18,7 +18,8 @@ package interfaces
 import (
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
@@ -103,7 +104,7 @@ type ApplicationService interface {
 	EventClient() coredata.EventClient
 	// CommandClient returns the Command client. Note if Support Command is not specified in the Clients configuration,
 	// this will return nil.
-	CommandClient() command.CommandClient
+	CommandClient() interfaces.CommandClient
 	// NotificationsClient returns the Notifications client. Note if Support Notifications is not specified in the
 	// Clients configuration, this will return nil.
 	NotificationsClient() notifications.NotificationsClient

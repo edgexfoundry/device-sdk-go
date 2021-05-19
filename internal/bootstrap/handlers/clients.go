@@ -22,10 +22,11 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
+	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 )
@@ -50,7 +51,7 @@ func (_ *Clients) BootstrapHandler(
 
 	var eventClient coredata.EventClient
 	var valueDescriptorClient coredata.ValueDescriptorClient
-	var commandClient command.CommandClient
+	var commandClient interfaces.CommandClient
 	var notificationsClient notifications.NotificationsClient
 
 	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
@@ -64,8 +65,7 @@ func (_ *Clients) BootstrapHandler(
 	}
 
 	if _, ok := config.Clients[clients.CoreCommandServiceKey]; ok {
-		commandClient = command.NewCommandClient(
-			local.New(config.Clients[clients.CoreCommandServiceKey].Url() + clients.ApiDeviceRoute))
+		commandClient = v2clients.NewCommandClient(config.Clients[clients.CoreCommandServiceKey].Url())
 	}
 
 	if _, ok := config.Clients[clients.SupportNotificationsServiceKey]; ok {

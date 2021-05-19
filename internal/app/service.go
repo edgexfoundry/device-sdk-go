@@ -29,11 +29,11 @@ import (
 	"syscall"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/command"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	clientInterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
@@ -480,7 +480,7 @@ func (svc *Service) EventClient() coredata.EventClient {
 }
 
 // CommandClient returns the Command client, which may be nil, from the dependency injection container
-func (svc *Service) CommandClient() command.CommandClient {
+func (svc *Service) CommandClient() clientInterfaces.CommandClient {
 	return container.CommandClientFrom(svc.dic.Get)
 }
 
