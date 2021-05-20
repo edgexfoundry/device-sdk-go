@@ -46,7 +46,7 @@ COPY --from=builder /device-sdk-go/example/cmd/device-simple/Attribution.txt /At
 COPY --from=builder /device-sdk-go/example/cmd/device-simple/device-simple /device-simple
 COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/ /res
 
-EXPOSE 49990
+EXPOSE 59999
 
 ENTRYPOINT ["/device-simple"]
 CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]

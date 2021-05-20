@@ -14,7 +14,7 @@ BootTimeout = 30000
 CheckInterval = '10s'
 Host = 'localhost'
 ServerBindAddr = ''  # blank value defaults to Service.Host value
-Port = 49990
+Port = 59999 # Device serivce are assigned the 599xx range
 Protocol = 'http'
 StartupMsg = 'device simple started'
 Timeout = 20000
@@ -35,12 +35,12 @@ Type = 'consul'
   [Clients.core-data]
   Protocol = 'http'
   Host = 'localhost'
-  Port = 48080
+  Port = 59880
 
   [Clients.core-metadata]
   Protocol = 'http'
   Host = 'localhost'
-  Port = 48081
+  Port = 59881
 
 [MessageQueue]
 Protocol = 'redis'
