@@ -21,7 +21,7 @@ ClientMonitor = '15s'
 CheckInterval = '10s'
 Host = 'localhost'
 ServerBindAddr = '' # Leave blank so default to Host value unless different value is needed.
-Port = 49600  # TODO: set this port appropriately
+Port = 59740  # TODO: set this port appropriately, App service use port assigments 597xx with lower range 00-39 reserved for app-service-configurable profiles/instances and examples
 Protocol = 'http'
 ReadMaxLimit = 100
 StartupMsg = 'new-app-service Application Service has started'
@@ -61,7 +61,7 @@ RetryWaitPeriod = "1s"
   [Clients.core-data]
   Protocol = 'http'
   Host = 'localhost'
-  Port = 48080
+  Port = 59880
 
 [Trigger]
 Type="edgex-messagebus"
