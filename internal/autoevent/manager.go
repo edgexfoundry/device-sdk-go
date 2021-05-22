@@ -39,7 +39,7 @@ func BootstrapHandler(
 		wg:              wg,
 		executorMap:     make(map[string][]*Executor),
 		dic:             dic,
-		autoeventBuffer: make(chan bool, config.Service.AsyncBufferSize),
+		autoeventBuffer: make(chan bool, config.AsyncBufferSize),
 	}
 
 	dic.Update(di.ServiceConstructorMap{

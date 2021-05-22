@@ -23,6 +23,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	bootstrapTypes "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
@@ -133,7 +134,7 @@ func (s *DeviceService) Version() string {
 
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *DeviceService) AsyncReadings() bool {
-	return s.config.Service.EnableAsyncReadings
+	return s.config.EnableAsyncReadings
 }
 
 func (s *DeviceService) DeviceDiscovery() bool {
@@ -186,8 +187,8 @@ func (s *DeviceService) ListenForCustomConfigChanges(
 func (s *DeviceService) selfRegister() errors.EdgeX {
 	localDeviceService := models.DeviceService{
 		Name:        s.ServiceName,
-		Labels:      s.config.Service.Labels,
-		BaseAddress: s.config.Service.Protocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
+		Labels:      s.config.Labels,
+		BaseAddress: bootstrapTypes.DefaultHttpProtocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
 		AdminState:  models.Unlocked,
 	}
 	*s.deviceService = localDeviceService

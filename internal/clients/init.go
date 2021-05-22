@@ -103,6 +103,13 @@ func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, di
 func checkServiceAvailable(ctx context.Context, serviceKey string, startupTimer startup.Timer, dic *di.Container) bool {
 	rc := bootstrapContainer.RegistryFrom(dic.Get)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	configuration := container.ConfigurationFrom(dic.Get)
+
+	timeout, err := time.ParseDuration(configuration.Service.RequestTimeout)
+	if err != nil {
+		lc.Errorf("Unable to parse RequestTimeout value of '%s' duration: %w", configuration.Service.RequestTimeout, err)
+		return false
+	}
 
 	for startupTimer.HasNotElapsed() {
 		select {
@@ -114,8 +121,7 @@ func checkServiceAvailable(ctx context.Context, serviceKey string, startupTimer 
 					return true
 				}
 			} else {
-				configuration := container.ConfigurationFrom(dic.Get)
-				if checkServiceAvailableByPing(serviceKey, configuration, lc) {
+				if checkServiceAvailableByPing(serviceKey, timeout, configuration, lc) {
 					return true
 				}
 			}
@@ -127,13 +133,12 @@ func checkServiceAvailable(ctx context.Context, serviceKey string, startupTimer 
 	return false
 }
 
-func checkServiceAvailableByPing(serviceKey string, configuration *config.ConfigurationStruct, lc logger.LoggingClient) bool {
+func checkServiceAvailableByPing(serviceKey string, timeout time.Duration, configuration *config.ConfigurationStruct, lc logger.LoggingClient) bool {
 	lc.Infof("Check %v service's status by ping...", serviceKey)
 	addr := configuration.Clients[serviceKey].Url()
-	timeout := int64(configuration.Service.Timeout) * int64(time.Millisecond)
 
 	client := http.Client{
-		Timeout: time.Duration(timeout),
+		Timeout: timeout,
 	}
 
 	_, err := client.Get(addr + clients.ApiPingRoute)

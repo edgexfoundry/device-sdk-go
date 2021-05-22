@@ -8,6 +8,7 @@ package clients
 
 import (
 	"testing"
+	"time"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
@@ -25,9 +26,9 @@ func TestCheckServiceAvailableByPingWithTimeoutError(test *testing.T) {
 			Protocol: "http",
 		},
 	}
-	config := &config.ConfigurationStruct{Service: config.ServiceInfo{Timeout: 1000}, Clients: clientConfig}
+	config := &config.ConfigurationStruct{Clients: clientConfig}
 	lc := logger.NewMockClient()
 
-	res := checkServiceAvailableByPing(clients.CoreDataServiceKey, config, lc)
+	res := checkServiceAvailableByPing(clients.CoreDataServiceKey, time.Duration(1000), config, lc)
 	assert.Equal(test, res, false, "request should be timeout and return false")
 }

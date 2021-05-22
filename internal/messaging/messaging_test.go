@@ -56,15 +56,11 @@ func TestMain(m *testing.M) {
 
 func TestBootstrapHandler(t *testing.T) {
 	validNotUsingMessageBus := config.ConfigurationStruct{
-		Service: config.ServiceInfo{
-			UseMessageBus: false,
-		},
+		UseMessageBus: false,
 	}
 
 	validCreateClient := config.ConfigurationStruct{
-		Service: config.ServiceInfo{
-			UseMessageBus: true,
-		},
+		UseMessageBus: true,
 		MessageQueue: bootstrapConfig.MessageBusInfo{
 			Type:               messaging.ZeroMQ, // Use ZMQ so no issue connecting.
 			Protocol:           "http",
@@ -77,9 +73,7 @@ func TestBootstrapHandler(t *testing.T) {
 	}
 
 	invalidSecrets := config.ConfigurationStruct{
-		Service: config.ServiceInfo{
-			UseMessageBus: true,
-		},
+		UseMessageBus: true,
 		MessageQueue: bootstrapConfig.MessageBusInfo{
 			AuthMode:   messaging2.AuthModeCert,
 			SecretName: "redisdb",
@@ -87,9 +81,7 @@ func TestBootstrapHandler(t *testing.T) {
 	}
 
 	invalidNoConnect := config.ConfigurationStruct{
-		Service: config.ServiceInfo{
-			UseMessageBus: true,
-		},
+		UseMessageBus: true,
 		MessageQueue: bootstrapConfig.MessageBusInfo{
 			Type:       messaging.MQTT, // This will cause no connection since broker not available
 			Protocol:   "tcp",

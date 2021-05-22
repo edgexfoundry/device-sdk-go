@@ -19,45 +19,6 @@ type WritableInfo struct {
 	InsecureSecrets config.InsecureSecrets
 }
 
-// ServiceInfo is a struct which contains service related configuration
-// settings.
-type ServiceInfo struct {
-	// BootTimeout indicates, in milliseconds, how long the service will retry connecting to upstream dependencies
-	// before giving up. Default is 30,000.
-	BootTimeout int
-	// Health check interval
-	CheckInterval string
-	// Host is the hostname or IP address of the service.
-	Host string
-	// Port is the HTTP port of the service.
-	Port int
-	// ServerBindAddr specifies an IP address or hostname
-	// for ListenAndServe to bind to, such as 0.0.0.0
-	ServerBindAddr string
-	// The protocol that should be used to call this service
-	Protocol string
-	// StartupMsg specifies a string to log once service
-	// initialization and startup is completed.
-	StartupMsg string
-	// MaxResultCount specifies the maximum size list supported
-	// in response to REST calls to other services.
-	MaxResultCount int
-	// Timeout (in milliseconds) specifies both
-	// - timeout for processing REST calls and
-	// - interval time the DS will wait between each retry call.
-	Timeout int
-	// Labels are properties applied to the device service to help with searching
-	Labels []string
-	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
-	EnableAsyncReadings bool
-	// AsyncBufferSize defines the size of asynchronous channel
-	AsyncBufferSize int
-	// MaxRequestSize defines the maximum size of http request body in bytes
-	MaxRequestSize int64
-	// UseMessageBus indicates whether or not the Event are published directly to the MessageBus
-	UseMessageBus bool
-}
-
 // DeviceInfo is a struct which contains device specific configuration settings.
 type DeviceInfo struct {
 	// DataTransform specifies whether or not the DS perform transformations
@@ -99,20 +60,6 @@ type DiscoveryInfo struct {
 	// Interval indicates how often the discovery process will be triggered.
 	// It represents as a duration string.
 	Interval string
-}
-
-func (s ServiceInfo) GetBootstrapServiceInfo() config.ServiceInfo {
-	return config.ServiceInfo{
-		BootTimeout:    s.BootTimeout,
-		CheckInterval:  s.CheckInterval,
-		Host:           s.Host,
-		Port:           s.Port,
-		ServerBindAddr: s.ServerBindAddr,
-		Protocol:       s.Protocol,
-		StartupMsg:     s.StartupMsg,
-		MaxResultCount: s.MaxResultCount,
-		Timeout:        s.Timeout,
-	}
 }
 
 // Telemetry provides metrics (on a given device service) to system management.

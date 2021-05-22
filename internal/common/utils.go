@@ -57,7 +57,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	ctx := context.WithValue(context.Background(), CorrelationHeader, correlationID)
 	req := requests.NewAddEventRequest(*event)
 
-	if configuration.Service.UseMessageBus {
+	if configuration.UseMessageBus {
 		mc := container.MessagingClientFrom(dic.Get)
 		bytes, encoding, err := req.Encode()
 		if err != nil {
