@@ -39,7 +39,7 @@ func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGr
 		wg.Done()
 	}()
 
-	working := make(chan bool, s.config.AsyncBufferSize)
+	working := make(chan bool, s.config.Device.AsyncBufferSize)
 	for {
 		select {
 		case <-ctx.Done():

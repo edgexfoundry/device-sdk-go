@@ -12,14 +12,6 @@ import (
 
 // ConfigurationStruct contains the configuration properties for the device service.
 type ConfigurationStruct struct {
-	// AsyncBufferSize defines the size of asynchronous channel
-	AsyncBufferSize int
-	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
-	EnableAsyncReadings bool
-	// Labels are properties applied to the device service to help with searching
-	Labels []string
-	// UseMessageBus indicates whether or not the Event are published directly to the MessageBus
-	UseMessageBus bool
 	// WritableInfo contains configuration settings that can be changed in the Registry .
 	Writable WritableInfo
 	// Clients is a map of services used by a DS.

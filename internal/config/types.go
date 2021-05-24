@@ -51,6 +51,14 @@ type DeviceInfo struct {
 	UpdateLastConnected bool
 
 	Discovery DiscoveryInfo
+	// AsyncBufferSize defines the size of asynchronous channel
+	AsyncBufferSize int
+	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
+	EnableAsyncReadings bool
+	// Labels are properties applied to the device service to help with searching
+	Labels []string
+	// UseMessageBus indicates whether or not the Event are published directly to the MessageBus
+	UseMessageBus bool
 }
 
 // DiscoveryInfo is a struct which contains configuration of device auto discovery.
