@@ -17,8 +17,6 @@
 package common
 
 import (
-	"time"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 )
@@ -44,7 +42,9 @@ type ConfigurationStruct struct {
 	// Registry contains the configuration for connecting the Registry service
 	Registry bootstrapConfig.RegistryInfo
 	// Service contains the standard 'service' configuration for the Application service
-	Service ServiceInfo
+	Service bootstrapConfig.ServiceInfo
+	// HttpServer contains the configuration for the HTTP Server
+	HttpServer HttpConfig
 	// Trigger contains the configuration for the Function Pipeline Trigger
 	Trigger TriggerInfo
 	// ApplicationSettings contains the custom configuration for the Application service
@@ -57,21 +57,6 @@ type ConfigurationStruct struct {
 	SecretStore bootstrapConfig.SecretStoreInfo
 }
 
-// ServiceInfo is used to hold and configure various settings related to the hosting of this service
-type ServiceInfo struct {
-	BootTimeout    string
-	CheckInterval  string
-	Host           string
-	HTTPSCert      string
-	HTTPSKey       string
-	ServerBindAddr string
-	Port           int
-	Protocol       string
-	StartupMsg     string
-	ReadMaxLimit   int
-	Timeout        string
-}
-
 // TriggerInfo contains Metadata associated with each Trigger
 type TriggerInfo struct {
 	// Type of trigger to start pipeline
@@ -81,6 +66,19 @@ type TriggerInfo struct {
 	EdgexMessageBus MessageBusConfig
 	// Used when Type=external-mqtt
 	ExternalMqtt ExternalMqttConfig
+}
+
+// HttpConfig contains the addition configuration for HTTP Server
+type HttpConfig struct {
+	// Protocol is the for the HTTP Server to use HTTP or HTTPS
+	// If HTTPS then the Secret store must contain the HTTPS cert and key
+	Protocol string
+	// SecretName is the name in the secret store for the HTTPS cert and key
+	SecretName string
+	// HTTPSCertName is name of the HTTPS cert in the secret store
+	HTTPSCertName string
+	// HTTPSKeyName is name of the HTTPS key in the secret store
+	HTTPSKeyName string
 }
 
 // MessageBusConfig defines the messaging information need to connect to the MessageBus
@@ -234,20 +232,5 @@ func (c *ConfigurationStruct) GetMessageBusInfo() bootstrapConfig.MessageBusInfo
 
 // transformToBootstrapServiceInfo transforms the SDK's ServiceInfo to the bootstrap's version of ServiceInfo
 func (c *ConfigurationStruct) transformToBootstrapServiceInfo() bootstrapConfig.ServiceInfo {
-	return bootstrapConfig.ServiceInfo{
-		BootTimeout:    durationToMill(c.Service.BootTimeout),
-		CheckInterval:  c.Service.CheckInterval,
-		Host:           c.Service.Host,
-		Port:           c.Service.Port,
-		Protocol:       c.Service.Protocol,
-		StartupMsg:     c.Service.StartupMsg,
-		MaxResultCount: c.Service.ReadMaxLimit,
-		Timeout:        durationToMill(c.Service.Timeout),
-	}
-}
-
-// durationToMill converts a duration string to milliseconds integer value
-func durationToMill(s string) int {
-	v, _ := time.ParseDuration(s)
-	return int(v.Milliseconds())
+	return c.Service
 }

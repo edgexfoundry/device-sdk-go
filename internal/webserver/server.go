@@ -37,6 +37,7 @@ import (
 
 // WebServer handles the webserver configuration
 type WebServer struct {
+	dic        *di.Container
 	config     *common.ConfigurationStruct
 	lc         logger.LoggingClient
 	router     *mux.Router
@@ -49,7 +50,7 @@ type Version struct {
 	SDKVersion string `json:"sdk_version"`
 }
 
-// NewWebserver returns a new instance of *WebServer
+// NewWebServer returns a new instance of *WebServer
 func NewWebServer(dic *di.Container, router *mux.Router) *WebServer {
 	ws := &WebServer{
 		lc:         bootstrapContainer.LoggingClientFrom(dic.Get),
@@ -95,30 +96,56 @@ func (webserver *WebServer) SetupTriggerRoute(path string, handlerForTrigger fun
 // StartWebServer starts the web server
 func (webserver *WebServer) StartWebServer(errChannel chan error) {
 	go func() {
-		if serviceTimeout, err := time.ParseDuration(webserver.config.Service.Timeout); err != nil {
+		if serviceTimeout, err := time.ParseDuration(webserver.config.Service.RequestTimeout); err != nil {
 			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
 		} else {
-			listenAndServe(webserver, serviceTimeout, errChannel)
+			webserver.listenAndServe(serviceTimeout, errChannel)
 		}
 	}()
 }
 
 // Helper function to handle HTTPs or HTTP connection based on the configured protocol
-func listenAndServe(webserver *WebServer, serviceTimeout time.Duration, errChannel chan error) {
+func (webserver *WebServer) listenAndServe(serviceTimeout time.Duration, errChannel chan error) {
+	config := webserver.config
+	lc := webserver.lc
+
 	// The Host value is the default bind address value if the ServerBindAddr value is not specified
 	// this allows env overrides to explicitly set the value used for ListenAndServe,
 	// as needed for different deployments
-	bindAddress := webserver.config.Service.Host
-	if len(webserver.config.Service.ServerBindAddr) != 0 {
-		bindAddress = webserver.config.Service.ServerBindAddr
+	bindAddress := config.Service.Host
+	if len(config.Service.ServerBindAddr) != 0 {
+		bindAddress = config.Service.ServerBindAddr
 	}
-	addr := fmt.Sprintf("%s:%d", bindAddress, webserver.config.Service.Port)
+	addr := fmt.Sprintf("%s:%d", bindAddress, config.Service.Port)
 
-	if webserver.config.Service.Protocol == "https" {
-		webserver.lc.Infof("Starting HTTPS Web Server on address %v", addr)
-		errChannel <- http.ListenAndServeTLS(addr, webserver.config.Service.HTTPSCert, webserver.config.Service.HTTPSKey, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
+	if config.HttpServer.Protocol == "https" {
+		provider := bootstrapContainer.SecretProviderFrom(webserver.dic.Get)
+		httpsSecretData, err := provider.GetSecret(config.HttpServer.SecretName)
+		if err != nil {
+			lc.Errorf("unable to find HTTPS Secret %s in Secret Store: %w", config.HttpServer.SecretName, err)
+			errChannel <- err
+			return
+		}
+
+		httpsCert, ok := httpsSecretData[config.HttpServer.HTTPSCertName]
+		if !ok {
+			lc.Errorf("unable to find HTTPS Cert in Secret Data as %s. Check configuration", config.HttpServer.HTTPSCertName, err)
+			errChannel <- err
+			return
+		}
+
+		httpsKey, ok := httpsSecretData[config.HttpServer.HTTPSKeyName]
+		if !ok {
+			lc.Errorf("unable to find HTTPS Key in Secret Data as %s. Check configuration.", config.HttpServer.HTTPSKeyName, err)
+			errChannel <- err
+			return
+		}
+
+		lc.Infof("Starting HTTPS Web Server on address %s", addr)
+
+		errChannel <- http.ListenAndServeTLS(addr, httpsCert, httpsKey, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
 	} else {
-		webserver.lc.Infof("Starting HTTP Web Server on address %v", addr)
+		lc.Infof("Starting HTTP Web Server on address %s", addr)
 		errChannel <- http.ListenAndServe(addr, http.TimeoutHandler(webserver.router, serviceTimeout, "Request timed out"))
 	}
 }

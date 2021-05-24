@@ -14,18 +14,33 @@ LogLevel = 'INFO'
       [Writable.InsecureSecrets.DB.Secrets]
       username = ""
       password = ""
+    # TODO: Remove if not using HTTPS Webserver
+    [Writable.InsecureSecrets.HTTPS]
+    path = "https"
+      [Writable.InsecureSecrets.HTTPS.Secrets]
+      cert = ""
+      key = ""
+
 
 [Service]
-BootTimeout = '30s'
-ClientMonitor = '15s'
-CheckInterval = '10s'
+HealthCheckInterval = '10s'
 Host = 'localhost'
+# TODO: set this port appropriately,
+#       App service use port assigments 597xx with lower range 00-39 reserved for
+#       app-service-configurable profiles/instances, Rules Engine and examples
+Port = 59740
 ServerBindAddr = '' # Leave blank so default to Host value unless different value is needed.
-Port = 59740  # TODO: set this port appropriately, App service use port assigments 597xx with lower range 00-39 reserved for app-service-configurable profiles/instances and examples
-Protocol = 'http'
-ReadMaxLimit = 100
 StartupMsg = 'new-app-service Application Service has started'
-Timeout = '30s'
+MaxResultCount = 0 # Not curently used by App Services.
+MaxRequestSize = 0 # Not curently used by App Services.
+RequestTimeout = '5s'
+
+# TODO: Remove section if not using HTTPS Webserver. Default protocol is HTTP if section is empty
+[HttpServer]
+Protocol = 'http'
+SecretName = 'https'
+HTTPSCertName = 'cert'
+HTTPSKeyName = 'key'
 
 [Registry]
 Host = 'localhost'
@@ -66,7 +81,7 @@ RetryWaitPeriod = "1s"
 [Trigger]
 Type="edgex-messagebus"
   [Trigger.EdgexMessageBus]
-  Type = 'redisstreams'
+  Type = 'redis'
     [Trigger.EdgexMessageBus.SubscribeHost]
     Host = 'localhost'
     Port = 6379

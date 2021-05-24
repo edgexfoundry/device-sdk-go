@@ -27,6 +27,8 @@ RUN apk add --update --no-cache ${ALPINE_PKG_BASE} ${ALPINE_PKG_EXTRA}
 WORKDIR /app
 
 COPY go.mod .
+
+RUN go mod tidy
 RUN go mod download
 
 COPY . .
@@ -50,7 +52,7 @@ COPY --from=builder /app/res/ /res/
 COPY --from=builder /app/new-app-service /new-app-service
 
 # TODO: set this port appropriatly as it is in the configuation.toml
-EXPOSE 49600
+EXPOSE 59740
 
 ENTRYPOINT ["/new-app-service"]
 CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]

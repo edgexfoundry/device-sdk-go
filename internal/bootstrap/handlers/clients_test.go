@@ -37,7 +37,7 @@ import (
 
 func TestClientsBootstrapHandler(t *testing.T) {
 	configuration := &common.ConfigurationStruct{
-		Service: common.ServiceInfo{},
+		Service: config.ServiceInfo{},
 	}
 
 	lc := logger.NewMockClient()

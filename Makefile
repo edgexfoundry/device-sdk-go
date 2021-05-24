@@ -30,6 +30,5 @@ test-sdk:
 	$(GO) vet ./...
 	gofmt -l .
 	[ "`gofmt -l .`" = "" ]
-	./app-service-template/bin/test-go-mod-tidy.sh
 
 test: build test-template test-sdk

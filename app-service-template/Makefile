@@ -54,14 +54,14 @@ docker:
 		-t nexus3.edgexfoundry.org:10004/new-app-service:master-dev \
 		.
 
-# The test-go-mod-tidy.sh & test-attribution-txt.sh scripts are required for upstreaming to EdgeX Foundry.
-# TODO: Remove bin folder and reference to scripts below if NOT upstreaming to EdgeX Foundry.
+# The test-attribution-txt.sh scripts are required for upstreaming to EdgeX Foundry.
+# TODO: Remove bin folder and reference to script below if NOT upstreaming to EdgeX Foundry.
 test:
+	go mod tidy
 	$(GO) test -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l .
 	[ "`gofmt -l .`" = "" ]
-	./bin/test-go-mod-tidy.sh
 	./bin/test-attribution-txt.sh
 
 clean:
