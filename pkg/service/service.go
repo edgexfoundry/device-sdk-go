@@ -134,7 +134,7 @@ func (s *DeviceService) Version() string {
 
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *DeviceService) AsyncReadings() bool {
-	return s.config.EnableAsyncReadings
+	return s.config.Device.EnableAsyncReadings
 }
 
 func (s *DeviceService) DeviceDiscovery() bool {
@@ -187,7 +187,7 @@ func (s *DeviceService) ListenForCustomConfigChanges(
 func (s *DeviceService) selfRegister() errors.EdgeX {
 	localDeviceService := models.DeviceService{
 		Name:        s.ServiceName,
-		Labels:      s.config.Labels,
+		Labels:      s.config.Device.Labels,
 		BaseAddress: bootstrapTypes.DefaultHttpProtocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
 		AdminState:  models.Unlocked,
 	}

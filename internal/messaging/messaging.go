@@ -35,7 +35,7 @@ import (
 func BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
-	if config.UseMessageBus == false {
+	if config.Device.UseMessageBus == false {
 		lc.Info("Use of MessageBus disabled, skipping creation of messaging client")
 		return true
 	}
