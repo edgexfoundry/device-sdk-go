@@ -311,6 +311,8 @@ func TestMQTTExport(t *testing.T) {
 	params[SkipVerify] = "true"
 	params[PersistOnError] = "false"
 	params[AuthMode] = "none"
+	params[ConnectTimeout] = "5s"
+	params[KeepAlive] = "6s"
 
 	trx := configurable.MQTTExport(params)
 	assert.NotNil(t, trx, "return result from MQTTSecretSend should not be nil")

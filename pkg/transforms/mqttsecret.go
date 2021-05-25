@@ -51,6 +51,10 @@ type MQTTSecretConfig struct {
 	SecretPath string
 	// AutoReconnect indicated whether or not to retry connection if disconnected
 	AutoReconnect bool
+	// KeepAlive is the interval duration between client sending keepalive ping to broker
+	KeepAlive string
+	// ConnectTimeout is the duration for timing out on connecting to the broker
+	ConnectTimeout string
 	// Topic that you wish to publish to
 	Topic string
 	// QoS for MQTT Connection
@@ -71,6 +75,7 @@ func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTT
 	opts.AddBroker(mqttConfig.BrokerAddress)
 	opts.SetClientID(mqttConfig.ClientId)
 	opts.SetAutoReconnect(mqttConfig.AutoReconnect)
+
 	//avoid casing issues
 	mqttConfig.AuthMode = strings.ToLower(mqttConfig.AuthMode)
 	sender := &MQTTSecretSender{
@@ -95,6 +100,24 @@ func (sender *MQTTSecretSender) initializeMQTTClient(ctx interfaces.AppFunctionC
 
 	config := sender.mqttConfig
 	mqttFactory := secure.NewMqttFactory(ctx, config.AuthMode, config.SecretPath, config.SkipCertVerify)
+
+	if len(sender.mqttConfig.KeepAlive) > 0 {
+		keepAlive, err := time.ParseDuration(sender.mqttConfig.KeepAlive)
+		if err != nil {
+			return fmt.Errorf("Unable to parse KeepAlive value of '%s': %w", sender.mqttConfig.KeepAlive, err)
+		}
+
+		sender.opts.SetKeepAlive(keepAlive)
+	}
+
+	if len(sender.mqttConfig.ConnectTimeout) > 0 {
+		timeout, err := time.ParseDuration(sender.mqttConfig.ConnectTimeout)
+		if err != nil {
+			return fmt.Errorf("Unable to parse ConnectTimeout value of '%s': %w", sender.mqttConfig.ConnectTimeout, err)
+		}
+
+		sender.opts.SetConnectTimeout(timeout)
+	}
 
 	client, err := mqttFactory.Create(sender.opts)
 	if err != nil {

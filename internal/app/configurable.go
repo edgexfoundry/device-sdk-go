@@ -46,6 +46,7 @@ const (
 	Qos                 = "qos"
 	Retain              = "retain"
 	AutoReconnect       = "autoreconnect"
+	ConnectTimeout      = "connecttimeout"
 	DeviceName          = "devicename"
 	ReadingName         = "readingname"
 	Rule                = "rule"
@@ -56,6 +57,7 @@ const (
 	SecretName          = "secretname"
 	BrokerAddress       = "brokeraddress"
 	ClientID            = "clientid"
+	KeepAlive           = "keepalive"
 	Topic               = "topic"
 	TransformType       = "type"
 	TransformXml        = "xml"
@@ -403,10 +405,17 @@ func (app *Configurable) MQTTExport(parameters map[string]string) interfaces.App
 			return nil
 		}
 	}
+
+	// These are optional and blank values result in MQTT defaults being used.
+	keepAlive := parameters[KeepAlive]
+	connectTimeout := parameters[ConnectTimeout]
+
 	mqttConfig := transforms.MQTTSecretConfig{
 		Retain:         retain,
 		SkipCertVerify: skipCertVerify,
 		AutoReconnect:  autoReconnect,
+		ConnectTimeout: connectTimeout,
+		KeepAlive:      keepAlive,
 		QoS:            byte(qos),
 		BrokerAddress:  brokerAddress,
 		ClientId:       clientID,
