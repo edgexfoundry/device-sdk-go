@@ -240,7 +240,6 @@ func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceService
 // updateAssociatedProfile updates the profile specified in AddDeviceRequest or UpdateDeviceRequest
 // to stay consistent with core metadata.
 func updateAssociatedProfile(profileName string, dic *di.Container) errors.EdgeX {
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
 
 	res, err := dpc.DeviceProfileByName(context.Background(), profileName)
@@ -256,10 +255,12 @@ func updateAssociatedProfile(profileName string, dic *di.Container) errors.EdgeX
 			errMsg := fmt.Sprintf("failed to add profile %s", profileName)
 			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
+		return nil
 	}
 	err = cache.Profiles().Update(dtos.ToDeviceProfileModel(res.Profile))
 	if err != nil {
-		lc.Warnf("failed to to update profile %s in cache, using the original one", profileName)
+		errMsg := fmt.Sprintf("failed to to update profile %s in cache, using the original one", profileName)
+		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	return nil
