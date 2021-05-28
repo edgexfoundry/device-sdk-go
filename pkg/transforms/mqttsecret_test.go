@@ -20,13 +20,20 @@
 package transforms
 
 import (
+	"errors"
+	"fmt"
+	// can't use pkg.NewAppFuncContextForTest due circular reference
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+	"github.com/google/uuid"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestSetRetryDataPersistFalse(t *testing.T) {
+func TestMQTTSecretSender_setRetryDataPersistFalse(t *testing.T) {
 	context.SetRetryData(nil)
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, false)
 	sender.mqttConfig = MQTTSecretConfig{}
@@ -34,7 +41,7 @@ func TestSetRetryDataPersistFalse(t *testing.T) {
 	assert.Nil(t, context.RetryData())
 }
 
-func TestSetRetryDataPersistTrue(t *testing.T) {
+func TestMQTTSecretSender_setRetryDataPersistTrue(t *testing.T) {
 	context.SetRetryData(nil)
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
@@ -42,7 +49,86 @@ func TestSetRetryDataPersistTrue(t *testing.T) {
 	assert.Equal(t, []byte("data"), context.RetryData())
 }
 
-func TestMQTTSendNodata(t *testing.T) {
+func TestMQTTSecretSender_formatTopic_Default(t *testing.T) {
+	configuredTopic := uuid.NewString()
+
+	sender := NewMQTTSecretSender(MQTTSecretConfig{Topic: configuredTopic}, false)
+
+	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
+
+	formattedTopic, err := sender.formatTopic(ctx, nil)
+
+	require.Equal(t, configuredTopic, formattedTopic)
+	require.NoError(t, err)
+}
+
+func TestMQTTSecretSender_formatTopic_Default_ContextKeyUsed(t *testing.T) {
+	configuredTopic := uuid.NewString() + "/{test}"
+
+	sender := NewMQTTSecretSender(MQTTSecretConfig{Topic: configuredTopic}, false)
+
+	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
+
+	ctx.AddValue("test", "testreplacement")
+
+	formattedTopic, err := sender.formatTopic(ctx, nil)
+
+	expectedTopic := configuredTopic
+
+	for k, v := range ctx.GetAllValues() {
+		expectedTopic = strings.Replace(expectedTopic, fmt.Sprintf("{%s}", k), v, -1)
+	}
+
+	require.Equal(t, expectedTopic, formattedTopic)
+	require.NoError(t, err)
+}
+
+func TestMQTTSecretSender_formatTopic_Default_MissingContextKeyUsed(t *testing.T) {
+	configuredTopic := uuid.NewString() + "/{test}"
+
+	sender := NewMQTTSecretSender(MQTTSecretConfig{Topic: configuredTopic}, false)
+
+	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
+
+	formattedTopic, err := sender.formatTopic(ctx, nil)
+
+	require.Equal(t, "", formattedTopic)
+	require.Error(t, err)
+	require.Equal(t, fmt.Sprintf("failed to replace all context placeholders in configured topic ('%s' after replacements)", configuredTopic), err.Error())
+}
+
+func TestMQTTSecretSender_WithTopicFormatter_formatTopic(t *testing.T) {
+	configuredTopic := uuid.NewString()
+	subtopic := uuid.NewString()
+
+	sender := NewMQTTSecretSenderWithTopicFormatter(MQTTSecretConfig{Topic: configuredTopic}, false, func(s string, functionContext interfaces.AppFunctionContext, i interface{}) (string, error) {
+		return configuredTopic + "/" + subtopic, nil
+	})
+
+	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
+
+	formattedTopic, err := sender.formatTopic(ctx, nil)
+
+	require.Equal(t, configuredTopic+"/"+subtopic, formattedTopic)
+	require.NoError(t, err)
+}
+
+func TestMQTTSecretSender_WithTopicFormatter_formatTopic_Error(t *testing.T) {
+	configuredTopic := uuid.NewString()
+
+	sender := NewMQTTSecretSenderWithTopicFormatter(MQTTSecretConfig{Topic: configuredTopic}, false, func(s string, functionContext interfaces.AppFunctionContext, i interface{}) (string, error) {
+		return "", errors.New("returned error from formatter")
+	})
+
+	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
+
+	formattedTopic, err := sender.formatTopic(ctx, nil)
+
+	require.Equal(t, "", formattedTopic)
+	require.Error(t, err)
+}
+
+func TestMQTTSecretSender_MQTTSendNodata(t *testing.T) {
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
 	continuePipeline, result := sender.MQTTSend(context, nil)
