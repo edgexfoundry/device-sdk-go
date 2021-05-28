@@ -97,7 +97,7 @@ func (webserver *WebServer) SetupTriggerRoute(path string, handlerForTrigger fun
 func (webserver *WebServer) StartWebServer(errChannel chan error) {
 	go func() {
 		if serviceTimeout, err := time.ParseDuration(webserver.config.Service.RequestTimeout); err != nil {
-			errChannel <- fmt.Errorf("failed to parse Service.Timeout: %v", err)
+			errChannel <- fmt.Errorf("failed to parse Service.RequestTimeout: %v", err)
 		} else {
 			webserver.listenAndServe(serviceTimeout, errChannel)
 		}

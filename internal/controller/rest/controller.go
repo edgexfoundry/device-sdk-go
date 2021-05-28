@@ -174,13 +174,5 @@ func (v2c *Controller) prepareSecret(request common.SecretRequest) (string, map[
 
 	path := strings.TrimSpace(request.Path)
 
-	// add '/' in the full URL path if it's not already at the end of the base path or sub path
-	if !strings.HasSuffix(v2c.config.SecretStore.Path, "/") && !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	} else if strings.HasSuffix(v2c.config.SecretStore.Path, "/") && strings.HasPrefix(path, "/") {
-		// remove extra '/' in the full URL path because secret store's (Vault) APIs don't handle extra '/'.
-		path = path[1:]
-	}
-
 	return path, secretsKV
 }
