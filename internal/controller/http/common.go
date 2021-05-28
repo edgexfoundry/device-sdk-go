@@ -95,15 +95,6 @@ func (c *RestController) prepareSecret(request common.SecretRequest) (string, ma
 	}
 
 	path := strings.TrimSpace(request.Path)
-	config := container.ConfigurationFrom(c.dic.Get)
-
-	// add '/' in the full URL path if it's not already at the end of the base path or sub path
-	if !strings.HasSuffix(config.SecretStore.Path, "/") && !strings.HasPrefix(path, "/") {
-		path = "/" + path
-	} else if strings.HasSuffix(config.SecretStore.Path, "/") && strings.HasPrefix(path, "/") {
-		// remove extra '/' in the full URL path because secret store's (Vault) APIs don't handle extra '/'.
-		path = path[1:]
-	}
 
 	return path, secretKVs
 }
