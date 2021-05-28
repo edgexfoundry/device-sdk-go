@@ -43,6 +43,9 @@ type StoredObject struct {
 
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
 	CorrelationID string `json:"correlationID"`
+
+	// ContextData is a snapshot of data used by the pipeline at runtime
+	ContextData map[string]string
 }
 
 // ToContract builds a contract out of the supplied model.
@@ -55,6 +58,7 @@ func (o StoredObject) ToContract() contracts.StoredObject {
 		PipelinePosition: o.PipelinePosition,
 		Version:          o.Version,
 		CorrelationID:    o.CorrelationID,
+		ContextData:      o.ContextData,
 	}
 }
 
@@ -67,24 +71,27 @@ func (o *StoredObject) FromContract(c contracts.StoredObject) {
 	o.PipelinePosition = c.PipelinePosition
 	o.Version = c.Version
 	o.CorrelationID = c.CorrelationID
+	o.ContextData = c.ContextData
 }
 
 // MarshalJSON returns the object as a JSON encoded byte array.
 func (o StoredObject) MarshalJSON() ([]byte, error) {
 	test := struct {
-		ID               *string `json:"id,omitempty"`
-		AppServiceKey    *string `json:"appServiceKey,omitempty"`
-		Payload          []byte  `json:"payload,omitempty"`
-		RetryCount       int     `json:"retryCount,omitempty"`
-		PipelinePosition int     `json:"pipelinePosition,omitempty"`
-		Version          *string `json:"version,omitempty"`
-		CorrelationID    *string `json:"correlationID,omitempty"`
-		EventID          *string `json:"eventID,omitempty"`
-		EventChecksum    *string `json:"eventChecksum,omitempty"`
+		ID               *string           `json:"id,omitempty"`
+		AppServiceKey    *string           `json:"appServiceKey,omitempty"`
+		Payload          []byte            `json:"payload,omitempty"`
+		RetryCount       int               `json:"retryCount,omitempty"`
+		PipelinePosition int               `json:"pipelinePosition,omitempty"`
+		Version          *string           `json:"version,omitempty"`
+		CorrelationID    *string           `json:"correlationID,omitempty"`
+		EventID          *string           `json:"eventID,omitempty"`
+		EventChecksum    *string           `json:"eventChecksum,omitempty"`
+		ContextData      map[string]string `json:"contextData,omitempty"`
 	}{
 		Payload:          o.Payload,
 		RetryCount:       o.RetryCount,
 		PipelinePosition: o.PipelinePosition,
+		ContextData:      o.ContextData,
 	}
 
 	// Empty strings are null
@@ -107,15 +114,16 @@ func (o StoredObject) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON returns an object from JSON.
 func (o *StoredObject) UnmarshalJSON(data []byte) error {
 	alias := new(struct {
-		ID               *string `json:"id"`
-		AppServiceKey    *string `json:"appServiceKey"`
-		Payload          []byte  `json:"payload"`
-		RetryCount       int     `json:"retryCount"`
-		PipelinePosition int     `json:"pipelinePosition"`
-		Version          *string `json:"version"`
-		CorrelationID    *string `json:"correlationID"`
-		EventID          *string `json:"eventID"`
-		EventChecksum    *string `json:"eventChecksum"`
+		ID               *string           `json:"id"`
+		AppServiceKey    *string           `json:"appServiceKey"`
+		Payload          []byte            `json:"payload"`
+		RetryCount       int               `json:"retryCount"`
+		PipelinePosition int               `json:"pipelinePosition"`
+		Version          *string           `json:"version"`
+		CorrelationID    *string           `json:"correlationID"`
+		EventID          *string           `json:"eventID"`
+		EventChecksum    *string           `json:"eventChecksum"`
+		ContextData      map[string]string `json:"contextData,omitempty"`
 	})
 
 	// Error with unmarshaling
@@ -140,6 +148,7 @@ func (o *StoredObject) UnmarshalJSON(data []byte) error {
 	o.Payload = alias.Payload
 	o.RetryCount = alias.RetryCount
 	o.PipelinePosition = alias.PipelinePosition
+	o.ContextData = alias.ContextData
 
 	return nil
 }

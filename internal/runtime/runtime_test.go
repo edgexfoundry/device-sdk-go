@@ -18,6 +18,7 @@ package runtime
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"testing"
 
@@ -128,6 +129,7 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
+		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
 
@@ -147,6 +149,8 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 	result := runtime.ProcessMessage(context, envelope)
 	require.Nil(t, result)
 	require.True(t, transform1WasCalled, "transform1 should have been called")
+
+	assertEventMetadataSet(t, context, envelope)
 }
 
 func TestProcessMessageTwoCustomTransforms(t *testing.T) {
@@ -157,6 +161,7 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
+		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
 	transform1WasCalled := false
@@ -187,6 +192,8 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 	require.Nil(t, result)
 	assert.True(t, transform1WasCalled, "transform1 should have been called")
 	assert.True(t, transform2WasCalled, "transform2 should have been called")
+
+	assertEventMetadataSet(t, context, envelope)
 }
 
 func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
@@ -197,6 +204,7 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
+		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
 
@@ -234,6 +242,8 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 	assert.True(t, transform1WasCalled, "transform1 should have been called")
 	assert.False(t, transform2WasCalled, "transform2 should NOT have been called")
 	assert.False(t, transform3WasCalled, "transform3 should NOT have been called")
+
+	assertEventMetadataSet(t, context, envelope)
 }
 
 func TestProcessMessageTransformError(t *testing.T) {
@@ -250,6 +260,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
 		ContentType:   clients.ContentTypeJSON,
+		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
 
@@ -264,6 +275,30 @@ func TestProcessMessageTransformError(t *testing.T) {
 	require.Error(t, err.Err, "Expected an error")
 	assert.Equal(t, expectedError, err.Err.Error())
 	assert.Equal(t, expectedErrorCode, err.ErrorCode)
+
+	assertReceivedTopicSet(t, context, envelope)
+}
+
+func assertEventMetadataSet(t *testing.T, context *appfunction.Context, envelope types.MessageEnvelope) {
+	assertReceivedTopicSet(t, context, envelope)
+
+	v, f := context.GetValue(interfaces.DEVICENAME)
+	require.True(t, f)
+	assert.Equal(t, testAddEventRequest.Event.DeviceName, v)
+
+	v, f = context.GetValue(interfaces.PROFILENAME)
+	require.True(t, f)
+	assert.Equal(t, testAddEventRequest.Event.ProfileName, v)
+
+	v, f = context.GetValue(interfaces.SOURCENAME)
+	require.True(t, f)
+	assert.Equal(t, testAddEventRequest.Event.SourceName, v)
+}
+
+func assertReceivedTopicSet(t *testing.T, context *appfunction.Context, envelope types.MessageEnvelope) {
+	v, f := context.GetValue(interfaces.RECEIVEDTOPIC)
+	require.True(t, f)
+	assert.Equal(t, envelope.ReceivedTopic, v)
 }
 
 func TestProcessMessageJSON(t *testing.T) {
@@ -419,6 +454,15 @@ func TestProcessMessageTargetType(t *testing.T) {
 
 			// ResponseData will be nil if an error occurred in the pipeline processing the data
 			assert.Equal(t, currentTest.ExpectedOutputData, context.ResponseData(), fmt.Sprintf("'%s' test failed", currentTest.Name))
+
+			switch currentTest.TargetType.(type) {
+			case nil:
+				assertEventMetadataSet(t, context, envelope)
+			case *dtos.Event:
+				assertEventMetadataSet(t, context, envelope)
+			default:
+				assertReceivedTopicSet(t, context, envelope)
+			}
 		})
 	}
 }

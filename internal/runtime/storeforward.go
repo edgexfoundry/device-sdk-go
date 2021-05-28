@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -110,7 +111,7 @@ func (sf *storeForwardInfo) storeForLaterRetry(
 	appContext interfaces.AppFunctionContext,
 	pipelinePosition int) {
 
-	item := contracts.NewStoredObject(sf.runtime.ServiceKey, payload, pipelinePosition, sf.pipelineHash)
+	item := contracts.NewStoredObject(sf.runtime.ServiceKey, payload, pipelinePosition, sf.pipelineHash, appContext.GetAllValues())
 	item.CorrelationID = appContext.CorrelationID()
 
 	appContext.LoggingClient().Trace("Storing data for later retry",
@@ -229,6 +230,10 @@ func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject) ([
 
 func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject) bool {
 	appContext := appfunction.NewContext(item.CorrelationID, sf.dic, "")
+
+	for k, v := range item.ContextData {
+		appContext.AddValue(strings.ToLower(k), v)
+	}
 
 	appContext.LoggingClient().Trace("Retrying stored data", clients.CorrelationHeader, appContext.CorrelationID)
 

@@ -26,6 +26,11 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 )
 
+const DEVICENAME = "devicename"
+const PROFILENAME = "profilename"
+const SOURCENAME = "sourcename"
+const RECEIVEDTOPIC = "receivedtopic"
+
 // AppFunction is a type alias for a application pipeline function.
 // appCtx is a reference to the AppFunctionContext below.
 // data is the data to be operated on by the function.
@@ -77,4 +82,12 @@ type AppFunctionContext interface {
 	// back onto the EdgeX MessageBus. This function uses the Event client and will result in an error if
 	// Core Data is not specified in the Clients configuration
 	PushToCoreData(deviceName string, readingName string, value interface{}) (*dtos.Event, error)
+	// AddValue stores a value for access within other functions in pipeline
+	AddValue(key string, value string)
+	// RemoveValue deletes a value stored in the context at the given key
+	RemoveValue(key string)
+	// GetValue attempts to retrieve a value stored in the context at the given key
+	GetValue(key string) (string, bool)
+	// GetAllValues returns a read-only copy of all data stored in the context
+	GetAllValues() map[string]string
 }

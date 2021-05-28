@@ -84,6 +84,8 @@ func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelop
 		return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
 	}
 
+	appContext.AddValue(interfaces.RECEIVEDTOPIC, envelope.ReceivedTopic)
+
 	lc.Debugf("Processing message %d Transforms", len(gr.transforms))
 
 	// Default Target Type for the function pipeline is an Event DTO.
@@ -127,6 +129,10 @@ func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelop
 		if lc.LogLevel() == models.DebugLog {
 			gr.debugLogEvent(lc, event)
 		}
+
+		appContext.AddValue(interfaces.DEVICENAME, event.DeviceName)
+		appContext.AddValue(interfaces.PROFILENAME, event.ProfileName)
+		appContext.AddValue(interfaces.SOURCENAME, event.SourceName)
 
 		target = event
 

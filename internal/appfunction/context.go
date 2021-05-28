@@ -19,6 +19,7 @@ package appfunction
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
@@ -46,6 +47,7 @@ func NewContext(correlationID string, dic *di.Container, inputContentType string
 		correlationID:    correlationID,
 		dic:              dic,
 		inputContentType: inputContentType,
+		contextData:      make(map[string]string, 0),
 	}
 }
 
@@ -57,6 +59,7 @@ type Context struct {
 	responseData        []byte
 	retryData           []byte
 	responseContentType string
+	contextData         map[string]string
 }
 
 // SetCorrelationID sets the correlationID. This function is not part of the AppFunctionContext interface,
@@ -212,5 +215,30 @@ func (appContext *Context) CommandClient() interfaces.CommandClient {
 // NotificationsClient returns the Notifications client, which may be nil, from the dependency injection container
 func (appContext *Context) NotificationsClient() notifications.NotificationsClient {
 	return container.NotificationsClientFrom(appContext.dic.Get)
+}
 
+// AddValue stores a value for access within other functions in pipeline
+func (appContext *Context) AddValue(key string, value string) {
+	appContext.contextData[strings.ToLower(key)] = value
+}
+
+// RemoveValue deletes a value stored in the context at the given key
+func (appContext *Context) RemoveValue(key string) {
+	delete(appContext.contextData, strings.ToLower(key))
+}
+
+// GetValue attempts to retrieve a value stored in the context at the given key
+func (appContext *Context) GetValue(key string) (string, bool) {
+	val, found := appContext.contextData[strings.ToLower(key)]
+	return val, found
+}
+
+// GetAllValues returns a read-only copy of all data stored in the context
+func (appContext *Context) GetAllValues() map[string]string {
+	out := make(map[string]string)
+
+	for k, v := range appContext.contextData {
+		out[k] = v
+	}
+	return out
 }

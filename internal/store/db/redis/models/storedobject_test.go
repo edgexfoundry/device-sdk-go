@@ -24,6 +24,7 @@ import (
 
 var TestUUIDValid = "fb49a277-9edf-4489-a89c-235b365107f7"
 var TestPayload = []byte("brandon wrote this")
+var TestContextData = map[string]string{"test": "data"}
 
 const (
 	TestAppServiceKey    = "apps"
@@ -41,6 +42,7 @@ var TestContractValid = contracts.StoredObject{
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
+	ContextData:      TestContextData,
 }
 
 var TestModelValid = StoredObject{
@@ -51,6 +53,7 @@ var TestModelValid = StoredObject{
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
+	ContextData:      TestContextData,
 }
 
 var TestModelEmpty = StoredObject{}
@@ -115,7 +118,7 @@ func TestStoredObject_MarshalJSON(t *testing.T) {
 			"Successful marshalling",
 			TestModelValid,
 			false,
-			`{"id":"fb49a277-9edf-4489-a89c-235b365107f7","appServiceKey":"apps","payload":"YnJhbmRvbiB3cm90ZSB0aGlz","retryCount":2,"pipelinePosition":1337,"version":"your","correlationID":"test"}`,
+			`{"id":"fb49a277-9edf-4489-a89c-235b365107f7","appServiceKey":"apps","payload":"YnJhbmRvbiB3cm90ZSB0aGlz","retryCount":2,"pipelinePosition":1337,"version":"your","correlationID":"test","contextData":{"test":"data"}}`,
 		},
 		{
 			"Successful, empty",
@@ -133,7 +136,7 @@ func TestStoredObject_MarshalJSON(t *testing.T) {
 
 			expected := []byte(test.expectedResult)
 			if bytes.Compare(actual, expected) != 0 {
-				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedResult, actual)
+				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedResult, string(actual))
 			}
 		})
 	}
@@ -152,7 +155,7 @@ func TestStoredObject_UnmarshalJSON(t *testing.T) {
 		{
 			"Valid",
 			TestModelValid,
-			args{[]byte(`{"id":"fb49a277-9edf-4489-a89c-235b365107f7","appServiceKey":"apps","payload":[98,114,97,110,100,111,110,32,119,114,111,116,101,32,116,104,105,115],"retryCount":2,"pipelinePosition":1337,"version":"your","correlationID":"test","eventID":"probably","eventChecksum":"failed :("}`)},
+			args{[]byte(`{"id":"fb49a277-9edf-4489-a89c-235b365107f7","appServiceKey":"apps","payload":[98,114,97,110,100,111,110,32,119,114,111,116,101,32,116,104,105,115],"retryCount":2,"pipelinePosition":1337,"version":"your","correlationID":"test","eventID":"probably","eventChecksum":"failed :(","contextData":{"test":"data"}}`)},
 			false,
 		},
 		{

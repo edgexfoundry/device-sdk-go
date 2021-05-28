@@ -64,6 +64,7 @@ func TestProcessRetryItems(t *testing.T) {
 
 	targetTransformWasCalled := false
 	expectedPayload := "This is a sample payload"
+	contextData := map[string]string{"x": "y"}
 
 	transformPassthru := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		return true, data
@@ -76,12 +77,13 @@ func TestProcessRetryItems(t *testing.T) {
 
 		require.True(t, ok, "Expected []byte payload")
 		require.Equal(t, expectedPayload, string(actualPayload))
-
+		require.Equal(t, contextData, appContext.GetAllValues())
 		return false, nil
 	}
 
 	failureTransform := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 		targetTransformWasCalled = true
+		require.Equal(t, contextData, appContext.GetAllValues())
 		return false, errors.New("I failed")
 	}
 	runtime := GolangRuntime{}
@@ -95,11 +97,12 @@ func TestProcessRetryItems(t *testing.T) {
 		ExpectedRetryCount       int
 		RemoveCount              int
 		BadVersion               bool
+		ContextData              map[string]string
 	}{
-		{"Happy Path", successTransform, true, expectedPayload, 0, 0, 1, false},
-		{"RetryCount Increased", failureTransform, true, expectedPayload, 4, 5, 0, false},
-		{"Max Retries", failureTransform, true, expectedPayload, 9, 9, 1, false},
-		{"Bad Version", successTransform, false, expectedPayload, 0, 0, 1, true},
+		{"Happy Path", successTransform, true, expectedPayload, 0, 0, 1, false, contextData},
+		{"RetryCount Increased", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData},
+		{"Max Retries", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData},
+		{"Bad Version", successTransform, false, expectedPayload, 0, 0, 1, true, contextData},
 	}
 
 	for _, test := range tests {
@@ -113,7 +116,7 @@ func TestProcessRetryItems(t *testing.T) {
 			if test.BadVersion {
 				version = "some bad version"
 			}
-			storedObject := contracts.NewStoredObject("dummy", []byte(test.ExpectedPayload), 2, version)
+			storedObject := contracts.NewStoredObject("dummy", []byte(test.ExpectedPayload), 2, version, contextData)
 			storedObject.RetryCount = test.RetryCount
 
 			removes, updates := runtime.storeForward.processRetryItems([]contracts.StoredObject{storedObject})
@@ -158,7 +161,7 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 			runtime.Initialize(updateDicWithMockStoreClient())
 			runtime.SetTransforms([]interfaces.AppFunction{transformPassthru, test.TargetTransform})
 
-			object := contracts.NewStoredObject(serviceKey, payload, 1, runtime.storeForward.calculatePipelineHash())
+			object := contracts.NewStoredObject(serviceKey, payload, 1, runtime.storeForward.calculatePipelineHash(), nil)
 			object.CorrelationID = "CorrelationID"
 			object.RetryCount = test.RetryCount
 

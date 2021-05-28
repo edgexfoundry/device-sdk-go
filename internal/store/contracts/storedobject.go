@@ -43,17 +43,21 @@ type StoredObject struct {
 
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
 	CorrelationID string
+
+	// ContextData is a snapshot of data used by the pipeline at runtime
+	ContextData map[string]string
 }
 
 // NewStoredObject creates a new instance of StoredObject and is the preferred way to create one.
 func NewStoredObject(appServiceKey string, payload []byte, pipelinePosition int,
-	version string) StoredObject {
+	version string, contextData map[string]string) StoredObject {
 	return StoredObject{
 		AppServiceKey:    appServiceKey,
 		Payload:          payload,
 		RetryCount:       0,
 		PipelinePosition: pipelinePosition,
 		Version:          version,
+		ContextData:      contextData,
 	}
 }
 

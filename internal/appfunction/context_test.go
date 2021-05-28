@@ -17,9 +17,12 @@
 package appfunction
 
 import (
+	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -259,4 +262,78 @@ func TestContext_SecretsLastUpdated(t *testing.T) {
 
 	actual := target.SecretsLastUpdated()
 	assert.Equal(t, expected, actual)
+}
+
+func TestContext_AddValue(t *testing.T) {
+	k := uuid.NewString()
+	v := uuid.NewString()
+
+	target.AddValue(k, v)
+
+	res, found := target.contextData[strings.ToLower(k)]
+
+	require.True(t, found, "item should be present in context map")
+	require.Equal(t, v, res, "and it should be what we put there")
+}
+
+func TestContext_GetValue(t *testing.T) {
+	k := uuid.NewString()
+	v := uuid.NewString()
+
+	target.contextData[strings.ToLower(k)] = v
+
+	res, found := target.GetValue(k)
+
+	require.True(t, found, "indicate item found in context map")
+	require.Equal(t, v, res, "and it should be what we put there")
+}
+
+func TestContext_GetValue_NotPresent(t *testing.T) {
+	k := uuid.NewString()
+
+	res, found := target.GetValue(k)
+
+	require.False(t, found, "should indicate item not found in context map")
+	require.Equal(t, "", res, "and default string is returned")
+}
+
+func TestContext_RemoveValue(t *testing.T) {
+	k := uuid.NewString()
+	v := uuid.NewString()
+
+	target.contextData[k] = v
+
+	target.RemoveValue(k)
+
+	_, found := target.contextData[strings.ToLower(k)]
+
+	require.False(t, found, "item should not be present in context map")
+}
+
+func TestContext_RemoveValue_Not_Present(t *testing.T) {
+	k := uuid.NewString()
+
+	_, found := target.contextData[strings.ToLower(k)]
+
+	require.False(t, found, "item should not be present in context map")
+
+	target.RemoveValue(k)
+}
+
+func TestContext_GetAllValues(t *testing.T) {
+	orig := map[string]string{
+		"key1": "val",
+		"key2": "val2",
+	}
+
+	target.contextData = orig
+
+	res := target.GetAllValues()
+
+	// pointers used to compare underlying memory
+	require.NotSame(t, &orig, &res, "Returned map should be a copy")
+
+	for k, v := range orig {
+		assert.Equal(t, v, res[k], fmt.Sprintf("Source and result do not match at key %s", k))
+	}
 }
