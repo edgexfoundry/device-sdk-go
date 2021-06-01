@@ -168,8 +168,8 @@ func TestSecretRequest(t *testing.T) {
 	config := &config.ConfigurationStruct{}
 
 	mockProvider := &mocks.SecretProvider{}
-	mockProvider.On("StoreSecret", "/mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
-	mockProvider.On("StoreSecret", "/no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
+	mockProvider.On("StoreSecret", "mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
+	mockProvider.On("StoreSecret", "no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
 
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
@@ -199,7 +199,7 @@ func TestSecretRequest(t *testing.T) {
 	NoPath := validRequest
 	NoPath.Path = ""
 	validPathWithSlash := validRequest
-	validPathWithSlash.Path = "/mqtt"
+	validPathWithSlash.Path = "mqtt"
 	validNoRequestId := validRequest
 	validNoRequestId.RequestId = ""
 	badRequestId := validRequest
