@@ -25,18 +25,19 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 )
 
 // HTTPSender ...
 type HTTPSender struct {
-	URL            string
-	MimeType       string
-	PersistOnError bool
-	HttpHeaderName string
-	SecretName     string
-	SecretPath     string
+	URL                 string
+	MimeType            string
+	PersistOnError      bool
+	ContinueOnSendError bool
+	ReturnInputData     bool
+	HttpHeaderName      string
+	SecretName          string
+	SecretPath          string
 }
 
 // NewHTTPSender creates, initializes and returns a new instance of HTTPSender
@@ -77,9 +78,19 @@ func (sender HTTPSender) HTTPPut(ctx interfaces.AppFunctionContext, data interfa
 func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interface{}, method string) (bool, interface{}) {
 	lc := ctx.LoggingClient()
 
+	lc.Debug("HTTP Exporting")
+
 	if data == nil {
 		// We didn't receive a result
 		return false, errors.New("No Data Received")
+	}
+
+	if sender.PersistOnError && sender.ContinueOnSendError {
+		return false, errors.New("PersistOnError & ContinueOnSendError can not both be set to true for HTTP Export")
+	}
+
+	if sender.ContinueOnSendError && !sender.ReturnInputData {
+		return false, errors.New("ContinueOnSendError can only be used in conjunction ReturnInputData for multiple HTTP Export")
 	}
 
 	if sender.MimeType == "" {
@@ -118,30 +129,50 @@ func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interf
 
 	req.Header.Set("Content-Type", sender.MimeType)
 
-	ctx.LoggingClient().Debug("POSTing data")
+	ctx.LoggingClient().Debugf("POSTing data to %s", sender.URL)
+
 	response, err := client.Do(req)
-	if err != nil {
-		sender.setRetryData(ctx, exportData)
-		return false, err
+	// Pipeline continues if we get a 2xx response, non-2xx response may stop pipeline
+	if err != nil || response.StatusCode < 200 || response.StatusCode >= 300 {
+		if err == nil {
+			err = fmt.Errorf("export failed with %d HTTP status code", response.StatusCode)
+		} else {
+			err = fmt.Errorf("export failed: %w", err)
+		}
+
+		// If continuing on send error then can't be persisting on error since Store and Forward retries starting
+		// with the function that failed and stopped the execution of the pipeline.
+		if !sender.ContinueOnSendError {
+			sender.setRetryData(ctx, exportData)
+			return false, err
+		}
+
+		// Continuing pipeline on error
+		// This is in support of sending to multiple export destinations by chaining export functions in the pipeline.
+		ctx.LoggingClient().Errorf("Continuing pipeline on error: %s", err.Error())
+
+		// Return the input data since must have some data for the next function to operate on.
+		return true, data
 	}
+
+	ctx.LoggingClient().Debugf("Sent %s bytes of data. Response status is %s", len(exportData), response.Status)
+	ctx.LoggingClient().Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, ctx.CorrelationID)
+
+	// This allows multiple HTTP Exports to be chained in the pipeline to send the same data to different destinations
+	// Don't need to read the response data since not going to return it so just return now.
+	if sender.ReturnInputData {
+		return true, data
+	}
+
 	defer func() { _ = response.Body.Close() }()
-	ctx.LoggingClient().Debugf("Response: %s", response.Status)
-	ctx.LoggingClient().Debugf("Sent data: %s", string(exportData))
-	bodyBytes, errReadingBody := ioutil.ReadAll(response.Body)
+	responseData, errReadingBody := ioutil.ReadAll(response.Body)
 	if errReadingBody != nil {
+		// Can't have ContinueOnSendError=true when ReturnInputData=false, so no need to check for it here
 		sender.setRetryData(ctx, exportData)
 		return false, errReadingBody
 	}
 
-	ctx.LoggingClient().Trace("Data exported", "Transport", "HTTP", clients.CorrelationHeader, ctx.CorrelationID)
-
-	// continues the pipeline if we get a 2xx response, stops pipeline if non-2xx response
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		sender.setRetryData(ctx, exportData)
-		return false, fmt.Errorf("export failed with %d HTTP status code", response.StatusCode)
-	}
-
-	return true, bodyBytes
+	return true, responseData
 }
 
 func (sender HTTPSender) determineIfUsingSecrets() (bool, error) {

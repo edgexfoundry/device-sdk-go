@@ -17,6 +17,9 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -173,4 +176,27 @@ func (svc *Service) stopStoreForward() {
 	svc.LoggingClient().Info("Canceling Store and Forward retry loop")
 	svc.ctx.storeForwardCancelCtx()
 	svc.ctx.storeForwardWg.Wait()
+}
+
+func (svc *Service) findMatchingFunction(configurable reflect.Value, functionName string) (reflect.Value, reflect.Type, error) {
+	var functionValue reflect.Value
+	count := configurable.Type().NumMethod()
+
+	for index := 0; index < count; index++ {
+		method := configurable.Type().Method(index)
+		// If the target configuration function name starts with actual method name then it is a match
+		if strings.Index(functionName, method.Name) == 0 {
+			functionValue = configurable.MethodByName(method.Name)
+			break
+		}
+	}
+
+	if functionValue.Kind() == reflect.Invalid {
+		return functionValue, nil, fmt.Errorf("function %s is not a built in SDK function", functionName)
+	} else if functionValue.IsNil() {
+		return functionValue, nil, fmt.Errorf("invalid/missing configuration for %s", functionName)
+	}
+
+	functionType := functionValue.Type()
+	return functionValue, functionType, nil
 }

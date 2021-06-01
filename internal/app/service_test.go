@@ -517,3 +517,38 @@ func TestMakeItStop(t *testing.T) {
 	sdk.ctx.stop = nil
 	sdk.MakeItStop() //should avoid nil pointer
 }
+
+func TestFindMatchingFunction(t *testing.T) {
+	svc := Service{
+		lc:                       lc,
+		serviceKey:               "MyAppService",
+		profileSuffixPlaceholder: interfaces.ProfileSuffixPlaceholder,
+	}
+
+	configurable := reflect.ValueOf(NewConfigurable(svc.lc))
+
+	tests := []struct {
+		Name         string
+		FunctionName string
+		ExpectError  bool
+	}{
+		{"valid exact match AddTags", "AddTags", false},
+		{"valid exact match HTTPExport", "HTTPExport", false},
+		{"valid starts with match AddTags", "AddTagsExtra", false},
+		{"valid starts with match HTTPExport", "HTTPExport2", false},
+		{"invalid no match", "Bogus", true},
+		{"invalid doesn't start with", "NextHTTPExport", true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			_, _, err := svc.findMatchingFunction(configurable, test.FunctionName)
+			if test.ExpectError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}

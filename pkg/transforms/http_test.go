@@ -36,6 +36,7 @@ import (
 const (
 	msgStr  = "test message"
 	path    = "/some-path/foo"
+	path2   = "/some-path/foo2"
 	badPath = "/some-path/bad"
 )
 
@@ -75,18 +76,27 @@ func TestHTTPPostPut(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		Name           string
-		Path           string
-		PersistOnFail  bool
-		RetryDataSet   bool
-		ExpectedMethod string
+		Name                      string
+		Path                      string
+		PersistOnFail             bool
+		RetryDataSet              bool
+		ReturnInputData           bool
+		ContinueOnSendError       bool
+		ExpectedContinueExecuting bool
+		ExpectedMethod            string
 	}{
-		{"Successful POST", path, true, false, http.MethodPost},
-		{"Failed POST no persist", badPath, false, false, http.MethodPost},
-		{"Failed POST with persist", badPath, true, true, http.MethodPost},
-		{"Successful PUT", path, false, false, http.MethodPut},
-		{"Failed PUT no persist", badPath, false, false, http.MethodPut},
-		{"Failed PUT with persist", badPath, true, true, http.MethodPut},
+		{"Successful POST", path, true, false, false, false, true, http.MethodPost},
+		{"Successful POST", path, true, false, false, false, true, http.MethodPost},
+		{"Successful PUT", path, false, false, false, false, true, http.MethodPut},
+		{"Failed POST no persist", badPath, false, false, false, false, false, http.MethodPost},
+		{"Failed POST continue on error", badPath, false, false, true, true, true, http.MethodPost},
+		{"Failed POST with persist", badPath, true, true, false, false, false, http.MethodPost},
+		{"Failed PUT no persist", badPath, false, false, false, false, false, http.MethodPut},
+		{"Failed PUT with persist", badPath, true, true, false, false, false, http.MethodPut},
+		{"Successful return inputData", path, false, false, true, false, true, http.MethodPost},
+		{"Failed with persist and ReturnInputData", badPath, true, true, true, false, false, http.MethodPut},
+		{"Failed ContinueOnSendError w/o ReturnInputData", path, false, false, false, true, false, ""},
+		{"Failed ContinueOnSendError with PersistOnFail", path, true, false, true, true, false, ""},
 	}
 
 	for _, test := range tests {
@@ -94,13 +104,25 @@ func TestHTTPPostPut(t *testing.T) {
 			context.SetRetryData(nil)
 			methodUsed = ""
 			sender := NewHTTPSender(`http://`+targetUrl.Host+test.Path, "", test.PersistOnFail)
+			sender.ReturnInputData = test.ReturnInputData
+			sender.ContinueOnSendError = test.ContinueOnSendError
+			var continueExecuting bool
+			var resultData interface{}
 
 			if test.ExpectedMethod == http.MethodPost {
-				sender.HTTPPost(context, msgStr)
+				continueExecuting, resultData = sender.HTTPPost(context, msgStr)
 			} else {
-				sender.HTTPPut(context, msgStr)
+				continueExecuting, resultData = sender.HTTPPut(context, msgStr)
 			}
 
+			assert.Equal(t, test.ExpectedContinueExecuting, continueExecuting)
+			if test.ExpectedContinueExecuting {
+				if test.ReturnInputData {
+					assert.Equal(t, msgStr, resultData)
+				} else {
+					assert.NotEqual(t, msgStr, resultData)
+				}
+			}
 			assert.Equal(t, test.RetryDataSet, context.RetryData() != nil)
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
 		})

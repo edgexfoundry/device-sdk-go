@@ -157,41 +157,50 @@ func TestHTTPExport(t *testing.T) {
 	testMimeType := clients.ContentTypeJSON
 	testPersistOnError := "false"
 	testBadPersistOnError := "bogus"
+	testContinueOnSendError := "true"
+	testBadContinueOnSendError := "bogus"
+	testReturnInputData := "true"
+	testBadReturnInputData := "bogus"
+
 	testHeaderName := "My-Header"
 	testSecretPath := "/path"
 	testSecretName := "header"
 
 	tests := []struct {
-		Name           string
-		Method         string
-		Url            *string
-		MimeType       *string
-		PersistOnError *string
-		HeaderName     *string
-		SecretPath     *string
-		SecretName     *string
-		ExpectValid    bool
+		Name                string
+		Method              string
+		Url                 *string
+		MimeType            *string
+		PersistOnError      *string
+		ContinueOnSendError *string
+		ReturnInputData     *string
+		HeaderName          *string
+		SecretPath          *string
+		SecretName          *string
+		ExpectValid         bool
 	}{
-		{"Valid Post - ony required params", ExportMethodPost, &testUrl, &testMimeType, nil, nil, nil, nil, true},
-		{"Valid Post - w/o secrets", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
-		{"Valid Post - with secrets", ExportMethodPost, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Valid Post - with all params", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Invalid Post - no url", ExportMethodPost, nil, &testMimeType, nil, nil, nil, nil, false},
-		{"Invalid Post - no mimeType", ExportMethodPost, &testUrl, nil, nil, nil, nil, nil, false},
-		{"Invalid Post - bad persistOnError", ExportMethodPost, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
-		{"Invalid Post - missing headerName", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
-		{"Invalid Post - missing secretPath", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
-		{"Invalid Post - missing secretName", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
-		{"Valid Put - ony required params", ExportMethodPut, &testUrl, &testMimeType, nil, nil, nil, nil, true},
-		{"Valid Put - w/o secrets", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, true},
-		{"Valid Put - with secrets", http.MethodPut, &testUrl, &testMimeType, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Valid Put - with all params", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, &testSecretName, true},
-		{"Invalid Put - no url", ExportMethodPut, nil, &testMimeType, nil, nil, nil, nil, false},
-		{"Invalid Put - no mimeType", ExportMethodPut, &testUrl, nil, nil, nil, nil, nil, false},
-		{"Invalid Put - bad persistOnError", ExportMethodPut, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, false},
-		{"Invalid Put - missing headerName", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, &testSecretPath, &testSecretName, false},
-		{"Invalid Put - missing secretPath", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, nil, &testSecretName, false},
-		{"Invalid Put - missing secretName", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, &testHeaderName, &testSecretPath, nil, false},
+		{"Valid Post - ony required params", ExportMethodPost, &testUrl, &testMimeType, nil, nil, nil, nil, nil, nil, true},
+		{"Valid Post - w/o secrets", http.MethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, nil, nil, true},
+		{"Valid Post - with secrets", ExportMethodPost, &testUrl, &testMimeType, nil, nil, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Valid Post - with all params", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, &testContinueOnSendError, &testReturnInputData, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Invalid Post - no url", ExportMethodPost, nil, &testMimeType, nil, nil, nil, nil, nil, nil, false},
+		{"Invalid Post - no mimeType", ExportMethodPost, &testUrl, nil, nil, nil, nil, nil, nil, nil, false},
+		{"Invalid Post - bad persistOnError", ExportMethodPost, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, nil, nil, false},
+		{"Invalid Post - missing headerName", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, &testSecretPath, &testSecretName, false},
+		{"Invalid Post - missing secretPath", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, &testHeaderName, nil, &testSecretName, false},
+		{"Invalid Post - missing secretName", ExportMethodPost, &testUrl, &testMimeType, &testPersistOnError, nil, nil, &testHeaderName, &testSecretPath, nil, false},
+		{"Valid Put - ony required params", ExportMethodPut, &testUrl, &testMimeType, nil, nil, nil, nil, nil, nil, true},
+		{"Valid Put - w/o secrets", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, nil, nil, true},
+		{"Valid Put - with secrets", http.MethodPut, &testUrl, &testMimeType, nil, nil, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Valid Put - with all params", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, &testHeaderName, &testSecretPath, &testSecretName, true},
+		{"Invalid Put - no url", ExportMethodPut, nil, &testMimeType, nil, nil, nil, nil, nil, nil, false},
+		{"Invalid Put - no mimeType", ExportMethodPut, &testUrl, nil, nil, nil, nil, nil, nil, nil, false},
+		{"Invalid Put - bad persistOnError", ExportMethodPut, &testUrl, &testMimeType, &testBadPersistOnError, nil, nil, nil, nil, nil, false},
+		{"Invalid Put - bad continueOnSendError", ExportMethodPut, &testUrl, &testMimeType, nil, &testBadContinueOnSendError, nil, nil, nil, nil, false},
+		{"Invalid Put - bad returnInputData", ExportMethodPut, &testUrl, &testMimeType, nil, nil, &testBadReturnInputData, nil, nil, nil, false},
+		{"Invalid Put - missing headerName", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, nil, &testSecretPath, &testSecretName, false},
+		{"Invalid Put - missing secretPath", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, &testHeaderName, nil, &testSecretName, false},
+		{"Invalid Put - missing secretName", ExportMethodPut, &testUrl, &testMimeType, &testPersistOnError, nil, nil, &testHeaderName, &testSecretPath, nil, false},
 	}
 
 	for _, test := range tests {
@@ -209,6 +218,14 @@ func TestHTTPExport(t *testing.T) {
 
 			if test.PersistOnError != nil {
 				params[PersistOnError] = *test.PersistOnError
+			}
+
+			if test.ContinueOnSendError != nil {
+				params[ContinueOnSendError] = *test.ContinueOnSendError
+			}
+
+			if test.ReturnInputData != nil {
+				params[ReturnInputData] = *test.ReturnInputData
 			}
 
 			if test.HeaderName != nil {

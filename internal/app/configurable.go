@@ -42,6 +42,8 @@ const (
 	ExportMethodPut     = "put"
 	MimeType            = "mimetype"
 	PersistOnError      = "persistonerror"
+	ContinueOnSendError = "continueonsenderror"
+	ReturnInputData     = "returninputdata"
 	SkipVerify          = "skipverify"
 	Qos                 = "qos"
 	Retain              = "retain"
@@ -76,13 +78,15 @@ const (
 )
 
 type postPutParameters struct {
-	method         string
-	url            string
-	mimeType       string
-	persistOnError bool
-	headerName     string
-	secretPath     string
-	secretName     string
+	method              string
+	url                 string
+	mimeType            string
+	persistOnError      bool
+	continueOnSendError bool
+	returnInputData     bool
+	headerName          string
+	secretPath          string
+	secretName          string
 }
 
 // Configurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -638,6 +642,36 @@ func (app *Configurable) processHttpExportParameters(
 				fmt.Errorf("HTTPExport Could not parse '%s' to a bool for '%s' parameter: %s",
 					value,
 					PersistOnError,
+					err.Error())
+		}
+	}
+
+	// ContinueOnSendError is optional and is false by default.
+	result.continueOnSendError = false
+	value, ok = parameters[ContinueOnSendError]
+	if ok {
+		var err error
+		result.continueOnSendError, err = strconv.ParseBool(value)
+		if err != nil {
+			return nil,
+				fmt.Errorf("HTTPExport Could not parse '%s' to a bool for '%s' parameter: %s",
+					value,
+					ContinueOnSendError,
+					err.Error())
+		}
+	}
+
+	// ReturnInputData is optional and is false by default.
+	result.returnInputData = false
+	value, ok = parameters[ReturnInputData]
+	if ok {
+		var err error
+		result.returnInputData, err = strconv.ParseBool(value)
+		if err != nil {
+			return nil,
+				fmt.Errorf("HTTPExport Could not parse '%s' to a bool for '%s' parameter: %s",
+					value,
+					ReturnInputData,
 					err.Error())
 		}
 	}

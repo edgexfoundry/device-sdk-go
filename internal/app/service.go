@@ -227,9 +227,7 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 		svc.targetType = &[]byte{}
 	}
 
-	configurable := NewConfigurable(svc.lc)
-
-	valueOfType := reflect.ValueOf(configurable)
+	configurable := reflect.ValueOf(NewConfigurable(svc.lc))
 	pipelineConfig := svc.config.Writable.Pipeline
 	executionOrder := util.DeleteEmptyAndTrim(strings.FieldsFunc(pipelineConfig.ExecutionOrder, util.SplitComma))
 
@@ -247,15 +245,13 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 			return nil, fmt.Errorf("function '%s' configuration not found in Pipeline.Functions section", functionName)
 		}
 
-		result := valueOfType.MethodByName(functionName)
-		if result.Kind() == reflect.Invalid {
-			return nil, fmt.Errorf("function %s is not a built in SDK function", functionName)
-		} else if result.IsNil() {
-			return nil, fmt.Errorf("invalid/missing configuration for %s", functionName)
+		functionValue, functionType, err := svc.findMatchingFunction(configurable, functionName)
+		if err != nil {
+			return nil, err
 		}
 
 		// determine number of parameters required for function call
-		inputParameters := make([]reflect.Value, result.Type().NumIn())
+		inputParameters := make([]reflect.Value, functionType.NumIn())
 		// set keys to be all lowercase to avoid casing issues from configuration
 		for key := range configuration.Parameters {
 			value := configuration.Parameters[key]
@@ -263,7 +259,7 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 			configuration.Parameters[strings.ToLower(key)] = value
 		}
 		for index := range inputParameters {
-			parameter := result.Type().In(index)
+			parameter := functionType.In(index)
 
 			switch parameter {
 			case reflect.TypeOf(map[string]string{}):
@@ -278,7 +274,7 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 			}
 		}
 
-		function, ok := result.Call(inputParameters)[0].Interface().(interfaces.AppFunction)
+		function, ok := functionValue.Call(inputParameters)[0].Interface().(interfaces.AppFunction)
 		if !ok {
 			return nil, fmt.Errorf("failed to cast function %s as AppFunction type", functionName)
 		}
