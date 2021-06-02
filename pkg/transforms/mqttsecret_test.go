@@ -58,8 +58,8 @@ func TestMQTTSecretSender_formatTopic_Default(t *testing.T) {
 
 	formattedTopic, err := sender.formatTopic(ctx, nil)
 
-	require.Equal(t, configuredTopic, formattedTopic)
 	require.NoError(t, err)
+	require.Equal(t, configuredTopic, formattedTopic)
 }
 
 func TestMQTTSecretSender_formatTopic_Default_ContextKeyUsed(t *testing.T) {
@@ -79,8 +79,8 @@ func TestMQTTSecretSender_formatTopic_Default_ContextKeyUsed(t *testing.T) {
 		expectedTopic = strings.Replace(expectedTopic, fmt.Sprintf("{%s}", k), v, -1)
 	}
 
-	require.Equal(t, expectedTopic, formattedTopic)
 	require.NoError(t, err)
+	require.Equal(t, expectedTopic, formattedTopic)
 }
 
 func TestMQTTSecretSender_formatTopic_Default_MissingContextKeyUsed(t *testing.T) {
@@ -92,9 +92,9 @@ func TestMQTTSecretSender_formatTopic_Default_MissingContextKeyUsed(t *testing.T
 
 	formattedTopic, err := sender.formatTopic(ctx, nil)
 
-	require.Equal(t, "", formattedTopic)
 	require.Error(t, err)
 	require.Equal(t, fmt.Sprintf("failed to replace all context placeholders in configured topic ('%s' after replacements)", configuredTopic), err.Error())
+	require.Equal(t, "", formattedTopic)
 }
 
 func TestMQTTSecretSender_WithTopicFormatter_formatTopic(t *testing.T) {
@@ -109,8 +109,8 @@ func TestMQTTSecretSender_WithTopicFormatter_formatTopic(t *testing.T) {
 
 	formattedTopic, err := sender.formatTopic(ctx, nil)
 
-	require.Equal(t, configuredTopic+"/"+subtopic, formattedTopic)
 	require.NoError(t, err)
+	require.Equal(t, configuredTopic+"/"+subtopic, formattedTopic)
 }
 
 func TestMQTTSecretSender_WithTopicFormatter_formatTopic_Error(t *testing.T) {
@@ -124,8 +124,8 @@ func TestMQTTSecretSender_WithTopicFormatter_formatTopic_Error(t *testing.T) {
 
 	formattedTopic, err := sender.formatTopic(ctx, nil)
 
-	require.Equal(t, "", formattedTopic)
 	require.Error(t, err)
+	require.Equal(t, "", formattedTopic)
 }
 
 func TestMQTTSecretSender_MQTTSendNodata(t *testing.T) {

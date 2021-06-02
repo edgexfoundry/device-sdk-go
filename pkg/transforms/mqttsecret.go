@@ -40,6 +40,7 @@ type MQTTSecretSender struct {
 	persistOnError       bool
 	opts                 *MQTT.ClientOptions
 	secretsLastRetrieved time.Time
+	topicPlaceholders    *regexp.Regexp
 	topicFormatter       MQTTTopicFormatter
 }
 
@@ -83,10 +84,11 @@ func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTT
 	//avoid casing issues
 	mqttConfig.AuthMode = strings.ToLower(mqttConfig.AuthMode)
 	sender := &MQTTSecretSender{
-		client:         nil,
-		mqttConfig:     mqttConfig,
-		persistOnError: persistOnError,
-		opts:           opts,
+		client:            nil,
+		mqttConfig:        mqttConfig,
+		persistOnError:    persistOnError,
+		opts:              opts,
+		topicPlaceholders: regexp.MustCompile("{[^}]*}"),
 	}
 
 	return sender
@@ -217,14 +219,28 @@ func (sender *MQTTSecretSender) formatTopic(ctx interfaces.AppFunctionContext, d
 	if sender.topicFormatter != nil {
 		publishTopic, err = sender.topicFormatter(publishTopic, ctx, data)
 	} else {
-		for k, v := range ctx.GetAllValues() {
-			publishTopic = strings.Replace(publishTopic, fmt.Sprintf("{%s}", k), v, -1)
+		attempts := make(map[string]bool)
+
+		for _, placeholder := range sender.topicPlaceholders.FindAllString(publishTopic, -1) {
+			if _, tried := attempts[placeholder]; tried {
+				continue
+			}
+
+			key := strings.TrimRight(strings.TrimLeft(placeholder, "{"), "}")
+
+			ctxval, found := ctx.GetValue(key)
+
+			attempts[placeholder] = found
+
+			if found {
+				publishTopic = strings.Replace(publishTopic, placeholder, ctxval, -1)
+			}
 		}
 
-		if match, err := regexp.MatchString("{[^}]*}", publishTopic); err != nil {
-			return "", fmt.Errorf("failed to validate formatted topic - %s", publishTopic)
-		} else if match {
-			return "", fmt.Errorf("failed to replace all context placeholders in configured topic ('%s' after replacements)", publishTopic)
+		for _, succeeded := range attempts {
+			if !succeeded {
+				return "", fmt.Errorf("failed to replace all context placeholders in configured topic ('%s' after replacements)", publishTopic)
+			}
 		}
 	}
 
