@@ -90,4 +90,9 @@ type AppFunctionContext interface {
 	GetValue(key string) (string, bool)
 	// GetAllValues returns a read-only copy of all data stored in the context
 	GetAllValues() map[string]string
+	// ApplyValues looks in the provided string for placeholders of the form
+	// '{any-value-key}' and attempts to replace with the value stored under
+	// the key in context storage.  An error will be returned if any placeholders
+	// are not matched to a value in the context.
+	ApplyValues(format string) (string, error)
 }

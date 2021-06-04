@@ -337,3 +337,52 @@ func TestContext_GetAllValues(t *testing.T) {
 		assert.Equal(t, v, res[k], fmt.Sprintf("Source and result do not match at key %s", k))
 	}
 }
+
+func TestContext_ApplyValues_No_Placeholders(t *testing.T) {
+	data := map[string]string{
+		"key1": "val",
+		"key2": "val2",
+	}
+
+	input := uuid.NewString()
+
+	target.contextData = data
+
+	res, err := target.ApplyValues(input)
+
+	require.NoError(t, err)
+	require.Equal(t, res, input)
+}
+
+func TestContext_ApplyValues_Placeholders(t *testing.T) {
+	data := map[string]string{
+		"key1": "val",
+		"key2": "val2",
+	}
+
+	input := "{key1}-{key2}"
+
+	target.contextData = data
+
+	res, err := target.ApplyValues(input)
+
+	require.NoError(t, err)
+	require.Equal(t, fmt.Sprintf("%s-%s", data["key1"], data["key2"]), res)
+}
+
+func TestContext_ApplyValues_MissingPlaceholder(t *testing.T) {
+	data := map[string]string{
+		"key1": "val",
+		"key2": "val2",
+	}
+
+	input := "{key1}-{key2}-{key3}"
+
+	target.contextData = data
+
+	res, err := target.ApplyValues(input)
+
+	require.Error(t, err)
+	require.Equal(t, fmt.Sprintf("failed to replace all context placeholders in input ('%s-%s-{key3}' after replacements)", data["key1"], data["key2"]), err.Error())
+	require.Equal(t, "", res)
+}

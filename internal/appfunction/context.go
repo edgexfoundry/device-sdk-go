@@ -19,6 +19,7 @@ package appfunction
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -44,22 +45,24 @@ import (
 // NewContext creates, initializes and return a new Context with implements the interfaces.AppFunctionContext interface
 func NewContext(correlationID string, dic *di.Container, inputContentType string) *Context {
 	return &Context{
-		correlationID:    correlationID,
-		dic:              dic,
-		inputContentType: inputContentType,
-		contextData:      make(map[string]string, 0),
+		correlationID:        correlationID,
+		dic:                  dic,
+		inputContentType:     inputContentType,
+		contextData:          make(map[string]string, 0),
+		valuePlaceholderSpec: regexp.MustCompile("{[^}]*}"),
 	}
 }
 
 // Context contains the data functions that implement the interfaces.AppFunctionContext
 type Context struct {
-	dic                 *di.Container
-	correlationID       string
-	inputContentType    string
-	responseData        []byte
-	retryData           []byte
-	responseContentType string
-	contextData         map[string]string
+	dic                  *di.Container
+	correlationID        string
+	inputContentType     string
+	responseData         []byte
+	retryData            []byte
+	responseContentType  string
+	contextData          map[string]string
+	valuePlaceholderSpec *regexp.Regexp
 }
 
 // SetCorrelationID sets the correlationID. This function is not part of the AppFunctionContext interface,
@@ -241,4 +244,38 @@ func (appContext *Context) GetAllValues() map[string]string {
 		out[k] = v
 	}
 	return out
+}
+
+// ApplyValues looks in the provided string for placeholders of the form
+// '{any-value-key}' and attempts to replace with the value stored under
+// the key in context storage.  An error will be returned if any placeholders
+// are not matched to a value in the context.
+func (appContext *Context) ApplyValues(format string) (string, error) {
+	attempts := make(map[string]bool)
+
+	result := format
+
+	for _, placeholder := range appContext.valuePlaceholderSpec.FindAllString(format, -1) {
+		if _, tried := attempts[placeholder]; tried {
+			continue
+		}
+
+		key := strings.TrimRight(strings.TrimLeft(placeholder, "{"), "}")
+
+		ctxval, found := appContext.GetValue(key)
+
+		attempts[placeholder] = found
+
+		if found {
+			result = strings.Replace(result, placeholder, ctxval, -1)
+		}
+	}
+
+	for _, succeeded := range attempts {
+		if !succeeded {
+			return "", fmt.Errorf("failed to replace all context placeholders in input ('%s' after replacements)", result)
+		}
+	}
+
+	return result, nil
 }

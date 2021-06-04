@@ -19,7 +19,6 @@ package transforms
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -40,11 +39,8 @@ type MQTTSecretSender struct {
 	persistOnError       bool
 	opts                 *MQTT.ClientOptions
 	secretsLastRetrieved time.Time
-	topicPlaceholders    *regexp.Regexp
-	topicFormatter       MQTTTopicFormatter
+	topicFormatter       StringValuesFormatter
 }
-
-type MQTTTopicFormatter func(string, interfaces.AppFunctionContext, interface{}) (string, error)
 
 // MQTTSecretConfig ...
 type MQTTSecretConfig struct {
@@ -84,11 +80,10 @@ func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTT
 	//avoid casing issues
 	mqttConfig.AuthMode = strings.ToLower(mqttConfig.AuthMode)
 	sender := &MQTTSecretSender{
-		client:            nil,
-		mqttConfig:        mqttConfig,
-		persistOnError:    persistOnError,
-		opts:              opts,
-		topicPlaceholders: regexp.MustCompile("{[^}]*}"),
+		client:         nil,
+		mqttConfig:     mqttConfig,
+		persistOnError: persistOnError,
+		opts:           opts,
 	}
 
 	return sender
@@ -96,7 +91,7 @@ func NewMQTTSecretSender(mqttConfig MQTTSecretConfig, persistOnError bool) *MQTT
 
 // NewMQTTSecretSenderWithTopicFormatter allows passing a function to build a final publish topic
 // from the combination of the configured topic and the input parameters passed to MQTTSend
-func NewMQTTSecretSenderWithTopicFormatter(mqttConfig MQTTSecretConfig, persistOnError bool, topicFormatter MQTTTopicFormatter) *MQTTSecretSender {
+func NewMQTTSecretSenderWithTopicFormatter(mqttConfig MQTTSecretConfig, persistOnError bool, topicFormatter StringValuesFormatter) *MQTTSecretSender {
 	sender := NewMQTTSecretSender(mqttConfig, persistOnError)
 	sender.topicFormatter = topicFormatter
 	return sender
@@ -193,7 +188,7 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 		}
 	}
 
-	publishTopic, err := sender.formatTopic(ctx, data)
+	publishTopic, err := sender.topicFormatter.invoke(sender.mqttConfig.Topic, ctx, data)
 
 	if err != nil {
 		return false, fmt.Errorf("MQTT topic formatting failed: %s", err.Error())
@@ -210,41 +205,6 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, ctx.CorrelationID)
 
 	return true, nil
-}
-
-func (sender *MQTTSecretSender) formatTopic(ctx interfaces.AppFunctionContext, data interface{}) (string, error) {
-	publishTopic := sender.mqttConfig.Topic
-	var err error
-
-	if sender.topicFormatter != nil {
-		publishTopic, err = sender.topicFormatter(publishTopic, ctx, data)
-	} else {
-		attempts := make(map[string]bool)
-
-		for _, placeholder := range sender.topicPlaceholders.FindAllString(publishTopic, -1) {
-			if _, tried := attempts[placeholder]; tried {
-				continue
-			}
-
-			key := strings.TrimRight(strings.TrimLeft(placeholder, "{"), "}")
-
-			ctxval, found := ctx.GetValue(key)
-
-			attempts[placeholder] = found
-
-			if found {
-				publishTopic = strings.Replace(publishTopic, placeholder, ctxval, -1)
-			}
-		}
-
-		for _, succeeded := range attempts {
-			if !succeeded {
-				return "", fmt.Errorf("failed to replace all context placeholders in configured topic ('%s' after replacements)", publishTopic)
-			}
-		}
-	}
-
-	return publishTopic, err
 }
 
 func (sender *MQTTSecretSender) setRetryData(ctx interfaces.AppFunctionContext, exportData []byte) {

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -34,10 +35,12 @@ import (
 )
 
 const (
-	msgStr  = "test message"
-	path    = "/some-path/foo"
-	path2   = "/some-path/foo2"
-	badPath = "/some-path/bad"
+	msgStr        = "test message"
+	path          = "/some-path/foo"
+	path2         = "/some-path/foo2"
+	badPath       = "/some-path/bad"
+	formatPath    = "/some-path/{test}"
+	badFormatPath = "/some-path/{test}/{test2}"
 )
 
 func TestHTTPPostPut(t *testing.T) {
@@ -86,26 +89,31 @@ func TestHTTPPostPut(t *testing.T) {
 		ExpectedMethod            string
 	}{
 		{"Successful POST", path, true, false, false, false, true, http.MethodPost},
-		{"Successful POST", path, true, false, false, false, true, http.MethodPost},
+		{"Successful POST Format", formatPath, true, false, false, false, true, http.MethodPost},
 		{"Successful PUT", path, false, false, false, false, true, http.MethodPut},
+		{"Successful PUT Format", formatPath, false, false, false, false, true, http.MethodPut},
 		{"Failed POST no persist", badPath, false, false, false, false, false, http.MethodPost},
 		{"Failed POST continue on error", badPath, false, false, true, true, true, http.MethodPost},
 		{"Failed POST with persist", badPath, true, true, false, false, false, http.MethodPost},
+		{"Failed POST with PersistOnFail", path, true, false, true, true, false, ""},
 		{"Failed PUT no persist", badPath, false, false, false, false, false, http.MethodPut},
 		{"Failed PUT with persist", badPath, true, true, false, false, false, http.MethodPut},
 		{"Successful return inputData", path, false, false, true, false, true, http.MethodPost},
-		{"Failed with persist and ReturnInputData", badPath, true, true, true, false, false, http.MethodPut},
-		{"Failed ContinueOnSendError w/o ReturnInputData", path, false, false, false, true, false, ""},
-		{"Failed ContinueOnSendError with PersistOnFail", path, true, false, true, true, false, ""},
+		{"Failed with persist and returnInputData", badPath, true, true, true, false, false, http.MethodPut},
+		{"Failed continueOnSendError w/o returnInputData", path, false, false, false, true, false, ""},
+		{"Failed continueOnSendError with PersistOnFail", path, true, false, true, true, false, ""},
+		//PUT is the default, do not think this is worth adding another value to test struct to support testing both
+		{"Failed PUT with missed replacement", badFormatPath, true, false, true, true, false, ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			context.AddValue("test", "foo")
 			context.SetRetryData(nil)
 			methodUsed = ""
 			sender := NewHTTPSender(`http://`+targetUrl.Host+test.Path, "", test.PersistOnFail)
-			sender.ReturnInputData = test.ReturnInputData
-			sender.ContinueOnSendError = test.ContinueOnSendError
+			sender.returnInputData = test.ReturnInputData
+			sender.continueOnSendError = test.ContinueOnSendError
 			var continueExecuting bool
 			var resultData interface{}
 
@@ -116,6 +124,7 @@ func TestHTTPPostPut(t *testing.T) {
 			}
 
 			assert.Equal(t, test.ExpectedContinueExecuting, continueExecuting)
+
 			if test.ExpectedContinueExecuting {
 				if test.ReturnInputData {
 					assert.Equal(t, msgStr, resultData)
@@ -125,6 +134,7 @@ func TestHTTPPostPut(t *testing.T) {
 			}
 			assert.Equal(t, test.RetryDataSet, context.RetryData() != nil)
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
+			context.RemoveValue("test")
 		})
 	}
 }
@@ -144,6 +154,8 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 		},
 	})
 
+	placeholderCheck := regexp.MustCompile("{[^}]*}")
+
 	// create test server with handler
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		methodUsed = request.Method
@@ -151,6 +163,11 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 		if request.URL.EscapedPath() == badPath {
 			writer.WriteHeader(http.StatusNotFound)
 			return
+		}
+
+		if placeholderCheck.MatchString(request.URL.RawPath) {
+			writer.WriteHeader(http.StatusBadRequest)
+			require.Fail(t, "url placeholders not replaced")
 		}
 
 		writer.WriteHeader(http.StatusOK)
@@ -178,20 +195,26 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 		ExpectedMethod       string
 	}{
 		{"unsuccessful POST w/o secret header name", path, "", "header", "/path", false, "HTTP Header Name required when using secrets", ""},
-		{"unsuccessful POST w/o secret path", path, "Secret-Header", "header", "", false, "HTTP Header SecretName was provided but no SecretPath was provided", ""},
-		{"unsuccessful POST w/o secret name", path, "Secret-Header", "", "/path", false, "SecretPath was specified but no SecretName was provided", ""},
+		{"unsuccessful POST w/o secret path", path, "Secret-Header", "header", "", false, "HTTP Header secretName was provided but no secretPath was provided", ""},
+		{"unsuccessful POST w/o secret name", path, "Secret-Header", "", "/path", false, "secretPath was specified but no secretName was provided", ""},
 		{"successful POST with secrets", path, "Secret-Header-Name", "header", "/path", true, "", http.MethodPost},
+		{"successful POST with secrets and formatted path", formatPath, "Secret-Header-Name", "header", "/path", true, "", http.MethodPost},
 		{"successful POST without secrets", path, "", "", "", true, "", http.MethodPost},
+		{"successful POST without secrets and formatted path", formatPath, "", "", "", true, "", http.MethodPost},
 		{"unsuccessful POST with secrets - retrieval fails", path, "Secret-Header", "bogus", "/path", false, "FAKE NOT FOUND ERROR", ""},
 		{"unsuccessful PUT w/o secret header name", path, "", "header", "/path", false, "HTTP Header Name required when using secrets", ""},
-		{"unsuccessful PUT w/o secret path name", path, "Secret-Header", "header", "", false, "HTTP Header SecretName was provided but no SecretPath was provided", ""},
+		{"unsuccessful PUT w/o secret path name", path, "Secret-Header", "header", "", false, "HTTP Header secretName was provided but no secretPath was provided", ""},
 		{"successful PUT with secrets", path, "Secret-Header", "header", "/path", true, "", http.MethodPut},
+		{"successful PUT with secrets and formatted path", formatPath, "Secret-Header", "header", "/path", true, "", http.MethodPut},
 		{"successful PUT without secrets", path, "", "", "", true, "", http.MethodPut},
+		{"successful PUT without secrets and formatted path", formatPath, "", "", "", true, "", http.MethodPut},
+		{"unsuccessful PUT with secrets - retrieval fails", path, "Secret-Header", "bogus", "/path", false, "FAKE NOT FOUND ERROR", ""},
 		{"unsuccessful PUT with secrets - retrieval fails", path, "Secret-Header", "bogus", "/path", false, "FAKE NOT FOUND ERROR", ""},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
+			context.AddValue("test", "foo")
 			methodUsed = ""
 			sender := NewHTTPSenderWithSecretHeader(
 				`http://`+targetUrl.Host+test.Path,
@@ -215,6 +238,7 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 				require.EqualError(t, err.(error), test.ExpectedErrorMessage)
 			}
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
+			context.RemoveValue("test")
 		})
 	}
 }

@@ -20,13 +20,6 @@
 package transforms
 
 import (
-	"errors"
-	"fmt"
-	// can't use pkg.NewAppFuncContextForTest due circular reference
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
-	"github.com/google/uuid"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -47,85 +40,6 @@ func TestMQTTSecretSender_setRetryDataPersistTrue(t *testing.T) {
 	sender.mqttConfig = MQTTSecretConfig{}
 	sender.setRetryData(context, []byte("data"))
 	assert.Equal(t, []byte("data"), context.RetryData())
-}
-
-func TestMQTTSecretSender_formatTopic_Default(t *testing.T) {
-	configuredTopic := uuid.NewString()
-
-	sender := NewMQTTSecretSender(MQTTSecretConfig{Topic: configuredTopic}, false)
-
-	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
-
-	formattedTopic, err := sender.formatTopic(ctx, nil)
-
-	require.NoError(t, err)
-	require.Equal(t, configuredTopic, formattedTopic)
-}
-
-func TestMQTTSecretSender_formatTopic_Default_ContextKeyUsed(t *testing.T) {
-	configuredTopic := uuid.NewString() + "/{test}"
-
-	sender := NewMQTTSecretSender(MQTTSecretConfig{Topic: configuredTopic}, false)
-
-	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
-
-	ctx.AddValue("test", "testreplacement")
-
-	formattedTopic, err := sender.formatTopic(ctx, nil)
-
-	expectedTopic := configuredTopic
-
-	for k, v := range ctx.GetAllValues() {
-		expectedTopic = strings.Replace(expectedTopic, fmt.Sprintf("{%s}", k), v, -1)
-	}
-
-	require.NoError(t, err)
-	require.Equal(t, expectedTopic, formattedTopic)
-}
-
-func TestMQTTSecretSender_formatTopic_Default_MissingContextKeyUsed(t *testing.T) {
-	configuredTopic := uuid.NewString() + "/{test}"
-
-	sender := NewMQTTSecretSender(MQTTSecretConfig{Topic: configuredTopic}, false)
-
-	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
-
-	formattedTopic, err := sender.formatTopic(ctx, nil)
-
-	require.Error(t, err)
-	require.Equal(t, fmt.Sprintf("failed to replace all context placeholders in configured topic ('%s' after replacements)", configuredTopic), err.Error())
-	require.Equal(t, "", formattedTopic)
-}
-
-func TestMQTTSecretSender_WithTopicFormatter_formatTopic(t *testing.T) {
-	configuredTopic := uuid.NewString()
-	subtopic := uuid.NewString()
-
-	sender := NewMQTTSecretSenderWithTopicFormatter(MQTTSecretConfig{Topic: configuredTopic}, false, func(s string, functionContext interfaces.AppFunctionContext, i interface{}) (string, error) {
-		return configuredTopic + "/" + subtopic, nil
-	})
-
-	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
-
-	formattedTopic, err := sender.formatTopic(ctx, nil)
-
-	require.NoError(t, err)
-	require.Equal(t, configuredTopic+"/"+subtopic, formattedTopic)
-}
-
-func TestMQTTSecretSender_WithTopicFormatter_formatTopic_Error(t *testing.T) {
-	configuredTopic := uuid.NewString()
-
-	sender := NewMQTTSecretSenderWithTopicFormatter(MQTTSecretConfig{Topic: configuredTopic}, false, func(s string, functionContext interfaces.AppFunctionContext, i interface{}) (string, error) {
-		return "", errors.New("returned error from formatter")
-	})
-
-	ctx := appfunction.NewContext(uuid.NewString(), nil, "")
-
-	formattedTopic, err := sender.formatTopic(ctx, nil)
-
-	require.Error(t, err)
-	require.Equal(t, "", formattedTopic)
 }
 
 func TestMQTTSecretSender_MQTTSendNodata(t *testing.T) {
