@@ -77,18 +77,6 @@ const (
 	BatchByTimeAndCount = "bytimecount"
 )
 
-type postPutParameters struct {
-	method              string
-	url                 string
-	mimeType            string
-	persistOnError      bool
-	continueOnSendError bool
-	returnInputData     bool
-	headerName          string
-	secretPath          string
-	secretName          string
-}
-
 // Configurable contains the helper functions that return the function pointers for building the configurable function pipeline.
 // They transform the parameters map from the Pipeline configuration in to the actual actual parameters required by the function.
 type Configurable struct {
@@ -306,26 +294,15 @@ func (app *Configurable) Encrypt(parameters map[string]string) interfaces.AppFun
 // method will default to application/json.
 // This function is a configuration function and returns a function pointer.
 func (app *Configurable) HTTPExport(parameters map[string]string) interfaces.AppFunction {
-	params, err := app.processHttpExportParameters(parameters)
+	options, method, err := app.processHttpExportParameters(parameters)
 	if err != nil {
 		app.lc.Error(err.Error())
 		return nil
 	}
 
-	var transform transforms.HTTPSender
-	if len(params.secretPath) != 0 {
-		transform = transforms.NewHTTPSenderWithSecretHeader(
-			params.url,
-			params.mimeType,
-			params.persistOnError,
-			params.headerName,
-			params.secretPath,
-			params.secretName)
-	} else {
-		transform = transforms.NewHTTPSender(params.url, params.mimeType, params.persistOnError)
-	}
+	transform := transforms.NewHTTPSenderWithOptions(options)
 
-	switch strings.ToLower(params.method) {
+	switch strings.ToLower(method) {
 	case ExportMethodPost:
 		return transform.HTTPPost
 	case ExportMethodPut:
@@ -333,7 +310,7 @@ func (app *Configurable) HTTPExport(parameters map[string]string) interfaces.App
 	default:
 		app.lc.Errorf(
 			"Invalid HTTPExport method of '%s'. Must be '%s' or '%s'",
-			params.method,
+			method,
 			ExportMethodPost,
 			ExportMethodPut)
 		return nil
@@ -611,34 +588,33 @@ func (app *Configurable) processFilterParameters(
 }
 
 func (app *Configurable) processHttpExportParameters(
-	parameters map[string]string) (*postPutParameters, error) {
+	parameters map[string]string) (transforms.HTTPSenderOptions, string, error) {
 
-	result := postPutParameters{}
-	var ok bool
+	result := transforms.HTTPSenderOptions{}
 
-	result.method, ok = parameters[ExportMethod]
+	method, ok := parameters[ExportMethod]
 	if !ok {
-		return nil, fmt.Errorf("HTTPExport Could not find %s", ExportMethod)
+		return result, "", fmt.Errorf("HTTPExport Could not find %s", ExportMethod)
 	}
 
-	result.url, ok = parameters[Url]
+	result.URL, ok = parameters[Url]
 	if !ok {
-		return nil, fmt.Errorf("HTTPExport Could not find %s", Url)
+		return result, "", fmt.Errorf("HTTPExport Could not find %s", Url)
 	}
-	result.mimeType, ok = parameters[MimeType]
+	result.MimeType, ok = parameters[MimeType]
 	if !ok {
-		return nil, fmt.Errorf("HTTPExport Could not find %s", MimeType)
+		return result, "", fmt.Errorf("HTTPExport Could not find %s", MimeType)
 	}
 
 	// PersistOnError is optional and is false by default.
 	var value string
-	result.persistOnError = false
+	result.PersistOnError = false
 	value, ok = parameters[PersistOnError]
 	if ok {
 		var err error
-		result.persistOnError, err = strconv.ParseBool(value)
+		result.PersistOnError, err = strconv.ParseBool(value)
 		if err != nil {
-			return nil,
+			return result, "",
 				fmt.Errorf("HTTPExport Could not parse '%s' to a bool for '%s' parameter: %s",
 					value,
 					PersistOnError,
@@ -647,13 +623,13 @@ func (app *Configurable) processHttpExportParameters(
 	}
 
 	// ContinueOnSendError is optional and is false by default.
-	result.continueOnSendError = false
+	result.ContinueOnSendError = false
 	value, ok = parameters[ContinueOnSendError]
 	if ok {
 		var err error
-		result.continueOnSendError, err = strconv.ParseBool(value)
+		result.ContinueOnSendError, err = strconv.ParseBool(value)
 		if err != nil {
-			return nil,
+			return result, "",
 				fmt.Errorf("HTTPExport Could not parse '%s' to a bool for '%s' parameter: %s",
 					value,
 					ContinueOnSendError,
@@ -662,13 +638,13 @@ func (app *Configurable) processHttpExportParameters(
 	}
 
 	// ReturnInputData is optional and is false by default.
-	result.returnInputData = false
+	result.ReturnInputData = false
 	value, ok = parameters[ReturnInputData]
 	if ok {
 		var err error
-		result.returnInputData, err = strconv.ParseBool(value)
+		result.ReturnInputData, err = strconv.ParseBool(value)
 		if err != nil {
-			return nil,
+			return result, "",
 				fmt.Errorf("HTTPExport Could not parse '%s' to a bool for '%s' parameter: %s",
 					value,
 					ReturnInputData,
@@ -676,24 +652,24 @@ func (app *Configurable) processHttpExportParameters(
 		}
 	}
 
-	result.url = strings.TrimSpace(result.url)
-	result.mimeType = strings.TrimSpace(result.mimeType)
-	result.headerName = strings.TrimSpace(parameters[HeaderName])
-	result.secretPath = strings.TrimSpace(parameters[SecretPath])
-	result.secretName = strings.TrimSpace(parameters[SecretName])
+	result.URL = strings.TrimSpace(result.URL)
+	result.MimeType = strings.TrimSpace(result.MimeType)
+	result.HTTPHeaderName = strings.TrimSpace(parameters[HeaderName])
+	result.SecretPath = strings.TrimSpace(parameters[SecretPath])
+	result.SecretName = strings.TrimSpace(parameters[SecretName])
 
-	if len(result.headerName) == 0 && len(result.secretPath) != 0 && len(result.secretName) != 0 {
-		return nil,
+	if len(result.HTTPHeaderName) == 0 && len(result.SecretPath) != 0 && len(result.SecretName) != 0 {
+		return result, "",
 			fmt.Errorf("HTTPExport missing %s since %s & %s are specified", HeaderName, SecretPath, SecretName)
 	}
-	if len(result.secretPath) == 0 && len(result.headerName) != 0 && len(result.secretName) != 0 {
-		return nil,
+	if len(result.SecretPath) == 0 && len(result.HTTPHeaderName) != 0 && len(result.SecretName) != 0 {
+		return result, "",
 			fmt.Errorf("HTTPExport missing %s since %s & %s are specified", SecretPath, HeaderName, SecretName)
 	}
-	if len(result.secretName) == 0 && len(result.secretPath) != 0 && len(result.headerName) != 0 {
-		return nil,
+	if len(result.SecretName) == 0 && len(result.SecretPath) != 0 && len(result.HTTPHeaderName) != 0 {
+		return result, "",
 			fmt.Errorf("HTTPExport missing %s since %s & %s are specified", SecretName, SecretPath, HeaderName)
 	}
 
-	return &result, nil
+	return result, method, nil
 }
