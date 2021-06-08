@@ -24,11 +24,6 @@ type DeviceInfo struct {
 	// DataTransform specifies whether or not the DS perform transformations
 	// specified by value descriptor on a actuation or query command.
 	DataTransform bool
-	// InitCmd specifies a device resource command which is automatically
-	// generated whenever a new device is added to the DS.
-	InitCmd string
-	// InitCmdArgs specify arguments to be used when building the InitCmd.
-	InitCmdArgs string
 	// MaxCmdOps defines the maximum number of resource operations that
 	// can be sent to a Driver in a single command.
 	MaxCmdOps int
@@ -36,11 +31,6 @@ type DeviceInfo struct {
 	// result (including the value descriptor name) that can be returned
 	// by a Driver.
 	MaxCmdValueLen int
-	// InitCmd specifies a device resource command which is automatically
-	// generated whenever a new device is removed from the DS.
-	RemoveCmd string
-	// RemoveCmdArgs specify arguments to be used when building the RemoveCmd.
-	RemoveCmdArgs string
 	// ProfilesDir specifies a directory which contains device profiles
 	// files which should be imported on startup.
 	ProfilesDir string

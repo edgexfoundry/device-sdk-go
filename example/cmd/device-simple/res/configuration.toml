@@ -73,12 +73,8 @@ TokenFile = '/tmp/edgex/secrets/device-simple/secrets-token.json'
 
 [Device]
   DataTransform = true
-  InitCmd = ''
-  InitCmdArgs = ''
   MaxCmdOps = 128
   MaxCmdValueLen = 256
-  RemoveCmd = ''
-  RemoveCmdArgs = ''
   ProfilesDir = './res/profiles'
   DevicesDir = './res/devices'
   UpdateLastConnected = false
