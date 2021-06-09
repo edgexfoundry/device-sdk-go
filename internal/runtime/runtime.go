@@ -36,12 +36,10 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/fxamacker/cbor/v2"
-	"github.com/google/uuid"
 )
 
 // GolangRuntime represents the golang runtime environment
@@ -256,77 +254,8 @@ func (gr *GolangRuntime) processEventPayload(envelope types.MessageEnvelope, lc 
 		return nil, err
 	}
 
-	// KindContractInvalid indicates that we likely don't have an Event DTO
-	// so try to process as V1 Event
-	// TODO: Remove this V1 detection once fully switched over to V2 DTOs.
-	event, err = gr.unmarshalV1EventToV2Event(envelope, lc)
-	if err == nil {
-		return event, nil
-	}
-
 	// Still unable to process so assume have invalid AddEventRequest DTO
 	return nil, requestDtoErr
-}
-
-// TODO: Remove when completely switched to V2 Event DTO
-func (gr *GolangRuntime) unmarshalV1EventToV2Event(envelope types.MessageEnvelope, lc logger.LoggingClient) (*dtos.Event, error) {
-	lc.Debug("Processing payload as V1 Event model")
-
-	var err error
-	v1Event := models.Event{}
-
-	err = gr.unmarshalPayload(envelope, &v1Event)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = v1Event.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	v2Event := dtos.Event{
-		Versionable: commonDTO.NewVersionable(),
-		Id:          v1Event.ID,
-		ProfileName: "Unknown",
-		DeviceName:  v1Event.Device,
-		SourceName:  "Unknown",
-		Origin:      v1Event.Origin,
-		Tags:        v1Event.Tags,
-	}
-
-	// V1 Event ID may not be set if Core Data persistence is turned off
-	if len(v2Event.Id) == 0 {
-		v2Event.Id = uuid.NewString()
-	}
-
-	for _, v1Reading := range v1Event.Readings {
-		v2Reading := dtos.BaseReading{
-			Id:           v1Reading.Id,
-			Origin:       v1Reading.Origin,
-			DeviceName:   v1Reading.Device,
-			ResourceName: v1Reading.Name,
-			ProfileName:  "Unknown",
-			ValueType:    v1Reading.ValueType,
-		}
-
-		// V1 Reading ID may not be set if Core Data persistence is turned off
-		if len(v2Reading.Id) == 0 {
-			v2Reading.Id = uuid.NewString()
-		}
-
-		if v1Reading.ValueType == v2.ValueTypeBinary {
-			v2Reading.BinaryValue = v1Reading.BinaryValue
-		} else {
-			v2Reading.Value = v1Reading.Value
-		}
-
-		v2Event.Readings = append(v2Event.Readings, v2Reading)
-	}
-
-	lc.Debug("Using Event DTO created from V1 Event Model")
-
-	return &v2Event, nil
 }
 
 func (gr *GolangRuntime) unmarshalPayload(envelope types.MessageEnvelope, target interface{}) error {

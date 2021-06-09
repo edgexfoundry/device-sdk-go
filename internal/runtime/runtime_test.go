@@ -31,7 +31,6 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
@@ -54,23 +53,6 @@ func createAddEventRequest() requests.AddEventRequest {
 	_ = event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
 	request := requests.NewAddEventRequest(event)
 	return request
-}
-
-var testV1Event = models.Event{
-	ID:     testV2Event.Id,
-	Device: "FamilyRoomThermostat",
-	Origin: testV2Event.Origin,
-	Readings: []models.Reading{
-		{
-			Id:        testV2Event.Readings[0].Id,
-			Origin:    testV2Event.Readings[0].Origin,
-			Device:    "FamilyRoomThermostat",
-			Name:      "Temperature",
-			ValueType: v2.ValueTypeInt64,
-			Value:     "72",
-		},
-	},
-	Tags: nil,
 }
 
 func TestProcessMessageBusRequest(t *testing.T) {
@@ -493,51 +475,11 @@ func TestExecutePipelinePersist(t *testing.T) {
 	assert.Equal(t, context.CorrelationID(), storedObjects[0].CorrelationID, "CorrelationID not as expected")
 }
 
-// TODO: Remove once switch completely to V2 Event DTOs
-func TestProcessMessageJSONWithV1Event(t *testing.T) {
-	expectedCorrelationID := "123-234-345-456"
-
-	transform1WasCalled := false
-
-	eventInBytes, _ := json.Marshal(testV1Event)
-	envelope := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       eventInBytes,
-		ContentType:   clients.ContentTypeJSON,
-	}
-
-	context := appfunction.NewContext(expectedCorrelationID, dic, "")
-
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		transform1WasCalled = true
-
-		require.Equal(t, expectedCorrelationID, appContext.CorrelationID(), "Context doesn't contain expected CorrelationID")
-
-		if result, ok := data.(*dtos.Event); ok {
-			require.True(t, ok, "Should have received EdgeX event")
-			assert.Equal(t, testV2Event.DeviceName, result.DeviceName, "Did not receive expected EdgeX event, wrong device")
-			assert.Equal(t, testV2Event.Id, result.Id, "Did not receive expected EdgeX event, wrong ID")
-		}
-
-		return false, nil
-	}
-
-	runtime := GolangRuntime{}
-	runtime.Initialize(nil)
-	runtime.SetTransforms([]interfaces.AppFunction{transform1})
-
-	result := runtime.ProcessMessage(context, envelope)
-	assert.Nil(t, result, "result should be null")
-	assert.True(t, transform1WasCalled, "transform1 should have been called")
-}
-
 func TestGolangRuntime_processEventPayload(t *testing.T) {
 	jsonV2AddEventPayload, _ := json.Marshal(testAddEventRequest)
 	cborV2AddEventPayload, _ := cbor.Marshal(testAddEventRequest)
 	jsonV2EventPayload, _ := json.Marshal(testAddEventRequest.Event)
 	cborV2EventPayload, _ := cbor.Marshal(testAddEventRequest.Event)
-	jsonV1EventPayload, _ := json.Marshal(testV1Event)
-	cborV1EventPayload, _ := cbor.Marshal(testV1Event)
 
 	notAnEvent := dtos.DeviceResource{
 		Description: "Not An Event",
@@ -547,11 +489,6 @@ func TestGolangRuntime_processEventPayload(t *testing.T) {
 	cborInvalidPayload, _ := cbor.Marshal(notAnEvent)
 
 	expectedV2Event := testV2Event
-	expectedV2EventFromV1Event := testV2Event
-	expectedV2EventFromV1Event.ProfileName = "Unknown"
-	expectedV2EventFromV1Event.SourceName = "Unknown"
-	expectedV2EventFromV1Event.Readings = []dtos.BaseReading{testV2Event.Readings[0]}
-	expectedV2EventFromV1Event.Readings[0].ProfileName = "Unknown"
 
 	tests := []struct {
 		Name        string
@@ -564,8 +501,6 @@ func TestGolangRuntime_processEventPayload(t *testing.T) {
 		{"CBOR V2 Add Event DTO", cborV2AddEventPayload, clients.ContentTypeCBOR, &expectedV2Event, false},
 		{"JSON V2 Event DTO", jsonV2EventPayload, clients.ContentTypeJSON, &expectedV2Event, false},
 		{"CBOR V2 Event DTO", cborV2EventPayload, clients.ContentTypeCBOR, &expectedV2Event, false},
-		{"JSON V1 Event", jsonV1EventPayload, clients.ContentTypeJSON, &expectedV2EventFromV1Event, false},
-		{"CBOR V1 Event", cborV1EventPayload, clients.ContentTypeCBOR, &expectedV2EventFromV1Event, false},
 		{"invalid JSON", jsonInvalidPayload, clients.ContentTypeJSON, nil, true},
 		{"invalid CBOR", cborInvalidPayload, clients.ContentTypeCBOR, nil, true},
 	}
@@ -586,39 +521,6 @@ func TestGolangRuntime_processEventPayload(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Equal(t, testCase.Expected, actual)
-		})
-	}
-}
-
-func TestGolangRuntime_unmarshalV1EventToV2Event(t *testing.T) {
-	target := GolangRuntime{}
-
-	jsonV1Payload, _ := json.Marshal(testV1Event)
-	cborV1Payload, _ := cbor.Marshal(testV1Event)
-
-	expectedEvent := testV2Event
-	expectedEvent.ProfileName = "Unknown"
-	expectedEvent.SourceName = "Unknown"
-	expectedEvent.Readings[0].ProfileName = "Unknown"
-
-	tests := []struct {
-		Name        string
-		Payload     []byte
-		ContentType string
-	}{
-		{"JSON V1 Event", jsonV1Payload, clients.ContentTypeJSON},
-		{"CBOR V1 Event", cborV1Payload, clients.ContentTypeCBOR},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.Name, func(t *testing.T) {
-			envelope := types.MessageEnvelope{}
-			envelope.Payload = testCase.Payload
-			envelope.ContentType = testCase.ContentType
-
-			actual, err := target.unmarshalV1EventToV2Event(envelope, logger.NewMockClient())
-			require.NoError(t, err)
-			require.Equal(t, expectedEvent, *actual)
 		})
 	}
 }
