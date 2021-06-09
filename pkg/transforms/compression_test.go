@@ -38,7 +38,7 @@ const (
 func TestGzip(t *testing.T) {
 
 	comp := NewCompression()
-	continuePipeline, result := comp.CompressWithGZIP(context, []byte(clearString))
+	continuePipeline, result := comp.CompressWithGZIP(ctx, []byte(clearString))
 	assert.True(t, continuePipeline)
 
 	compressed, err := base64.StdEncoding.DecodeString(string(result.([]byte)))
@@ -54,16 +54,16 @@ func TestGzip(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, clearString, string(decoded))
 
-	continuePipeline2, result2 := comp.CompressWithGZIP(context, []byte(clearString))
+	continuePipeline2, result2 := comp.CompressWithGZIP(ctx, []byte(clearString))
 	assert.True(t, continuePipeline2)
 	assert.Equal(t, result.([]byte), result2.([]byte))
-	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
+	assert.Equal(t, ctx.ResponseContentType(), clients.ContentTypeText)
 }
 
 func TestZlib(t *testing.T) {
 
 	comp := NewCompression()
-	continuePipeline, result := comp.CompressWithZLIB(context, []byte(clearString))
+	continuePipeline, result := comp.CompressWithZLIB(ctx, []byte(clearString))
 	assert.True(t, continuePipeline)
 	require.NotNil(t, result)
 
@@ -80,10 +80,10 @@ func TestZlib(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, clearString, string(decoded))
 
-	continuePipeline2, result2 := comp.CompressWithZLIB(context, []byte(clearString))
+	continuePipeline2, result2 := comp.CompressWithZLIB(ctx, []byte(clearString))
 	assert.True(t, continuePipeline2)
 	assert.Equal(t, result.([]byte), result2.([]byte))
-	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
+	assert.Equal(t, ctx.ResponseContentType(), clients.ContentTypeText)
 }
 
 var result []byte
@@ -94,7 +94,7 @@ func BenchmarkGzip(b *testing.B) {
 
 	var enc interface{}
 	for i := 0; i < b.N; i++ {
-		_, enc = comp.CompressWithGZIP(context, []byte(clearString))
+		_, enc = comp.CompressWithGZIP(ctx, []byte(clearString))
 	}
 	b.SetBytes(int64(len(enc.([]byte))))
 	result = enc.([]byte)
@@ -106,7 +106,7 @@ func BenchmarkZlib(b *testing.B) {
 
 	var enc interface{}
 	for i := 0; i < b.N; i++ {
-		_, enc = comp.CompressWithZLIB(context, []byte(clearString))
+		_, enc = comp.CompressWithZLIB(ctx, []byte(clearString))
 	}
 	b.SetBytes(int64(len(enc.([]byte))))
 	result = enc.([]byte)

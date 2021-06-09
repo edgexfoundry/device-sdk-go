@@ -414,3 +414,60 @@ func TestEncrypt(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigurable_PushToCore(t *testing.T) {
+	configurable := Configurable{lc: lc}
+
+	profileName := "MyProfile"
+	deviceName := "MyDevice"
+	resourceName := "MyResource"
+	simpleValueType := "int64"
+	binaryValueType := "binary"
+	badValueType := "bogus"
+	mediaType := "application/mxl"
+	emptyMediaType := ""
+
+	tests := []struct {
+		Name         string
+		ProfileName  *string
+		DeviceName   *string
+		ResourceName *string
+		ValueType    *string
+		MediaType    *string
+		ExpectNil    bool
+	}{
+		{"Valid simple", &profileName, &deviceName, &resourceName, &simpleValueType, nil, false},
+		{"Invalid simple - missing profile", nil, &deviceName, &resourceName, &simpleValueType, nil, true},
+		{"Invalid simple - missing device", &profileName, nil, &resourceName, &simpleValueType, nil, true},
+		{"Invalid simple - missing resource", &profileName, &deviceName, nil, &simpleValueType, nil, true},
+		{"Invalid simple - missing value type", &profileName, &deviceName, &resourceName, nil, nil, true},
+		{"Invalid - bad value type", &profileName, &deviceName, &resourceName, &badValueType, nil, true},
+		{"Valid binary", &profileName, &deviceName, &resourceName, &binaryValueType, &mediaType, false},
+		{"Invalid binary - empty MediaType", &profileName, &deviceName, &resourceName, &binaryValueType, &emptyMediaType, true},
+		{"Invalid binary - missing MediaType", &profileName, &deviceName, &resourceName, &binaryValueType, nil, true},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.Name, func(t *testing.T) {
+			params := make(map[string]string)
+			if testCase.ProfileName != nil {
+				params[ProfileName] = *testCase.ProfileName
+			}
+			if testCase.DeviceName != nil {
+				params[DeviceName] = *testCase.DeviceName
+			}
+			if testCase.ResourceName != nil {
+				params[ResourceName] = *testCase.ResourceName
+			}
+			if testCase.ValueType != nil {
+				params[ValueType] = *testCase.ValueType
+			}
+			if testCase.MediaType != nil {
+				params[MediaType] = *testCase.MediaType
+			}
+
+			transform := configurable.PushToCore(params)
+			assert.Equal(t, testCase.ExpectNil, transform == nil)
+		})
+	}
+}

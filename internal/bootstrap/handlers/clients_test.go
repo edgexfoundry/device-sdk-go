@@ -58,13 +58,19 @@ func TestClientsBootstrapHandler(t *testing.T) {
 		Protocol: "http",
 	}
 
+	metadataClientInfo := config.ClientInfo{
+		Host:     "localhost",
+		Port:     59881,
+		Protocol: "http",
+	}
+
 	commandClientInfo := config.ClientInfo{
 		Host:     "localhost",
 		Port:     59882,
 		Protocol: "http",
 	}
 
-	notificationsClientInfo := config.ClientInfo{
+	notificationClientInfo := config.ClientInfo{
 		Host:     "localhost",
 		Port:     59860,
 		Protocol: "http",
@@ -73,28 +79,32 @@ func TestClientsBootstrapHandler(t *testing.T) {
 	startupTimer := startup.NewStartUpTimer("unit-test")
 
 	tests := []struct {
-		Name                    string
-		CoreDataClientInfo      *config.ClientInfo
-		CommandClientInfo       *config.ClientInfo
-		NotificationsClientInfo *config.ClientInfo
+		Name                   string
+		CoreDataClientInfo     *config.ClientInfo
+		CommandClientInfo      *config.ClientInfo
+		MetadataClientInfo     *config.ClientInfo
+		NotificationClientInfo *config.ClientInfo
 	}{
 		{
-			Name:                    "All Clients",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       &commandClientInfo,
-			NotificationsClientInfo: &notificationsClientInfo,
+			Name:                   "All Clients",
+			CoreDataClientInfo:     &coreDataClientInfo,
+			CommandClientInfo:      &commandClientInfo,
+			MetadataClientInfo:     &metadataClientInfo,
+			NotificationClientInfo: &notificationClientInfo,
 		},
 		{
-			Name:                    "No Clients",
-			CoreDataClientInfo:      nil,
-			CommandClientInfo:       nil,
-			NotificationsClientInfo: nil,
+			Name:                   "No Clients",
+			CoreDataClientInfo:     nil,
+			CommandClientInfo:      nil,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
 		},
 		{
-			Name:                    "Only Core Data Clients",
-			CoreDataClientInfo:      &coreDataClientInfo,
-			CommandClientInfo:       nil,
-			NotificationsClientInfo: nil,
+			Name:                   "Only Core Data Clients",
+			CoreDataClientInfo:     &coreDataClientInfo,
+			CommandClientInfo:      nil,
+			MetadataClientInfo:     nil,
+			NotificationClientInfo: nil,
 		},
 	}
 
@@ -110,8 +120,12 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				configuration.Clients[clients.CoreCommandServiceKey] = commandClientInfo
 			}
 
-			if test.NotificationsClientInfo != nil {
-				configuration.Clients[clients.SupportNotificationsServiceKey] = notificationsClientInfo
+			if test.MetadataClientInfo != nil {
+				configuration.Clients[clients.CoreMetaDataServiceKey] = metadataClientInfo
+			}
+
+			if test.NotificationClientInfo != nil {
+				configuration.Clients[clients.SupportNotificationsServiceKey] = notificationClientInfo
 			}
 
 			dic.Update(di.ServiceConstructorMap{
@@ -124,16 +138,17 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			require.True(t, success)
 
 			eventClient := container.EventClientFrom(dic.Get)
-			valueDescriptorClient := container.ValueDescriptorClientFrom(dic.Get)
 			commandClient := container.CommandClientFrom(dic.Get)
-			notificationsClient := container.NotificationsClientFrom(dic.Get)
+			deviceServiceClient := container.DeviceServiceClientFrom(dic.Get)
+			deviceProfileClient := container.DeviceProfileClientFrom(dic.Get)
+			deviceClient := container.DeviceClientFrom(dic.Get)
+			notificationClient := container.NotificationClientFrom(dic.Get)
+			subscriptionClient := container.SubscriptionClientFrom(dic.Get)
 
 			if test.CoreDataClientInfo != nil {
 				assert.NotNil(t, eventClient)
-				assert.NotNil(t, valueDescriptorClient)
 			} else {
 				assert.Nil(t, eventClient)
-				assert.Nil(t, valueDescriptorClient)
 			}
 
 			if test.CommandClientInfo != nil {
@@ -142,10 +157,22 @@ func TestClientsBootstrapHandler(t *testing.T) {
 				assert.Nil(t, commandClient)
 			}
 
-			if test.NotificationsClientInfo != nil {
-				assert.NotNil(t, notificationsClient)
+			if test.MetadataClientInfo != nil {
+				assert.NotNil(t, deviceServiceClient)
+				assert.NotNil(t, deviceProfileClient)
+				assert.NotNil(t, deviceClient)
 			} else {
-				assert.Nil(t, notificationsClient)
+				assert.Nil(t, deviceServiceClient)
+				assert.Nil(t, deviceProfileClient)
+				assert.Nil(t, deviceClient)
+			}
+
+			if test.NotificationClientInfo != nil {
+				assert.NotNil(t, notificationClient)
+				assert.NotNil(t, subscriptionClient)
+			} else {
+				assert.Nil(t, notificationClient)
+				assert.Nil(t, subscriptionClient)
 			}
 		})
 	}

@@ -18,12 +18,10 @@ package interfaces
 import (
 	"time"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
 )
 
 const DEVICENAME = "devicename"
@@ -71,17 +69,31 @@ type AppFunctionContext interface {
 	LoggingClient() logger.LoggingClient
 	// EventClient returns the Event client. Note if Core Data is not specified in the Clients configuration,
 	// this will return nil.
-	EventClient() coredata.EventClient
+	EventClient() interfaces.EventClient
 	// CommandClient returns the Command client. Note if Support Command is not specified in the Clients configuration,
 	// this will return nil.
 	CommandClient() interfaces.CommandClient
-	// NotificationsClient returns the Notifications client. Note if Support Notifications is not specified in the
+	// NotificationClient returns the Notification client. Note if Support Notifications is not specified in the
 	// Clients configuration, this will return nil.
-	NotificationsClient() notifications.NotificationsClient
-	// PushToCoreData is a convenience function for adding new Event/Reading(s) to core data and
-	// back onto the EdgeX MessageBus. This function uses the Event client and will result in an error if
-	// Core Data is not specified in the Clients configuration
-	PushToCoreData(deviceName string, readingName string, value interface{}) (*dtos.Event, error)
+	NotificationClient() interfaces.NotificationClient
+	// SubscriptionClient returns the Subscription client. Note if Support Notifications is not specified in the
+	// Clients configuration, this will return nil.
+	SubscriptionClient() interfaces.SubscriptionClient
+	// DeviceServiceClient returns the DeviceService client. Note if Core Metadata is not specified in the
+	// Clients configuration, this will return nil.
+	DeviceServiceClient() interfaces.DeviceServiceClient
+	// DeviceProfileClient returns the DeviceProfile client. Note if Core Metadata is not specified in the
+	// Clients configuration, this will return nil.
+	DeviceProfileClient() interfaces.DeviceProfileClient
+	// DeviceClient returns the Device client. Note if Core Metadata is not specified in the
+	// Clients configuration, this will return nil.
+	DeviceClient() interfaces.DeviceClient
+	// PushToCore pushes a new event to Core Data.
+	PushToCore(event dtos.Event) (common.BaseWithIdResponse, error)
+	// GetDeviceResource retrieves the DeviceResource for given profileName and resourceName.
+	// Resources retrieved are cached so multiple calls for same profileName and resourceName don't result in multiple
+	// unneeded HTTP calls to Core Metadata
+	GetDeviceResource(profileName string, resourceName string) (dtos.DeviceResource, error)
 	// AddValue stores a value for access within other functions in pipeline
 	AddValue(key string, value string)
 	// RemoveValue deletes a value stored in the context at the given key

@@ -108,8 +108,8 @@ func TestHTTPPostPut(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			context.AddValue("test", "foo")
-			context.SetRetryData(nil)
+			ctx.AddValue("test", "foo")
+			ctx.SetRetryData(nil)
 			methodUsed = ""
 			sender := NewHTTPSender(`http://`+targetUrl.Host+test.Path, "", test.PersistOnFail)
 			sender.returnInputData = test.ReturnInputData
@@ -118,9 +118,9 @@ func TestHTTPPostPut(t *testing.T) {
 			var resultData interface{}
 
 			if test.ExpectedMethod == http.MethodPost {
-				continueExecuting, resultData = sender.HTTPPost(context, msgStr)
+				continueExecuting, resultData = sender.HTTPPost(ctx, msgStr)
 			} else {
-				continueExecuting, resultData = sender.HTTPPut(context, msgStr)
+				continueExecuting, resultData = sender.HTTPPut(ctx, msgStr)
 			}
 
 			assert.Equal(t, test.ExpectedContinueExecuting, continueExecuting)
@@ -132,9 +132,9 @@ func TestHTTPPostPut(t *testing.T) {
 					assert.NotEqual(t, msgStr, resultData)
 				}
 			}
-			assert.Equal(t, test.RetryDataSet, context.RetryData() != nil)
+			assert.Equal(t, test.RetryDataSet, ctx.RetryData() != nil)
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
-			context.RemoveValue("test")
+			ctx.RemoveValue("test")
 		})
 	}
 }
@@ -214,7 +214,7 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			context.AddValue("test", "foo")
+			ctx.AddValue("test", "foo")
 			methodUsed = ""
 			sender := NewHTTPSenderWithSecretHeader(
 				`http://`+targetUrl.Host+test.Path,
@@ -228,9 +228,9 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 			var err interface{}
 
 			if test.ExpectedMethod == http.MethodPost {
-				continuePipeline, err = sender.HTTPPost(context, msgStr)
+				continuePipeline, err = sender.HTTPPost(ctx, msgStr)
 			} else {
-				continuePipeline, err = sender.HTTPPut(context, msgStr)
+				continuePipeline, err = sender.HTTPPut(ctx, msgStr)
 			}
 
 			assert.Equal(t, test.ExpectToContinue, continuePipeline)
@@ -238,14 +238,14 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 				require.EqualError(t, err.(error), test.ExpectedErrorMessage)
 			}
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
-			context.RemoveValue("test")
+			ctx.RemoveValue("test")
 		})
 	}
 }
 
 func TestHTTPPostNoParameterPassed(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
-	continuePipeline, result := sender.HTTPPost(context, nil)
+	continuePipeline, result := sender.HTTPPost(ctx, nil)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
@@ -254,7 +254,7 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 
 func TestHTTPPutNoParameterPassed(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
-	continuePipeline, result := sender.HTTPPut(context, nil)
+	continuePipeline, result := sender.HTTPPut(ctx, nil)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
@@ -265,7 +265,7 @@ func TestHTTPPostInvalidParameter(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
 	// Channels are not marshalable to JSON and generate an error
 	data := make(chan int)
-	continuePipeline, result := sender.HTTPPost(context, data)
+	continuePipeline, result := sender.HTTPPost(ctx, data)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
@@ -277,7 +277,7 @@ func TestHTTPPutInvalidParameter(t *testing.T) {
 	sender := NewHTTPSender("", "", false)
 	// Channels are not marshalable to JSON and generate an error
 	data := make(chan int)
-	continuePipeline, result := sender.HTTPPut(context, data)
+	continuePipeline, result := sender.HTTPPut(ctx, data)
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")

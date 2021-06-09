@@ -6,7 +6,7 @@ go 1.15
 
 require (
 	github.com/edgexfoundry/app-functions-sdk-go/v2 v2.0.0-dev.52
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.91
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.98
 	github.com/google/uuid v1.2.0
 	github.com/stretchr/testify v1.7.0
 )

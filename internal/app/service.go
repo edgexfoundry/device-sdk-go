@@ -28,11 +28,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	clientInterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
@@ -110,10 +108,10 @@ type contextGroup struct {
 
 // AddRoute allows you to leverage the existing webserver to add routes.
 func (svc *Service) AddRoute(route string, handler func(nethttp.ResponseWriter, *nethttp.Request), methods ...string) error {
-	if route == clients.ApiPingRoute ||
-		route == clients.ApiConfigRoute ||
-		route == clients.ApiMetricsRoute ||
-		route == clients.ApiVersionRoute ||
+	if route == v2.ApiPingRoute ||
+		route == v2.ApiConfigRoute ||
+		route == v2.ApiMetricsRoute ||
+		route == v2.ApiVersionRoute ||
 		route == internal.ApiTriggerRoute {
 		return errors.New("route is reserved")
 	}
@@ -471,7 +469,7 @@ func (svc *Service) RegistryClient() registry.Client {
 }
 
 // EventClient returns the Event client, which may be nil, from the dependency injection container
-func (svc *Service) EventClient() coredata.EventClient {
+func (svc *Service) EventClient() clientInterfaces.EventClient {
 	return container.EventClientFrom(svc.dic.Get)
 }
 
@@ -480,9 +478,29 @@ func (svc *Service) CommandClient() clientInterfaces.CommandClient {
 	return container.CommandClientFrom(svc.dic.Get)
 }
 
-// NotificationsClient returns the Notifications client, which may be nil, from the dependency injection container
-func (svc *Service) NotificationsClient() notifications.NotificationsClient {
-	return container.NotificationsClientFrom(svc.dic.Get)
+// DeviceServiceClient returns the DeviceService client, which may be nil, from the dependency injection container
+func (svc *Service) DeviceServiceClient() clientInterfaces.DeviceServiceClient {
+	return container.DeviceServiceClientFrom(svc.dic.Get)
+}
+
+// DeviceProfileClient returns the DeviceProfile client, which may be nil, from the dependency injection container
+func (svc *Service) DeviceProfileClient() clientInterfaces.DeviceProfileClient {
+	return container.DeviceProfileClientFrom(svc.dic.Get)
+}
+
+// DeviceClient returns the Device client, which may be nil, from the dependency injection container
+func (svc *Service) DeviceClient() clientInterfaces.DeviceClient {
+	return container.DeviceClientFrom(svc.dic.Get)
+}
+
+// NotificationClient returns the Notifications client, which may be nil, from the dependency injection container
+func (svc *Service) NotificationClient() clientInterfaces.NotificationClient {
+	return container.NotificationClientFrom(svc.dic.Get)
+}
+
+// SubscriptionClient returns the Subscription client, which may be nil, from the dependency injection container
+func (svc *Service) SubscriptionClient() clientInterfaces.SubscriptionClient {
+	return container.SubscriptionClientFrom(svc.dic.Get)
 }
 
 func listParameters(parameters map[string]string) string {

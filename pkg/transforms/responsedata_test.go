@@ -31,12 +31,12 @@ func TestSetResponseDataString(t *testing.T) {
 	expected := getExpectedEventXml(t)
 	target := NewResponseData()
 
-	continuePipeline, result := target.SetResponseData(context, expected)
+	continuePipeline, result := target.SetResponseData(ctx, expected)
 
 	assert.True(t, continuePipeline)
 	assert.NotNil(t, result)
 
-	actual := string(context.ResponseData())
+	actual := string(ctx.ResponseData())
 	assert.Equal(t, expected, actual)
 }
 
@@ -44,11 +44,11 @@ func TestSetResponseDataBytes(t *testing.T) {
 	expected := []byte(getExpectedEventXml(t))
 	target := NewResponseData()
 
-	continuePipeline, result := target.SetResponseData(context, expected)
+	continuePipeline, result := target.SetResponseData(ctx, expected)
 	assert.True(t, continuePipeline)
 	assert.NotNil(t, result)
 
-	actual := string(context.ResponseData())
+	actual := string(ctx.ResponseData())
 	assert.Equal(t, string(expected), actual)
 }
 
@@ -61,17 +61,17 @@ func TestSetResponseDataEvent(t *testing.T) {
 
 	expected, _ := json.Marshal(eventIn)
 
-	continuePipeline, result := target.SetResponseData(context, eventIn)
+	continuePipeline, result := target.SetResponseData(ctx, eventIn)
 	assert.True(t, continuePipeline)
 	assert.NotNil(t, result)
 
-	actual := string(context.ResponseData())
+	actual := string(ctx.ResponseData())
 	assert.Equal(t, string(expected), actual)
 }
 
 func TestSetResponseDataNoData(t *testing.T) {
 	target := NewResponseData()
-	continuePipeline, result := target.SetResponseData(context, nil)
+	continuePipeline, result := target.SetResponseData(ctx, nil)
 	assert.Nil(t, result)
 	assert.False(t, continuePipeline)
 }
@@ -80,7 +80,7 @@ func TestSetResponseDataBadType(t *testing.T) {
 	target := NewResponseData()
 
 	// Channels are not marshalable to JSON and generate an error
-	continuePipeline, result := target.SetResponseData(context, make(chan int))
+	continuePipeline, result := target.SetResponseData(ctx, make(chan int))
 	assert.False(t, continuePipeline)
 	require.NotNil(t, result)
 	assert.Contains(t, result.(error).Error(), "passed in data must be of type")

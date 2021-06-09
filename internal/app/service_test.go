@@ -30,6 +30,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -42,6 +43,8 @@ import (
 
 var lc logger.LoggingClient
 var dic *di.Container
+var target *Service
+var baseUrl = "http://localhost:"
 
 func TestMain(m *testing.M) {
 	// No remote and no file results in STDOUT logging only
@@ -54,6 +57,10 @@ func TestMain(m *testing.M) {
 			return &common.ConfigurationStruct{}
 		},
 	})
+
+	target = NewService("unitTest", nil, "")
+	target.dic = dic
+	target.lc = lc
 
 	m.Run()
 }
@@ -551,4 +558,110 @@ func TestFindMatchingFunction(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestService_EventClient(t *testing.T) {
+	actual := target.EventClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.EventClientName: func(get di.Get) interface{} {
+			return v2clients.NewEventClient(baseUrl + "59880")
+		},
+	})
+
+	actual = target.EventClient()
+	assert.NotNil(t, actual)
+}
+
+func TestService_CommandClient(t *testing.T) {
+	actual := target.CommandClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.CommandClientName: func(get di.Get) interface{} {
+			return v2clients.NewCommandClient(baseUrl + "59882")
+		},
+	})
+
+	actual = target.CommandClient()
+	assert.NotNil(t, actual)
+}
+
+func TestService_DeviceServiceClient(t *testing.T) {
+	actual := target.DeviceServiceClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.DeviceServiceClientName: func(get di.Get) interface{} {
+			return v2clients.NewDeviceServiceClient(baseUrl + "59881")
+		},
+	})
+
+	actual = target.DeviceServiceClient()
+	assert.NotNil(t, actual)
+
+}
+
+func TestService_DeviceProfileClient(t *testing.T) {
+	actual := target.DeviceProfileClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.DeviceProfileClientName: func(get di.Get) interface{} {
+			return v2clients.NewDeviceProfileClient(baseUrl + "59881")
+		},
+	})
+
+	actual = target.DeviceProfileClient()
+	assert.NotNil(t, actual)
+}
+
+func TestService_DeviceClient(t *testing.T) {
+	actual := target.DeviceClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.DeviceClientName: func(get di.Get) interface{} {
+			return v2clients.NewDeviceClient(baseUrl + "59881")
+		},
+	})
+
+	actual = target.DeviceClient()
+	assert.NotNil(t, actual)
+
+}
+
+func TestService_NotificationClient(t *testing.T) {
+	actual := target.NotificationClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.NotificationClientName: func(get di.Get) interface{} {
+			return v2clients.NewNotificationClient(baseUrl + "59860")
+		},
+	})
+
+	actual = target.NotificationClient()
+	assert.NotNil(t, actual)
+
+}
+
+func TestService_SubscriptionClient(t *testing.T) {
+	actual := target.SubscriptionClient()
+	assert.Nil(t, actual)
+
+	dic.Update(di.ServiceConstructorMap{
+		container.SubscriptionClientName: func(get di.Get) interface{} {
+			return v2clients.NewSubscriptionClient(baseUrl + "59860")
+		},
+	})
+
+	actual = target.SubscriptionClient()
+	assert.NotNil(t, actual)
+}
+
+func TestService_LoggingClient(t *testing.T) {
+	actual := target.LoggingClient()
+	assert.NotNil(t, actual)
 }

@@ -18,11 +18,8 @@ package interfaces
 import (
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
@@ -101,14 +98,26 @@ type ApplicationService interface {
 	LoggingClient() logger.LoggingClient
 	// EventClient returns the Event client. Note if Core Data is not specified in the Clients configuration,
 	// this will return nil.
-	EventClient() coredata.EventClient
+	EventClient() interfaces.EventClient
 	// CommandClient returns the Command client. Note if Support Command is not specified in the Clients configuration,
 	// this will return nil.
 	CommandClient() interfaces.CommandClient
-	// NotificationsClient returns the Notifications client. Note if Support Notifications is not specified in the
+	// NotificationClient returns the Notification client. Note if Support Notifications is not specified in the
 	// Clients configuration, this will return nil.
-	NotificationsClient() notifications.NotificationsClient
-	// RegistryClient() returns the Registry client. Note the registry must been enable, otherwise this will return nil.
+	NotificationClient() interfaces.NotificationClient
+	// SubscriptionClient returns the Subscription client. Note if Support Notifications is not specified in the
+	// Clients configuration, this will return nil.
+	SubscriptionClient() interfaces.SubscriptionClient
+	// DeviceServiceClient returns the DeviceService client. Note if Core Metadata is not specified in the
+	// Clients configuration, this will return nil.
+	DeviceServiceClient() interfaces.DeviceServiceClient
+	// DeviceProfileClient returns the DeviceProfile client. Note if Core Metadata is not specified in the
+	// Clients configuration, this will return nil.
+	DeviceProfileClient() interfaces.DeviceProfileClient
+	// DeviceClient returns the Device client. Note if Core Metadata is not specified in the
+	// Clients configuration, this will return nil.
+	DeviceClient() interfaces.DeviceClient
+	// RegistryClient returns the Registry client. Note the registry must been enable, otherwise this will return nil.
 	// Useful if service needs to add additional health checks or needs to get endpoint of another registered service
 	RegistryClient() registry.Client
 	// LoadConfigurablePipeline loads the function pipeline from configuration.

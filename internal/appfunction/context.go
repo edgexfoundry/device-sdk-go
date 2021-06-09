@@ -18,6 +18,7 @@ package appfunction
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -25,21 +26,13 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
-
-	"github.com/google/uuid"
 )
 
 // NewContext creates, initializes and return a new Context with implements the interfaces.AppFunctionContext interface
@@ -121,73 +114,6 @@ func (appContext *Context) RetryData() []byte {
 	return appContext.retryData
 }
 
-// PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set.
-// TODO: This function must be reworked for the new V2 Event Client
-func (appContext *Context) PushToCoreData(deviceName string, readingName string, value interface{}) (*dtos.Event, error) {
-	lc := appContext.LoggingClient()
-	lc.Debug("Pushing to CoreData")
-
-	if appContext.EventClient() == nil {
-		return nil, fmt.Errorf("unable to Push To CoreData: '%s' is missing from Clients configuration", clients.CoreDataServiceKey)
-	}
-
-	now := time.Now().UnixNano()
-	val, err := util.CoerceType(value)
-	if err != nil {
-		return nil, err
-	}
-
-	// Temporary use V1 Reading until V2 EventClient is available
-	// TODO: Change to use dtos.Reading
-	v1Reading := models.Reading{
-		Value:     string(val),
-		ValueType: v2.ValueTypeString,
-		Origin:    now,
-		Device:    deviceName,
-		Name:      readingName,
-	}
-
-	readings := make([]models.Reading, 0, 1)
-	readings = append(readings, v1Reading)
-
-	// Temporary use V1 Event until V2 EventClient is available
-	// TODO: Change to use dtos.Event
-	v1Event := &models.Event{
-		Device:   deviceName,
-		Origin:   now,
-		Readings: readings,
-	}
-
-	correlation := uuid.New().String()
-	ctx := context.WithValue(context.Background(), clients.CorrelationHeader, correlation)
-	result, err := appContext.EventClient().Add(ctx, v1Event) // TODO: Update to use V2 EventClient
-	if err != nil {
-		return nil, err
-	}
-	v1Event.ID = result
-
-	// TODO: Remove once V2 EventClient is available
-	v2Reading := dtos.BaseReading{
-		Id:            v1Reading.Id,
-		Origin:        v1Reading.Origin,
-		DeviceName:    v1Reading.Device,
-		ResourceName:  v1Reading.Name,
-		ProfileName:   "",
-		ValueType:     v1Reading.ValueType,
-		SimpleReading: dtos.SimpleReading{Value: v1Reading.Value},
-	}
-
-	// TODO: Remove once V2 EventClient is available
-	v2Event := dtos.Event{
-		Versionable: commonDTO.NewVersionable(),
-		Id:          result,
-		DeviceName:  v1Event.Device,
-		Origin:      v1Event.Origin,
-		Readings:    []dtos.BaseReading{v2Reading},
-	}
-	return &v2Event, nil
-}
-
 // GetSecret returns the secret data from the secret store (secure or insecure) for the specified path.
 func (appContext *Context) GetSecret(path string, keys ...string) (map[string]string, error) {
 	secretProvider := bootstrapContainer.SecretProviderFrom(appContext.dic.Get)
@@ -206,7 +132,7 @@ func (appContext *Context) LoggingClient() logger.LoggingClient {
 }
 
 // EventClient returns the Event client, which may be nil, from the dependency injection container
-func (appContext *Context) EventClient() coredata.EventClient {
+func (appContext *Context) EventClient() interfaces.EventClient {
 	return container.EventClientFrom(appContext.dic.Get)
 }
 
@@ -215,9 +141,29 @@ func (appContext *Context) CommandClient() interfaces.CommandClient {
 	return container.CommandClientFrom(appContext.dic.Get)
 }
 
-// NotificationsClient returns the Notifications client, which may be nil, from the dependency injection container
-func (appContext *Context) NotificationsClient() notifications.NotificationsClient {
-	return container.NotificationsClientFrom(appContext.dic.Get)
+// DeviceServiceClient returns the DeviceService client, which may be nil, from the dependency injection container
+func (appContext *Context) DeviceServiceClient() interfaces.DeviceServiceClient {
+	return container.DeviceServiceClientFrom(appContext.dic.Get)
+}
+
+// DeviceProfileClient returns the DeviceProfile client, which may be nil, from the dependency injection container
+func (appContext *Context) DeviceProfileClient() interfaces.DeviceProfileClient {
+	return container.DeviceProfileClientFrom(appContext.dic.Get)
+}
+
+// DeviceClient returns the Device client, which may be nil, from the dependency injection container
+func (appContext *Context) DeviceClient() interfaces.DeviceClient {
+	return container.DeviceClientFrom(appContext.dic.Get)
+}
+
+// NotificationClient returns the Notification client, which may be nil, from the dependency injection container
+func (appContext *Context) NotificationClient() interfaces.NotificationClient {
+	return container.NotificationClientFrom(appContext.dic.Get)
+}
+
+// SubscriptionClient returns the Subscription client, which may be nil, from the dependency injection container
+func (appContext *Context) SubscriptionClient() interfaces.SubscriptionClient {
+	return container.SubscriptionClientFrom(appContext.dic.Get)
 }
 
 // AddValue stores a value for access within other functions in pipeline
@@ -228,6 +174,32 @@ func (appContext *Context) AddValue(key string, value string) {
 // RemoveValue deletes a value stored in the context at the given key
 func (appContext *Context) RemoveValue(key string) {
 	delete(appContext.contextData, strings.ToLower(key))
+}
+
+// PushToCore pushes a new event to Core Data.
+func (appContext *Context) PushToCore(event dtos.Event) (common.BaseWithIdResponse, error) {
+	client := appContext.EventClient()
+	if client == nil {
+		return common.BaseWithIdResponse{}, errors.New("EventClient not initialized. Core Metadata is missing from clients configuration")
+	}
+
+	request := requests.NewAddEventRequest(event)
+	return client.Add(context.Background(), request)
+}
+
+// GetDeviceResource retrieves the DeviceResource for given profileName and resourceName.
+func (appContext *Context) GetDeviceResource(profileName string, resourceName string) (dtos.DeviceResource, error) {
+	client := appContext.DeviceProfileClient()
+	if client == nil {
+		return dtos.DeviceResource{}, errors.New("DeviceProfileClient not initialized. Core Metadata is missing from clients configuration")
+	}
+
+	response, err := client.DeviceResourceByProfileNameAndResourceName(context.Background(), profileName, resourceName)
+	if err != nil {
+		return dtos.DeviceResource{}, err
+	}
+
+	return response.Resource, nil
 }
 
 // GetValue attempts to retrieve a value stored in the context at the given key
@@ -262,12 +234,12 @@ func (appContext *Context) ApplyValues(format string) (string, error) {
 
 		key := strings.TrimRight(strings.TrimLeft(placeholder, "{"), "}")
 
-		ctxval, found := appContext.GetValue(key)
+		value, found := appContext.GetValue(key)
 
 		attempts[placeholder] = found
 
 		if found {
-			result = strings.Replace(result, placeholder, ctxval, -1)
+			result = strings.Replace(result, placeholder, value, -1)
 		}
 	}
 

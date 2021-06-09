@@ -13,39 +13,84 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 package transforms
 
 import (
+	"context"
 	"errors"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 )
 
 type CoreData struct {
-	DeviceName  string
-	ReadingName string
+	profileName  string
+	deviceName   string
+	resourceName string
+	valueType    string
+	mediaType    string
 }
 
-// NewCoreData Is provided to interact with CoreData
-func NewCoreData() *CoreData {
-	coreData := &CoreData{}
+// NewCoreDataSimpleReading Is provided to interact with CoreData to add a simple reading
+func NewCoreDataSimpleReading(profileName string, deviceName string, resourceName string, valueType string) *CoreData {
+	coreData := &CoreData{
+		profileName:  profileName,
+		deviceName:   deviceName,
+		resourceName: resourceName,
+		valueType:    valueType,
+	}
+	return coreData
+}
+
+// NewCoreDataBinaryReading Is provided to interact with CoreData to add a binary reading
+func NewCoreDataBinaryReading(profileName string, deviceName string, resourceName string, mediaType string) *CoreData {
+	coreData := &CoreData{
+		profileName:  profileName,
+		deviceName:   deviceName,
+		resourceName: resourceName,
+		valueType:    v2.ValueTypeBinary,
+		mediaType:    mediaType,
+	}
 	return coreData
 }
 
 // PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
 func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+	ctx.LoggingClient().Info("Pushing To CoreData...")
+
 	if data == nil {
-		return false, errors.New("No Data Received")
+		return false, errors.New("PushToCoreData - No Data Received")
 	}
 
-	val, err := util.CoerceType(data)
-	if err != nil {
-		return false, err
+	client := ctx.EventClient()
+	if client == nil {
+		return false, errors.New("EventClient not initialized. Core Data is missing from clients configuration")
 	}
 
-	result, err := ctx.PushToCoreData(cdc.DeviceName, cdc.ReadingName, val)
+	event := dtos.NewEvent(cdc.profileName, cdc.deviceName, cdc.resourceName)
+	if cdc.valueType == v2.ValueTypeBinary {
+		reading, err := util.CoerceType(data)
+		if err != nil {
+			return false, err
+		}
+		event.AddBinaryReading(cdc.resourceName, reading, cdc.mediaType)
+	} else if cdc.valueType == v2.ValueTypeString {
+		reading, err := util.CoerceType(data)
+		if err != nil {
+			return false, err
+		}
+		event.AddSimpleReading(cdc.resourceName, cdc.valueType, string(reading))
+	} else {
+		event.AddSimpleReading(cdc.resourceName, cdc.valueType, data)
+	}
+
+	request := requests.NewAddEventRequest(event)
+	result, err := client.Add(context.Background(), request)
 	if err != nil {
 		return false, err
 	}

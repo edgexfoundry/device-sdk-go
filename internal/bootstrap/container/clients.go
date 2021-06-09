@@ -17,55 +17,89 @@ package container
 
 import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 )
 
-// ValueDescriptorClientName contains the name of the ValueDescriptorClient's implementation in the DIC.
-var ValueDescriptorClientName = di.TypeInstanceToName((*coredata.ValueDescriptorClient)(nil))
-
-// ValueDescriptorClientFrom helper function queries the DIC and returns the ValueDescriptorClient's implementation.
-func ValueDescriptorClientFrom(get di.Get) coredata.ValueDescriptorClient {
-	if get(ValueDescriptorClientName) == nil {
-		return nil
-	}
-
-	return get(ValueDescriptorClientName).(coredata.ValueDescriptorClient)
-}
-
 // EventClientName contains the name of the EventClient's implementation in the DIC.
-var EventClientName = di.TypeInstanceToName((*coredata.EventClient)(nil))
+var EventClientName = di.TypeInstanceToName((*interfaces.EventClient)(nil))
 
-// ValueDescriptorClientFrom helper function queries the DIC and returns the ValueDescriptorClient's implementation.
-func EventClientFrom(get di.Get) coredata.EventClient {
+// EventClientFrom helper function queries the DIC and returns the EventClient's implementation.
+func EventClientFrom(get di.Get) interfaces.EventClient {
 	if get(EventClientName) == nil {
 		return nil
 	}
 
-	return get(EventClientName).(coredata.EventClient)
+	return get(EventClientName).(interfaces.EventClient)
 }
 
-// NotificationsClientName contains the name of the NotificationsClientInfo's implementation in the DIC.
-var NotificationsClientName = di.TypeInstanceToName((*notifications.NotificationsClient)(nil))
-
-// NotificationsClientFrom helper function queries the DIC and returns the NotificationsClientInfo's implementation.
-func NotificationsClientFrom(get di.Get) notifications.NotificationsClient {
-	if get(NotificationsClientName) == nil {
-		return nil
-	}
-
-	return get(NotificationsClientName).(notifications.NotificationsClient)
-}
-
-// CommandClientName contains the name of the CommandClientInfo's implementation in the DIC.
+// CommandClientName contains the name of the CommandClient's implementation in the DIC.
 var CommandClientName = di.TypeInstanceToName((*interfaces.CommandClient)(nil))
 
-// NotificationsClientFrom helper function queries the DIC and returns the NotificationsClientInfo's implementation.
+// CommandClientFrom helper function queries the DIC and returns the CommandClient's implementation.
 func CommandClientFrom(get di.Get) interfaces.CommandClient {
 	if get(CommandClientName) == nil {
 		return nil
 	}
 
 	return get(CommandClientName).(interfaces.CommandClient)
+}
+
+// NotificationClientName contains the name of the NotificationClient's implementation in the DIC.
+var NotificationClientName = di.TypeInstanceToName((*interfaces.NotificationClient)(nil))
+
+// NotificationClientFrom helper function queries the DIC and returns the NotificationClient's implementation.
+func NotificationClientFrom(get di.Get) interfaces.NotificationClient {
+	if get(NotificationClientName) == nil {
+		return nil
+	}
+
+	return get(NotificationClientName).(interfaces.NotificationClient)
+}
+
+// SubscriptionClientName contains the name of the SubscriptionClient's implementation in the DIC.
+var SubscriptionClientName = di.TypeInstanceToName((*interfaces.SubscriptionClient)(nil))
+
+// SubscriptionClientFrom helper function queries the DIC and returns the SubscriptionClient's implementation.
+func SubscriptionClientFrom(get di.Get) interfaces.SubscriptionClient {
+	if get(SubscriptionClientName) == nil {
+		return nil
+	}
+
+	return get(SubscriptionClientName).(interfaces.SubscriptionClient)
+}
+
+// DeviceServiceClientName contains the name of the DeviceServiceClient's implementation in the DIC.
+var DeviceServiceClientName = di.TypeInstanceToName((*interfaces.DeviceServiceClient)(nil))
+
+// DeviceServiceClientFrom helper function queries the DIC and returns the DeviceServiceClient's implementation.
+func DeviceServiceClientFrom(get di.Get) interfaces.DeviceServiceClient {
+	if get(DeviceServiceClientName) == nil {
+		return nil
+	}
+
+	return get(DeviceServiceClientName).(interfaces.DeviceServiceClient)
+}
+
+// DeviceProfileClientName contains the name of the DeviceProfileClient's implementation in the DIC.
+var DeviceProfileClientName = di.TypeInstanceToName((*interfaces.DeviceProfileClient)(nil))
+
+// DeviceProfileClientFrom helper function queries the DIC and returns the DeviceProfileClient's implementation.
+func DeviceProfileClientFrom(get di.Get) interfaces.DeviceProfileClient {
+	if get(DeviceProfileClientName) == nil {
+		return nil
+	}
+
+	return get(DeviceProfileClientName).(interfaces.DeviceProfileClient)
+}
+
+// DeviceClientName contains the name of the DeviceClient's implementation in the DIC.
+var DeviceClientName = di.TypeInstanceToName((*interfaces.DeviceClient)(nil))
+
+// DeviceClientFrom helper function queries the DIC and returns the DeviceClient's implementation.
+func DeviceClientFrom(get di.Get) interfaces.DeviceClient {
+	if get(DeviceClientName) == nil {
+		return nil
+	}
+
+	return get(DeviceClientName).(interfaces.DeviceClient)
 }

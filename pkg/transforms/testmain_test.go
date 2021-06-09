@@ -26,19 +26,17 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/urlclient/local"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 )
 
 var lc logger.LoggingClient
 var dic *di.Container
-var context *appfunction.Context
+var ctx *appfunction.Context
 
 func TestMain(m *testing.M) {
 	lc = logger.NewMockClient()
-	eventClient := coredata.NewEventClient(local.New("http://test" + clients.ApiEventRoute))
+	eventClient := http.NewEventClient("http://test")
 
 	config := &common.ConfigurationStruct{}
 
@@ -54,7 +52,7 @@ func TestMain(m *testing.M) {
 		},
 	})
 
-	context = appfunction.NewContext("123", dic, "")
+	ctx = appfunction.NewContext("123", dic, "")
 
 	os.Exit(m.Run())
 }

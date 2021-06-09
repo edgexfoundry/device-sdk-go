@@ -76,11 +76,11 @@ func TestFilter_FilterByProfileName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterByProfileName(context, nil)
+				continuePipeline, result := filter.FilterByProfileName(ctx, nil)
 				assert.EqualError(t, result.(error), "FilterByProfileName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				continuePipeline, result := filter.FilterByProfileName(context, *test.EventIn)
+				continuePipeline, result := filter.FilterByProfileName(ctx, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil && test.EventIn != nil {
@@ -126,11 +126,11 @@ func TestFilter_FilterByDeviceName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterByDeviceName(context, nil)
+				continuePipeline, result := filter.FilterByDeviceName(ctx, nil)
 				assert.EqualError(t, result.(error), "FilterByDeviceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				continuePipeline, result := filter.FilterByDeviceName(context, *test.EventIn)
+				continuePipeline, result := filter.FilterByDeviceName(ctx, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil && test.EventIn != nil {
@@ -176,11 +176,11 @@ func TestFilter_FilterBySourceName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterBySourceName(context, nil)
+				continuePipeline, result := filter.FilterBySourceName(ctx, nil)
 				assert.EqualError(t, result.(error), "FilterBySourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				continuePipeline, result := filter.FilterBySourceName(context, *test.EventIn)
+				continuePipeline, result := filter.FilterBySourceName(ctx, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil && test.EventIn != nil {
@@ -256,11 +256,11 @@ func TestFilter_FilterByResourceName(t *testing.T) {
 			expectedContinue := !test.ExpectedNilResult
 
 			if test.EventIn == nil {
-				continuePipeline, result := filter.FilterByResourceName(context, nil)
+				continuePipeline, result := filter.FilterByResourceName(ctx, nil)
 				assert.EqualError(t, result.(error), "FilterByResourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
-				continuePipeline, result := filter.FilterByResourceName(context, *test.EventIn)
+				continuePipeline, result := filter.FilterByResourceName(ctx, *test.EventIn)
 				assert.Equal(t, expectedContinue, continuePipeline)
 				assert.Equal(t, test.ExpectedNilResult, result == nil)
 				if result != nil {

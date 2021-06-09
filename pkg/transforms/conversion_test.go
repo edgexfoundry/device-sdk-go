@@ -33,17 +33,17 @@ func TestTransformToXML(t *testing.T) {
 	expectedResult := `<Event><ApiVersion></ApiVersion><Id></Id><DeviceName>device1</DeviceName><ProfileName></ProfileName><SourceName></SourceName><Origin>0</Origin></Event>`
 	conv := NewConversion()
 
-	continuePipeline, result := conv.TransformToXML(context, eventIn)
+	continuePipeline, result := conv.TransformToXML(ctx, eventIn)
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
-	assert.Equal(t, clients.ContentTypeXML, context.ResponseContentType())
+	assert.Equal(t, clients.ContentTypeXML, ctx.ResponseContentType())
 	assert.Equal(t, expectedResult, result.(string))
 }
 
 func TestTransformToXMLNoData(t *testing.T) {
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToXML(context, nil)
+	continuePipeline, result := conv.TransformToXML(ctx, nil)
 
 	assert.Equal(t, "No Event Received", result.(error).Error())
 	assert.False(t, continuePipeline)
@@ -51,7 +51,7 @@ func TestTransformToXMLNoData(t *testing.T) {
 
 func TestTransformToXMLNotAnEvent(t *testing.T) {
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToXML(context, "")
+	continuePipeline, result := conv.TransformToXML(ctx, "")
 
 	assert.Equal(t, "Unexpected type received", result.(error).Error())
 	assert.False(t, continuePipeline)
@@ -65,17 +65,17 @@ func TestTransformToJSON(t *testing.T) {
 	}
 	expectedResult := `{"apiVersion":"","id":"","deviceName":"device1","profileName":"","sourceName":"","origin":0,"readings":null}`
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToJSON(context, eventIn)
+	continuePipeline, result := conv.TransformToJSON(ctx, eventIn)
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
-	assert.Equal(t, clients.ContentTypeJSON, context.ResponseContentType())
+	assert.Equal(t, clients.ContentTypeJSON, ctx.ResponseContentType())
 	assert.Equal(t, expectedResult, result.(string))
 }
 
 func TestTransformToJSONNoEvent(t *testing.T) {
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToJSON(context, nil)
+	continuePipeline, result := conv.TransformToJSON(ctx, nil)
 
 	assert.Equal(t, "No Event Received", result.(error).Error())
 	assert.False(t, continuePipeline)
@@ -84,7 +84,7 @@ func TestTransformToJSONNoEvent(t *testing.T) {
 
 func TestTransformToJSONNotAnEvent(t *testing.T) {
 	conv := NewConversion()
-	continuePipeline, result := conv.TransformToJSON(context, "")
+	continuePipeline, result := conv.TransformToJSON(ctx, "")
 	require.EqualError(t, result.(error), "Unexpected type received")
 	assert.False(t, continuePipeline)
 }

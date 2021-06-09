@@ -78,13 +78,13 @@ func pkcs5Trimming(encrypt []byte) []byte {
 func TestNewEncryption(t *testing.T) {
 	enc := NewEncryption(aesData.Key, aesData.InitVector)
 
-	continuePipeline, encrypted := enc.EncryptWithAES(context, []byte(plainString))
+	continuePipeline, encrypted := enc.EncryptWithAES(ctx, []byte(plainString))
 	assert.True(t, continuePipeline)
 
 	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
 	assert.Equal(t, plainString, string(decrypted))
-	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
+	assert.Equal(t, ctx.ResponseContentType(), clients.ContentTypeText)
 }
 
 func TestNewEncryptionWithSecrets(t *testing.T) {
@@ -102,13 +102,13 @@ func TestNewEncryptionWithSecrets(t *testing.T) {
 
 	enc := NewEncryptionWithSecrets(secretPath, secretName, aesData.InitVector)
 
-	continuePipeline, encrypted := enc.EncryptWithAES(context, []byte(plainString))
+	continuePipeline, encrypted := enc.EncryptWithAES(ctx, []byte(plainString))
 	assert.True(t, continuePipeline)
 
 	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
 	assert.Equal(t, plainString, string(decrypted))
-	assert.Equal(t, context.ResponseContentType(), clients.ContentTypeText)
+	assert.Equal(t, ctx.ResponseContentType(), clients.ContentTypeText)
 }
 
 func TestAESNoData(t *testing.T) {
@@ -120,7 +120,7 @@ func TestAESNoData(t *testing.T) {
 
 	enc := NewEncryption(aesData.Key, aesData.InitVector)
 
-	continuePipeline, result := enc.EncryptWithAES(context, nil)
+	continuePipeline, result := enc.EncryptWithAES(ctx, nil)
 	assert.False(t, continuePipeline)
 	assert.Error(t, result.(error), "expect an error")
 }

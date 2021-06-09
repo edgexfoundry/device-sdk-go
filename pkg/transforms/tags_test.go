@@ -70,9 +70,9 @@ func TestTags_AddTags(t *testing.T) {
 			target := NewTags(testCase.TagsToAdd)
 
 			if testCase.FunctionInput != nil {
-				continuePipeline, result = target.AddTags(context, testCase.FunctionInput)
+				continuePipeline, result = target.AddTags(ctx, testCase.FunctionInput)
 			} else {
-				continuePipeline, result = target.AddTags(context, nil)
+				continuePipeline, result = target.AddTags(ctx, nil)
 			}
 
 			if testCase.ErrorExpected {

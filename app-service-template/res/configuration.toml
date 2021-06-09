@@ -76,6 +76,21 @@ TokenFile = '/tmp/edgex/secrets/new-app-service/secrets-token.json'
   Host = 'localhost'
   Port = 59880
 
+  [Clients.core-metadata]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 59881
+
+  [Clients.core-command]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 59882
+
+  [Clients.support-notifications]
+  Protocol = 'http'
+  Host = 'localhost'
+  Port = 59860
+
 [Trigger]
 Type="edgex-messagebus"
   [Trigger.EdgexMessageBus]

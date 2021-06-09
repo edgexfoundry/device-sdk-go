@@ -24,6 +24,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
@@ -49,8 +50,11 @@ const (
 	Retain              = "retain"
 	AutoReconnect       = "autoreconnect"
 	ConnectTimeout      = "connecttimeout"
+	ProfileName         = "profilename"
 	DeviceName          = "devicename"
-	ReadingName         = "readingname"
+	ResourceName        = "resourcename"
+	ValueType           = "valuetype"
+	MediaType           = "mediatype"
 	Rule                = "rule"
 	BatchThreshold      = "batchthreshold"
 	TimeInterval        = "timeinterval"
@@ -189,22 +193,60 @@ func (app *Configurable) Transform(parameters map[string]string) interfaces.AppF
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
 // This function is a configuration function and returns a function pointer.
 func (app *Configurable) PushToCore(parameters map[string]string) interfaces.AppFunction {
+	profileName, ok := parameters[ProfileName]
+	if !ok {
+		app.lc.Errorf("Could not find %s", ProfileName)
+		return nil
+	}
 	deviceName, ok := parameters[DeviceName]
 	if !ok {
-		app.lc.Error("Could not find " + DeviceName)
+		app.lc.Errorf("Could not find %s", DeviceName)
 		return nil
 	}
-	readingName, ok := parameters[ReadingName]
+	resourceName, ok := parameters[ResourceName]
 	if !ok {
-		app.lc.Error("Could not find " + ReadingName)
+		app.lc.Errorf("Could not find %s", ResourceName)
 		return nil
 	}
-	deviceName = strings.TrimSpace(deviceName)
-	readingName = strings.TrimSpace(readingName)
-	transform := transforms.CoreData{
-		DeviceName:  deviceName,
-		ReadingName: readingName,
+	valueType, ok := parameters[ValueType]
+	if !ok {
+		app.lc.Errorf("Could not find %s", ValueType)
+		return nil
 	}
+
+	profileName = strings.TrimSpace(profileName)
+	deviceName = strings.TrimSpace(deviceName)
+	resourceName = strings.TrimSpace(resourceName)
+	valueType = strings.TrimSpace(valueType)
+
+	var transform *transforms.CoreData
+
+	// Converts to upper case and validates it is a validates ValueType
+	valueType, err := v2.NormalizeValueType(valueType)
+	if err != nil {
+		app.lc.Error(err.Error())
+		return nil
+	}
+
+	if valueType == v2.ValueTypeBinary {
+		mediaType, ok := parameters[MediaType]
+		if !ok {
+			app.lc.Error("Could not find " + MediaType)
+			return nil
+		}
+
+		mediaType = strings.TrimSpace(mediaType)
+
+		if len(mediaType) == 0 {
+			app.lc.Error("MediaType can not be empty when ValueType=Binary")
+			return nil
+		}
+
+		transform = transforms.NewCoreDataBinaryReading(profileName, deviceName, resourceName, mediaType)
+	} else {
+		transform = transforms.NewCoreDataSimpleReading(profileName, deviceName, resourceName, valueType)
+	}
+
 	return transform.PushToCoreData
 }
 

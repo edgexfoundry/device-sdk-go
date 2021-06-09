@@ -27,25 +27,25 @@ import (
 )
 
 func TestMQTTSecretSender_setRetryDataPersistFalse(t *testing.T) {
-	context.SetRetryData(nil)
+	ctx.SetRetryData(nil)
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, false)
 	sender.mqttConfig = MQTTSecretConfig{}
-	sender.setRetryData(context, []byte("data"))
-	assert.Nil(t, context.RetryData())
+	sender.setRetryData(ctx, []byte("data"))
+	assert.Nil(t, ctx.RetryData())
 }
 
 func TestMQTTSecretSender_setRetryDataPersistTrue(t *testing.T) {
-	context.SetRetryData(nil)
+	ctx.SetRetryData(nil)
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
-	sender.setRetryData(context, []byte("data"))
-	assert.Equal(t, []byte("data"), context.RetryData())
+	sender.setRetryData(ctx, []byte("data"))
+	assert.Equal(t, []byte("data"), ctx.RetryData())
 }
 
 func TestMQTTSecretSender_MQTTSendNodata(t *testing.T) {
 	sender := NewMQTTSecretSender(MQTTSecretConfig{}, true)
 	sender.mqttConfig = MQTTSecretConfig{}
-	continuePipeline, result := sender.MQTTSend(context, nil)
+	continuePipeline, result := sender.MQTTSend(ctx, nil)
 	require.False(t, continuePipeline)
 	require.Error(t, result.(error))
 }

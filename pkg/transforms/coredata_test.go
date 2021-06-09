@@ -18,26 +18,23 @@ package transforms
 import (
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPushToCore_ShouldFailPipelineOnError(t *testing.T) {
-	coreData := NewCoreData()
-	coreData.DeviceName = "my-device"
-	coreData.ReadingName = "my-device-resource"
-	continuePipeline, result := coreData.PushToCoreData(context, "something")
+	coreData := NewCoreDataSimpleReading("MyProfile", "MyDevice", "MyResource", v2.ValueTypeInt32)
+	continuePipeline, result := coreData.PushToCoreData(ctx, "something")
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
 }
 
 func TestPushToCore_NoData(t *testing.T) {
-	coreData := NewCoreData()
-	coreData.DeviceName = "my-device"
-	coreData.ReadingName = "my-device-resource"
-	continuePipeline, result := coreData.PushToCoreData(context, nil)
+	coreData := NewCoreDataSimpleReading("MyProfile", "MyDevice", "MyResource", v2.ValueTypeInt32)
+	continuePipeline, result := coreData.PushToCoreData(ctx, nil)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, "No Data Received", result.(error).Error())
+	assert.Equal(t, "PushToCoreData - No Data Received", result.(error).Error())
 	assert.False(t, continuePipeline)
 }

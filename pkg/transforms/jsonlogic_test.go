@@ -27,7 +27,7 @@ import (
 func TestJSONLogicSimple(t *testing.T) {
 	jsonLogic := NewJSONLogic(`{"==": [1, 1]}`)
 
-	continuePipeline, result := jsonLogic.Evaluate(context, "{}")
+	continuePipeline, result := jsonLogic.Evaluate(ctx, "{}")
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
@@ -41,7 +41,7 @@ func TestJSONLogicAdvanced(t *testing.T) {
 	  ] }`)
 
 	data := `{ "temp" : 100, "sensor" : { "type" : "temperature" } }`
-	continuePipeline, result := jsonLogic.Evaluate(context, data)
+	continuePipeline, result := jsonLogic.Evaluate(ctx, data)
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
@@ -52,7 +52,7 @@ func TestJSONLogicMalformedJSONRule(t *testing.T) {
 	//missing quote
 	jsonLogic := NewJSONLogic(`{"==: [1, 1]}`)
 
-	continuePipeline, result := jsonLogic.Evaluate(context, `{}`)
+	continuePipeline, result := jsonLogic.Evaluate(ctx, `{}`)
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
@@ -63,7 +63,7 @@ func TestJSONLogicValidJSONBadRule(t *testing.T) {
 	//missing quote
 	jsonLogic := NewJSONLogic(`{"notAnOperator": [1, 1]}`)
 
-	continuePipeline, result := jsonLogic.Evaluate(context, `{}`)
+	continuePipeline, result := jsonLogic.Evaluate(ctx, `{}`)
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
@@ -75,7 +75,7 @@ func TestJSONLogicNoData(t *testing.T) {
 	//missing quote
 	jsonLogic := NewJSONLogic(`{"notAnOperator": [1, 1]}`)
 
-	continuePipeline, result := jsonLogic.Evaluate(context, nil)
+	continuePipeline, result := jsonLogic.Evaluate(ctx, nil)
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
@@ -86,7 +86,7 @@ func TestJSONLogicNonJSONData(t *testing.T) {
 	//missing quote
 	jsonLogic := NewJSONLogic(`{"==": [1, 1]}`)
 
-	continuePipeline, result := jsonLogic.Evaluate(context, "iAmNotJson")
+	continuePipeline, result := jsonLogic.Evaluate(ctx, "iAmNotJson")
 
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)

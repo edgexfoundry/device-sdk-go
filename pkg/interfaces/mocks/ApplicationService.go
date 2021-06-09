@@ -3,18 +3,15 @@
 package mocks
 
 import (
-	coredata "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/coredata"
-	interfaces2 "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
-
 	http "net/http"
+
+	clientsinterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
 
 	interfaces "github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	logger "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	mock "github.com/stretchr/testify/mock"
-
-	notifications "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/notifications"
 
 	registry "github.com/edgexfoundry/go-mod-registry/v2/registry"
 )
@@ -78,15 +75,63 @@ func (_m *ApplicationService) ApplicationSettings() map[string]string {
 }
 
 // CommandClient provides a mock function with given fields:
-func (_m *ApplicationService) CommandClient() interfaces2.CommandClient {
+func (_m *ApplicationService) CommandClient() clientsinterfaces.CommandClient {
 	ret := _m.Called()
 
-	var r0 interfaces2.CommandClient
-	if rf, ok := ret.Get(0).(func() interfaces2.CommandClient); ok {
+	var r0 clientsinterfaces.CommandClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.CommandClient); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interfaces2.CommandClient)
+			r0 = ret.Get(0).(clientsinterfaces.CommandClient)
+		}
+	}
+
+	return r0
+}
+
+// DeviceClient provides a mock function with given fields:
+func (_m *ApplicationService) DeviceClient() clientsinterfaces.DeviceClient {
+	ret := _m.Called()
+
+	var r0 clientsinterfaces.DeviceClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.DeviceClient); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientsinterfaces.DeviceClient)
+		}
+	}
+
+	return r0
+}
+
+// DeviceProfileClient provides a mock function with given fields:
+func (_m *ApplicationService) DeviceProfileClient() clientsinterfaces.DeviceProfileClient {
+	ret := _m.Called()
+
+	var r0 clientsinterfaces.DeviceProfileClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.DeviceProfileClient); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientsinterfaces.DeviceProfileClient)
+		}
+	}
+
+	return r0
+}
+
+// DeviceServiceClient provides a mock function with given fields:
+func (_m *ApplicationService) DeviceServiceClient() clientsinterfaces.DeviceServiceClient {
+	ret := _m.Called()
+
+	var r0 clientsinterfaces.DeviceServiceClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.DeviceServiceClient); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientsinterfaces.DeviceServiceClient)
 		}
 	}
 
@@ -94,15 +139,15 @@ func (_m *ApplicationService) CommandClient() interfaces2.CommandClient {
 }
 
 // EventClient provides a mock function with given fields:
-func (_m *ApplicationService) EventClient() coredata.EventClient {
+func (_m *ApplicationService) EventClient() clientsinterfaces.EventClient {
 	ret := _m.Called()
 
-	var r0 coredata.EventClient
-	if rf, ok := ret.Get(0).(func() coredata.EventClient); ok {
+	var r0 clientsinterfaces.EventClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.EventClient); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(coredata.EventClient)
+			r0 = ret.Get(0).(clientsinterfaces.EventClient)
 		}
 	}
 
@@ -269,16 +314,16 @@ func (_m *ApplicationService) MakeItStop() {
 	_m.Called()
 }
 
-// NotificationsClient provides a mock function with given fields:
-func (_m *ApplicationService) NotificationsClient() notifications.NotificationsClient {
+// NotificationClient provides a mock function with given fields:
+func (_m *ApplicationService) NotificationClient() clientsinterfaces.NotificationClient {
 	ret := _m.Called()
 
-	var r0 notifications.NotificationsClient
-	if rf, ok := ret.Get(0).(func() notifications.NotificationsClient); ok {
+	var r0 clientsinterfaces.NotificationClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.NotificationClient); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(notifications.NotificationsClient)
+			r0 = ret.Get(0).(clientsinterfaces.NotificationClient)
 		}
 	}
 
@@ -344,6 +389,22 @@ func (_m *ApplicationService) StoreSecret(path string, secretData map[string]str
 		r0 = rf(path, secretData)
 	} else {
 		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SubscriptionClient provides a mock function with given fields:
+func (_m *ApplicationService) SubscriptionClient() clientsinterfaces.SubscriptionClient {
+	ret := _m.Called()
+
+	var r0 clientsinterfaces.SubscriptionClient
+	if rf, ok := ret.Get(0).(func() clientsinterfaces.SubscriptionClient); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(clientsinterfaces.SubscriptionClient)
+		}
 	}
 
 	return r0
