@@ -9,6 +9,7 @@ package provision
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +27,7 @@ import (
 )
 
 const (
+	jsonExt = ".json"
 	yamlExt = ".yaml"
 	ymlExt  = ".yml"
 )
@@ -51,33 +53,45 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	lc.Infof("Loading pre-defined profiles from %s", absPath)
 	for _, file := range fileInfo {
 		var profile dtos.DeviceProfile
-
-		fName := file.Name()
-		lfName := strings.ToLower(fName)
-		if strings.HasSuffix(lfName, yamlExt) || strings.HasSuffix(lfName, ymlExt) {
-			fullPath := filepath.Join(absPath, fName)
-			yamlFile, err := os.ReadFile(fullPath)
+		fullPath := filepath.Join(absPath, file.Name())
+		if strings.HasSuffix(fullPath, yamlExt) || strings.HasSuffix(fullPath, ymlExt) {
+			content, err := os.ReadFile(fullPath)
 			if err != nil {
 				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue
 			}
 
-			err = yaml.Unmarshal(yamlFile, &profile)
+			err = yaml.Unmarshal(content, &profile)
 			if err != nil {
-				lc.Errorf("Failed to decode profile %s: %v", fullPath, err)
+				lc.Errorf("Failed to decode profile %s: %v", file.Name(), err)
+				continue
+			}
+		} else if strings.HasSuffix(fullPath, jsonExt) {
+			content, err := os.ReadFile(fullPath)
+			if err != nil {
+				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue
 			}
 
-			_, err = dpc.DeviceProfileByName(context.Background(), profile.Name)
-			if err == nil {
-				lc.Infof("Profile %s exists, using the existing one", profile.Name)
-			} else {
-				lc.Infof("Profile %s not found in Metadata, adding it ...", profile.Name)
-				req := requests.NewDeviceProfileRequest(profile)
-				addProfilesReq = append(addProfilesReq, req)
+			err = json.Unmarshal(content, &profile)
+			if err != nil {
+				lc.Errorf("Failed to decode profile %s: %v", file.Name(), err)
+				continue
 			}
+		} else {
+			continue
+		}
+
+		_, err = dpc.DeviceProfileByName(context.Background(), profile.Name)
+		if err == nil {
+			lc.Infof("Profile %s exists, using the existing one", profile.Name)
+		} else {
+			lc.Infof("Profile %s not found in Metadata, adding it ...", profile.Name)
+			req := requests.NewDeviceProfileRequest(profile)
+			addProfilesReq = append(addProfilesReq, req)
 		}
 	}
+
 	if len(addProfilesReq) == 0 {
 		return nil
 	}
