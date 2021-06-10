@@ -5,7 +5,7 @@ go 1.16
 require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
 	github.com/diegoholiveira/jsonlogic v1.0.1-0.20200220175622-ab7989be08b9
-	github.com/eclipse/paho.mqtt.golang v1.3.4
+	github.com/eclipse/paho.mqtt.golang v1.3.5
 	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.0-dev.61
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.0.0-dev.98
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.0.0-dev.13
