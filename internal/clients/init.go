@@ -80,7 +80,7 @@ func validateClientConfig(configuration *config.ConfigurationStruct) errors.Edge
 }
 
 func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, dic *di.Container) bool {
-	var dependencyList = []string{clients.CoreDataServiceKey, clients.CoreMetaDataServiceKey}
+	var dependencyList = []string{clients.CoreMetaDataServiceKey}
 	var waitGroup sync.WaitGroup
 	checkingErr := true
 
