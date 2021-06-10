@@ -20,23 +20,23 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-registry/v2/registry"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-registry/v2/registry"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestClientsBootstrapHandler(t *testing.T) {
-	configuration := &common.ConfigurationStruct{
+	configuration := &sdkCommon.ConfigurationStruct{
 		Service: config.ServiceInfo{},
 	}
 
@@ -113,19 +113,19 @@ func TestClientsBootstrapHandler(t *testing.T) {
 			configuration.Clients = make(map[string]config.ClientInfo)
 
 			if test.CoreDataClientInfo != nil {
-				configuration.Clients[clients.CoreDataServiceKey] = coreDataClientInfo
+				configuration.Clients[common.CoreDataServiceKey] = coreDataClientInfo
 			}
 
 			if test.CommandClientInfo != nil {
-				configuration.Clients[clients.CoreCommandServiceKey] = commandClientInfo
+				configuration.Clients[common.CoreCommandServiceKey] = commandClientInfo
 			}
 
 			if test.MetadataClientInfo != nil {
-				configuration.Clients[clients.CoreMetaDataServiceKey] = metadataClientInfo
+				configuration.Clients[common.CoreMetaDataServiceKey] = metadataClientInfo
 			}
 
 			if test.NotificationClientInfo != nil {
-				configuration.Clients[clients.SupportNotificationsServiceKey] = notificationClientInfo
+				configuration.Clients[common.SupportNotificationsServiceKey] = notificationClientInfo
 			}
 
 			dic.Update(di.ServiceConstructorMap{

@@ -32,7 +32,7 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 const (
@@ -115,13 +115,13 @@ func (sf *storeForwardInfo) storeForLaterRetry(
 	item.CorrelationID = appContext.CorrelationID()
 
 	appContext.LoggingClient().Trace("Storing data for later retry",
-		clients.CorrelationHeader, appContext.CorrelationID)
+		common.CorrelationHeader, appContext.CorrelationID)
 
 	config := container.ConfigurationFrom(sf.dic.Get)
 	if !config.Writable.StoreAndForward.Enabled {
 		appContext.LoggingClient().Error(
 			"Failed to store item for later retry", "error", "StoreAndForward not enabled",
-			clients.CorrelationHeader, item.CorrelationID)
+			common.CorrelationHeader, item.CorrelationID)
 		return
 	}
 
@@ -130,7 +130,7 @@ func (sf *storeForwardInfo) storeForLaterRetry(
 	if _, err := storeClient.Store(item); err != nil {
 		appContext.LoggingClient().Error("Failed to store item for later retry",
 			"error", err,
-			clients.CorrelationHeader, item.CorrelationID)
+			common.CorrelationHeader, item.CorrelationID)
 	}
 }
 
@@ -161,7 +161,7 @@ func (sf *storeForwardInfo) retryStoredData(serviceKey string) {
 					"Unable to remove stored data item from DB",
 					"error", err,
 					"objectID", item.ID,
-					clients.CorrelationHeader, item.CorrelationID)
+					common.CorrelationHeader, item.CorrelationID)
 			}
 		}
 
@@ -170,7 +170,7 @@ func (sf *storeForwardInfo) retryStoredData(serviceKey string) {
 				lc.Error("Unable to update stored data item in DB",
 					"error", err,
 					"objectID", item.ID,
-					clients.CorrelationHeader, item.CorrelationID)
+					common.CorrelationHeader, item.CorrelationID)
 			}
 		}
 	}
@@ -192,7 +192,7 @@ func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject) ([
 					lc.Trace("Export retry failed. Incrementing retry count",
 						"retries",
 						item.RetryCount,
-						clients.CorrelationHeader,
+						common.CorrelationHeader,
 						item.CorrelationID)
 					itemsToUpdate = append(itemsToUpdate, item)
 					continue
@@ -201,19 +201,19 @@ func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject) ([
 				lc.Trace(
 					"Max retries exceeded. Removing item from DB", "retries",
 					item.RetryCount,
-					clients.CorrelationHeader,
+					common.CorrelationHeader,
 					item.CorrelationID)
 				// Note that item will be removed for DB below.
 			} else {
 				lc.Trace(
 					"Export retry successful. Removing item from DB",
-					clients.CorrelationHeader,
+					common.CorrelationHeader,
 					item.CorrelationID)
 			}
 		} else {
 			lc.Error(
 				"Stored data item's Function Pipeline Version doesn't match current Function Pipeline Version. Removing item from DB",
-				clients.CorrelationHeader,
+				common.CorrelationHeader,
 				item.CorrelationID)
 		}
 
@@ -235,7 +235,7 @@ func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject) boo
 		appContext.AddValue(strings.ToLower(k), v)
 	}
 
-	appContext.LoggingClient().Trace("Retrying stored data", clients.CorrelationHeader, appContext.CorrelationID)
+	appContext.LoggingClient().Trace("Retrying stored data", common.CorrelationHeader, appContext.CorrelationID)
 
 	return sf.runtime.ExecutePipeline(
 		item.Payload,

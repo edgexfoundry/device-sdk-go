@@ -20,12 +20,10 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 )
 
 // TODO: Create your custom type and function(s) and remove these samples
@@ -61,7 +59,7 @@ func (s *Sample) LogEventDetails(ctx interfaces.AppFunctionContext, data interfa
 		len(event.Readings))
 	for index, reading := range event.Readings {
 		switch strings.ToLower(reading.ValueType) {
-		case strings.ToLower(v2.ValueTypeBinary):
+		case strings.ToLower(common.ValueTypeBinary):
 			lc.Infof(
 				"Reading #%d received with ID=%s, Resource=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
 				index+1,
@@ -134,7 +132,7 @@ func (s *Sample) OutputXML(ctx interfaces.AppFunctionContext, data interface{}) 
 	// HTTP response to for the HTTP Trigger
 	// For more details on the SetResponseData() function go here: https://docs.edgexfoundry.org/1.3/microservices/application/ContextAPI/#complete
 	ctx.SetResponseData([]byte(xml))
-	ctx.SetResponseContentType(clients.ContentTypeXML)
+	ctx.SetResponseContentType(common.ContentTypeXML)
 
 	// Returning false terminates the pipeline execution, so this should be last function specified in the pipeline,
 	// which is typical in conjunction with usage of .SetResponseData() function.

@@ -19,7 +19,7 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

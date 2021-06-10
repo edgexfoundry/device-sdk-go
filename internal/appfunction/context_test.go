@@ -24,18 +24,17 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/responses"
-
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
+	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
-	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	commonDtos "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -183,7 +182,7 @@ func TestContext_SetCorrelationID(t *testing.T) {
 }
 
 func TestContext_InputContentType(t *testing.T) {
-	expected := clients.ContentTypeXML
+	expected := common.ContentTypeXML
 	target.inputContentType = expected
 
 	actual := target.InputContentType()
@@ -192,7 +191,7 @@ func TestContext_InputContentType(t *testing.T) {
 }
 
 func TestContext_SetInputContentType(t *testing.T) {
-	expected := clients.ContentTypeCBOR
+	expected := common.ContentTypeCBOR
 
 	target.SetInputContentType(expected)
 	actual := target.inputContentType
@@ -201,7 +200,7 @@ func TestContext_SetInputContentType(t *testing.T) {
 }
 
 func TestContext_ResponseContentType(t *testing.T) {
-	expected := clients.ContentTypeJSON
+	expected := common.ContentTypeJSON
 	target.responseContentType = expected
 
 	actual := target.ResponseContentType()
@@ -210,7 +209,7 @@ func TestContext_ResponseContentType(t *testing.T) {
 }
 
 func TestContext_SetResponseContentType(t *testing.T) {
-	expected := clients.ContentTypeText
+	expected := common.ContentTypeText
 
 	target.SetResponseContentType(expected)
 	actual := target.responseContentType
@@ -415,7 +414,7 @@ func TestContext_ApplyValues_MissingPlaceholder(t *testing.T) {
 
 func TestContext_PushToCore(t *testing.T) {
 	mockClient := clientMocks.EventClient{}
-	mockClient.On("Add", mock.Anything, mock.Anything).Return(common.BaseWithIdResponse{}, nil)
+	mockClient.On("Add", mock.Anything, mock.Anything).Return(commonDtos.BaseWithIdResponse{}, nil)
 	dic.Update(di.ServiceConstructorMap{
 		container.EventClientName: func(get di.Get) interface{} {
 			return &mockClient
@@ -423,7 +422,7 @@ func TestContext_PushToCore(t *testing.T) {
 	})
 
 	event := dtos.NewEvent("MyProfile", "MyDevice", "MyResource")
-	err := event.AddSimpleReading("MyResource", v2.ValueTypeInt32, int32(1234))
+	err := event.AddSimpleReading("MyResource", common.ValueTypeInt32, int32(1234))
 	require.NoError(t, err)
 
 	_, err = target.PushToCore(event)

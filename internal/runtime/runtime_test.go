@@ -18,22 +18,20 @@ package runtime
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"net/http"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/google/uuid"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/fxamacker/cbor/v2"
@@ -50,7 +48,7 @@ var testV2Event = testAddEventRequest.Event
 
 func createAddEventRequest() requests.AddEventRequest {
 	event := dtos.NewEvent("Thermostat", "FamilyRoomThermostat", "Temperature")
-	_ = event.AddSimpleReading("Temperature", v2.ValueTypeInt64, int64(72))
+	_ = event.AddSimpleReading("Temperature", common.ValueTypeInt64, int64(72))
 	request := requests.NewAddEventRequest(event)
 	return request
 }
@@ -67,7 +65,7 @@ func TestProcessMessageBusRequest(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 	context := appfunction.NewContext("testId", dic, "")
 
@@ -91,7 +89,7 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 	context := appfunction.NewContext("testId", dic, "")
 
@@ -110,7 +108,7 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
@@ -142,7 +140,7 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
@@ -185,7 +183,7 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
@@ -241,7 +239,7 @@ func TestProcessMessageTransformError(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: "123-234-345-456",
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 		ReceivedTopic: uuid.NewString(),
 	}
 	context := appfunction.NewContext("testId", dic, "")
@@ -294,7 +292,7 @@ func TestProcessMessageJSON(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	context := appfunction.NewContext("testing", dic, "")
@@ -333,7 +331,7 @@ func TestProcessMessageCBOR(t *testing.T) {
 	envelope := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeCBOR,
+		ContentType:   common.ContentTypeCBOR,
 	}
 
 	context := appfunction.NewContext("testing", dic, "")
@@ -403,11 +401,11 @@ func TestProcessMessageTargetType(t *testing.T) {
 		ExpectedOutputData []byte
 		ErrorExpected      bool
 	}{
-		{"JSON default Target Type", nil, jsonPayload, clients.ContentTypeJSON, eventJsonPayload, false},
-		{"CBOR default Target Type", nil, cborPayload, clients.ContentTypeCBOR, eventJsonPayload, false},
-		{"JSON Event Event DTO", &dtos.Event{}, eventJsonPayload, clients.ContentTypeJSON, eventJsonPayload, false},
-		{"CBOR Event Event DTO", &dtos.Event{}, eventCborPayload, clients.ContentTypeCBOR, eventJsonPayload, false}, // Not re-encoding as CBOR
-		{"Custom Type Json", &CustomType{}, customJsonPayload, clients.ContentTypeJSON, customJsonPayload, false},
+		{"JSON default Target Type", nil, jsonPayload, common.ContentTypeJSON, eventJsonPayload, false},
+		{"CBOR default Target Type", nil, cborPayload, common.ContentTypeCBOR, eventJsonPayload, false},
+		{"JSON Event Event DTO", &dtos.Event{}, eventJsonPayload, common.ContentTypeJSON, eventJsonPayload, false},
+		{"CBOR Event Event DTO", &dtos.Event{}, eventCborPayload, common.ContentTypeCBOR, eventJsonPayload, false}, // Not re-encoding as CBOR
+		{"Custom Type Json", &CustomType{}, customJsonPayload, common.ContentTypeJSON, customJsonPayload, false},
 		{"Byte Slice", &[]byte{}, byteData, "application/binary", byteData, false},
 		{"Target Type Not a pointer", dtos.Event{}, nil, "", nil, true},
 	}
@@ -497,12 +495,12 @@ func TestGolangRuntime_processEventPayload(t *testing.T) {
 		Expected    *dtos.Event
 		ExpectError bool
 	}{
-		{"JSON V2 Add Event DTO", jsonV2AddEventPayload, clients.ContentTypeJSON, &expectedV2Event, false},
-		{"CBOR V2 Add Event DTO", cborV2AddEventPayload, clients.ContentTypeCBOR, &expectedV2Event, false},
-		{"JSON V2 Event DTO", jsonV2EventPayload, clients.ContentTypeJSON, &expectedV2Event, false},
-		{"CBOR V2 Event DTO", cborV2EventPayload, clients.ContentTypeCBOR, &expectedV2Event, false},
-		{"invalid JSON", jsonInvalidPayload, clients.ContentTypeJSON, nil, true},
-		{"invalid CBOR", cborInvalidPayload, clients.ContentTypeCBOR, nil, true},
+		{"JSON V2 Add Event DTO", jsonV2AddEventPayload, common.ContentTypeJSON, &expectedV2Event, false},
+		{"CBOR V2 Add Event DTO", cborV2AddEventPayload, common.ContentTypeCBOR, &expectedV2Event, false},
+		{"JSON V2 Event DTO", jsonV2EventPayload, common.ContentTypeJSON, &expectedV2Event, false},
+		{"CBOR V2 Event DTO", cborV2EventPayload, common.ContentTypeCBOR, &expectedV2Event, false},
+		{"invalid JSON", jsonInvalidPayload, common.ContentTypeJSON, nil, true},
+		{"invalid CBOR", cborInvalidPayload, common.ContentTypeCBOR, nil, true},
 	}
 
 	target := GolangRuntime{}

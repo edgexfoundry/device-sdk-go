@@ -24,7 +24,7 @@ import (
 	"time"
 
 	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/secure"
@@ -174,7 +174,7 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 	if err != nil {
 		return false, err
 	}
-	// if we havent initialized the client yet OR the cache has been invalidated (due to new/updated secrets) we need to (re)initialize the client
+	// if we haven't initialized the client yet OR the cache has been invalidated (due to new/updated secrets) we need to (re)initialize the client
 	if sender.client == nil || sender.secretsLastRetrieved.Before(ctx.SecretsLastUpdated()) {
 		err := sender.initializeMQTTClient(ctx)
 		if err != nil {
@@ -202,7 +202,7 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 	}
 
 	ctx.LoggingClient().Debug("Sent data to MQTT Broker")
-	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", clients.CorrelationHeader, ctx.CorrelationID)
+	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", common.CorrelationHeader, ctx.CorrelationID)
 
 	return true, nil
 }

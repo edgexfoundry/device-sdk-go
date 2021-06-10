@@ -19,8 +19,8 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +37,7 @@ func TestTransformToXML(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
-	assert.Equal(t, clients.ContentTypeXML, ctx.ResponseContentType())
+	assert.Equal(t, common.ContentTypeXML, ctx.ResponseContentType())
 	assert.Equal(t, expectedResult, result.(string))
 }
 
@@ -69,7 +69,7 @@ func TestTransformToJSON(t *testing.T) {
 
 	assert.NotNil(t, result)
 	assert.True(t, continuePipeline)
-	assert.Equal(t, clients.ContentTypeJSON, ctx.ResponseContentType())
+	assert.Equal(t, common.ContentTypeJSON, ctx.ResponseContentType())
 	assert.Equal(t, expectedResult, result.(string))
 }
 

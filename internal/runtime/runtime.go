@@ -30,13 +30,12 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	edgexErrors "github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/fxamacker/cbor/v2"
@@ -191,7 +190,7 @@ func (gr *GolangRuntime) ExecutePipeline(
 				if err, ok := result.(error); ok {
 					appContext.LoggingClient().Error(
 						fmt.Sprintf("Pipeline function #%d resulted in error", functionIndex),
-						"error", err.Error(), clients.CorrelationHeader, appContext.CorrelationID)
+						"error", err.Error(), common.CorrelationHeader, appContext.CorrelationID)
 					if appContext.RetryData() != nil && !isRetry {
 						gr.storeForward.storeForLaterRetry(appContext.RetryData(), appContext, functionIndex)
 					}
@@ -242,7 +241,7 @@ func (gr *GolangRuntime) processEventPayload(envelope types.MessageEnvelope, lc 
 	event := &dtos.Event{}
 	err := gr.unmarshalPayload(envelope, event)
 	if err == nil {
-		err = v2.Validate(event)
+		err = common.Validate(event)
 		if err == nil {
 			lc.Debug("Using Event DTO received")
 			return event, nil
@@ -262,10 +261,10 @@ func (gr *GolangRuntime) unmarshalPayload(envelope types.MessageEnvelope, target
 	var err error
 
 	switch envelope.ContentType {
-	case clients.ContentTypeJSON:
+	case common.ContentTypeJSON:
 		err = json.Unmarshal(envelope.Payload, target)
 
-	case clients.ContentTypeCBOR:
+	case common.ContentTypeCBOR:
 		err = cbor.Unmarshal(envelope.Payload, target)
 
 	default:
@@ -288,7 +287,7 @@ func (gr *GolangRuntime) debugLogEvent(lc logger.LoggingClient, event *dtos.Even
 
 	for index, reading := range event.Readings {
 		switch strings.ToLower(reading.ValueType) {
-		case strings.ToLower(v2.ValueTypeBinary):
+		case strings.ToLower(common.ValueTypeBinary):
 			lc.Debugf("Reading #%d received with ResourceName=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
 				index+1,
 				reading.ResourceName,
@@ -306,5 +305,5 @@ func (gr *GolangRuntime) debugLogEvent(lc logger.LoggingClient, event *dtos.Even
 }
 
 func logError(lc logger.LoggingClient, err error, correlationID string) {
-	lc.Errorf("%s. %s=%s", err.Error(), clients.CorrelationHeader, correlationID)
+	lc.Errorf("%s. %s=%s", err.Error(), common.CorrelationHeader, correlationID)
 }

@@ -30,10 +30,10 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/webserver"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
-	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/gorilla/mux"
@@ -566,7 +566,7 @@ func TestService_EventClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.EventClientName: func(get di.Get) interface{} {
-			return v2clients.NewEventClient(baseUrl + "59880")
+			return clients.NewEventClient(baseUrl + "59880")
 		},
 	})
 
@@ -580,7 +580,7 @@ func TestService_CommandClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.CommandClientName: func(get di.Get) interface{} {
-			return v2clients.NewCommandClient(baseUrl + "59882")
+			return clients.NewCommandClient(baseUrl + "59882")
 		},
 	})
 
@@ -594,7 +594,7 @@ func TestService_DeviceServiceClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceServiceClientName: func(get di.Get) interface{} {
-			return v2clients.NewDeviceServiceClient(baseUrl + "59881")
+			return clients.NewDeviceServiceClient(baseUrl + "59881")
 		},
 	})
 
@@ -609,7 +609,7 @@ func TestService_DeviceProfileClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceProfileClientName: func(get di.Get) interface{} {
-			return v2clients.NewDeviceProfileClient(baseUrl + "59881")
+			return clients.NewDeviceProfileClient(baseUrl + "59881")
 		},
 	})
 
@@ -623,7 +623,7 @@ func TestService_DeviceClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceClientName: func(get di.Get) interface{} {
-			return v2clients.NewDeviceClient(baseUrl + "59881")
+			return clients.NewDeviceClient(baseUrl + "59881")
 		},
 	})
 
@@ -638,7 +638,7 @@ func TestService_NotificationClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.NotificationClientName: func(get di.Get) interface{} {
-			return v2clients.NewNotificationClient(baseUrl + "59860")
+			return clients.NewNotificationClient(baseUrl + "59860")
 		},
 	})
 
@@ -653,7 +653,7 @@ func TestService_SubscriptionClient(t *testing.T) {
 
 	dic.Update(di.ServiceConstructorMap{
 		container.SubscriptionClientName: func(get di.Get) interface{} {
-			return v2clients.NewSubscriptionClient(baseUrl + "59860")
+			return clients.NewSubscriptionClient(baseUrl + "59860")
 		},
 	})
 

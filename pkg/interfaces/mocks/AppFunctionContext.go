@@ -3,10 +3,10 @@
 package mocks
 
 import (
-	clientsinterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
-	common "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	clientsinterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
+	common "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 
-	dtos "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	dtos "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	logger "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 

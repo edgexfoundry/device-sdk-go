@@ -19,9 +19,9 @@ package transforms
 import (
 	"errors"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 )
 
 // Tags contains the list of Tag key/values

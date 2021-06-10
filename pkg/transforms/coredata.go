@@ -22,9 +22,10 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 )
 
 type CoreData struct {
@@ -52,7 +53,7 @@ func NewCoreDataBinaryReading(profileName string, deviceName string, resourceNam
 		profileName:  profileName,
 		deviceName:   deviceName,
 		resourceName: resourceName,
-		valueType:    v2.ValueTypeBinary,
+		valueType:    common.ValueTypeBinary,
 		mediaType:    mediaType,
 	}
 	return coreData
@@ -73,13 +74,13 @@ func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data inte
 	}
 
 	event := dtos.NewEvent(cdc.profileName, cdc.deviceName, cdc.resourceName)
-	if cdc.valueType == v2.ValueTypeBinary {
+	if cdc.valueType == common.ValueTypeBinary {
 		reading, err := util.CoerceType(data)
 		if err != nil {
 			return false, err
 		}
 		event.AddBinaryReading(cdc.resourceName, reading, cdc.mediaType)
-	} else if cdc.valueType == v2.ValueTypeString {
+	} else if cdc.valueType == common.ValueTypeString {
 		reading, err := util.CoerceType(data)
 		if err != nil {
 			return false, err

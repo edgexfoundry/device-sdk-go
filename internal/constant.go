@@ -17,15 +17,14 @@
 package internal
 
 import (
-	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 const (
-	ConfigRegistryStem   = "edgex/appservices/"
-	CorrelationHeaderKey = "X-Correlation-ID"
+	ConfigRegistryStem = "edgex/appservices/"
 
-	ApiTriggerRoute   = contracts.ApiBase + "/trigger"
-	ApiAddSecretRoute = contracts.ApiBase + "/secret"
+	ApiTriggerRoute   = common.ApiBase + "/trigger"
+	ApiAddSecretRoute = common.ApiBase + "/secret"
 )
 
 // SDKVersion indicates the version of the SDK - will be overwritten by build

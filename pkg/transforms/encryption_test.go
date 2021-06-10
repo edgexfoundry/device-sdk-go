@@ -27,8 +27,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,13 +37,19 @@ const (
 	key         = "aquqweoruqwpeoruqwpoeruqwpoierupqoweiurpoqwiuerpqowieurqpowieurpoqiweuroipwqure"
 )
 
-var aesData = models.EncryptionDetails{
+type encryptionDetails struct {
+	Algo       string
+	Key        string
+	InitVector string
+}
+
+var aesData = encryptionDetails{
 	Algo:       "AES",
 	Key:        key,
 	InitVector: iv,
 }
 
-func aesDecrypt(crypt []byte, aesData models.EncryptionDetails) []byte {
+func aesDecrypt(crypt []byte, aesData encryptionDetails) []byte {
 	hash := sha1.New()
 
 	hash.Write([]byte((aesData.Key)))
@@ -84,7 +89,7 @@ func TestNewEncryption(t *testing.T) {
 	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
 	assert.Equal(t, plainString, string(decrypted))
-	assert.Equal(t, ctx.ResponseContentType(), clients.ContentTypeText)
+	assert.Equal(t, ctx.ResponseContentType(), common.ContentTypeText)
 }
 
 func TestNewEncryptionWithSecrets(t *testing.T) {
@@ -108,11 +113,11 @@ func TestNewEncryptionWithSecrets(t *testing.T) {
 	decrypted := aesDecrypt(encrypted.([]byte), aesData)
 
 	assert.Equal(t, plainString, string(decrypted))
-	assert.Equal(t, ctx.ResponseContentType(), clients.ContentTypeText)
+	assert.Equal(t, ctx.ResponseContentType(), common.ContentTypeText)
 }
 
 func TestAESNoData(t *testing.T) {
-	aesData := models.EncryptionDetails{
+	aesData := encryptionDetails{
 		Algo:       "AES",
 		Key:        key,
 		InitVector: iv,

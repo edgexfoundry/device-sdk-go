@@ -20,12 +20,12 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 // Clients contains references to dependencies required by the Clients bootstrap implementation.
@@ -56,23 +56,23 @@ func (_ *Clients) BootstrapHandler(
 
 	// Use of these client interfaces is optional, so they are not required to be configured. For instance if not
 	// sending commands, then don't need to have the Command client in the configuration.
-	if val, ok := config.Clients[clients.CoreDataServiceKey]; ok {
-		eventClient = v2clients.NewEventClient(val.Url())
+	if val, ok := config.Clients[common.CoreDataServiceKey]; ok {
+		eventClient = clients.NewEventClient(val.Url())
 	}
 
-	if val, ok := config.Clients[clients.CoreCommandServiceKey]; ok {
-		commandClient = v2clients.NewCommandClient(val.Url())
+	if val, ok := config.Clients[common.CoreCommandServiceKey]; ok {
+		commandClient = clients.NewCommandClient(val.Url())
 	}
 
-	if val, ok := config.Clients[clients.CoreMetaDataServiceKey]; ok {
-		deviceServiceClient = v2clients.NewDeviceServiceClient(val.Url())
-		deviceProfileClient = v2clients.NewDeviceProfileClient(val.Url())
-		deviceClient = v2clients.NewDeviceClient(val.Url())
+	if val, ok := config.Clients[common.CoreMetaDataServiceKey]; ok {
+		deviceServiceClient = clients.NewDeviceServiceClient(val.Url())
+		deviceProfileClient = clients.NewDeviceProfileClient(val.Url())
+		deviceClient = clients.NewDeviceClient(val.Url())
 	}
 
-	if val, ok := config.Clients[clients.SupportNotificationsServiceKey]; ok {
-		notificationClient = v2clients.NewNotificationClient(val.Url())
-		subscriptionClient = v2clients.NewSubscriptionClient(val.Url())
+	if val, ok := config.Clients[common.SupportNotificationsServiceKey]; ok {
+		notificationClient = clients.NewNotificationClient(val.Url())
+		subscriptionClient = clients.NewSubscriptionClient(val.Url())
 	}
 
 	// Note that all the clients are optional so some or all these clients may be nil

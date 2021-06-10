@@ -25,7 +25,7 @@ import (
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
@@ -33,8 +33,8 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
@@ -149,7 +149,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 					}
 
 					lc.Debugf("Published background message to bus on %s topic", publishTopic)
-					lc.Tracef("%s=%s", clients.CorrelationHeader, bg.CorrelationID)
+					lc.Tracef("%s=%s", common.CorrelationHeader, bg.CorrelationID)
 				}()
 			}
 		}
@@ -171,7 +171,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 
 func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic types.TopicChannel, message types.MessageEnvelope) {
 	logger.Debugf("Received message from MessageBus on topic '%s'. Content-Type=%s", triggerTopic.Topic, message.ContentType)
-	logger.Tracef("%s=%s", clients.CorrelationHeader, message.CorrelationID)
+	logger.Tracef("%s=%s", common.CorrelationHeader, message.CorrelationID)
 
 	appContext := appfunction.NewContext(message.CorrelationID, trigger.dic, message.ContentType)
 
@@ -187,10 +187,10 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 		if appContext.ResponseContentType() != "" {
 			contentType = appContext.ResponseContentType()
 		} else {
-			contentType = clients.ContentTypeJSON
+			contentType = common.ContentTypeJSON
 			if appContext.ResponseData()[0] != byte('{') {
 				// If not JSON then assume it is CBOR
-				contentType = clients.ContentTypeCBOR
+				contentType = common.ContentTypeCBOR
 			}
 		}
 		outputEnvelope := types.MessageEnvelope{
@@ -209,11 +209,11 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 		}
 
 		logger.Debugf("Published message to bus on '%s' topic", publishTopic)
-		logger.Tracef("%s=%s", clients.CorrelationHeader, message.CorrelationID)
+		logger.Tracef("%s=%s", common.CorrelationHeader, message.CorrelationID)
 	}
 }
 
-func (_ *Trigger) createMessagingClientConfig(localConfig common.MessageBusConfig) types.MessageBusConfig {
+func (_ *Trigger) createMessagingClientConfig(localConfig sdkCommon.MessageBusConfig) types.MessageBusConfig {
 	clientConfig := types.MessageBusConfig{
 		PublishHost: types.HostInfo{
 			Host:     localConfig.PublishHost.Host,

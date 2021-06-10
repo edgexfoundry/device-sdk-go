@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 )
 
 // Conversion houses various built in conversion transforms (XML, JSON, CSV)
@@ -50,7 +50,7 @@ func (f Conversion) TransformToXML(ctx interfaces.AppFunctionContext, data inter
 			return false, fmt.Errorf("unable to marshal Event to XML: %s", err.Error())
 		}
 
-		ctx.SetResponseContentType(clients.ContentTypeXML)
+		ctx.SetResponseContentType(common.ContentTypeXML)
 		return true, xml
 	}
 
@@ -69,7 +69,7 @@ func (f Conversion) TransformToJSON(ctx interfaces.AppFunctionContext, data inte
 		if err != nil {
 			return false, errors.New("Error marshalling JSON")
 		}
-		ctx.SetResponseContentType(clients.ContentTypeJSON)
+		ctx.SetResponseContentType(common.ContentTypeJSON)
 		// should we return a byte[] or string?
 		// return b
 		return true, string(b)

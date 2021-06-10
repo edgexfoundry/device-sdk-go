@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -88,7 +88,7 @@ func TestSetResponseDataBadType(t *testing.T) {
 
 func getExpectedEventXml(t *testing.T) string {
 	event := dtos.NewEvent("profile1", "dev1", "source1")
-	event.AddSimpleReading("resource1", v2.ValueTypeInt32, int32(32))
+	event.AddSimpleReading("resource1", common.ValueTypeInt32, int32(32))
 
 	xml, err := event.ToXML()
 	require.NoError(t, err)

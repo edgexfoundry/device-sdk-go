@@ -19,8 +19,8 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -194,24 +194,24 @@ func TestFilter_FilterBySourceName(t *testing.T) {
 func TestFilter_FilterByResourceName(t *testing.T) {
 	// event with a reading for resource 1
 	resource1Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
-	err := resource1Event.AddSimpleReading(resource1, v2.ValueTypeInt32, int32(123))
+	err := resource1Event.AddSimpleReading(resource1, common.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	// event with a reading for resource 2
 	resource2Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
-	err = resource2Event.AddSimpleReading(resource2, v2.ValueTypeInt32, int32(123))
+	err = resource2Event.AddSimpleReading(resource2, common.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	// event with a reading for resource 3
 	resource3Event := dtos.NewEvent(profileName1, deviceName1, sourceName1)
-	err = resource3Event.AddSimpleReading(resource3, v2.ValueTypeInt32, int32(123))
+	err = resource3Event.AddSimpleReading(resource3, common.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	// event with readings for resource 1 & 2
 	twoResourceEvent := dtos.NewEvent(profileName1, deviceName1, sourceName1)
-	err = twoResourceEvent.AddSimpleReading(resource1, v2.ValueTypeInt32, int32(123))
+	err = twoResourceEvent.AddSimpleReading(resource1, common.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
-	err = twoResourceEvent.AddSimpleReading(resource2, v2.ValueTypeInt32, int32(123))
+	err = twoResourceEvent.AddSimpleReading(resource2, common.ValueTypeInt32, int32(123))
 	require.NoError(t, err)
 
 	tests := []struct {

@@ -28,7 +28,7 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 type Compression struct {
@@ -72,7 +72,7 @@ func (compression *Compression) CompressWithGZIP(ctx interfaces.AppFunctionConte
 	}
 
 	// Set response "content-type" header to "text/plain"
-	ctx.SetResponseContentType(clients.ContentTypeText)
+	ctx.SetResponseContentType(common.ContentTypeText)
 
 	return true, bytesBufferToBase64(buf)
 
@@ -109,7 +109,7 @@ func (compression *Compression) CompressWithZLIB(ctx interfaces.AppFunctionConte
 	}
 
 	// Set response "content-type" header to "text/plain"
-	ctx.SetResponseContentType(clients.ContentTypeText)
+	ctx.SetResponseContentType(common.ContentTypeText)
 
 	return true, bytesBufferToBase64(buf)
 

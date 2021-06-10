@@ -19,17 +19,16 @@ package functions
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/stretchr/testify/require"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // This file contains example of how to unit test pipeline functions
@@ -79,7 +78,7 @@ func TestSample_OutputXML(t *testing.T) {
 	testEvent := createTestEvent(t)
 	xml, _ := testEvent.ToXML()
 	expectedContinuePipeline := false
-	expectedContentType := clients.ContentTypeXML
+	expectedContentType := common.ContentTypeXML
 
 	target := NewSample()
 	actualContinuePipeline, result := target.OutputXML(appContext, xml)
@@ -97,7 +96,7 @@ func createTestEvent(t *testing.T) dtos.Event {
 	resourceName := "MyResource"
 
 	event := dtos.NewEvent(profileName, deviceName, sourceName)
-	err := event.AddSimpleReading(resourceName, v2.ValueTypeInt32, int32(1234))
+	err := event.AddSimpleReading(resourceName, common.ValueTypeInt32, int32(1234))
 	require.NoError(t, err)
 
 	event.Tags = map[string]string{

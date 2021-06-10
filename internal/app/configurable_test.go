@@ -19,7 +19,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -154,7 +155,7 @@ func TestHTTPExport(t *testing.T) {
 	configurable := Configurable{lc: lc}
 
 	testUrl := "http://url"
-	testMimeType := clients.ContentTypeJSON
+	testMimeType := common.ContentTypeJSON
 	testPersistOnError := "false"
 	testBadPersistOnError := "bogus"
 	testContinueOnSendError := "true"

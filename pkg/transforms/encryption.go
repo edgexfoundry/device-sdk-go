@@ -26,10 +26,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 type Encryption struct {
@@ -131,7 +131,7 @@ func (aesData Encryption) EncryptWithAES(ctx interfaces.AppFunctionContext, data
 	encodedData := []byte(base64.StdEncoding.EncodeToString(encrypted))
 
 	// Set response "content-type" header to "text/plain"
-	ctx.SetResponseContentType(clients.ContentTypeText)
+	ctx.SetResponseContentType(common.ContentTypeText)
 
 	return true, encodedData
 }

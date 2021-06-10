@@ -24,9 +24,9 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
 const (
@@ -222,13 +222,13 @@ func (app *Configurable) PushToCore(parameters map[string]string) interfaces.App
 	var transform *transforms.CoreData
 
 	// Converts to upper case and validates it is a validates ValueType
-	valueType, err := v2.NormalizeValueType(valueType)
+	valueType, err := common.NormalizeValueType(valueType)
 	if err != nil {
 		app.lc.Error(err.Error())
 		return nil
 	}
 
-	if valueType == v2.ValueTypeBinary {
+	if valueType == common.ValueTypeBinary {
 		mediaType, ok := parameters[MediaType]
 		if !ok {
 			app.lc.Error("Could not find " + MediaType)

@@ -5,7 +5,7 @@ package mocks
 import (
 	http "net/http"
 
-	clientsinterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	clientsinterfaces "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 
 	interfaces "github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 

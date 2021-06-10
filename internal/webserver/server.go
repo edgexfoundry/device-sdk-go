@@ -21,16 +21,15 @@ import (
 	"net/http"
 	"time"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/controller/rest"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 
 	"github.com/gorilla/mux"
 )
@@ -38,7 +37,7 @@ import (
 // WebServer handles the webserver configuration
 type WebServer struct {
 	dic        *di.Container
-	config     *common.ConfigurationStruct
+	config     *sdkCommon.ConfigurationStruct
 	lc         logger.LoggingClient
 	router     *mux.Router
 	controller *rest.Controller
@@ -78,10 +77,10 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 
 	webserver.lc.Info("Registering standard routes...")
 
-	router.HandleFunc(contracts.ApiPingRoute, controller.Ping).Methods(http.MethodGet)
-	router.HandleFunc(contracts.ApiVersionRoute, controller.Version).Methods(http.MethodGet)
-	router.HandleFunc(contracts.ApiMetricsRoute, controller.Metrics).Methods(http.MethodGet)
-	router.HandleFunc(contracts.ApiConfigRoute, controller.Config).Methods(http.MethodGet)
+	router.HandleFunc(common.ApiPingRoute, controller.Ping).Methods(http.MethodGet)
+	router.HandleFunc(common.ApiVersionRoute, controller.Version).Methods(http.MethodGet)
+	router.HandleFunc(common.ApiMetricsRoute, controller.Metrics).Methods(http.MethodGet)
+	router.HandleFunc(common.ApiConfigRoute, controller.Config).Methods(http.MethodGet)
 	router.HandleFunc(internal.ApiAddSecretRoute, controller.AddSecret).Methods(http.MethodPost)
 
 	/// Trigger is not considered a standard route. Trigger route (when configured) is setup by the HTTP Trigger

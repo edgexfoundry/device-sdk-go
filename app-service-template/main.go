@@ -21,14 +21,14 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"new-app-service/config"
+	"new-app-service/functions"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
-	"new-app-service/config"
 
-	"new-app-service/functions"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 const (

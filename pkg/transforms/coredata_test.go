@@ -18,12 +18,13 @@ package transforms
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPushToCore_ShouldFailPipelineOnError(t *testing.T) {
-	coreData := NewCoreDataSimpleReading("MyProfile", "MyDevice", "MyResource", v2.ValueTypeInt32)
+	coreData := NewCoreDataSimpleReading("MyProfile", "MyDevice", "MyResource", common.ValueTypeInt32)
 	continuePipeline, result := coreData.PushToCoreData(ctx, "something")
 
 	assert.NotNil(t, result)
@@ -31,7 +32,7 @@ func TestPushToCore_ShouldFailPipelineOnError(t *testing.T) {
 }
 
 func TestPushToCore_NoData(t *testing.T) {
-	coreData := NewCoreDataSimpleReading("MyProfile", "MyDevice", "MyResource", v2.ValueTypeInt32)
+	coreData := NewCoreDataSimpleReading("MyProfile", "MyDevice", "MyResource", common.ValueTypeInt32)
 	continuePipeline, result := coreData.PushToCoreData(ctx, nil)
 
 	assert.NotNil(t, result)

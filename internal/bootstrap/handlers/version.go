@@ -17,19 +17,19 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+	clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonDtos "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 )
 
 const (
@@ -85,12 +85,19 @@ func (vv *VersionValidator) BootstrapHandler(
 		return true
 	}
 
-	url := config.Clients[clients.CoreDataServiceKey].Url() + v2.ApiVersionRoute
-	var data []byte
+	val, ok := config.Clients[common.CoreDataServiceKey]
+	if !ok {
+		logger.Error("Core Data missing from Clients configuration: Unable to get version of Core Data")
+		return false
+	}
+
+	client := clients.NewCommonClient(val.Url())
+
+	var response commonDtos.VersionResponse
 	var err error
 	for startupTimer.HasNotElapsed() {
-		if data, err = clients.GetRequestWithURL(context.Background(), url); err != nil {
-			logger.Warn("Unable to get version of Core Services", "error", err)
+		if response, err = client.Version(context.Background()); err != nil {
+			logger.Warnf("Unable to get version of Core Data: %w", err)
 			startupTimer.SleepForInterval()
 			continue
 		}
@@ -98,22 +105,11 @@ func (vv *VersionValidator) BootstrapHandler(
 	}
 
 	if err != nil {
-		logger.Warn("Unable to get version of Core Services after retries", "error", err)
+		logger.Errorf("Unable to get version of Core Data after retries: %w", err)
 		return false
 	}
 
-	versionJson := map[string]string{}
-	err = json.Unmarshal(data, &versionJson)
-	if err != nil {
-		logger.Error("Unable to un-marshal Core Services version data", "error", err)
-		return false
-	}
-
-	coreVersion, ok := versionJson[CoreServiceVersionKey]
-	if !ok {
-		logger.Error(fmt.Sprintf("Core Services version data missing '%s' information", CoreServiceVersionKey))
-		return false
-	}
+	coreVersion := response.Version
 
 	if coreVersion == CorePreReleaseVersion {
 		logger.Info(
@@ -141,14 +137,14 @@ func (vv *VersionValidator) BootstrapHandler(
 	// Do Major versions match?
 	if coreVersionParts[0] == sdkVersionParts[0] {
 		logger.Debug(
-			fmt.Sprintf("Confirmed Core Services version (%s) is compatible with SDK's version (%s)",
+			fmt.Sprintf("Confirmed Core Data version (%s) is compatible with SDK's version (%s)",
 				coreVersion,
 				internal.SDKVersion))
 		return true
 	}
 
 	logger.Error(
-		fmt.Sprintf("Core services version (%s) is not compatible with SDK's version(%s)",
+		fmt.Sprintf("Core Data version (%s) is not compatible with SDK's version(%s)",
 			coreVersion,
 			internal.SDKVersion))
 

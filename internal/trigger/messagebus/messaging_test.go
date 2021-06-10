@@ -23,21 +23,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
@@ -54,7 +53,7 @@ var expectedEvent = addEventRequest.Event
 
 func createTestEventRequest() requests.AddEventRequest {
 	event := dtos.NewEvent("thermostat", "LivingRoomThermostat", "temperature")
-	_ = event.AddSimpleReading("temperature", v2.ValueTypeInt64, int64(38))
+	_ = event.AddSimpleReading("temperature", common.ValueTypeInt64, int64(38))
 	request := requests.NewAddEventRequest(event)
 	return request
 }
@@ -72,19 +71,19 @@ func TestMain(m *testing.M) {
 
 func TestInitializeNotSecure(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
 
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5563,
 					Protocol:     "tcp",
 					PublishTopic: "publish",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5563,
 					Protocol:        "tcp",
@@ -115,19 +114,19 @@ func TestInitializeNotSecure(t *testing.T) {
 func TestInitializeSecure(t *testing.T) {
 	secretName := "redisdb"
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
 
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5563,
 					Protocol:     "tcp",
 					PublishTopic: "publish",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5563,
 					Protocol:        "tcp",
@@ -170,19 +169,19 @@ func TestInitializeSecure(t *testing.T) {
 
 func TestInitializeBadConfiguration(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
 
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "aaaa", //as type is not "zero", should return an error on client initialization
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5568,
 					Protocol:     "tcp",
 					PublishTopic: "publish",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5568,
 					Protocol:        "tcp",
@@ -207,18 +206,18 @@ func TestInitializeBadConfiguration(t *testing.T) {
 
 func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5566,
 					Protocol:     "tcp",
 					PublishTopic: "",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5564,
 					Protocol:        "tcp",
@@ -257,7 +256,7 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	testClientConfig := types.MessageBusConfig{
@@ -285,18 +284,18 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5586,
 					Protocol:     "tcp",
 					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5584,
 					Protocol:        "tcp",
@@ -362,7 +361,7 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	err = testClient.Publish(message, "SubscribeTopic")
@@ -391,18 +390,18 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5701,
 					Protocol:     "tcp",
 					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5702,
 					Protocol:        "tcp",
@@ -465,7 +464,7 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	err = testClient.Publish(message, "SubscribeTopic")
@@ -488,25 +487,25 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 		case msgs := <-testTopics[0].Messages:
 			receiveMessage = false
 			assert.Equal(t, "{;)Transformed", string(msgs.Payload))
-			assert.Equal(t, clients.ContentTypeJSON, msgs.ContentType)
+			assert.Equal(t, common.ContentTypeJSON, msgs.ContentType)
 		}
 	}
 }
 
 func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5703,
 					Protocol:     "tcp",
 					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5704,
 					Protocol:        "tcp",
@@ -566,7 +565,7 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	err = testClient.Publish(message, "SubscribeTopic")
@@ -589,25 +588,25 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 		case msgs := <-testTopics[0].Messages:
 			receiveMessage = false
 			assert.Equal(t, "Transformed", string(msgs.Payload))
-			assert.Equal(t, clients.ContentTypeCBOR, msgs.ContentType)
+			assert.Equal(t, common.ContentTypeCBOR, msgs.ContentType)
 		}
 	}
 }
 
 func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5588,
 					Protocol:     "tcp",
 					PublishTopic: "PublishTopic",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5590,
 					Protocol:        "tcp",
@@ -661,7 +660,7 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       expectedPayload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	background <- message
@@ -681,18 +680,18 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 }
 
 func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
-	config := common.ConfigurationStruct{
-		Trigger: common.TriggerInfo{
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
 			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: common.MessageBusConfig{
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
 				Type: "zero",
-				PublishHost: common.PublishHostInfo{
+				PublishHost: sdkCommon.PublishHostInfo{
 					Host:         "*",
 					Port:         5592,
 					Protocol:     "tcp",
 					PublishTopic: "",
 				},
-				SubscribeHost: common.SubscribeHostInfo{
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
 					Host:            "localhost",
 					Port:            5594,
 					Protocol:        "tcp",
@@ -729,7 +728,7 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	message := types.MessageEnvelope{
 		CorrelationID: expectedCorrelationID,
 		Payload:       payload,
-		ContentType:   clients.ContentTypeJSON,
+		ContentType:   common.ContentTypeJSON,
 	}
 
 	testClientConfig := types.MessageBusConfig{

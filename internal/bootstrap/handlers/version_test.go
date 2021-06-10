@@ -25,31 +25,31 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 )
 
 func TestValidateVersionMatch(t *testing.T) {
 	startupTimer := startup.NewStartUpTimer("unit-test")
 
 	clientConfigs := make(map[string]config.ClientInfo)
-	clientConfigs[clients.CoreDataServiceKey] = config.ClientInfo{
+	clientConfigs[common.CoreDataServiceKey] = config.ClientInfo{
 		Protocol: "http",
 		Host:     "localhost",
 		Port:     0, // Will be replaced by local test webserver's port
 	}
 
-	configuration := &common.ConfigurationStruct{
-		Writable: common.WritableInfo{
+	configuration := &sdkCommon.ConfigurationStruct{
+		Writable: sdkCommon.WritableInfo{
 			LogLevel: "DEBUG",
 		},
 		Clients: clientConfigs,
@@ -116,9 +116,9 @@ func TestValidateVersionMatch(t *testing.T) {
 
 			testServerUrl, _ := url.Parse(testServer.URL)
 			port, _ := strconv.Atoi(testServerUrl.Port())
-			coreService := configuration.Clients[clients.CoreDataServiceKey]
+			coreService := configuration.Clients[common.CoreDataServiceKey]
 			coreService.Port = port
-			configuration.Clients[clients.CoreDataServiceKey] = coreService
+			configuration.Clients[common.CoreDataServiceKey] = coreService
 
 			validator := NewVersionValidator(test.skipVersionCheck, test.SdkVersion)
 			result := validator.BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
