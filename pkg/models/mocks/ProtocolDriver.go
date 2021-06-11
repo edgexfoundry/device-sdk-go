@@ -6,7 +6,7 @@ import (
 	logger "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	mock "github.com/stretchr/testify/mock"
 
-	models "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	models "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	pkgmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )

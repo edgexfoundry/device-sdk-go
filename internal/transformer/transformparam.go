@@ -11,7 +11,7 @@ import (
 	"strconv"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )

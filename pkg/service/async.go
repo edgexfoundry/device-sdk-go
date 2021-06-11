@@ -14,14 +14,14 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 // processAsyncResults processes readings that are pushed from
@@ -51,7 +51,7 @@ func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGr
 }
 
 // sendAsyncValues convert AsyncValues to event and send the event to CoreData
-func (s *DeviceService) sendAsyncValues(acv *dsModels.AsyncValues, working chan bool, dic *di.Container) {
+func (s *DeviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan bool, dic *di.Container) {
 	working <- true
 	defer func() {
 		<-working
@@ -129,7 +129,7 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 	}
 }
 
-func checkAllowList(d dsModels.DiscoveredDevice, pw models.ProvisionWatcher, lc logger.LoggingClient) bool {
+func checkAllowList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc logger.LoggingClient) bool {
 	// ignore the device protocol properties name
 	for _, protocol := range d.Protocols {
 		matchedCount := 0
@@ -151,7 +151,7 @@ func checkAllowList(d dsModels.DiscoveredDevice, pw models.ProvisionWatcher, lc 
 	return false
 }
 
-func checkBlockList(d dsModels.DiscoveredDevice, pw models.ProvisionWatcher, lc logger.LoggingClient) bool {
+func checkBlockList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc logger.LoggingClient) bool {
 	// a candidate should match none of the blocking identifiers
 	for name, blacklist := range pw.BlockingIdentifiers {
 		// ignore the device protocol properties name

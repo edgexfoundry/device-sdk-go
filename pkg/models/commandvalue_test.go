@@ -12,7 +12,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,11 +26,11 @@ func Test_validate(t *testing.T) {
 		value       interface{}
 		expectedErr bool
 	}{
-		{"invalid - value doesn't match with valueType", v2.ValueTypeInt64, "invalid", true},
-		{"invalid - array type with incorrect elements", v2.ValueTypeUint64Array, []int8{-1, -2, -3}, true},
-		{"invalid - binary payload exceeds MaxBinaryBytes size", v2.ValueTypeBinary, exceedBinary, true},
-		{"valid - binary payload doesn't exceed MaxBinaryBytes size", v2.ValueTypeBinary, []byte{1, 2, 3}, false},
-		{"valid - normal type", v2.ValueTypeInt8, int8(8), false},
+		{"invalid - value doesn't match with valueType", common.ValueTypeInt64, "invalid", true},
+		{"invalid - array type with incorrect elements", common.ValueTypeUint64Array, []int8{-1, -2, -3}, true},
+		{"invalid - binary payload exceeds MaxBinaryBytes size", common.ValueTypeBinary, exceedBinary, true},
+		{"valid - binary payload doesn't exceed MaxBinaryBytes size", common.ValueTypeBinary, []byte{1, 2, 3}, false},
+		{"valid - normal type", common.ValueTypeInt8, int8(8), false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -45,19 +45,19 @@ func Test_validate(t *testing.T) {
 }
 
 func TestCommandValue_ValueToString(t *testing.T) {
-	uintCommandValue, err := NewCommandValue("test-resource", v2.ValueTypeUint8, uint8(1))
+	uintCommandValue, err := NewCommandValue("test-resource", common.ValueTypeUint8, uint8(1))
 	require.NoError(t, err)
-	intCommandValue, err := NewCommandValue("test-resource", v2.ValueTypeInt8, int8(-1))
+	intCommandValue, err := NewCommandValue("test-resource", common.ValueTypeInt8, int8(-1))
 	require.NoError(t, err)
-	floatCommandValue, err := NewCommandValue("test-resource", v2.ValueTypeFloat64, float64(123.456))
+	floatCommandValue, err := NewCommandValue("test-resource", common.ValueTypeFloat64, float64(123.456))
 	require.NoError(t, err)
-	stringCommandValue, err := NewCommandValue("test-resource", v2.ValueTypeString, "string")
+	stringCommandValue, err := NewCommandValue("test-resource", common.ValueTypeString, "string")
 	require.NoError(t, err)
-	boolCommandValue, err := NewCommandValue("test-resource", v2.ValueTypeBool, true)
+	boolCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBool, true)
 	require.NoError(t, err)
 	binaryValue := make([]byte, 100)
 	rand.Read(binaryValue)
-	binaryCommandValue, err := NewCommandValue("test-resource", v2.ValueTypeBinary, binaryValue)
+	binaryCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBinary, binaryValue)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -81,9 +81,9 @@ func TestCommandValue_ValueToString(t *testing.T) {
 }
 
 func TestCommandValue_BoolValue(t *testing.T) {
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBool, Value: true}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: true}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBool, Value: "true"}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBool, Value: true}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: true}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBool, Value: "true"}
 
 	tests := []struct {
 		name        string
@@ -108,9 +108,9 @@ func TestCommandValue_BoolValue(t *testing.T) {
 }
 
 func TestCommandValue_BoolArrayValue(t *testing.T) {
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBoolArray, Value: []bool{true, false, true}}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: true}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBoolArray, Value: "true"}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBoolArray, Value: []bool{true, false, true}}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: true}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBoolArray, Value: "true"}
 
 	tests := []struct {
 		name        string
@@ -135,9 +135,9 @@ func TestCommandValue_BoolArrayValue(t *testing.T) {
 }
 
 func TestCommandValue_StringValue(t *testing.T) {
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeString, Value: "test"}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: "test"}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeString, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeString, Value: "test"}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: "test"}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeString, Value: true}
 
 	tests := []struct {
 		name        string
@@ -163,9 +163,9 @@ func TestCommandValue_StringValue(t *testing.T) {
 
 func TestCommandValue_Uint8Value(t *testing.T) {
 	value := uint8(1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint8, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint8, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint8, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint8, Value: true}
 
 	tests := []struct {
 		name        string
@@ -191,9 +191,9 @@ func TestCommandValue_Uint8Value(t *testing.T) {
 
 func TestCommandValue_Uint8ArrayValue(t *testing.T) {
 	value := []uint8{1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint8Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint8Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint8Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint8Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -219,9 +219,9 @@ func TestCommandValue_Uint8ArrayValue(t *testing.T) {
 
 func TestCommandValue_Uint16Value(t *testing.T) {
 	value := uint16(1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint16, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint16, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint16, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint16, Value: true}
 
 	tests := []struct {
 		name        string
@@ -247,9 +247,9 @@ func TestCommandValue_Uint16Value(t *testing.T) {
 
 func TestCommandValue_Uint16ArrayValue(t *testing.T) {
 	value := []uint16{1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint16Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint16Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint16Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint16Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -275,9 +275,9 @@ func TestCommandValue_Uint16ArrayValue(t *testing.T) {
 
 func TestCommandValue_Uint32Value(t *testing.T) {
 	value := uint32(1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint32, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint32, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint32, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint32, Value: true}
 
 	tests := []struct {
 		name        string
@@ -303,9 +303,9 @@ func TestCommandValue_Uint32Value(t *testing.T) {
 
 func TestCommandValue_Uint32ArrayValue(t *testing.T) {
 	value := []uint32{1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint32Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint32Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint32Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint32Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -331,9 +331,9 @@ func TestCommandValue_Uint32ArrayValue(t *testing.T) {
 
 func TestCommandValue_Uint64Value(t *testing.T) {
 	value := uint64(1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint64, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint64, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint64, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint64, Value: true}
 
 	tests := []struct {
 		name        string
@@ -359,9 +359,9 @@ func TestCommandValue_Uint64Value(t *testing.T) {
 
 func TestCommandValue_Uint64ArrayValue(t *testing.T) {
 	value := []uint64{1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint64Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeUint64Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint64Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeUint64Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -387,9 +387,9 @@ func TestCommandValue_Uint64ArrayValue(t *testing.T) {
 
 func TestCommandValue_Int8Value(t *testing.T) {
 	value := int8(-1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt8, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt8, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt8, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt8, Value: true}
 
 	tests := []struct {
 		name        string
@@ -415,9 +415,9 @@ func TestCommandValue_Int8Value(t *testing.T) {
 
 func TestCommandValue_Int8ArrayValue(t *testing.T) {
 	value := []int8{-1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt8Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt8Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt8Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt8Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -443,9 +443,9 @@ func TestCommandValue_Int8ArrayValue(t *testing.T) {
 
 func TestCommandValue_Int16Value(t *testing.T) {
 	value := int16(-1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt16, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt16, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt16, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt16, Value: true}
 
 	tests := []struct {
 		name        string
@@ -471,9 +471,9 @@ func TestCommandValue_Int16Value(t *testing.T) {
 
 func TestCommandValue_Int16ArrayValue(t *testing.T) {
 	value := []int16{-1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt16Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt16Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt16Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt16Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -499,9 +499,9 @@ func TestCommandValue_Int16ArrayValue(t *testing.T) {
 
 func TestCommandValue_Int32Value(t *testing.T) {
 	value := int32(-1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt32, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt32, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt32, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt32, Value: true}
 
 	tests := []struct {
 		name        string
@@ -527,9 +527,9 @@ func TestCommandValue_Int32Value(t *testing.T) {
 
 func TestCommandValue_Int32ArrayValue(t *testing.T) {
 	value := []int32{-1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt32Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt32Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt32Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt32Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -555,9 +555,9 @@ func TestCommandValue_Int32ArrayValue(t *testing.T) {
 
 func TestCommandValue_Int64Value(t *testing.T) {
 	value := int64(-1)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt64, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt64, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt64, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt64, Value: true}
 
 	tests := []struct {
 		name        string
@@ -583,9 +583,9 @@ func TestCommandValue_Int64Value(t *testing.T) {
 
 func TestCommandValue_Int64ArrayValue(t *testing.T) {
 	value := []int64{-1}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt64Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeInt64Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt64Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeInt64Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -611,9 +611,9 @@ func TestCommandValue_Int64ArrayValue(t *testing.T) {
 
 func TestCommandValue_Float32Value(t *testing.T) {
 	value := float32(13.456)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat32, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat32, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat32, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat32, Value: true}
 
 	tests := []struct {
 		name        string
@@ -639,9 +639,9 @@ func TestCommandValue_Float32Value(t *testing.T) {
 
 func TestCommandValue_Float32ArrayValue(t *testing.T) {
 	value := []float32{12.345}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat32Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat32Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat32Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat32Array, Value: true}
 
 	tests := []struct {
 		name        string
@@ -667,9 +667,9 @@ func TestCommandValue_Float32ArrayValue(t *testing.T) {
 
 func TestCommandValue_Float64Value(t *testing.T) {
 	value := float64(13.456)
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat64, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat64, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat64, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat64, Value: true}
 
 	tests := []struct {
 		name        string
@@ -695,9 +695,9 @@ func TestCommandValue_Float64Value(t *testing.T) {
 
 func TestCommandValue_Float64ArrayValue(t *testing.T) {
 	value := []float64{12.345}
-	valid := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat64Array, Value: value}
-	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeBinary, Value: value}
-	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: v2.ValueTypeFloat64Array, Value: true}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat64Array, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeFloat64Array, Value: true}
 
 	tests := []struct {
 		name        string

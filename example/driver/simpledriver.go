@@ -21,18 +21,18 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	contract "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/example/config"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
 )
 
 type SimpleDriver struct {
 	lc            logger.LoggingClient
-	asyncCh       chan<- *dsModels.AsyncValues
-	deviceCh      chan<- []dsModels.DiscoveredDevice
+	asyncCh       chan<- *sdkModels.AsyncValues
+	deviceCh      chan<- []sdkModels.DiscoveredDevice
 	switchButton  bool
 	xRotation     int32
 	yRotation     int32
@@ -74,7 +74,7 @@ func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 
 // Initialize performs protocol-specific initialization for the device
 // service.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *dsModels.AsyncValues, deviceCh chan<- []dsModels.DiscoveredDevice) error {
+func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkModels.AsyncValues, deviceCh chan<- []sdkModels.DiscoveredDevice) error {
 	s.lc = lc
 	s.asyncCh = asyncCh
 	s.deviceCh = deviceCh
@@ -131,22 +131,22 @@ func (s *SimpleDriver) ProcessCustomConfigChanges(rawWritableConfig interface{})
 }
 
 // HandleReadCommands triggers a protocol Read operation for the specified device.
-func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest) (res []*dsModels.CommandValue, err error) {
+func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkModels.CommandRequest) (res []*sdkModels.CommandValue, err error) {
 	s.lc.Debugf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes)
 
 	if len(reqs) == 1 {
-		res = make([]*dsModels.CommandValue, 1)
+		res = make([]*sdkModels.CommandValue, 1)
 		if reqs[0].DeviceResourceName == "SwitchButton" {
-			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeBool, s.switchButton)
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeBool, s.switchButton)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Xrotation" {
-			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeInt32, s.xRotation)
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeInt32, s.xRotation)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Yrotation" {
-			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeInt32, s.yRotation)
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeInt32, s.yRotation)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Zrotation" {
-			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeInt32, s.zRotation)
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeInt32, s.zRotation)
 			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Image" {
 			// Show a binary/image representation of the switch's on/off value
@@ -156,23 +156,23 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			} else {
 				err = getImageBytes(s.serviceConfig.SimpleCustom.OffImageLocation, buf)
 			}
-			cvb, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeBinary, buf.Bytes())
+			cvb, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeBinary, buf.Bytes())
 			res[0] = cvb
 		} else if reqs[0].DeviceResourceName == "Uint8Array" {
-			cv, _ := dsModels.NewCommandValue(reqs[0].DeviceResourceName, v2.ValueTypeUint8Array, []uint8{0, 1, 2})
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeUint8Array, []uint8{0, 1, 2})
 			res[0] = cv
 		}
 	} else if len(reqs) == 3 {
-		res = make([]*dsModels.CommandValue, 3)
+		res = make([]*sdkModels.CommandValue, 3)
 		for i, r := range reqs {
-			var cv *dsModels.CommandValue
+			var cv *sdkModels.CommandValue
 			switch r.DeviceResourceName {
 			case "Xrotation":
-				cv, _ = dsModels.NewCommandValue(r.DeviceResourceName, v2.ValueTypeInt32, s.xRotation)
+				cv, _ = sdkModels.NewCommandValue(r.DeviceResourceName, common.ValueTypeInt32, s.xRotation)
 			case "Yrotation":
-				cv, _ = dsModels.NewCommandValue(r.DeviceResourceName, v2.ValueTypeInt32, s.yRotation)
+				cv, _ = sdkModels.NewCommandValue(r.DeviceResourceName, common.ValueTypeInt32, s.yRotation)
 			case "Zrotation":
-				cv, _ = dsModels.NewCommandValue(r.DeviceResourceName, v2.ValueTypeInt32, s.zRotation)
+				cv, _ = sdkModels.NewCommandValue(r.DeviceResourceName, common.ValueTypeInt32, s.zRotation)
 			}
 			res[i] = cv
 		}
@@ -185,8 +185,8 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 // a ResourceOperation for a specific device resource.
 // Since the commands are actuation commands, params provide parameters for the individual
 // command.
-func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[string]contract.ProtocolProperties, reqs []dsModels.CommandRequest,
-	params []*dsModels.CommandValue) error {
+func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkModels.CommandRequest,
+	params []*sdkModels.CommandValue) error {
 	var err error
 
 	for i, r := range reqs {
@@ -239,21 +239,21 @@ func (s *SimpleDriver) Stop(force bool) error {
 
 // AddDevice is a callback function that is invoked
 // when a new Device associated with this Device Service is added
-func (s *SimpleDriver) AddDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
+func (s *SimpleDriver) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
 	s.lc.Debugf("a new Device is added: %s", deviceName)
 	return nil
 }
 
 // UpdateDevice is a callback function that is invoked
 // when a Device associated with this Device Service is updated
-func (s *SimpleDriver) UpdateDevice(deviceName string, protocols map[string]contract.ProtocolProperties, adminState contract.AdminState) error {
+func (s *SimpleDriver) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
 	s.lc.Debugf("Device %s is updated", deviceName)
 	return nil
 }
 
 // RemoveDevice is a callback function that is invoked
 // when a Device associated with this Device Service is removed
-func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]contract.ProtocolProperties) error {
+func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
 	s.lc.Debugf("Device %s is removed", deviceName)
 	return nil
 }
@@ -261,27 +261,27 @@ func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]cont
 // Discover triggers protocol specific device discovery, which is an asynchronous operation.
 // Devices found as part of this discovery operation are written to the channel devices.
 func (s *SimpleDriver) Discover() {
-	proto := make(map[string]contract.ProtocolProperties)
+	proto := make(map[string]models.ProtocolProperties)
 	proto["other"] = map[string]string{"Address": "simple02", "Port": "301"}
 
-	device2 := dsModels.DiscoveredDevice{
+	device2 := sdkModels.DiscoveredDevice{
 		Name:        "Simple-Device02",
 		Protocols:   proto,
 		Description: "found by discovery",
 		Labels:      []string{"auto-discovery"},
 	}
 
-	proto = make(map[string]contract.ProtocolProperties)
+	proto = make(map[string]models.ProtocolProperties)
 	proto["other"] = map[string]string{"Address": "simple03", "Port": "399"}
 
-	device3 := dsModels.DiscoveredDevice{
+	device3 := sdkModels.DiscoveredDevice{
 		Name:        "Simple-Device03",
 		Protocols:   proto,
 		Description: "found by discovery",
 		Labels:      []string{"auto-discovery"},
 	}
 
-	res := []dsModels.DiscoveredDevice{device2, device3}
+	res := []sdkModels.DiscoveredDevice{device2, device3}
 
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	s.deviceCh <- res

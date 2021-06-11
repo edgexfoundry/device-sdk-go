@@ -11,14 +11,14 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 	NaN      = "NaN"
 )
 
-func TransformReadResult(cv *dsModels.CommandValue, pv models.ResourceProperties) errors.EdgeX {
+func TransformReadResult(cv *sdkModels.CommandValue, pv models.ResourceProperties) errors.EdgeX {
 	if !isNumericValueType(cv) {
 		return nil
 	}
@@ -48,14 +48,14 @@ func TransformReadResult(cv *dsModels.CommandValue, pv models.ResourceProperties
 	newValue := value
 
 	if pv.Mask != "" && pv.Mask != defaultMask &&
-		(cv.Type == v2.ValueTypeUint8 || cv.Type == v2.ValueTypeUint16 || cv.Type == v2.ValueTypeUint32 || cv.Type == v2.ValueTypeUint64) {
+		(cv.Type == common.ValueTypeUint8 || cv.Type == common.ValueTypeUint16 || cv.Type == common.ValueTypeUint32 || cv.Type == common.ValueTypeUint64) {
 		newValue, err = transformReadMask(newValue, pv.Mask)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
 	if pv.Shift != "" && pv.Shift != defaultShift &&
-		(cv.Type == v2.ValueTypeUint8 || cv.Type == v2.ValueTypeUint16 || cv.Type == v2.ValueTypeUint32 || cv.Type == v2.ValueTypeUint64) {
+		(cv.Type == common.ValueTypeUint8 || cv.Type == common.ValueTypeUint16 || cv.Type == common.ValueTypeUint32 || cv.Type == common.ValueTypeUint64) {
 		newValue, err = transformReadShift(newValue, pv.Shift)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
@@ -453,56 +453,56 @@ func transformReadShift(value interface{}, shift string) (interface{}, errors.Ed
 	return value, nil
 }
 
-func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, errors.EdgeX) {
+func commandValueForTransform(cv *sdkModels.CommandValue) (interface{}, errors.EdgeX) {
 	var v interface{}
 	var err error
 	switch cv.Type {
-	case v2.ValueTypeUint8:
+	case common.ValueTypeUint8:
 		v, err = cv.Uint8Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeUint16:
+	case common.ValueTypeUint16:
 		v, err = cv.Uint16Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeUint32:
+	case common.ValueTypeUint32:
 		v, err = cv.Uint32Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeUint64:
+	case common.ValueTypeUint64:
 		v, err = cv.Uint64Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeInt8:
+	case common.ValueTypeInt8:
 		v, err = cv.Int8Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeInt16:
+	case common.ValueTypeInt16:
 		v, err = cv.Int16Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeInt32:
+	case common.ValueTypeInt32:
 		v, err = cv.Int32Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeInt64:
+	case common.ValueTypeInt64:
 		v, err = cv.Int64Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeFloat32:
+	case common.ValueTypeFloat32:
 		v, err = cv.Float32Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
 		}
-	case v2.ValueTypeFloat64:
+	case common.ValueTypeFloat64:
 		v, err = cv.Float64Value()
 		if err != nil {
 			return 0, errors.NewCommonEdgeXWrapper(err)
@@ -514,26 +514,26 @@ func commandValueForTransform(cv *dsModels.CommandValue) (interface{}, errors.Ed
 }
 
 func checkAssertion(
-	cv *dsModels.CommandValue,
+	cv *sdkModels.CommandValue,
 	assertion string,
 	deviceName string,
 	lc logger.LoggingClient,
 	dc interfaces.DeviceClient) errors.EdgeX {
 	if assertion != "" && cv.ValueToString() != assertion {
-		go common.UpdateOperatingState(deviceName, models.Down, lc, dc)
+		go sdkCommon.UpdateOperatingState(deviceName, models.Down, lc, dc)
 		errMsg := fmt.Sprintf("Assertion failed for DeviceResource %s, with value %s", cv.DeviceResourceName, cv.ValueToString())
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 	return nil
 }
 
-func mapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (*dsModels.CommandValue, bool) {
+func mapCommandValue(value *sdkModels.CommandValue, mappings map[string]string) (*sdkModels.CommandValue, bool) {
 	var err error
-	var result *dsModels.CommandValue
+	var result *sdkModels.CommandValue
 
 	newValue, ok := mappings[value.ValueToString()]
 	if ok {
-		result, err = dsModels.NewCommandValue(value.DeviceResourceName, v2.ValueTypeString, newValue)
+		result, err = sdkModels.NewCommandValue(value.DeviceResourceName, common.ValueTypeString, newValue)
 		if err != nil {
 			return nil, false
 		}
@@ -541,18 +541,18 @@ func mapCommandValue(value *dsModels.CommandValue, mappings map[string]string) (
 	return result, ok
 }
 
-func isNumericValueType(cv *dsModels.CommandValue) bool {
+func isNumericValueType(cv *sdkModels.CommandValue) bool {
 	switch cv.Type {
-	case v2.ValueTypeUint8:
-	case v2.ValueTypeUint16:
-	case v2.ValueTypeUint32:
-	case v2.ValueTypeUint64:
-	case v2.ValueTypeInt8:
-	case v2.ValueTypeInt16:
-	case v2.ValueTypeInt32:
-	case v2.ValueTypeInt64:
-	case v2.ValueTypeFloat32:
-	case v2.ValueTypeFloat64:
+	case common.ValueTypeUint8:
+	case common.ValueTypeUint16:
+	case common.ValueTypeUint32:
+	case common.ValueTypeUint64:
+	case common.ValueTypeInt8:
+	case common.ValueTypeInt16:
+	case common.ValueTypeInt32:
+	case common.ValueTypeInt64:
+	case common.ValueTypeFloat32:
+	case common.ValueTypeFloat64:
 	default:
 		return false
 	}

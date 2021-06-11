@@ -8,21 +8,9 @@
 
 package common
 
-import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-)
-
 const (
-	EnvInstanceName = "EDGEX_INSTANCE_NAME"
-
-	ConfigStemDevice = "edgex/devices/"
-	APIV2SecretRoute = v2.ApiBase + "/secret"
-
-	GetCmdMethod = "get"
-	SetCmdMethod = "set"
-
-	CorrelationHeader = clients.CorrelationHeader
+	EnvInstanceName   = "EDGEX_INSTANCE_NAME"
+	ConfigStemDevice  = "edgex/devices/"
 	URLRawQuery       = "urlRawQuery"
 	SDKReservedPrefix = "ds-"
 )

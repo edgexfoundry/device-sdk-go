@@ -14,11 +14,11 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -54,7 +54,7 @@ func UpdateOperatingState(name string, state string, lc logger.LoggingClient, dc
 func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), CorrelationHeader, correlationID)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlationID)
 	req := requests.NewAddEventRequest(*event)
 
 	if configuration.Device.UseMessageBus {
@@ -63,7 +63,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		if err != nil {
 			lc.Error(err.Error())
 		}
-		ctx = context.WithValue(ctx, clients.ContentType, encoding)
+		ctx = context.WithValue(ctx, common.ContentType, encoding)
 		envelope := types.NewMessageEnvelope(bytes, ctx)
 		publishTopic := fmt.Sprintf("%s/%s/%s/%s", configuration.MessageQueue.PublishTopicPrefix, event.ProfileName, event.DeviceName, event.SourceName)
 		err = mc.Publish(envelope, publishTopic)

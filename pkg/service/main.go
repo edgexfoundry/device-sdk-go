@@ -10,18 +10,19 @@ import (
 	"context"
 	"os"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/messaging"
 
 	"github.com/gorilla/mux"
 )

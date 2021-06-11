@@ -18,16 +18,16 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 type CommandProcessor struct {
@@ -58,7 +58,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	}
 
 	// check provided device exists
-	deviceKey := vars[v2.Name]
+	deviceKey := vars[common.Name]
 	device, ok := cache.Devices().ForName(deviceKey)
 	if !ok {
 		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceKey), nil)
@@ -82,15 +82,15 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 		}
 		config := container.ConfigurationFrom(dic.Get)
 		if config.Device.UpdateLastConnected {
-			go common.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), container.MetadataDeviceClientFrom(dic.Get))
+			go sdkCommon.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), container.MetadataDeviceClientFrom(dic.Get))
 		}
 
 		if res != nil && sendEvent {
-			go common.SendEvent(res, correlationID, dic)
+			go sdkCommon.SendEvent(res, correlationID, dic)
 		}
 	}()
 
-	cmd := vars[v2.Command]
+	cmd := vars[common.Command]
 	helper := NewCommandProcessor(device, cmd, correlationID, body, attributes, dic)
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, cmd)
 	if cmdExist {
@@ -115,7 +115,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e errors.EdgeX
 		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not write-only
-	if dr.Properties.ReadWrite == v2.ReadWrite_W {
+	if dr.Properties.ReadWrite == common.ReadWrite_W {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", dr.Name)
 		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
@@ -123,8 +123,8 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e errors.EdgeX
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
 	lc.Debugf("Application - readDeviceResource: reading deviceResource: %s; %s: %s", dr.Name, common.CorrelationHeader, c.correlationID)
 
-	var req dsModels.CommandRequest
-	var reqs []dsModels.CommandRequest
+	var req sdkModels.CommandRequest
+	var reqs []sdkModels.CommandRequest
 
 	// prepare CommandRequest
 	req.DeviceResourceName = dr.Name
@@ -133,7 +133,7 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e errors.EdgeX
 		if len(req.Attributes) <= 0 {
 			req.Attributes = make(map[string]interface{})
 		}
-		req.Attributes[common.URLRawQuery] = c.attributes
+		req.Attributes[sdkCommon.URLRawQuery] = c.attributes
 	}
 	req.Type = dr.Properties.ValueType
 	reqs = append(reqs, req)
@@ -162,7 +162,7 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not write-only
-	if dc.ReadWrite == v2.ReadWrite_W {
+	if dc.ReadWrite == common.ReadWrite_W {
 		errMsg := fmt.Sprintf("deviceCommand %s is marked as write-only", dc.Name)
 		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
@@ -177,7 +177,7 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 	lc.Debugf("Application - readCmd: reading cmd: %s; %s: %s", dc.Name, common.CorrelationHeader, c.correlationID)
 
 	// prepare CommandRequests
-	reqs := make([]dsModels.CommandRequest, len(dc.ResourceOperations))
+	reqs := make([]sdkModels.CommandRequest, len(dc.ResourceOperations))
 	for i, op := range dc.ResourceOperations {
 		drName := op.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
@@ -193,7 +193,7 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]interface{})
 			}
-			reqs[i].Attributes[common.URLRawQuery] = c.attributes
+			reqs[i].Attributes[sdkCommon.URLRawQuery] = c.attributes
 		}
 		reqs[i].Type = dr.Properties.ValueType
 	}
@@ -222,7 +222,7 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not read-only
-	if dr.Properties.ReadWrite == v2.ReadWrite_R {
+	if dr.Properties.ReadWrite == common.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", dr.Name)
 		return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
@@ -254,14 +254,14 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 	}
 
 	// prepare CommandRequest
-	reqs := make([]dsModels.CommandRequest, 1)
+	reqs := make([]sdkModels.CommandRequest, 1)
 	reqs[0].DeviceResourceName = cv.DeviceResourceName
 	reqs[0].Attributes = dr.Attributes
 	if c.attributes != "" {
 		if len(reqs[0].Attributes) <= 0 {
 			reqs[0].Attributes = make(map[string]interface{})
 		}
-		reqs[0].Attributes[common.URLRawQuery] = c.attributes
+		reqs[0].Attributes[sdkCommon.URLRawQuery] = c.attributes
 	}
 	reqs[0].Type = cv.Type
 
@@ -276,7 +276,7 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 
 	// execute protocol-specific write operation
 	driver := container.ProtocolDriverFrom(c.dic.Get)
-	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*dsModels.CommandValue{cv})
+	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*sdkModels.CommandValue{cv})
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s", dr.Name, c.device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -292,7 +292,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not read-only
-	if dc.ReadWrite == v2.ReadWrite_R {
+	if dc.ReadWrite == common.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceCommand %s is marked as read-only", dc.Name)
 		return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
@@ -313,7 +313,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	}
 
 	// create CommandValues
-	cvs := make([]*dsModels.CommandValue, 0, len(paramMap))
+	cvs := make([]*sdkModels.CommandValue, 0, len(paramMap))
 	for _, ro := range dc.ResourceOperations {
 		drName := ro.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
@@ -357,7 +357,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	}
 
 	// prepare CommandRequests
-	reqs := make([]dsModels.CommandRequest, len(cvs))
+	reqs := make([]sdkModels.CommandRequest, len(cvs))
 	for i, cv := range cvs {
 		dr, _ := cache.Profiles().DeviceResource(c.device.ProfileName, cv.DeviceResourceName)
 
@@ -367,7 +367,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 			if len(reqs[i].Attributes) <= 0 {
 				reqs[i].Attributes = make(map[string]interface{})
 			}
-			reqs[i].Attributes[common.URLRawQuery] = c.attributes
+			reqs[i].Attributes[sdkCommon.URLRawQuery] = c.attributes
 		}
 		reqs[i].Type = cv.Type
 
@@ -405,36 +405,36 @@ func parseParams(params string) (paramMap map[string]string, err error) {
 	return
 }
 
-func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*dsModels.CommandValue, errors.EdgeX) {
+func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*sdkModels.CommandValue, errors.EdgeX) {
 	var err error
-	var result *dsModels.CommandValue
+	var result *sdkModels.CommandValue
 
 	switch dr.Properties.ValueType {
-	case v2.ValueTypeString:
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeString, v)
-	case v2.ValueTypeBool:
+	case common.ValueTypeString:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeString, v)
+	case common.ValueTypeBool:
 		value, err := strconv.ParseBool(v)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeBool, value)
-	case v2.ValueTypeBoolArray:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeBool, value)
+	case common.ValueTypeBoolArray:
 		var arr []bool
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeBoolArray, arr)
-	case v2.ValueTypeUint8:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeBoolArray, arr)
+	case common.ValueTypeUint8:
 		n, err := strconv.ParseUint(v, 10, 8)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint8, uint8(n))
-	case v2.ValueTypeUint8Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint8, uint8(n))
+	case common.ValueTypeUint8Array:
 		var arr []uint8
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -445,15 +445,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			}
 			arr = append(arr, uint8(n))
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint8Array, arr)
-	case v2.ValueTypeUint16:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint8Array, arr)
+	case common.ValueTypeUint16:
 		n, err := strconv.ParseUint(v, 10, 16)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint16, uint16(n))
-	case v2.ValueTypeUint16Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint16, uint16(n))
+	case common.ValueTypeUint16Array:
 		var arr []uint16
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -464,15 +464,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			}
 			arr = append(arr, uint16(n))
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint16Array, arr)
-	case v2.ValueTypeUint32:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint16Array, arr)
+	case common.ValueTypeUint32:
 		n, err := strconv.ParseUint(v, 10, 32)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint32, uint32(n))
-	case v2.ValueTypeUint32Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint32, uint32(n))
+	case common.ValueTypeUint32Array:
 		var arr []uint32
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -483,15 +483,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			}
 			arr = append(arr, uint32(n))
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint32Array, arr)
-	case v2.ValueTypeUint64:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint32Array, arr)
+	case common.ValueTypeUint64:
 		n, err := strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint64, n)
-	case v2.ValueTypeUint64Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint64, n)
+	case common.ValueTypeUint64Array:
 		var arr []uint64
 		strArr := strings.Split(strings.Trim(v, "[]"), ",")
 		for _, u := range strArr {
@@ -502,71 +502,71 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			}
 			arr = append(arr, n)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeUint64Array, arr)
-	case v2.ValueTypeInt8:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint64Array, arr)
+	case common.ValueTypeInt8:
 		n, err := strconv.ParseInt(v, 10, 8)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt8, int8(n))
-	case v2.ValueTypeInt8Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt8, int8(n))
+	case common.ValueTypeInt8Array:
 		var arr []int8
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt8Array, arr)
-	case v2.ValueTypeInt16:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt8Array, arr)
+	case common.ValueTypeInt16:
 		n, err := strconv.ParseInt(v, 10, 16)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt16, int16(n))
-	case v2.ValueTypeInt16Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt16, int16(n))
+	case common.ValueTypeInt16Array:
 		var arr []int16
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt16Array, arr)
-	case v2.ValueTypeInt32:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt16Array, arr)
+	case common.ValueTypeInt32:
 		n, err := strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt32, int32(n))
-	case v2.ValueTypeInt32Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt32, int32(n))
+	case common.ValueTypeInt32Array:
 		var arr []int32
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt32Array, arr)
-	case v2.ValueTypeInt64:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt32Array, arr)
+	case common.ValueTypeInt64:
 		n, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt64, n)
-	case v2.ValueTypeInt64Array:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt64, n)
+	case common.ValueTypeInt64Array:
 		var arr []int64
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeInt64Array, arr)
-	case v2.ValueTypeFloat32:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt64Array, arr)
+	case common.ValueTypeFloat32:
 		val, err := strconv.ParseFloat(v, 32)
 		if err == nil {
-			result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32, float32(val))
+			result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat32, float32(val))
 			break
 		}
 		if numError, ok := err.(*strconv.NumError); ok {
@@ -585,22 +585,22 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			} else if math.IsNaN(float64(val)) {
 				err = fmt.Errorf("fail to parse %v to float32, unexpected result %v", v, val)
 			} else {
-				result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32, val)
+				result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat32, val)
 			}
 		}
-	case v2.ValueTypeFloat32Array:
+	case common.ValueTypeFloat32Array:
 		var arr []float32
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat32Array, arr)
-	case v2.ValueTypeFloat64:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat32Array, arr)
+	case common.ValueTypeFloat64:
 		var val float64
 		val, err := strconv.ParseFloat(v, 64)
 		if err == nil {
-			result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64, val)
+			result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64, val)
 			break
 		}
 		if numError, ok := err.(*strconv.NumError); ok {
@@ -618,17 +618,17 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			} else if math.IsNaN(val) {
 				err = fmt.Errorf("fail to parse %v to float64, unexpected result %v", v, val)
 			} else {
-				result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64, val)
+				result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64, val)
 			}
 		}
-	case v2.ValueTypeFloat64Array:
+	case common.ValueTypeFloat64Array:
 		var arr []float64
 		err := json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
-		result, err = dsModels.NewCommandValue(dr.Name, v2.ValueTypeFloat64Array, arr)
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64Array, arr)
 	default:
 		err = errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

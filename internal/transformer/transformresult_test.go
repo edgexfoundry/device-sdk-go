@@ -11,8 +11,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -203,27 +203,27 @@ func Test_transformReadShift(t *testing.T) {
 }
 
 func Test_commandValueForTransform(t *testing.T) {
-	u8, err := models.NewCommandValue("test-resource", v2.ValueTypeUint8, uint8(0))
+	u8, err := models.NewCommandValue("test-resource", common.ValueTypeUint8, uint8(0))
 	require.NoError(t, err)
-	u16, err := models.NewCommandValue("test-resource", v2.ValueTypeUint16, uint16(0))
+	u16, err := models.NewCommandValue("test-resource", common.ValueTypeUint16, uint16(0))
 	require.NoError(t, err)
-	u32, err := models.NewCommandValue("test-resource", v2.ValueTypeUint32, uint32(0))
+	u32, err := models.NewCommandValue("test-resource", common.ValueTypeUint32, uint32(0))
 	require.NoError(t, err)
-	u64, err := models.NewCommandValue("test-resource", v2.ValueTypeUint64, uint64(0))
+	u64, err := models.NewCommandValue("test-resource", common.ValueTypeUint64, uint64(0))
 	require.NoError(t, err)
-	i8, err := models.NewCommandValue("test-resource", v2.ValueTypeInt8, int8(0))
+	i8, err := models.NewCommandValue("test-resource", common.ValueTypeInt8, int8(0))
 	require.NoError(t, err)
-	i16, err := models.NewCommandValue("test-resource", v2.ValueTypeInt16, int16(0))
+	i16, err := models.NewCommandValue("test-resource", common.ValueTypeInt16, int16(0))
 	require.NoError(t, err)
-	i32, err := models.NewCommandValue("test-resource", v2.ValueTypeInt32, int32(0))
+	i32, err := models.NewCommandValue("test-resource", common.ValueTypeInt32, int32(0))
 	require.NoError(t, err)
-	i64, err := models.NewCommandValue("test-resource", v2.ValueTypeInt64, int64(0))
+	i64, err := models.NewCommandValue("test-resource", common.ValueTypeInt64, int64(0))
 	require.NoError(t, err)
-	f32, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat32, float32(0))
+	f32, err := models.NewCommandValue("test-resource", common.ValueTypeFloat32, float32(0))
 	require.NoError(t, err)
-	f64, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat64, float64(0))
+	f64, err := models.NewCommandValue("test-resource", common.ValueTypeFloat64, float64(0))
 	require.NoError(t, err)
-	s, err := models.NewCommandValue("test-resource", v2.ValueTypeString, "invalid")
+	s, err := models.NewCommandValue("test-resource", common.ValueTypeString, "invalid")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -257,13 +257,13 @@ func Test_commandValueForTransform(t *testing.T) {
 }
 
 func Test_mapCommandValue(t *testing.T) {
-	numericValue, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat32, float32(123.456))
+	numericValue, err := models.NewCommandValue("test-resource", common.ValueTypeFloat32, float32(123.456))
 	require.NoError(t, err)
-	stringValue, err := models.NewCommandValue("test-resource", v2.ValueTypeString, "key")
+	stringValue, err := models.NewCommandValue("test-resource", common.ValueTypeString, "key")
 	require.NoError(t, err)
-	arrayValue, err := models.NewCommandValue("test-resource", v2.ValueTypeInt8Array, []int8{1, 2, 3})
+	arrayValue, err := models.NewCommandValue("test-resource", common.ValueTypeInt8Array, []int8{1, 2, 3})
 	require.NoError(t, err)
-	invalid, err := models.NewCommandValue("test-resource", v2.ValueTypeString, "invalid")
+	invalid, err := models.NewCommandValue("test-resource", common.ValueTypeString, "invalid")
 	require.NoError(t, err)
 
 	mappings := map[string]string{

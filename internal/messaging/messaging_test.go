@@ -22,24 +22,25 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
-	messaging2 "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
+	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 var lc logger.LoggingClient
 var dic *di.Container
 var usernameSecretData = map[string]string{
-	messaging2.SecretUsernameKey: "username",
-	messaging2.SecretPasswordKey: "password",
+	bootstrapMessaging.SecretUsernameKey: "username",
+	bootstrapMessaging.SecretPasswordKey: "password",
 }
 
 func TestMain(m *testing.M) {
@@ -71,7 +72,7 @@ func TestBootstrapHandler(t *testing.T) {
 			Host:               "*",
 			Port:               8765,
 			PublishTopicPrefix: "edgex/events/#",
-			AuthMode:           messaging2.AuthModeUsernamePassword,
+			AuthMode:           bootstrapMessaging.AuthModeUsernamePassword,
 			SecretName:         "redisdb",
 		},
 	}
@@ -81,7 +82,7 @@ func TestBootstrapHandler(t *testing.T) {
 			UseMessageBus: true,
 		},
 		MessageQueue: bootstrapConfig.MessageBusInfo{
-			AuthMode:   messaging2.AuthModeCert,
+			AuthMode:   bootstrapMessaging.AuthModeCert,
 			SecretName: "redisdb",
 		},
 	}
@@ -95,7 +96,7 @@ func TestBootstrapHandler(t *testing.T) {
 			Protocol:   "tcp",
 			Host:       "localhost",
 			Port:       8765,
-			AuthMode:   messaging2.AuthModeUsernamePassword,
+			AuthMode:   bootstrapMessaging.AuthModeUsernamePassword,
 			SecretName: "redisdb",
 		},
 	}

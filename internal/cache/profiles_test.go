@@ -8,8 +8,8 @@ package cache
 import (
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,7 +21,7 @@ var testProfile = models.DeviceProfile{
 	DeviceCommands: []models.DeviceCommand{
 		models.DeviceCommand{
 			Name:      TestDeviceCommand,
-			ReadWrite: v2.ReadWrite_R,
+			ReadWrite: common.ReadWrite_R,
 			ResourceOperations: []models.ResourceOperation{
 				models.ResourceOperation{DeviceResource: TestDeviceResource},
 			},
@@ -37,7 +37,7 @@ var newProfile = models.DeviceProfile{
 	DeviceCommands: []models.DeviceCommand{
 		models.DeviceCommand{
 			Name:      "newCommand",
-			ReadWrite: v2.ReadWrite_R,
+			ReadWrite: common.ReadWrite_R,
 			ResourceOperations: []models.ResourceOperation{
 				models.ResourceOperation{DeviceResource: "newResource"},
 			},

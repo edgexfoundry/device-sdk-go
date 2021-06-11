@@ -7,7 +7,7 @@
 package clients
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 )
 
 type EdgeXClients struct {

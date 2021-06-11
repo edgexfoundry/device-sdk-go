@@ -12,9 +12,9 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -67,12 +67,12 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 
 				var err error
 				if errors.Kind(edgexErr) == errors.KindOverflowError {
-					cv, err = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, Overflow)
+					cv, err = models.NewCommandValue(cv.DeviceResourceName, common.ValueTypeString, Overflow)
 					if err != nil {
 						return nil, errors.NewCommonEdgeXWrapper(err)
 					}
 				} else if errors.Kind(edgexErr) == errors.KindNaNError {
-					cv, err = models.NewCommandValue(cv.DeviceResourceName, v2.ValueTypeString, NaN)
+					cv, err = models.NewCommandValue(cv.DeviceResourceName, common.ValueTypeString, NaN)
 					if err != nil {
 						return nil, errors.NewCommonEdgeXWrapper(err)
 					}
@@ -111,7 +111,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		}
 		readings = append(readings, reading)
 
-		if cv.Type == v2.ValueTypeBinary {
+		if cv.Type == common.ValueTypeBinary {
 			lc.Debugf("device: %s DeviceResource: %v reading: binary value", device.Name, cv.DeviceResourceName)
 		} else {
 			lc.Debugf("device: %s DeviceResource: %v reading: %+v", device.Name, cv.DeviceResourceName, reading)
@@ -138,7 +138,7 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 	var err error
 	var reading dtos.BaseReading
 
-	if cv.Type == v2.ValueTypeBinary {
+	if cv.Type == common.ValueTypeBinary {
 		var binary []byte
 		binary, err = cv.BinaryValue()
 		if err != nil {
