@@ -82,7 +82,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 		}
 		config := container.ConfigurationFrom(dic.Get)
 		if config.Device.UpdateLastConnected {
-			go sdkCommon.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), container.MetadataDeviceClientFrom(dic.Get))
+			go sdkCommon.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), bootstrapContainer.MetadataDeviceClientFrom(dic.Get))
 		}
 
 		if res != nil && sendEvent {

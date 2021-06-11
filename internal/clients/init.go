@@ -175,19 +175,19 @@ func initCoreServiceClients(dic *di.Container) {
 	ec := v2clients.NewEventClient(configuration.Clients[common.CoreDataServiceKey].Url())
 
 	dic.Update(di.ServiceConstructorMap{
-		container.MetadataDeviceClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataDeviceClientName: func(get di.Get) interface{} {
 			return dc
 		},
-		container.MetadataDeviceServiceClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataDeviceServiceClientName: func(get di.Get) interface{} {
 			return dsc
 		},
-		container.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
 			return dpc
 		},
-		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
 			return pwc
 		},
-		container.CoredataEventClientName: func(get di.Get) interface{} {
+		bootstrapContainer.DataEventClientName: func(get di.Get) interface{} {
 			return ec
 		},
 	})

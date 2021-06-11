@@ -22,8 +22,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v2"
-
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 const (
@@ -49,7 +47,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	}
 
 	var addProfilesReq []requests.DeviceProfileRequest
-	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
+	dpc := bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)
 	lc.Infof("Loading pre-defined profiles from %s", absPath)
 	for _, file := range fileInfo {
 		var profile dtos.DeviceProfile

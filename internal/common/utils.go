@@ -72,7 +72,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		}
 		lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
 	} else {
-		ec := container.CoredataEventClientFrom(dic.Get)
+		ec := bootstrapContainer.DataEventClientFrom(dic.Get)
 		_, err := ec.Add(ctx, req)
 		if err != nil {
 			lc.Errorf("Failed to push event to Coredata: %s", err)

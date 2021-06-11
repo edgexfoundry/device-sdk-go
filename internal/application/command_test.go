@@ -136,13 +136,13 @@ func mockDic() *di.Container {
 		container.ProtocolDriverName: func(get di.Get) interface{} {
 			return driverMock
 		},
-		container.MetadataDeviceClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataDeviceClientName: func(get di.Get) interface{} {
 			return dcMock
 		},
-		container.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
 			return dpcMock
 		},
-		container.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
+		bootstrapContainer.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
 			return pwcMock
 		},
 		container.ConfigurationName: func(get di.Get) interface{} {

@@ -83,7 +83,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		}
 
 		// assertion
-		dc := container.MetadataDeviceClientFrom(dic.Get)
+		dc := bootstrapContainer.MetadataDeviceClientFrom(dic.Get)
 		err := checkAssertion(cv, dr.Properties.Assertion, device.Name, lc, dc)
 		if err != nil {
 			return nil, errors.NewCommonEdgeXWrapper(err)
