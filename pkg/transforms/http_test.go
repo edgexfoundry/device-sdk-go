@@ -18,7 +18,7 @@ package transforms
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -56,7 +56,7 @@ func TestHTTPPostPut(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 
-		readMsg, _ := ioutil.ReadAll(r.Body)
+		readMsg, _ := io.ReadAll(r.Body)
 		_ = r.Body.Close()
 		if strings.Compare((string)(readMsg), msgStr) != 0 {
 			t.Errorf("Invalid msg received %v, expected %v", readMsg, msgStr)

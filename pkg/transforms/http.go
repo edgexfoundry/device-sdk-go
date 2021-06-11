@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -219,7 +219,7 @@ func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interf
 	}
 
 	defer func() { _ = response.Body.Close() }()
-	responseData, errReadingBody := ioutil.ReadAll(response.Body)
+	responseData, errReadingBody := io.ReadAll(response.Body)
 	if errReadingBody != nil {
 		// Can't have continueOnSendError=true when returnInputData=false, so no need to check for it here
 		sender.setRetryData(ctx, exportData)

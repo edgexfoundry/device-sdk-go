@@ -22,7 +22,7 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
@@ -50,7 +50,7 @@ func TestGzip(t *testing.T) {
 	zr, err := gzip.NewReader(&buf)
 	require.NoError(t, err)
 
-	decoded, err := ioutil.ReadAll(zr)
+	decoded, err := io.ReadAll(zr)
 	require.NoError(t, err)
 	require.Equal(t, clearString, string(decoded))
 
@@ -76,7 +76,7 @@ func TestZlib(t *testing.T) {
 	zr, err := zlib.NewReader(&buf)
 	require.NoError(t, err)
 
-	decoded, err := ioutil.ReadAll(zr)
+	decoded, err := io.ReadAll(zr)
 	require.NoError(t, err)
 	require.Equal(t, clearString, string(decoded))
 

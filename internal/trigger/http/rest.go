@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 
@@ -73,7 +73,7 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 
 	contentType := r.Header.Get(common.ContentType)
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		lc.Error("Error reading HTTP Body", "error", err)
 		writer.WriteHeader(http.StatusBadRequest)
