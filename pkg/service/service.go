@@ -26,20 +26,21 @@ import (
 	bootstrapTypes "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/requests"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 var (
@@ -65,11 +66,11 @@ type DeviceService struct {
 	controller      *restController.RestController
 	config          *config.ConfigurationStruct
 	deviceService   *models.DeviceService
-	driver          dsModels.ProtocolDriver
-	discovery       dsModels.ProtocolDiscovery
-	manager         dsModels.AutoEventManager
-	asyncCh         chan *dsModels.AsyncValues
-	deviceCh        chan []dsModels.DiscoveredDevice
+	driver          sdkModels.ProtocolDriver
+	discovery       sdkModels.ProtocolDiscovery
+	manager         sdkModels.AutoEventManager
+	asyncCh         chan *sdkModels.AsyncValues
+	deviceCh        chan []sdkModels.DiscoveredDevice
 	initialized     bool
 	dic             *di.Container
 	flags           flags.Common
@@ -89,16 +90,16 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 		_, _ = fmt.Fprintf(os.Stderr, "Please specify device service version")
 		os.Exit(1)
 	}
-	common.ServiceVersion = serviceVersion
+	sdkCommon.ServiceVersion = serviceVersion
 
-	if driver, ok := proto.(dsModels.ProtocolDriver); ok {
+	if driver, ok := proto.(sdkModels.ProtocolDriver); ok {
 		s.driver = driver
 	} else {
 		_, _ = fmt.Fprintf(os.Stderr, "Please implement and specify the protocoldriver")
 		os.Exit(1)
 	}
 
-	if discovery, ok := proto.(dsModels.ProtocolDiscovery); ok {
+	if discovery, ok := proto.(sdkModels.ProtocolDiscovery); ok {
 		s.discovery = discovery
 	} else {
 		s.discovery = nil
@@ -129,7 +130,7 @@ func (s *DeviceService) Name() string {
 
 // Version returns the version number of this Device Service
 func (s *DeviceService) Version() string {
-	return common.ServiceVersion
+	return sdkCommon.ServiceVersion
 }
 
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.

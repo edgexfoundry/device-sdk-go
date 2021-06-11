@@ -32,10 +32,9 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -57,16 +56,16 @@ func TestPingRequest(t *testing.T) {
 
 	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, v2.ApiPingRoute, target.Ping, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, target.Ping, nil)
 
-	actual := common.PingResponse{}
+	actual := commonDTO.PingResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
 	_, err = time.Parse(time.UnixDate, actual.Timestamp)
 	assert.NoError(t, err)
 
-	require.Equal(t, v2.ApiVersion, actual.ApiVersion)
+	require.Equal(t, common.ApiVersion, actual.ApiVersion)
 }
 
 func TestVersionRequest(t *testing.T) {
@@ -84,13 +83,13 @@ func TestVersionRequest(t *testing.T) {
 
 	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, v2.ApiVersion, target.Version, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiVersion, target.Version, nil)
 
-	actual := common.VersionSdkResponse{}
+	actual := commonDTO.VersionSdkResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
-	assert.Equal(t, v2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
 	assert.Equal(t, expectedServiceVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
 }
@@ -104,13 +103,13 @@ func TestMetricsRequest(t *testing.T) {
 
 	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, v2.ApiMetricsRoute, target.Metrics, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiMetricsRoute, target.Metrics, nil)
 
-	actual := common.MetricsResponse{}
+	actual := commonDTO.MetricsResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
 	require.NoError(t, err)
 
-	assert.Equal(t, v2.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
 	assert.NotZero(t, actual.Metrics.MemAlloc)
 	assert.NotZero(t, actual.Metrics.MemFrees)
 	assert.NotZero(t, actual.Metrics.MemLiveObjects)
@@ -143,13 +142,13 @@ func TestConfigRequest(t *testing.T) {
 
 	target := NewRestController(mux.NewRouter(), dic)
 
-	recorder := doRequest(t, http.MethodGet, v2.ApiConfigRoute, target.Config, nil)
+	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
 
-	actualResponse := common.ConfigResponse{}
+	actualResponse := commonDTO.ConfigResponse{}
 	err := json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
 	require.NoError(t, err)
 
-	assert.Equal(t, v2.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, common.ApiVersion, actualResponse.ApiVersion)
 
 	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into sdkCommon.ConfigurationStruct
 	configJson, err := json.Marshal(actualResponse.Config)
@@ -186,10 +185,10 @@ func TestSecretRequest(t *testing.T) {
 	target := NewRestController(mux.NewRouter(), dic)
 	assert.NotNil(t, target)
 
-	validRequest := common.SecretRequest{
-		BaseRequest: common.NewBaseRequest(),
+	validRequest := commonDTO.SecretRequest{
+		BaseRequest: commonDTO.NewBaseRequest(),
 		Path:        "mqtt",
-		SecretData: []common.SecretDataKeyValue{
+		SecretData: []commonDTO.SecretDataKeyValue{
 			{Key: "username", Value: "username"},
 			{Key: "password", Value: "password"},
 		},
@@ -205,13 +204,13 @@ func TestSecretRequest(t *testing.T) {
 	badRequestId := validRequest
 	badRequestId.RequestId = "bad requestId"
 	noSecret := validRequest
-	noSecret.SecretData = []common.SecretDataKeyValue{}
+	noSecret.SecretData = []commonDTO.SecretDataKeyValue{}
 	missingSecretKey := validRequest
-	missingSecretKey.SecretData = []common.SecretDataKeyValue{
+	missingSecretKey.SecretData = []commonDTO.SecretDataKeyValue{
 		{Key: "", Value: "username"},
 	}
 	missingSecretValue := validRequest
-	missingSecretValue.SecretData = []common.SecretDataKeyValue{
+	missingSecretValue.SecretData = []commonDTO.SecretDataKeyValue{
 		{Key: "username", Value: ""},
 	}
 	noSecretStore := validRequest
@@ -219,7 +218,7 @@ func TestSecretRequest(t *testing.T) {
 
 	tests := []struct {
 		Name               string
-		Request            common.SecretRequest
+		Request            commonDTO.SecretRequest
 		ExpectedRequestId  string
 		SecretPath         string
 		SecretStoreEnabled string
@@ -247,20 +246,20 @@ func TestSecretRequest(t *testing.T) {
 
 			reader := strings.NewReader(string(jsonData))
 
-			req, err := http.NewRequest(http.MethodPost, sdkCommon.APIV2SecretRoute, reader)
+			req, err := http.NewRequest(http.MethodPost, common.ApiSecretRoute, reader)
 			require.NoError(t, err)
-			req.Header.Set(clients.CorrelationHeader, expectedCorrelationId)
+			req.Header.Set(common.CorrelationHeader, expectedCorrelationId)
 
 			recorder := httptest.NewRecorder()
 			handler := http.HandlerFunc(target.Secret)
 			handler.ServeHTTP(recorder, req)
 
-			actualResponse := common.BaseResponse{}
+			actualResponse := commonDTO.BaseResponse{}
 			err = json.Unmarshal(recorder.Body.Bytes(), &actualResponse)
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.ExpectedStatusCode, recorder.Result().StatusCode, "HTTP status code not as expected")
-			assert.Equal(t, v2.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
+			assert.Equal(t, common.ApiVersion, actualResponse.ApiVersion, "Api Version not as expected")
 			assert.Equal(t, testCase.ExpectedStatusCode, actualResponse.StatusCode, "BaseResponse status code not as expected")
 
 			if testCase.ErrorExpected {
@@ -277,7 +276,7 @@ func TestSecretRequest(t *testing.T) {
 func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc, body io.Reader) *httptest.ResponseRecorder {
 	req, err := http.NewRequest(method, api, body)
 	require.NoError(t, err)
-	req.Header.Set(clients.CorrelationHeader, expectedCorrelationId)
+	req.Header.Set(common.CorrelationHeader, expectedCorrelationId)
 
 	recorder := httptest.NewRecorder()
 
@@ -289,8 +288,8 @@ func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc
 	}
 
 	assert.Equal(t, expectedStatusCode, recorder.Code, "Wrong status code")
-	assert.Equal(t, clients.ContentTypeJSON, recorder.HeaderMap.Get(clients.ContentType), "Content type not set or not JSON")
-	assert.Equal(t, expectedCorrelationId, recorder.HeaderMap.Get(clients.CorrelationHeader), "CorrelationHeader not as expected")
+	assert.Equal(t, common.ContentTypeJSON, recorder.HeaderMap.Get(common.ContentType), "Content type not set or not JSON")
+	assert.Equal(t, expectedCorrelationId, recorder.HeaderMap.Get(common.CorrelationHeader), "CorrelationHeader not as expected")
 
 	require.NotEmpty(t, recorder.Body.String(), "Response body is empty")
 

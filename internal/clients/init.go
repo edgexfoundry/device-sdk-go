@@ -16,10 +16,10 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients"
+	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
@@ -58,19 +58,19 @@ func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer
 }
 
 func validateClientConfig(configuration *config.ConfigurationStruct) errors.EdgeX {
-	if len(configuration.Clients[clients.CoreMetaDataServiceKey].Host) == 0 {
+	if len(configuration.Clients[common.CoreMetaDataServiceKey].Host) == 0 {
 		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Host setting for Core Metadata client not configured", nil)
 	}
 
-	if configuration.Clients[clients.CoreMetaDataServiceKey].Port == 0 {
+	if configuration.Clients[common.CoreMetaDataServiceKey].Port == 0 {
 		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Port setting for Core Metadata client not configured", nil)
 	}
 
-	if len(configuration.Clients[clients.CoreDataServiceKey].Host) == 0 {
+	if len(configuration.Clients[common.CoreDataServiceKey].Host) == 0 {
 		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Host setting for Core Data client not configured", nil)
 	}
 
-	if configuration.Clients[clients.CoreDataServiceKey].Port == 0 {
+	if configuration.Clients[common.CoreDataServiceKey].Port == 0 {
 		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Port setting for Core Data client not configured", nil)
 	}
 
@@ -80,7 +80,7 @@ func validateClientConfig(configuration *config.ConfigurationStruct) errors.Edge
 }
 
 func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, dic *di.Container) bool {
-	var dependencyList = []string{clients.CoreMetaDataServiceKey}
+	var dependencyList = []string{common.CoreMetaDataServiceKey}
 	var waitGroup sync.WaitGroup
 	checkingErr := true
 
@@ -141,7 +141,7 @@ func checkServiceAvailableByPing(serviceKey string, timeout time.Duration, confi
 		Timeout: timeout,
 	}
 
-	_, err := client.Get(addr + clients.ApiPingRoute)
+	_, err := client.Get(addr + common.ApiPingRoute)
 	if err != nil {
 		lc.Error(err.Error())
 		return false
@@ -168,11 +168,11 @@ func checkServiceAvailableViaRegistry(serviceKey string, rc registry.Client, lc 
 
 func initCoreServiceClients(dic *di.Container) {
 	configuration := container.ConfigurationFrom(dic.Get)
-	dc := v2clients.NewDeviceClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
-	dsc := v2clients.NewDeviceServiceClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
-	dpc := v2clients.NewDeviceProfileClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
-	pwc := v2clients.NewProvisionWatcherClient(configuration.Clients[clients.CoreMetaDataServiceKey].Url())
-	ec := v2clients.NewEventClient(configuration.Clients[clients.CoreDataServiceKey].Url())
+	dc := v2clients.NewDeviceClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
+	dsc := v2clients.NewDeviceServiceClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
+	dpc := v2clients.NewDeviceProfileClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
+	pwc := v2clients.NewProvisionWatcherClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
+	ec := v2clients.NewEventClient(configuration.Clients[common.CoreDataServiceKey].Url())
 
 	dic.Update(di.ServiceConstructorMap{
 		container.MetadataDeviceClientName: func(get di.Get) interface{} {

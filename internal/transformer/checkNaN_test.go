@@ -10,7 +10,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -18,13 +18,13 @@ import (
 )
 
 func Test_isNaN(t *testing.T) {
-	validFloat32, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat32, float32(1.234))
+	validFloat32, err := models.NewCommandValue("test-resource", common.ValueTypeFloat32, float32(1.234))
 	require.NoError(t, err)
-	validFloat64, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat64, 1.234)
+	validFloat64, err := models.NewCommandValue("test-resource", common.ValueTypeFloat64, 1.234)
 	require.NoError(t, err)
-	float32NaN, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat32, float32(math.NaN()))
+	float32NaN, err := models.NewCommandValue("test-resource", common.ValueTypeFloat32, float32(math.NaN()))
 	require.NoError(t, err)
-	float64NaN, err := models.NewCommandValue("test-resource", v2.ValueTypeFloat64, math.NaN())
+	float64NaN, err := models.NewCommandValue("test-resource", common.ValueTypeFloat64, math.NaN())
 	require.NoError(t, err)
 
 	tests := []struct {

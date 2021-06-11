@@ -15,13 +15,13 @@ import (
 	"github.com/OneOfOne/xxhash"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 )
 
 type Executor struct {
@@ -68,7 +68,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				// By adding a buffer here, the user can use the Service.AsyncBufferSize configuration to control the goroutine for sending events.
 				go func() {
 					buffer <- true
-					common.SendEvent(evt, "", dic)
+					sdkCommon.SendEvent(evt, "", dic)
 					<-buffer
 				}()
 			} else {
@@ -80,8 +80,8 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 
 func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors.EdgeX) {
 	vars := make(map[string]string, 2)
-	vars[v2.Name] = e.deviceName
-	vars[v2.Command] = e.sourceName
+	vars[common.Name] = e.deviceName
+	vars[common.Command] = e.sourceName
 
 	res, err := application.CommandHandler(true, false, "", vars, "", "", dic)
 	if err != nil {
@@ -102,7 +102,7 @@ func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 	var result = true
 	for _, reading := range readings {
 		if lastReading, ok := e.lastReadings[reading.ResourceName]; ok {
-			if reading.ValueType == v2.ValueTypeBinary {
+			if reading.ValueType == common.ValueTypeBinary {
 				checksum := xxhash.Checksum64(reading.BinaryValue)
 				if lastReading != checksum {
 					e.lastReadings[reading.ResourceName] = checksum
@@ -126,7 +126,7 @@ func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 func (e *Executor) renewLastReadings(readings []dtos.BaseReading) {
 	e.lastReadings = make(map[string]interface{}, len(readings))
 	for _, r := range readings {
-		if r.ValueType == v2.ValueTypeBinary {
+		if r.ValueType == common.ValueTypeBinary {
 			e.lastReadings[r.ResourceName] = xxhash.Checksum64(r.BinaryValue)
 		} else {
 			e.lastReadings[r.ResourceName] = r.Value

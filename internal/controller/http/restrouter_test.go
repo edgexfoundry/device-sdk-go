@@ -25,7 +25,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
@@ -41,7 +41,7 @@ func TestAddRoute(t *testing.T) {
 		ErrorExpected bool
 	}{
 		{"Success", "/api/v2/test", false},
-		{"Reserved Route", v2.ApiVersionRoute, true},
+		{"Reserved Route", common.ApiVersionRoute, true},
 	}
 
 	lc := logger.NewMockClient()

@@ -13,10 +13,10 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2/dtos/responses"
 	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
@@ -32,46 +32,46 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 	var err errors.EdgeX
 	var reserved url.Values
 	vars := mux.Vars(request)
-	correlationID := request.Header.Get(sdkCommon.CorrelationHeader)
+	correlationID := request.Header.Get(common.CorrelationHeader)
 	if correlationID == "" {
-		correlationID, _ = request.Context().Value(sdkCommon.CorrelationHeader).(string)
+		correlationID, _ = request.Context().Value(common.CorrelationHeader).(string)
 	}
 
 	// read request body for SET command
 	if request.Method == http.MethodPut {
 		requestBody, err = readBodyAsString(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
 		if err != nil {
-			c.sendEdgexError(writer, request, err, v2.ApiDeviceNameCommandNameRoute)
+			c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
 			return
 		}
 	}
 	// parse query parameter
 	queryParams, reserved, err = filterQueryParams(request.URL.RawQuery)
 	if err != nil {
-		c.sendEdgexError(writer, request, err, v2.ApiDeviceNameCommandNameRoute)
+		c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
 		return
 	}
 
 	var sendEvent bool
 	// push event to CoreData if specified (default no)
-	if ok, exist := reserved[v2.PushEvent]; exist && ok[0] == v2.ValueYes {
+	if ok, exist := reserved[common.PushEvent]; exist && ok[0] == common.ValueYes {
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
 	eventDTO, err := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
 	if err != nil {
-		c.sendEdgexError(writer, request, err, v2.ApiDeviceNameCommandNameRoute)
+		c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
 		return
 	}
 
 	// return event in http response if specified (default yes)
-	if ok, exist := reserved[v2.ReturnEvent]; !exist || ok[0] == v2.ValueYes {
+	if ok, exist := reserved[common.ReturnEvent]; !exist || ok[0] == common.ValueYes {
 		if eventDTO != nil {
 			res := responses.NewEventResponse("", "", http.StatusOK, *eventDTO)
 			c.sendEventResponse(writer, request, res, http.StatusOK)
 		} else {
-			res := common.NewBaseResponse("", "", http.StatusOK)
-			c.sendResponse(writer, request, v2.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
+			res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+			c.sendResponse(writer, request, common.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
 		}
 	}
 }

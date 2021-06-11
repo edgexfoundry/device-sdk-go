@@ -9,15 +9,15 @@ package transformer
 import (
 	"math"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/v2"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 func isNaN(cv *models.CommandValue) (bool, errors.EdgeX) {
 	switch cv.Type {
-	case v2.ValueTypeFloat32:
+	case common.ValueTypeFloat32:
 		v, err := cv.Float32Value()
 		if err != nil {
 			return false, errors.NewCommonEdgeXWrapper(err)
@@ -25,7 +25,7 @@ func isNaN(cv *models.CommandValue) (bool, errors.EdgeX) {
 		if math.IsNaN(float64(v)) {
 			return true, nil
 		}
-	case v2.ValueTypeFloat64:
+	case common.ValueTypeFloat64:
 		v, err := cv.Float64Value()
 		if err != nil {
 			return false, errors.NewCommonEdgeXWrapper(err)

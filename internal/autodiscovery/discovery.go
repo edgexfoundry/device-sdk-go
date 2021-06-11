@@ -10,8 +10,9 @@ import (
 	"fmt"
 	"sync"
 
-	dsModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 type discoveryLocker struct {
@@ -21,7 +22,7 @@ type discoveryLocker struct {
 
 var locker discoveryLocker
 
-func DiscoveryWrapper(discovery dsModels.ProtocolDiscovery, lc logger.LoggingClient) {
+func DiscoveryWrapper(discovery models.ProtocolDiscovery, lc logger.LoggingClient) {
 	locker.mux.Lock()
 	if locker.busy {
 		lc.Info("another device discovery process is currently running")
