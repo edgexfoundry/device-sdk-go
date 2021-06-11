@@ -240,7 +240,7 @@ func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceService
 // updateAssociatedProfile updates the profile specified in AddDeviceRequest or UpdateDeviceRequest
 // to stay consistent with core metadata.
 func updateAssociatedProfile(profileName string, dic *di.Container) errors.EdgeX {
-	dpc := container.MetadataDeviceProfileClientFrom(dic.Get)
+	dpc := bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)
 
 	res, err := dpc.DeviceProfileByName(context.Background(), profileName)
 	if err != nil {
