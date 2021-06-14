@@ -155,7 +155,7 @@ func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.
 
 	data := message.Payload()
 	contentType := common.ContentTypeJSON
-	if data[0] != byte('{') {
+	if data[0] != byte('{') && data[0] != byte('[') {
 		// If not JSON then assume it is CBOR
 		contentType = common.ContentTypeCBOR
 	}

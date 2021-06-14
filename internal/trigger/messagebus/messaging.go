@@ -188,7 +188,7 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 			contentType = appContext.ResponseContentType()
 		} else {
 			contentType = common.ContentTypeJSON
-			if appContext.ResponseData()[0] != byte('{') {
+			if appContext.ResponseData()[0] != byte('{') && appContext.ResponseData()[0] != byte('[') {
 				// If not JSON then assume it is CBOR
 				contentType = common.ContentTypeCBOR
 			}
