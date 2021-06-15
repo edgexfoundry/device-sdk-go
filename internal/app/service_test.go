@@ -18,6 +18,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"reflect"
@@ -89,9 +90,35 @@ func TestAddRoute(t *testing.T) {
 
 }
 
-func TestAddBackgroundPublisher(t *testing.T) {
-	sdk := Service{}
-	pub, ok := sdk.AddBackgroundPublisher(1).(*backgroundPublisher)
+func TestAddBackgroundPublisherNoTopic(t *testing.T) {
+	sdk := Service{
+		config: &common.ConfigurationStruct{},
+	}
+
+	p, err := sdk.AddBackgroundPublisher(1)
+
+	require.Error(t, err)
+	require.Nil(t, p)
+}
+
+func TestAddBackgroundPublisherMessageBus(t *testing.T) {
+	sdk := Service{
+		config: &common.ConfigurationStruct{
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMessageBus,
+				EdgexMessageBus: common.MessageBusConfig{
+					PublishHost: common.PublishHostInfo{
+						PublishTopic: "topic",
+					},
+				},
+			},
+		}}
+
+	p, err := sdk.AddBackgroundPublisher(1)
+
+	require.NoError(t, err)
+
+	pub, ok := p.(*backgroundPublisher)
 
 	if !ok {
 		assert.Fail(t, fmt.Sprintf("Unexpected BackgroundPublisher implementation encountered: %T", pub))
@@ -99,10 +126,105 @@ func TestAddBackgroundPublisher(t *testing.T) {
 
 	require.NotNil(t, pub.output, "publisher should have an output channel set")
 	require.NotNil(t, sdk.backgroundPublishChannel, "svc should have a background channel set for passing to trigger initialization")
+	require.Equal(t, sdk.config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, pub.topic)
 
 	// compare addresses since types will not match
 	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundPublishChannel), fmt.Sprintf("%p", pub.output),
 		"same channel should be referenced by the BackgroundPublisher and the SDK.")
+}
+
+func TestAddBackgroundPublisher_Arbitrary(t *testing.T) {
+	sdk := Service{
+		config: &common.ConfigurationStruct{
+			Trigger: common.TriggerInfo{
+				Type: "NOT MQTT OR HTTP",
+				EdgexMessageBus: common.MessageBusConfig{
+					PublishHost: common.PublishHostInfo{
+						PublishTopic: "topic",
+					},
+				},
+			},
+		}}
+
+	p, err := sdk.AddBackgroundPublisher(1)
+
+	require.NoError(t, err)
+
+	pub, ok := p.(*backgroundPublisher)
+
+	if !ok {
+		assert.Fail(t, fmt.Sprintf("Unexpected BackgroundPublisher implementation encountered: %T", pub))
+	}
+
+	require.NotNil(t, pub.output, "publisher should have an output channel set")
+	require.NotNil(t, sdk.backgroundPublishChannel, "svc should have a background channel set for passing to trigger initialization")
+	require.Equal(t, sdk.config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, pub.topic)
+
+	// compare addresses since types will not match
+	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundPublishChannel), fmt.Sprintf("%p", pub.output),
+		"same channel should be referenced by the BackgroundPublisher and the SDK.")
+}
+
+func TestAddBackgroundPublisher_Custom_Topic(t *testing.T) {
+	sdk := Service{config: &common.ConfigurationStruct{}}
+
+	topic := uuid.NewString()
+
+	p, err := sdk.AddBackgroundPublisherWithTopic(1, topic)
+
+	require.NoError(t, err)
+
+	pub, ok := p.(*backgroundPublisher)
+
+	if !ok {
+		assert.Fail(t, fmt.Sprintf("Unexpected BackgroundPublisher implementation encountered: %T", pub))
+	}
+
+	require.NotNil(t, pub.output, "publisher should have an output channel set")
+	require.NotNil(t, sdk.backgroundPublishChannel, "svc should have a background channel set for passing to trigger initialization")
+	require.Equal(t, topic, pub.topic)
+
+	// compare addresses since types will not match
+	assert.Equal(t, fmt.Sprintf("%p", sdk.backgroundPublishChannel), fmt.Sprintf("%p", pub.output),
+		"same channel should be referenced by the BackgroundPublisher and the SDK.")
+}
+
+func TestAddBackgroundPublisher_MQTT(t *testing.T) {
+	sdk := Service{
+		config: &common.ConfigurationStruct{
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMQTT,
+				EdgexMessageBus: common.MessageBusConfig{
+					PublishHost: common.PublishHostInfo{
+						PublishTopic: "topic",
+					},
+				},
+			},
+		}}
+
+	pub, err := sdk.AddBackgroundPublisher(1)
+
+	require.Error(t, err)
+	require.Nil(t, pub)
+}
+
+func TestAddBackgroundPublisher_HTTP(t *testing.T) {
+	sdk := Service{
+		config: &common.ConfigurationStruct{
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeHTTP,
+				EdgexMessageBus: common.MessageBusConfig{
+					PublishHost: common.PublishHostInfo{
+						PublishTopic: "topic",
+					},
+				},
+			},
+		}}
+
+	pub, err := sdk.AddBackgroundPublisher(1)
+
+	require.Error(t, err)
+	require.Nil(t, pub)
 }
 
 func TestSetupHTTPTrigger(t *testing.T) {

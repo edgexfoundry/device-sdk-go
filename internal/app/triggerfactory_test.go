@@ -35,8 +35,6 @@ import (
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
@@ -153,7 +151,7 @@ func TestSetupTrigger_MQTT(t *testing.T) {
 type mockCustomTrigger struct {
 }
 
-func (*mockCustomTrigger) Initialize(_ *sync.WaitGroup, _ context.Context, _ <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
+func (*mockCustomTrigger) Initialize(_ *sync.WaitGroup, _ context.Context, _ <-chan interfaces.BackgroundMessage) (bootstrap.Deferred, error) {
 	return nil, nil
 }
 

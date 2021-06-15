@@ -36,7 +36,7 @@ type TriggerConfig struct {
 // Trigger provides an abstract means to pass messages to the function pipeline
 type Trigger interface {
 	// Initialize performs post creation initializations
-	Initialize(wg *sync.WaitGroup, ctx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error)
+	Initialize(wg *sync.WaitGroup, ctx context.Context, background <-chan BackgroundMessage) (bootstrap.Deferred, error)
 }
 
 // TriggerMessageProcessor provides an interface that can be used by custom triggers to invoke the runtime

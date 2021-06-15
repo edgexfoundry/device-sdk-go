@@ -18,18 +18,17 @@
 package http
 
 import (
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
-
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTriggerInitializeWitBackgroundChannel(t *testing.T) {
-	background := make(chan types.MessageEnvelope)
+	background := make(chan interfaces.BackgroundMessage)
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return logger.NewMockClient()

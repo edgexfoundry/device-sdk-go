@@ -48,7 +48,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	commonConstants "github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 
 	"github.com/gorilla/mux"
@@ -83,7 +82,7 @@ type Service struct {
 	webserver                 *webserver.WebServer
 	ctx                       contextGroup
 	deferredFunctions         []bootstrap.Deferred
-	backgroundPublishChannel  <-chan types.MessageEnvelope
+	backgroundPublishChannel  <-chan interfaces.BackgroundMessage
 	customTriggerFactories    map[string]func(sdk *Service) (interfaces.Trigger, error)
 	profileSuffixPlaceholder  string
 	commandLine               commandLineFlags
@@ -119,10 +118,28 @@ func (svc *Service) AddRoute(route string, handler func(nethttp.ResponseWriter, 
 
 // AddBackgroundPublisher will create a channel of provided capacity to be
 // consumed by the MessageBus output and return a publisher that writes to it
-func (svc *Service) AddBackgroundPublisher(capacity int) interfaces.BackgroundPublisher {
-	bgchan, pub := newBackgroundPublisher(capacity)
+func (svc *Service) AddBackgroundPublisher(capacity int) (interfaces.BackgroundPublisher, error) {
+	topic := svc.config.Trigger.EdgexMessageBus.PublishHost.PublishTopic
+
+	if topic == "" {
+		return nil, errors.New("no publish topic configured for messagebus, background publishing unavailable")
+	}
+	return svc.AddBackgroundPublisherWithTopic(capacity, topic)
+}
+
+// AddBackgroundPublisherWithTopic will create a channel of provided capacity to be
+// consumed by the MessageBus output and return a publisher that writes to it on a different
+// topic than configured for messagebus output.
+func (svc *Service) AddBackgroundPublisherWithTopic(capacity int, topic string) (interfaces.BackgroundPublisher, error) {
+	// for custom triggers we don't know if background publishing available or not
+	// but probably makes sense to trust the caller.
+	if svc.config.Trigger.Type == TriggerTypeHTTP || svc.config.Trigger.Type == TriggerTypeMQTT {
+		return nil, fmt.Errorf("Background publishing not supported for %s trigger.", svc.config.Trigger.Type)
+	}
+
+	bgchan, pub := newBackgroundPublisher(topic, capacity)
 	svc.backgroundPublishChannel = bgchan
-	return pub
+	return pub, nil
 }
 
 // MakeItStop will force the service loop to exit in the same fashion as SIGINT/SIGTERM received from the OS

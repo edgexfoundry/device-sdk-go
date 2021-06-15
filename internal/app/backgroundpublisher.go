@@ -18,27 +18,40 @@
 package app
 
 import (
+	"fmt"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 )
 
 type backgroundPublisher struct {
-	output chan<- types.MessageEnvelope
+	topic  string
+	output chan<- interfaces.BackgroundMessage
 }
 
 // Publish provided message through the configured MessageBus output
-func (pub *backgroundPublisher) Publish(payload []byte, correlationID string, contentType string) {
+func (pub *backgroundPublisher) Publish(payload []byte, context interfaces.AppFunctionContext) error {
 	outputEnvelope := types.MessageEnvelope{
-		CorrelationID: correlationID,
+		CorrelationID: context.CorrelationID(),
 		Payload:       payload,
-		ContentType:   contentType,
+		ContentType:   context.InputContentType(),
 	}
 
-	pub.output <- outputEnvelope
+	topic, err := context.ApplyValues(pub.topic)
+
+	if err != nil {
+		return fmt.Errorf("Failed to prepare topic for publishing: %s", err.Error())
+	}
+
+	pub.output <- BackgroundMessage{
+		Payload:      outputEnvelope,
+		PublishTopic: topic,
+	}
+
+	return nil
 }
 
-func newBackgroundPublisher(capacity int) (<-chan types.MessageEnvelope, interfaces.BackgroundPublisher) {
-	backgroundChannel := make(chan types.MessageEnvelope, capacity)
-	return backgroundChannel, &backgroundPublisher{output: backgroundChannel}
+func newBackgroundPublisher(baseTopic string, capacity int) (<-chan interfaces.BackgroundMessage, interfaces.BackgroundPublisher) {
+	backgroundChannel := make(chan interfaces.BackgroundMessage, capacity)
+	return backgroundChannel, &backgroundPublisher{topic: baseTopic, output: backgroundChannel}
 }

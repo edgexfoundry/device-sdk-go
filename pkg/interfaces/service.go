@@ -80,9 +80,14 @@ type ApplicationService interface {
 	MakeItStop()
 	// RegisterCustomTriggerFactory registers a trigger factory for a custom trigger to be used.
 	RegisterCustomTriggerFactory(name string, factory func(TriggerConfig) (Trigger, error)) error
-	// Adds and returns a BackgroundPublisher which is used to publish asynchronously to the Edgex MessageBus.
+	// AddBackgroundPublisher Adds and returns a BackgroundPublisher which is used to publish
+	// asynchronously to the Edgex MessageBus.
 	// Not valid for use with the HTTP or External MQTT triggers
-	AddBackgroundPublisher(capacity int) BackgroundPublisher
+	AddBackgroundPublisher(capacity int) (BackgroundPublisher, error)
+	// AddBackgroundPublisherWithTopic Adds and returns a BackgroundPublisher which is used to publish
+	// asynchronously to the Edgex MessageBus on the specified topic.
+	// Not valid for use with the HTTP or External MQTT triggers
+	AddBackgroundPublisherWithTopic(capacity int, topic string) (BackgroundPublisher, error)
 	// GetSecret returns the secret data from the secret store (secure or insecure) for the specified path.
 	// An error is returned if the path is not found or any of the keys (if specified) are not found.
 	// Omit keys if all secret data for the specified path is required.

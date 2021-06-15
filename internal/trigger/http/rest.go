@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"io"
 	"net/http"
 	"sync"
@@ -53,7 +54,7 @@ func NewTrigger(dic *di.Container, runtime *runtime.GolangRuntime, webserver *we
 }
 
 // Initialize initializes the Trigger for logging and REST route
-func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
+func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, background <-chan interfaces.BackgroundMessage) (bootstrap.Deferred, error) {
 	lc := bootstrapContainer.LoggingClientFrom(trigger.dic.Get)
 
 	if background != nil {

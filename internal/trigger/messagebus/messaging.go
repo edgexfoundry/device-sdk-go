@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"strings"
 	"sync"
 
@@ -55,7 +56,7 @@ func NewTrigger(dic *di.Container, runtime *runtime.GolangRuntime) *Trigger {
 }
 
 // Initialize ...
-func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context, background <-chan types.MessageEnvelope) (bootstrap.Deferred, error) {
+func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context, background <-chan interfaces.BackgroundMessage) (bootstrap.Deferred, error) {
 	var err error
 	lc := bootstrapContainer.LoggingClientFrom(trigger.dic.Get)
 	config := container.ConfigurationFrom(trigger.dic.Get)
@@ -142,14 +143,17 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 
 			case bg := <-background:
 				go func() {
-					err := trigger.client.Publish(bg, publishTopic)
+					topic := bg.Topic()
+					msg := bg.Message()
+
+					err := trigger.client.Publish(msg, topic)
 					if err != nil {
 						lc.Errorf("Failed to publish background Message to bus, %v", err)
 						return
 					}
 
-					lc.Debugf("Published background message to bus on %s topic", publishTopic)
-					lc.Tracef("%s=%s", common.CorrelationHeader, bg.CorrelationID)
+					lc.Debugf("Published background message to bus on %s topic", topic)
+					lc.Tracef("%s=%s", common.CorrelationHeader, msg.CorrelationID)
 				}()
 			}
 		}
@@ -200,9 +204,14 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 		}
 
 		config := container.ConfigurationFrom(trigger.dic.Get)
-		publishTopic := config.Trigger.EdgexMessageBus.PublishHost.PublishTopic
+		publishTopic, err := appContext.ApplyValues(config.Trigger.EdgexMessageBus.PublishHost.PublishTopic)
 
-		err := trigger.client.Publish(outputEnvelope, publishTopic)
+		if err != nil {
+			logger.Errorf("Unable to format output topic '%s': %s", config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, err.Error())
+			return
+		}
+
+		err = trigger.client.Publish(outputEnvelope, publishTopic)
 		if err != nil {
 			logger.Errorf("Failed to publish Message to bus, %v", err)
 			return

@@ -1,6 +1,5 @@
 //
-// Copyright (c) 2020 Technotects
-// Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 Technotects
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,9 +16,11 @@
 
 package interfaces
 
-// BackgroundPublisher provides an interface to send messages from background processes
-// through the service's configured MessageBus output
-type BackgroundPublisher interface {
-	// Publish provided message through the configured MessageBus output
-	Publish(payload []byte, context AppFunctionContext) error
+import (
+	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+)
+
+type BackgroundMessage interface {
+	Message() types.MessageEnvelope
+	Topic() string
 }

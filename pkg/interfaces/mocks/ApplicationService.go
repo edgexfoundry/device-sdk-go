@@ -22,7 +22,7 @@ type ApplicationService struct {
 }
 
 // AddBackgroundPublisher provides a mock function with given fields: capacity
-func (_m *ApplicationService) AddBackgroundPublisher(capacity int) interfaces.BackgroundPublisher {
+func (_m *ApplicationService) AddBackgroundPublisher(capacity int) (interfaces.BackgroundPublisher, error) {
 	ret := _m.Called(capacity)
 
 	var r0 interfaces.BackgroundPublisher
@@ -34,7 +34,41 @@ func (_m *ApplicationService) AddBackgroundPublisher(capacity int) interfaces.Ba
 		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int) error); ok {
+		r1 = rf(1)
+	} else {
+		if ret.Get(0) != nil {
+			r1 = ret.Get(1).(error)
+		}
+	}
+
+	return r0, r1
+}
+
+// AddBackgroundPublisher provides a mock function with given fields: capacity, topic
+func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topic string) (interfaces.BackgroundPublisher, error) {
+	ret := _m.Called(capacity)
+
+	var r0 interfaces.BackgroundPublisher
+	if rf, ok := ret.Get(0).(func(int, string) interfaces.BackgroundPublisher); ok {
+		r0 = rf(capacity, topic)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interfaces.BackgroundPublisher)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(int) error); ok {
+		r1 = rf(1)
+	} else {
+		if ret.Get(0) != nil {
+			r1 = ret.Get(1).(error)
+		}
+	}
+
+	return r0, r1
 }
 
 // AddRoute provides a mock function with given fields: route, handler, methods

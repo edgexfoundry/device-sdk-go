@@ -646,24 +646,27 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
 	require.NoError(t, err, "Failed to create test client")
 
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
+	backgroundTopic := uuid.NewString()
+
+	testTopics := []types.TopicChannel{{Topic: backgroundTopic, Messages: make(chan types.MessageEnvelope)}}
 	testMessageErrors := make(chan error)
 
 	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
 	require.NoError(t, err)
 
-	background := make(chan types.MessageEnvelope)
+	background := make(chan interfaces.BackgroundMessage)
 
 	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), background)
 	require.NoError(t, err)
 
-	message := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       expectedPayload,
-		ContentType:   common.ContentTypeJSON,
+	background <- mockBackgroundMessage{
+		Payload: types.MessageEnvelope{
+			CorrelationID: expectedCorrelationID,
+			Payload:       expectedPayload,
+			ContentType:   common.ContentTypeJSON,
+		},
+		DeliverToTopic: backgroundTopic,
 	}
-
-	background <- message
 
 	receiveMessage := true
 
@@ -762,4 +765,17 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		require.Fail(t, "Transform never called t2")
 	}
+}
+
+type mockBackgroundMessage struct {
+	DeliverToTopic string
+	Payload        types.MessageEnvelope
+}
+
+func (bg mockBackgroundMessage) Topic() string {
+	return bg.DeliverToTopic
+}
+
+func (bg mockBackgroundMessage) Message() types.MessageEnvelope {
+	return bg.Payload
 }
