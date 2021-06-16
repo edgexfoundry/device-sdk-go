@@ -139,4 +139,6 @@ type ApplicationService interface {
 	// UpdateWritableFromRaw interface will be called on the custom configuration to apply the updates and then signal
 	// that the changes occurred via writableChanged.
 	ListenForCustomConfigChanges(configToWatch interface{}, sectionName string, changedCallback func(interface{})) error
+	// BuildContext allows external callers that may need a context (eg background publishers) to easily create one
+	BuildContext(correlationId string, contentType string) AppFunctionContext
 }

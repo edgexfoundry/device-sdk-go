@@ -38,8 +38,9 @@ import (
 // NewContext creates, initializes and return a new Context with implements the interfaces.AppFunctionContext interface
 func NewContext(correlationID string, dic *di.Container, inputContentType string) *Context {
 	return &Context{
-		correlationID:        correlationID,
-		dic:                  dic,
+		correlationID: correlationID,
+		// Dic is public so we can confirm it is set correctly
+		Dic:                  dic,
 		inputContentType:     inputContentType,
 		contextData:          make(map[string]string, 0),
 		valuePlaceholderSpec: regexp.MustCompile("{[^}]*}"),
@@ -48,7 +49,8 @@ func NewContext(correlationID string, dic *di.Container, inputContentType string
 
 // Context contains the data functions that implement the interfaces.AppFunctionContext
 type Context struct {
-	dic                  *di.Container
+	// Dic is public so we can confirm it is set correctly
+	Dic                  *di.Container
 	correlationID        string
 	inputContentType     string
 	responseData         []byte
@@ -116,54 +118,54 @@ func (appContext *Context) RetryData() []byte {
 
 // GetSecret returns the secret data from the secret store (secure or insecure) for the specified path.
 func (appContext *Context) GetSecret(path string, keys ...string) (map[string]string, error) {
-	secretProvider := bootstrapContainer.SecretProviderFrom(appContext.dic.Get)
+	secretProvider := bootstrapContainer.SecretProviderFrom(appContext.Dic.Get)
 	return secretProvider.GetSecret(path, keys...)
 }
 
 // SecretsLastUpdated returns that timestamp for when the secrets in the SecretStore where last updated.
 func (appContext *Context) SecretsLastUpdated() time.Time {
-	secretProvider := bootstrapContainer.SecretProviderFrom(appContext.dic.Get)
+	secretProvider := bootstrapContainer.SecretProviderFrom(appContext.Dic.Get)
 	return secretProvider.SecretsLastUpdated()
 }
 
 // LoggingClient returns the Logging client from the dependency injection container
 func (appContext *Context) LoggingClient() logger.LoggingClient {
-	return bootstrapContainer.LoggingClientFrom(appContext.dic.Get)
+	return bootstrapContainer.LoggingClientFrom(appContext.Dic.Get)
 }
 
 // EventClient returns the Event client, which may be nil, from the dependency injection container
 func (appContext *Context) EventClient() interfaces.EventClient {
-	return container.EventClientFrom(appContext.dic.Get)
+	return container.EventClientFrom(appContext.Dic.Get)
 }
 
 // CommandClient returns the Command client, which may be nil, from the dependency injection container
 func (appContext *Context) CommandClient() interfaces.CommandClient {
-	return container.CommandClientFrom(appContext.dic.Get)
+	return container.CommandClientFrom(appContext.Dic.Get)
 }
 
 // DeviceServiceClient returns the DeviceService client, which may be nil, from the dependency injection container
 func (appContext *Context) DeviceServiceClient() interfaces.DeviceServiceClient {
-	return container.DeviceServiceClientFrom(appContext.dic.Get)
+	return container.DeviceServiceClientFrom(appContext.Dic.Get)
 }
 
 // DeviceProfileClient returns the DeviceProfile client, which may be nil, from the dependency injection container
 func (appContext *Context) DeviceProfileClient() interfaces.DeviceProfileClient {
-	return container.DeviceProfileClientFrom(appContext.dic.Get)
+	return container.DeviceProfileClientFrom(appContext.Dic.Get)
 }
 
 // DeviceClient returns the Device client, which may be nil, from the dependency injection container
 func (appContext *Context) DeviceClient() interfaces.DeviceClient {
-	return container.DeviceClientFrom(appContext.dic.Get)
+	return container.DeviceClientFrom(appContext.Dic.Get)
 }
 
 // NotificationClient returns the Notification client, which may be nil, from the dependency injection container
 func (appContext *Context) NotificationClient() interfaces.NotificationClient {
-	return container.NotificationClientFrom(appContext.dic.Get)
+	return container.NotificationClientFrom(appContext.Dic.Get)
 }
 
 // SubscriptionClient returns the Subscription client, which may be nil, from the dependency injection container
 func (appContext *Context) SubscriptionClient() interfaces.SubscriptionClient {
-	return container.SubscriptionClientFrom(appContext.dic.Get)
+	return container.SubscriptionClientFrom(appContext.Dic.Get)
 }
 
 // AddValue stores a value for access within other functions in pipeline

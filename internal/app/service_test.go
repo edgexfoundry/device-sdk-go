@@ -18,6 +18,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/google/uuid"
 	"net/http"
 	"os"
@@ -786,4 +787,26 @@ func TestService_SubscriptionClient(t *testing.T) {
 func TestService_LoggingClient(t *testing.T) {
 	actual := target.LoggingClient()
 	assert.NotNil(t, actual)
+}
+
+func TestService_BuildContext(t *testing.T) {
+	sdk := Service{
+		dic: dic,
+	}
+
+	correlationId := uuid.NewString()
+
+	contentType := uuid.NewString()
+
+	appctx := sdk.BuildContext(correlationId, contentType)
+
+	require.NotNil(t, appctx)
+
+	require.Equal(t, correlationId, appctx.CorrelationID())
+	require.Equal(t, contentType, appctx.InputContentType())
+
+	castctx := appctx.(*appfunction.Context)
+
+	require.NotNil(t, castctx)
+	require.Equal(t, dic, castctx.Dic)
 }

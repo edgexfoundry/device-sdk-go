@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	nethttp "net/http"
 	"os"
 	"os/signal"
@@ -581,4 +582,10 @@ func (svc *Service) setServiceKey(profile string) {
 
 	// No profile specified so remove the placeholder text
 	svc.serviceKey = strings.Replace(svc.serviceKey, svc.profileSuffixPlaceholder, "", 1)
+}
+
+// BuildContext allows external callers that may need a context (eg background publishers)
+// to easily create one around the service's dic
+func (svc *Service) BuildContext(correlationId string, contentType string) interfaces.AppFunctionContext {
+	return appfunction.NewContext(correlationId, svc.dic, contentType)
 }

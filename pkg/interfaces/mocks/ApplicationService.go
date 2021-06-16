@@ -48,7 +48,7 @@ func (_m *ApplicationService) AddBackgroundPublisher(capacity int) (interfaces.B
 
 // AddBackgroundPublisher provides a mock function with given fields: capacity, topic
 func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topic string) (interfaces.BackgroundPublisher, error) {
-	ret := _m.Called(capacity)
+	ret := _m.Called(capacity, topic)
 
 	var r0 interfaces.BackgroundPublisher
 	if rf, ok := ret.Get(0).(func(int, string) interfaces.BackgroundPublisher); ok {
@@ -60,8 +60,8 @@ func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topi
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(1)
+	if rf, ok := ret.Get(1).(func(int, string) error); ok {
+		r1 = rf(capacity, topic)
 	} else {
 		if ret.Get(0) != nil {
 			r1 = ret.Get(1).(error)
@@ -69,6 +69,22 @@ func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topi
 	}
 
 	return r0, r1
+}
+
+// AddBackgroundPublisher provides a mock function with given fields: correlationId, contentType
+func (_m *ApplicationService) BuildContext(correlationId string, contentType string) interfaces.AppFunctionContext {
+	ret := _m.Called(correlationId, contentType)
+
+	var r0 interfaces.AppFunctionContext
+	if rf, ok := ret.Get(0).(func(string, string) interfaces.AppFunctionContext); ok {
+		r0 = rf(correlationId, contentType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interfaces.AppFunctionContext)
+		}
+	}
+
+	return r0
 }
 
 // AddRoute provides a mock function with given fields: route, handler, methods
