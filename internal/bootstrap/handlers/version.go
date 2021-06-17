@@ -17,7 +17,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -35,7 +34,6 @@ import (
 const (
 	CorePreReleaseVersion = "master"
 	CoreDeveloperVersion  = "0.0.0"
-	CoreServiceVersionKey = "version"
 	VersionMajorIndex     = 0
 )
 
@@ -72,22 +70,22 @@ func (vv *VersionValidator) BootstrapHandler(
 	// and has the format "v{major}.{minor}.{patch}[-dev.{build}]"
 	sdkVersionParts := strings.Split(vv.sdkVersion, ".")
 	if len(sdkVersionParts) < 3 {
-		logger.Error("SDK version is malformed", "version", internal.SDKVersion)
+		logger.Errorf("SDK version is malformed: version=%s", internal.SDKVersion)
 		return false
 	}
 
 	sdkVersionParts[VersionMajorIndex] = strings.Replace(sdkVersionParts[VersionMajorIndex], "v", "", 1)
 	if sdkVersionParts[VersionMajorIndex] == "0" {
-		logger.Info(
-			"Skipping version compatibility check for SDK Beta version or running in debugger",
-			"version",
+		logger.Infof("Skipping version compatibility check for SDK Beta version or running in debugger: version=%s",
 			internal.SDKVersion)
 		return true
 	}
 
-	val, ok := config.Clients[common.CoreDataServiceKey]
+	// Using Core Metadata for Version Check since Core Data can now be optional.
+	// Core Metadata will never be optional.
+	val, ok := config.Clients[common.CoreMetaDataServiceKey]
 	if !ok {
-		logger.Error("Core Data missing from Clients configuration: Unable to get version of Core Data")
+		logger.Error("Unable to get version of Core Metadata: Core Metadata missing from Clients configuration")
 		return false
 	}
 
@@ -97,7 +95,7 @@ func (vv *VersionValidator) BootstrapHandler(
 	var err error
 	for startupTimer.HasNotElapsed() {
 		if response, err = client.Version(context.Background()); err != nil {
-			logger.Warnf("Unable to get version of Core Data: %w", err)
+			logger.Warnf("Unable to get version of Core Metadata: %s", err.Error())
 			startupTimer.SleepForInterval()
 			continue
 		}
@@ -105,48 +103,40 @@ func (vv *VersionValidator) BootstrapHandler(
 	}
 
 	if err != nil {
-		logger.Errorf("Unable to get version of Core Data after retries: %w", err)
+		logger.Errorf("Unable to get version of Core Metadata after retries: %s", err.Error())
 		return false
 	}
 
 	coreVersion := response.Version
 
 	if coreVersion == CorePreReleaseVersion {
-		logger.Info(
-			"Skipping version compatibility check for Core Pre-release version",
-			"version",
-			coreVersion)
+		logger.Infof("Skipping version compatibility check for Core Services Pre-release version: version=%s", coreVersion)
 		return true
 	}
 
 	if coreVersion == CoreDeveloperVersion {
-		logger.Info(
-			"Skipping version compatibility check for Core Developer version",
-			"version",
-			coreVersion)
+		logger.Infof("Skipping version compatibility check for Core Services Developer version: version=%s", coreVersion)
 		return true
 	}
 
 	// Core Service version is reported as "{major}.{minor}.{patch}"
 	coreVersionParts := strings.Split(coreVersion, ".")
 	if len(coreVersionParts) < 3 {
-		logger.Error("Core Services version is malformed", "version", coreVersion)
+		logger.Errorf("Core Services version is malformed: version=%s", coreVersion)
 		return false
 	}
 
 	// Do Major versions match?
 	if coreVersionParts[0] == sdkVersionParts[0] {
-		logger.Debug(
-			fmt.Sprintf("Confirmed Core Data version (%s) is compatible with SDK's version (%s)",
-				coreVersion,
-				internal.SDKVersion))
+		logger.Debugf("Confirmed Core Services version (%s) is compatible with SDK's version (%s)",
+			coreVersion,
+			internal.SDKVersion)
 		return true
 	}
 
-	logger.Error(
-		fmt.Sprintf("Core Data version (%s) is not compatible with SDK's version(%s)",
-			coreVersion,
-			internal.SDKVersion))
+	logger.Errorf("Core Services version (%s) is not compatible with SDK's version(%s)",
+		coreVersion,
+		internal.SDKVersion)
 
 	return false
 }

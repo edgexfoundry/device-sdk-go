@@ -42,7 +42,7 @@ func TestValidateVersionMatch(t *testing.T) {
 	startupTimer := startup.NewStartUpTimer("unit-test")
 
 	clientConfigs := make(map[string]config.ClientInfo)
-	clientConfigs[common.CoreDataServiceKey] = config.ClientInfo{
+	clientConfigs[common.CoreMetaDataServiceKey] = config.ClientInfo{
 		Protocol: "http",
 		Host:     "localhost",
 		Port:     0, // Will be replaced by local test webserver's port
@@ -116,9 +116,9 @@ func TestValidateVersionMatch(t *testing.T) {
 
 			testServerUrl, _ := url.Parse(testServer.URL)
 			port, _ := strconv.Atoi(testServerUrl.Port())
-			coreService := configuration.Clients[common.CoreDataServiceKey]
+			coreService := configuration.Clients[common.CoreMetaDataServiceKey]
 			coreService.Port = port
-			configuration.Clients[common.CoreDataServiceKey] = coreService
+			configuration.Clients[common.CoreMetaDataServiceKey] = coreService
 
 			validator := NewVersionValidator(test.skipVersionCheck, test.SdkVersion)
 			result := validator.BootstrapHandler(context.Background(), &sync.WaitGroup{}, startupTimer, dic)
