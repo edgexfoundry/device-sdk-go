@@ -81,7 +81,7 @@ TokenFile = '/tmp/edgex/secrets/device-simple/secrets-token.json'
   AsyncBufferSize = 1
   EnableAsyncReadings = true
   Labels = []
-  UseMessageBus = false
+  UseMessageBus = true
   [Device.Discovery]
     Enabled = false
     Interval = '30s'
