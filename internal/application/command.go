@@ -34,23 +34,26 @@ type CommandProcessor struct {
 	device        models.Device
 	sourceName    string
 	correlationID string
-	body          string
+	setParamsMap  map[string]string
 	attributes    string
 	dic           *di.Container
 }
 
-func NewCommandProcessor(device models.Device, sourceName string, correlationID string, body string, attributes string, dic *di.Container) *CommandProcessor {
+func NewCommandProcessor(device models.Device, sourceName string, correlationID string, setParamsMap map[string]string, attributes string, dic *di.Container) *CommandProcessor {
+	if setParamsMap == nil {
+		setParamsMap = make(map[string]string)
+	}
 	return &CommandProcessor{
 		device:        device,
 		sourceName:    sourceName,
 		correlationID: correlationID,
-		body:          body,
+		setParamsMap:  setParamsMap,
 		attributes:    attributes,
 		dic:           dic,
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, body string, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, setParamsMap map[string]string, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
 	// check device service AdminState
 	ds := container.DeviceServiceFrom(dic.Get)
 	if ds.AdminState == models.Locked {
@@ -91,7 +94,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 	}()
 
 	cmd := vars[common.Command]
-	helper := NewCommandProcessor(device, cmd, correlationID, body, attributes, dic)
+	helper := NewCommandProcessor(device, cmd, correlationID, setParamsMap, attributes, dic)
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, cmd)
 	if cmdExist {
 		if isRead {
@@ -215,7 +218,7 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 	return
 }
 
-func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
+func (c *CommandProcessor) WriteDeviceResource() (e errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, c.sourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceResource %s not found", c.sourceName)
@@ -230,14 +233,8 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
 	lc.Debugf("Application - writeDeviceResource: writing deviceResource: %s; %s: %s", dr.Name, common.CorrelationHeader, c.correlationID)
 
-	// parse request body string
-	paramMap, err := parseParams(c.body)
-	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse SET command parameters", err)
-	}
-
 	// check request body contains provided deviceResource
-	v, ok := paramMap[dr.Name]
+	v, ok := c.setParamsMap[dr.Name]
 	if !ok {
 		if dr.Properties.DefaultValue != "" {
 			v = dr.Properties.DefaultValue
@@ -248,9 +245,9 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 	}
 
 	// create CommandValue
-	cv, err := createCommandValueFromDeviceResource(dr, v)
-	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", err)
+	cv, e := createCommandValueFromDeviceResource(dr, v)
+	if e != nil {
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", e)
 	}
 
 	// prepare CommandRequest
@@ -268,15 +265,15 @@ func (c *CommandProcessor) WriteDeviceResource() errors.EdgeX {
 	// transform write value
 	configuration := container.ConfigurationFrom(c.dic.Get)
 	if configuration.Device.DataTransform {
-		err = transformer.TransformWriteParameter(cv, dr.Properties)
-		if err != nil {
-			return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", err)
+		e = transformer.TransformWriteParameter(cv, dr.Properties)
+		if e != nil {
+			return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", e)
 		}
 	}
 
 	// execute protocol-specific write operation
 	driver := container.ProtocolDriverFrom(c.dic.Get)
-	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*sdkModels.CommandValue{cv})
+	err := driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, []*sdkModels.CommandValue{cv})
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s", dr.Name, c.device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -306,14 +303,8 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(c.dic.Get)
 	lc.Debugf("Application - writeCmd: writing command: %s; %s: %s", dc.Name, common.CorrelationHeader, c.correlationID)
 
-	// parse request body
-	paramMap, err := parseParams(c.body)
-	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse SET command parameters", err)
-	}
-
 	// create CommandValues
-	cvs := make([]*sdkModels.CommandValue, 0, len(paramMap))
+	cvs := make([]*sdkModels.CommandValue, 0, len(c.setParamsMap))
 	for _, ro := range dc.ResourceOperations {
 		drName := ro.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
@@ -324,7 +315,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 		}
 
 		// check request body contains the deviceResource
-		value, ok := paramMap[ro.DeviceResource]
+		value, ok := c.setParamsMap[ro.DeviceResource]
 		if !ok {
 			if ro.DefaultValue != "" {
 				value = ro.DefaultValue
@@ -373,7 +364,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 
 		// transform write value
 		if configuration.Device.DataTransform {
-			err = transformer.TransformWriteParameter(cv, dr.Properties)
+			err := transformer.TransformWriteParameter(cv, dr.Properties)
 			if err != nil {
 				return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", err)
 			}
@@ -382,27 +373,13 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 
 	// execute protocol-specific write operation
 	driver := container.ProtocolDriverFrom(c.dic.Get)
-	err = driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, cvs)
+	err := driver.HandleWriteCommands(c.device.Name, c.device.Protocols, reqs, cvs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceCommand %s for %s", dc.Name, c.device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	return nil
-}
-
-func parseParams(params string) (paramMap map[string]string, err error) {
-	err = json.Unmarshal([]byte(params), &paramMap)
-	if err != nil {
-		return
-	}
-
-	if len(paramMap) == 0 {
-		err = fmt.Errorf("no parameters specified")
-		return
-	}
-
-	return
 }
 
 func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*sdkModels.CommandValue, errors.EdgeX) {

@@ -158,9 +158,9 @@ func TestCommandProcessor_ReadDeviceResource(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), "", "", dic)
-	invalidDeviceResource := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), "", "", dic)
-	writeOnlyDeviceResource := NewCommandProcessor(testDevice, "wo-resource", uuid.NewString(), "", "", dic)
+	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), nil, "", dic)
+	invalidDeviceResource := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
+	writeOnlyDeviceResource := NewCommandProcessor(testDevice, "wo-resource", uuid.NewString(), nil, "", dic)
 
 	tests := []struct {
 		name             string
@@ -189,10 +189,10 @@ func TestCommandProcessor_ReadDeviceCommand(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), "", "", dic)
-	invalidDeviceCommand := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), "", "", dic)
-	writeOnlyDeviceCommand := NewCommandProcessor(testDevice, "wo-command", uuid.NewString(), "", "", dic)
-	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), "", "", dic)
+	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), nil, "", dic)
+	invalidDeviceCommand := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
+	writeOnlyDeviceCommand := NewCommandProcessor(testDevice, "wo-command", uuid.NewString(), nil, "", dic)
+	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), nil, "", dic)
 
 	tests := []struct {
 		name             string
@@ -222,11 +222,11 @@ func TestCommandProcessor_WriteDeviceResource(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), "{\"test-resource\":\"test-value\"}", "", dic)
-	invalidDeviceResource := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), "", "", dic)
-	readOnlyDeviceResource := NewCommandProcessor(testDevice, "ro-resource", uuid.NewString(), "", "", dic)
-	noRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), "", "", dic)
-	invalidRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), "{\"wrong-resource\":\"wrong-value\"}", "", dic)
+	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]string{"test-resource": "test-value"}, "", dic)
+	invalidDeviceResource := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
+	readOnlyDeviceResource := NewCommandProcessor(testDevice, "ro-resource", uuid.NewString(), nil, "", dic)
+	noRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), nil, "", dic)
+	invalidRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]string{"wrong-resource": "wrong-value"}, "", dic)
 
 	tests := []struct {
 		name             string
@@ -236,8 +236,8 @@ func TestCommandProcessor_WriteDeviceResource(t *testing.T) {
 		{"valid", valid, false},
 		{"invalid - DeviceResource name not found", invalidDeviceResource, true},
 		{"invalid - writing read-only DeviceResource", readOnlyDeviceResource, true},
-		{"invalid - no set parameter(body) specified", noRequestBody, true},
-		{"valid - parameter(body) doesn't match requested command, using DefaultValue in DeviceResource.Properties", invalidRequestBody, false},
+		{"valid - no set parameter specified but default value exists", noRequestBody, false},
+		{"valid - set parameter doesn't match requested command, using DefaultValue in DeviceResource.Properties", invalidRequestBody, false},
 	}
 
 	for _, tt := range tests {
@@ -257,12 +257,12 @@ func TestCommandProcessor_WriteDeviceCommand(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), "{\"test-resource\":\"test-value\"}", "", dic)
-	invalidDeviceCommand := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), "", "", dic)
-	readOnlyDeviceCommand := NewCommandProcessor(testDevice, "ro-command", uuid.NewString(), "", "", dic)
-	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), "", "", dic)
-	noRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), "", "", dic)
-	invalidRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), "{\"wrong-resource\":\"wrong-value\"}", "", dic)
+	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]string{"test-resource": "test-value"}, "", dic)
+	invalidDeviceCommand := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
+	readOnlyDeviceCommand := NewCommandProcessor(testDevice, "ro-command", uuid.NewString(), nil, "", dic)
+	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), nil, "", dic)
+	noRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), nil, "", dic)
+	invalidRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]string{"wrong-resource": "wrong-value"}, "", dic)
 
 	tests := []struct {
 		name             string
@@ -273,8 +273,8 @@ func TestCommandProcessor_WriteDeviceCommand(t *testing.T) {
 		{"invalid - DeviceCommand name not found", invalidDeviceCommand, true},
 		{"invalid - writing read-only DeviceCommand", readOnlyDeviceCommand, true},
 		{"invalid - RO exceed MaxCmdOps count", outOfRangeResourceOperation, true},
-		{"invalid - no set parameter(body) specified", noRequestBody, true},
-		{"valid - parameter(body) doesn't match requested command, using DefaultValue in DeviceResource.Properties", invalidRequestBody, false},
+		{"valid - no set parameter specified but default value exist", noRequestBody, false},
+		{"valid - parameter doesn't match requested command, using DefaultValue in DeviceResource.Properties", invalidRequestBody, false},
 	}
 
 	for _, tt := range tests {

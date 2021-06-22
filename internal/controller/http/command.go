@@ -7,6 +7,7 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 func (c *RestController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
-	var requestBody string
+	var requestParamsMap map[string]string
 	var queryParams string
 	var err errors.EdgeX
 	var reserved url.Values
@@ -39,7 +40,7 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 
 	// read request body for SET command
 	if request.Method == http.MethodPut {
-		requestBody, err = readBodyAsString(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
+		requestParamsMap, err = parseRequestBody(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
 		if err != nil {
 			c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
 			return
@@ -58,7 +59,7 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 		sendEvent = true
 	}
 	isRead := request.Method == http.MethodGet
-	eventDTO, err := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestBody, queryParams, c.dic)
+	eventDTO, err := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestParamsMap, queryParams, c.dic)
 	if err != nil {
 		c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
 		return
@@ -76,22 +77,28 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 	}
 }
 
-func readBodyAsString(req *http.Request, maxRequestSize int64) (string, errors.EdgeX) {
+func parseRequestBody(req *http.Request, maxRequestSize int64) (map[string]string, errors.EdgeX) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		if err.Error() == "http: request body too large" {
 			errMsg := fmt.Sprintf("request size exceed Service.MaxRequestSize(%d)", maxRequestSize)
-			return "", errors.NewCommonEdgeX(errors.KindLimitExceeded, errMsg, err)
+			return nil, errors.NewCommonEdgeX(errors.KindLimitExceeded, errMsg, err)
 		}
-		return "", errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
 	}
 
+	var paramMap = make(map[string]string)
 	if len(body) == 0 {
-		return "", errors.NewCommonEdgeX(errors.KindServerError, "no request body provided for SET command", nil)
+		return paramMap, nil
 	}
 
-	return string(body), nil
+	err = json.Unmarshal(body, &paramMap)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to parse SET command parameters", err)
+	}
+
+	return paramMap, nil
 }
 
 func filterQueryParams(queryParams string) (string, url.Values, errors.EdgeX) {

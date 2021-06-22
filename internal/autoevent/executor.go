@@ -83,7 +83,7 @@ func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors
 	vars[common.Name] = e.deviceName
 	vars[common.Command] = e.sourceName
 
-	res, err := application.CommandHandler(true, false, "", vars, "", "", dic)
+	res, err := application.CommandHandler(true, false, "", vars, nil, "", dic)
 	if err != nil {
 		return event, err
 	}
