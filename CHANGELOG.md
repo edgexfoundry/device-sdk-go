@@ -126,6 +126,8 @@
 - Add json array check when determining CBOR of JSON encoding ([#896](https://github.com/edgexfoundry/app-functions-sdk-go/issues/896)) ([#d07bca6](https://github.com/edgexfoundry/app-functions-sdk-go/commits/d07bca6))
 - Normalize Trigger Factory Returns ([#699](https://github.com/edgexfoundry/app-functions-sdk-go/issues/699)) ([#d22e914](https://github.com/edgexfoundry/app-functions-sdk-go/commits/d22e914))
 ### Code Refactoring ♻
+- Use Core Metadata version API for version check ([#906](https://github.com/edgexfoundry/app-functions-sdk-go/issues/906)) ([#94336c9](https://github.com/edgexfoundry/app-functions-sdk-go/commits/94336c9))
+
 - Replace use of deprecated io/ioutil with proper package ([#893](https://github.com/edgexfoundry/app-functions-sdk-go/issues/893)) ([#a453267](https://github.com/edgexfoundry/app-functions-sdk-go/commits/a453267))
 
 - Remove support for V1 Events/Readings ([#889](https://github.com/edgexfoundry/app-functions-sdk-go/issues/889)) ([#d651532](https://github.com/edgexfoundry/app-functions-sdk-go/commits/d651532))
