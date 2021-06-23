@@ -20,11 +20,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
@@ -172,6 +173,7 @@ func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.
 		CorrelationID: correlationID,
 		ContentType:   contentType,
 		Payload:       data,
+		ReceivedTopic: message.Topic(),
 	}
 
 	messageError := trigger.runtime.ProcessMessage(appContext, envelope)
