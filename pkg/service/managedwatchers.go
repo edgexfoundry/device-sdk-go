@@ -97,6 +97,7 @@ func (s *DeviceService) UpdateProvisionWatcher(watcher models.ProvisionWatcher) 
 
 	s.LoggingClient.Debugf("Updating managed ProvisionWatcher: %s", watcher.Name)
 	req := requests.NewUpdateProvisionWatcherRequest(dtos.FromProvisionWatcherModelToUpdateDTO(watcher))
+	req.ProvisionWatcher.Id = nil
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	_, err := s.edgexClients.ProvisionWatcherClient.Update(ctx, []requests.UpdateProvisionWatcherRequest{req})
 	if err != nil {
