@@ -215,6 +215,7 @@ func (s *DeviceService) selfRegister() errors.EdgeX {
 	} else {
 		s.LoggingClient.Infof("device service %s exists, updating it", s.ServiceName)
 		req := requests.NewUpdateDeviceServiceRequest(dtos.FromDeviceServiceModelToUpdateDTO(localDeviceService))
+		req.Service.Id = nil
 		_, err = s.edgexClients.DeviceServiceClient.Update(ctx, []requests.UpdateDeviceServiceRequest{req})
 		if err != nil {
 			s.LoggingClient.Errorf("failed to update device service %s with local config: %v", localDeviceService.Name, err)

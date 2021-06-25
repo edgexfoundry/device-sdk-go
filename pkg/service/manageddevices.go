@@ -100,6 +100,7 @@ func (s *DeviceService) UpdateDevice(device models.Device) error {
 
 	s.LoggingClient.Debugf("Updating managed Device %s", device.Name)
 	req := requests.NewUpdateDeviceRequest(dtos.FromDeviceModelToUpdateDTO(device))
+	req.Device.Id = nil
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
 	_, err := s.edgexClients.DeviceClient.Update(ctx, []requests.UpdateDeviceRequest{req})
 	if err != nil {
