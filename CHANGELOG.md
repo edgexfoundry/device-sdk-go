@@ -4,10 +4,16 @@
 [Github repository](https://github.com/edgexfoundry/device-sdk-go)
 
 ## [v2.0.0] Ireland - 2021-06-30  (Not Compatible with 1.x releases)
+### Change Logs for EdgeX Dependencies
+- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/v2.0.0/CHANGELOG.md)
+- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/v2.0.0/CHANGELOG.md)
+- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/v2.0.1/CHANGELOG.md)
+- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/v2.0.0/CHANGELOG.md)
+- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
+- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
 
 ### Features ✨
 - Enable using MessageBus as the default ([#eca11b8](https://github.com/edgexfoundry/device-sdk-go/commits/eca11b8))
-- remove coredata dependency ([#4be52ad](https://github.com/edgexfoundry/device-sdk-go/commits/4be52ad))
 - support device profile provision in json format ([#945ec1c](https://github.com/edgexfoundry/device-sdk-go/commits/945ec1c))
 - add Event tagging capability ([#149daef](https://github.com/edgexfoundry/device-sdk-go/commits/149daef))
 - Add secure MessageBus capability ([#57291f0](https://github.com/edgexfoundry/device-sdk-go/commits/57291f0))
@@ -39,7 +45,6 @@
 - SecretProvider for storing/retrieving secrets ([#bcd0eef](https://github.com/edgexfoundry/device-sdk-go/commits/bcd0eef))
 - Updates from PR review. ([#c4cbbed](https://github.com/edgexfoundry/device-sdk-go/commits/c4cbbed))
 - Modify callback func to consist with V2 API ([#98ab8c7](https://github.com/edgexfoundry/device-sdk-go/commits/98ab8c7))
-- Reworked /secrets enpoint to be singular /secret ([#72dc926](https://github.com/edgexfoundry/device-sdk-go/commits/72dc926))
 - Added missing module to Attribution.txt ([#9a6397b](https://github.com/edgexfoundry/device-sdk-go/commits/9a6397b))
 - Add /api/v2/secrets endpoint to store secrets ([#2c57645](https://github.com/edgexfoundry/device-sdk-go/commits/2c57645))
 - Removed remote logging feature ([#1cc1ee3](https://github.com/edgexfoundry/device-sdk-go/commits/1cc1ee3))
@@ -51,9 +56,7 @@
 ### Bug Fixes 🐛
 - Fix device service update failed when startup ([#785b4de](https://github.com/edgexfoundry/device-sdk-go/commit/785b4de))
 - fix default value usage in SET command ([#65fbd6f](https://github.com/edgexfoundry/device-sdk-go/commits/65fbd6f))
-- Update config on removing retry and secret path change Address PR feedback on Cloud's commnets ([#a51df48](https://github.com/edgexfoundry/device-sdk-go/commits/a51df48))
 - modify function updateAssociatedProfile return errors ([#942](https://github.com/edgexfoundry/device-sdk-go/issues/942)) ([#13e775a](https://github.com/edgexfoundry/device-sdk-go/commits/13e775a))
-- Addressed PR feedback ([#692b286](https://github.com/edgexfoundry/device-sdk-go/commits/692b286))
 - correctly update DeviceService.deviceService model ([#c48d0fd](https://github.com/edgexfoundry/device-sdk-go/commits/c48d0fd))
 - use RequestLimitMiddleware on all routes ([#b69e6f6](https://github.com/edgexfoundry/device-sdk-go/commits/b69e6f6))
 - add logLevel check in LoggingMiddleware ([#23eaf68](https://github.com/edgexfoundry/device-sdk-go/commits/23eaf68))
@@ -61,19 +64,15 @@
 - fix set command resourceOperation mapping ([#870](https://github.com/edgexfoundry/device-sdk-go/issues/870)) ([#e9afc7c](https://github.com/edgexfoundry/device-sdk-go/commits/e9afc7c))
 - add Content-Type in context for MessageEnvelope ([#2d80251](https://github.com/edgexfoundry/device-sdk-go/commits/2d80251))
 - add device OperatingState check in device command API ([#db824b8](https://github.com/edgexfoundry/device-sdk-go/commits/db824b8))
-- Updates to address PR comments from Tony ([#ba1d8f4](https://github.com/edgexfoundry/device-sdk-go/commits/ba1d8f4))
 - remove StopAutoEvents call during bootstrap ([#6d0d00b](https://github.com/edgexfoundry/device-sdk-go/commits/6d0d00b))
 - remove hard-coded Content-Type in SDK ([#f2441cf](https://github.com/edgexfoundry/device-sdk-go/commits/f2441cf))
-- fix requested changes in PR ([#257588e](https://github.com/edgexfoundry/device-sdk-go/commits/257588e))
 - sync v2 query parameter with ADR ([#9940e7e](https://github.com/edgexfoundry/device-sdk-go/commits/9940e7e))
 - rm unused pkg/service function params ([#39c0334](https://github.com/edgexfoundry/device-sdk-go/commits/39c0334))
 ### Code Refactoring ♻
 - remove redundant dic client code ([#13aef19](https://github.com/edgexfoundry/device-sdk-go/commits/13aef19))
-- update imports path ([#fd4c598](https://github.com/edgexfoundry/device-sdk-go/commits/fd4c598))
 - Change PublishTopicPrefix value to be 'edgex/events/device' ([#37f218f](https://github.com/edgexfoundry/device-sdk-go/commits/37f218f))
 - remove unimplemented InitCmd/RemoveCmd configuration ([#956](https://github.com/edgexfoundry/device-sdk-go/issues/956)) ([#457577c](https://github.com/edgexfoundry/device-sdk-go/commits/457577c))
 - Remove obsolete code from Add Secret ([#951](https://github.com/edgexfoundry/device-sdk-go/issues/951)) ([#93abf71](https://github.com/edgexfoundry/device-sdk-go/commits/93abf71))
-- Update go-mod-bootstrap version to use latsest config Latest config on SecretStore section with removal of retry-related items and secret path update ([#59faab7](https://github.com/edgexfoundry/device-sdk-go/commits/59faab7))
 - Move top level individual config settings under Device section ([#356d22d](https://github.com/edgexfoundry/device-sdk-go/commits/356d22d))
 - Use common ServiceInfo struct and adjust code/configuration ([#a3cc839](https://github.com/edgexfoundry/device-sdk-go/commits/a3cc839))
     ```
@@ -87,12 +86,10 @@
     Service key names used in configuration have changed.
     ```
 - rename AutoEvent.Frequency field to Interval ([#0649751](https://github.com/edgexfoundry/device-sdk-go/commits/0649751))
-- Rework Messaging bootstrap handler for removal of shared handler ([#a2450f2](https://github.com/edgexfoundry/device-sdk-go/commits/a2450f2))
 - replace usage of io/ioutl package ([#cb99f86](https://github.com/edgexfoundry/device-sdk-go/commits/cb99f86))
 - remove unnecessary check for WriteDeviceCommand ([#e2c4148](https://github.com/edgexfoundry/device-sdk-go/commits/e2c4148))
 - remove RO mapping not found warning log ([#bcdc0e5](https://github.com/edgexfoundry/device-sdk-go/commits/bcdc0e5))
 - update returned type to errors.Edgex ([#eef323e](https://github.com/edgexfoundry/device-sdk-go/commits/eef323e))
-- remove import package alias ([#ccab8f5](https://github.com/edgexfoundry/device-sdk-go/commits/ccab8f5))
 - return normal error type in pkg package ([#a34d60e](https://github.com/edgexfoundry/device-sdk-go/commits/a34d60e))
 - refactor MiddlewareFunc ([#fd3eb0c](https://github.com/edgexfoundry/device-sdk-go/commits/fd3eb0c))
 - Replace use of BurntSushi/toml with pelletier/go-toml ([#dd0b196](https://github.com/edgexfoundry/device-sdk-go/commits/dd0b196))
@@ -113,7 +110,6 @@
 - remove v2 subdirectory for SDK ([#269686d](https://github.com/edgexfoundry/device-sdk-go/commits/269686d))
 - rename problematic terminology in SDK ([#819fd06](https://github.com/edgexfoundry/device-sdk-go/commits/819fd06))
 - use new CommandValue function/method ([#df528cb](https://github.com/edgexfoundry/device-sdk-go/commits/df528cb))
-- remove mock package ([#9c8214f](https://github.com/edgexfoundry/device-sdk-go/commits/9c8214f))
 - remove default floating encoding ([#1a909d6](https://github.com/edgexfoundry/device-sdk-go/commits/1a909d6))
 - replace PUT command wording to SET command ([#6059ff5](https://github.com/edgexfoundry/device-sdk-go/commits/6059ff5))
 - update logging message of simpledriver ([#1c5dcca](https://github.com/edgexfoundry/device-sdk-go/commits/1c5dcca))
