@@ -21,5 +21,5 @@ edgeXBuildGoApp (
     dockerFilePath: 'example/cmd/device-simple/Dockerfile',
     pushImage: false,
     publishSwaggerDocs: true,
-    swaggerApiFolders: ['openapi/v1', 'openapi/v2']
+    swaggerApiFolders: ['openapi/v2']
 )
