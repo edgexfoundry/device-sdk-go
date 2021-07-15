@@ -115,7 +115,7 @@ func (sf *storeForwardInfo) storeForLaterRetry(
 	item.CorrelationID = appContext.CorrelationID()
 
 	appContext.LoggingClient().Trace("Storing data for later retry",
-		common.CorrelationHeader, appContext.CorrelationID)
+		common.CorrelationHeader, appContext.CorrelationID())
 
 	config := container.ConfigurationFrom(sf.dic.Get)
 	if !config.Writable.StoreAndForward.Enabled {
@@ -235,7 +235,7 @@ func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject) boo
 		appContext.AddValue(strings.ToLower(k), v)
 	}
 
-	appContext.LoggingClient().Trace("Retrying stored data", common.CorrelationHeader, appContext.CorrelationID)
+	appContext.LoggingClient().Trace("Retrying stored data", common.CorrelationHeader, appContext.CorrelationID())
 
 	return sf.runtime.ExecutePipeline(
 		item.Payload,

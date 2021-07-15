@@ -190,7 +190,7 @@ func (gr *GolangRuntime) ExecutePipeline(
 				if err, ok := result.(error); ok {
 					appContext.LoggingClient().Error(
 						fmt.Sprintf("Pipeline function #%d resulted in error", functionIndex),
-						"error", err.Error(), common.CorrelationHeader, appContext.CorrelationID)
+						"error", err.Error(), common.CorrelationHeader, appContext.CorrelationID())
 					if appContext.RetryData() != nil && !isRetry {
 						gr.storeForward.storeForLaterRetry(appContext.RetryData(), appContext, functionIndex)
 					}

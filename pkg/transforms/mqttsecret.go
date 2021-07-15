@@ -202,7 +202,7 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 	}
 
 	ctx.LoggingClient().Debug("Sent data to MQTT Broker")
-	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", common.CorrelationHeader, ctx.CorrelationID)
+	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", common.CorrelationHeader, ctx.CorrelationID())
 
 	return true, nil
 }
