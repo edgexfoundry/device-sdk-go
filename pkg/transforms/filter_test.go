@@ -21,6 +21,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -267,6 +268,11 @@ func TestFilter_FilterByResourceName(t *testing.T) {
 					actualEvent, ok := result.(dtos.Event)
 					require.True(t, ok)
 					assert.Equal(t, test.ExpectedReadingCount, len(actualEvent.Readings))
+
+					// Make sure the event is still valid
+					request := requests.NewAddEventRequest(actualEvent)
+					err = request.Validate()
+					require.NoError(t, err)
 				}
 			}
 		})

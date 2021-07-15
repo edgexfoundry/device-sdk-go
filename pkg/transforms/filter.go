@@ -110,11 +110,11 @@ func (f Filter) FilterByResourceName(ctx interfaces.AppFunctionContext, data int
 		return true, *existingEvent
 	}
 
-	auxEvent := dtos.Event{
-		DeviceName: existingEvent.DeviceName,
-		Origin:     existingEvent.Origin,
-		Readings:   []dtos.BaseReading{},
-	}
+	// Create copy of Event which will contain any Reading that are not filtered out
+	auxEvent := dtos.NewEvent(existingEvent.ProfileName, existingEvent.DeviceName, existingEvent.SourceName)
+	auxEvent.Id = existingEvent.Id
+	auxEvent.Origin = existingEvent.Origin
+	auxEvent.Readings = []dtos.BaseReading{}
 
 	if f.FilterOut {
 		for _, reading := range existingEvent.Readings {
