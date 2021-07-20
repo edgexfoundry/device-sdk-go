@@ -48,6 +48,7 @@ type MqttFactory struct {
 func NewMqttFactory(appContext interfaces.AppFunctionContext, mode string, path string, skipVerify bool) MqttFactory {
 	return MqttFactory{
 		appContext:     appContext,
+		logger:         appContext.LoggingClient(),
 		authMode:       mode,
 		secretPath:     path,
 		skipCertVerify: skipVerify,

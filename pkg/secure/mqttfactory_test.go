@@ -51,6 +51,20 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestNewMqttFactory(t *testing.T) {
+	expectedMode := "none"
+	expectedPath := "myPath"
+	expectedSkipVerify := true
+	target := NewMqttFactory(context, expectedMode, expectedPath, expectedSkipVerify)
+
+	assert.NotNil(t, target.logger)
+	assert.Equal(t, expectedMode, target.authMode)
+	assert.Equal(t, expectedPath, target.secretPath)
+	assert.Equal(t, expectedSkipVerify, target.skipCertVerify)
+	assert.Nil(t, target.opts)
+
+}
+
 func TestConfigureMQTTClientForAuth(t *testing.T) {
 	target := NewMqttFactory(context, "", "", false)
 	target.opts = mqtt.NewClientOptions()
