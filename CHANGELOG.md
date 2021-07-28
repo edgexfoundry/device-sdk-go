@@ -2,6 +2,18 @@
 ## App Functions SDK (in Go)
 [Github repository](https://github.com/edgexfoundry/app-functions-sdk-go)
 
+## [v2.0.1] Ireland - 2021-07-28 (Not Compatible with 1.x releases)
+
+### Bug Fixes 🐛
+
+- FilterByResourceName - Create Event copy with all required fields ([#925](https://github.com/edgexfoundry/app-functions-sdk-go/issues/925)) ([#e52849b](https://github.com/edgexfoundry/app-functions-sdk-go/commits/e52849b))
+- Set logger in MqttFactory to avoid panic when AuthMode is empty ([#926](https://github.com/edgexfoundry/app-functions-sdk-go/issues/926)) ([#1bc0c5a](https://github.com/edgexfoundry/app-functions-sdk-go/commits/1bc0c5a))
+- Change logging of CorrelationID to use proper function call ([#924](https://github.com/edgexfoundry/app-functions-sdk-go/issues/924)) ([#83c633e](https://github.com/edgexfoundry/app-functions-sdk-go/commits/83c633e))
+
+### Build 👷
+
+- Change swagger to publish version to 2.0.0 ([#919](https://github.com/edgexfoundry/app-functions-sdk-go/issues/919)) ([#b10469f](https://github.com/edgexfoundry/app-functions-sdk-go/commits/b10469f))
+
 ## [v2.0.0] Ireland - 2021-06-30 (Not Compatible with 1.x releases)
 
 ### Change Logs for EdgeX Dependencies
