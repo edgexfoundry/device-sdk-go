@@ -1,17 +1,17 @@
 [[DeviceList]]
-  Name = 'Simple-Device01'
-  ProfileName = 'Simple-Device'
-  Description = 'Example of Simple Device'
-  Labels = [ 'industrial' ]
+  Name = "Simple-Device01"
+  ProfileName = "Simple-Device"
+  Description = "Example of Simple Device"
+  Labels = [ "industrial" ]
   [DeviceList.Protocols]
   [DeviceList.Protocols.other]
-    Address = 'simple01'
-    Port = '300'
+    Address = "simple01"
+    Port = "300"
   [[DeviceList.AutoEvents]]
-    Interval = '10s'
+    Interval = "10s"
     OnChange = false
-    SourceName = 'Switch'
+    SourceName = "Switch"
   [[DeviceList.AutoEvents]]
-    Interval = '30s'
+    Interval = "30s"
     OnChange = false
-    SourceName = 'Image'
+    SourceName = "Image"
