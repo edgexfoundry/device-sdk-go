@@ -3,7 +3,6 @@ debug
 *.exe
 new-app-service
 .vscode
-go.sum
 coverage.out
 logs/
 .idea

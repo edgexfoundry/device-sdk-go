@@ -37,7 +37,6 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/app-functions-sdk-go/v2/internal.SD
 GIT_SHA=no-sha
 
 build:
-	go mod tidy
 	$(GO) build $(GOFLAGS) -o $(MICROSERVICE)
 
 # TODO: Change the registries (edgexfoundry, nexus3.edgexfoundry.org:10004) below as needed.
@@ -57,7 +56,6 @@ docker:
 # The test-attribution-txt.sh scripts are required for upstreaming to EdgeX Foundry.
 # TODO: Remove bin folder and reference to script below if NOT upstreaming to EdgeX Foundry.
 test:
-	go mod tidy
 	$(GO) test -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l .
