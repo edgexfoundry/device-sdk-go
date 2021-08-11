@@ -1,11 +1,11 @@
 # TODO: Go here for detailed information on Application Service configuation:
 #       https://docs.edgexfoundry.org/1.3/microservices/application/GeneralAppServiceConfig/
 [Writable]
-LogLevel = 'INFO'
+LogLevel = "INFO"
 
   [Writable.StoreAndForward]
   Enabled = false
-  RetryInterval = '5m'
+  RetryInterval = "5m"
   MaxRetryCount = 10
 
   [Writable.InsecureSecrets]
@@ -23,29 +23,29 @@ LogLevel = 'INFO'
 
 
 [Service]
-HealthCheckInterval = '10s'
-Host = 'localhost'
+HealthCheckInterval = "10s"
+Host = "localhost"
 # TODO: set this port appropriately,
 #       App service use port assigments 597xx with lower range 00-39 reserved for
 #       app-service-configurable profiles/instances, Rules Engine and examples
 Port = 59740
-ServerBindAddr = '' # Leave blank so default to Host value unless different value is needed.
-StartupMsg = 'new-app-service Application Service has started'
+ServerBindAddr = "" # Leave blank so default to Host value unless different value is needed.
+StartupMsg = "new-app-service Application Service has started"
 MaxResultCount = 0 # Not curently used by App Services.
 MaxRequestSize = 0 # Not curently used by App Services.
-RequestTimeout = '5s'
+RequestTimeout = "5s"
 
 # TODO: Remove section if not using HTTPS Webserver. Default protocol is HTTP if section is empty
 [HttpServer]
-Protocol = 'http'
-SecretName = 'https'
-HTTPSCertName = 'cert'
-HTTPSKeyName = 'key'
+Protocol = "http"
+SecretName = "https"
+HTTPSCertName = "cert"
+HTTPSKeyName = "key"
 
 [Registry]
-Host = 'localhost'
+Host = "localhost"
 Port = 8500
-Type = 'consul'
+Type = "consul"
 
 [Database]
 Type = "redisdb"
@@ -59,71 +59,71 @@ Timeout = "30s"
 #       service in secure mode.
 #       For more deatils about SecretStore: https://docs.edgexfoundry.org/1.3/microservices/security/Ch-SecretStore/
 [SecretStore]
-Type = 'vault'
-Host = 'localhost'
+Type = "vault"
+Host = "localhost"
 Port = 8200
-Path = 'appservice/'
-Protocol = 'http'
-RootCaCertPath = ''
-ServerName = ''
-TokenFile = '/tmp/edgex/secrets/new-app-service/secrets-token.json'
+Path = "appservice/"
+Protocol = "http"
+RootCaCertPath = ""
+ServerName = ""
+TokenFile = "/tmp/edgex/secrets/new-app-service/secrets-token.json"
   [SecretStore.Authentication]
-  AuthType = 'X-Vault-Token'
+  AuthType = "X-Vault-Token"
 
 [Clients]
   [Clients.core-data]
-  Protocol = 'http'
-  Host = 'localhost'
+  Protocol = "http"
+  Host = "localhost"
   Port = 59880
 
   [Clients.core-metadata]
-  Protocol = 'http'
-  Host = 'localhost'
+  Protocol = "http"
+  Host = "localhost"
   Port = 59881
 
   [Clients.core-command]
-  Protocol = 'http'
-  Host = 'localhost'
+  Protocol = "http"
+  Host = "localhost"
   Port = 59882
 
   [Clients.support-notifications]
-  Protocol = 'http'
-  Host = 'localhost'
+  Protocol = "http"
+  Host = "localhost"
   Port = 59860
 
 [Trigger]
 Type="edgex-messagebus"
   [Trigger.EdgexMessageBus]
-  Type = 'redis'
+  Type = "redis"
     [Trigger.EdgexMessageBus.SubscribeHost]
-    Host = 'localhost'
+    Host = "localhost"
     Port = 6379
-    Protocol = 'redis'
+    Protocol = "redis"
     SubscribeTopics="edgex/events/#"
     [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
-    Host = 'localhost'
+    Host = "localhost"
     Port = 6379
-    Protocol = 'redis'
+    Protocol = "redis"
     PublishTopic="event-xml"
     [Trigger.EdgexMessageBus.Optional]
-    authmode = 'usernamepassword'  # requied for redis messagebus (secure or insecure).
-    secretname = 'redisdb'
+    authmode = "usernamepassword"  # requied for redis messagebus (secure or insecure).
+    secretname = "redisdb"
 
 # TODO: If using mqtt messagebus, Uncomment this section and remove above [Trigger] section,
 #       Otherwise remove this commented out block
 #[Trigger]
 #Type="edgex-messagebus"
 #  [Trigger.EdgexMessageBus]
-#  Type = 'mqtt'
+#  Type = "mqtt"
 #    [Trigger.EdgexMessageBus.SubscribeHost]
-#    Host = 'localhost'
+#    Host = "localhost"
 #    Port = 1883
-#    Protocol = 'tcp'
+#    Protocol = "tcp"
 #    SubscribeTopics="events, edgex/events/#"
 #    [Trigger.EdgexMessageBus.PublishHost]   # TODO: Remove if service is NOT publishing back to the message bus
-#    Host = 'localhost'
+#    Host = "localhost"
 #    Port = 1883
-#    Protocol = 'tcp'
+#    Protocol = "tcp"
 #    PublishTopic="event-xml"
 #    [Trigger.EdgexMessageBus.Optional]
 #    ClientId ="new-app-service"
@@ -133,8 +133,8 @@ Type="edgex-messagebus"
 #    AutoReconnect  = "true"
 #    ConnectTimeout = "30" # Seconds
 #    SkipCertVerify = "false"
-#    authmode = 'none'  # change to 'usernamepassword', 'clientcert', or 'cacert' for secure MQTT messagebus.
-#    secretname = 'mqtt-bus'
+#    authmode = "none"  # change to "usernamepassword", "clientcert", or "cacert" for secure MQTT messagebus.
+#    secretname = "mqtt-bus"
 
 # TODO: Add custom settings needed by your app service or remove if you don't have any settings.
 # This can be any Key/Value pair you need.
