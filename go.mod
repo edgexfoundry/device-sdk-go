@@ -12,7 +12,7 @@ require (
 	github.com/edgexfoundry/go-mod-registry/v2 v2.0.0
 	github.com/fxamacker/cbor/v2 v2.2.0
 	github.com/gomodule/redigo v2.0.0+incompatible
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.7.0
 )
