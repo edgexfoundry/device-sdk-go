@@ -132,8 +132,6 @@ func (processor *ConfigUpdateProcessor) processConfigChangedStoreForwardEnabled(
 					return storeClient
 				},
 			})
-
-			sdk.runtime.Initialize(sdk.dic)
 		}
 
 		sdk.startStoreForward()
@@ -149,9 +147,8 @@ func (processor *ConfigUpdateProcessor) processConfigChangedPipeline() {
 		transforms, err := sdk.LoadConfigurablePipeline()
 		if err != nil {
 			sdk.LoggingClient().Error("unable to reload Configurable Pipeline from new configuration: " + err.Error())
-			// Reset the transforms so error occurs when attempting to execute the pipeline.
-			sdk.transforms = nil
-			sdk.runtime.SetTransforms(nil)
+			// Reset the default pipeline transforms to nil so error occurs when attempting to execute the pipeline.
+			_ = sdk.runtime.SetDefaultFunctionsPipeline(nil)
 			return
 		}
 

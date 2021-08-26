@@ -23,9 +23,11 @@ package redis
 import (
 	"testing"
 
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/stretchr/testify/require"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/contracts"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
-	"github.com/stretchr/testify/require"
 
 	"github.com/google/uuid"
 )
@@ -33,15 +35,15 @@ import (
 const (
 	TestHost      = "localhost"
 	TestPort      = 6379
-	TestTimeout   = 5000
+	TestTimeout   = "5s"
+	TestMaxIdle   = 5000
 	TestBatchSize = 1337
 
 	TestRetryCount       = 100
 	TestPipelinePosition = 1337
 	TestVersion          = "your"
 	TestCorrelationID    = "test"
-	TestEventID          = "probably"
-	TestEventChecksum    = "failed :("
+	TestPipelineId       = "test-pipeline"
 )
 
 var TestPayload = []byte("brandon was here")
@@ -51,18 +53,17 @@ var TestValidNoAuthConfig = db.DatabaseInfo{
 	Host:      TestHost,
 	Port:      TestPort,
 	Timeout:   TestTimeout,
-	MaxIdle:   TestTimeout,
+	MaxIdle:   TestMaxIdle,
 	BatchSize: TestBatchSize,
 }
 
 var TestContractBase = contracts.StoredObject{
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
+	PipelineId:       TestPipelineId,
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 var TestContractBadID = contracts.StoredObject{
@@ -70,42 +71,38 @@ var TestContractBadID = contracts.StoredObject{
 	AppServiceKey:    "brandon!",
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
+	PipelineId:       TestPipelineId,
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 var TestContractNoAppServiceKey = contracts.StoredObject{
 	ID:               uuid.New().String(),
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
+	PipelineId:       TestPipelineId,
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 var TestContractNoPayload = contracts.StoredObject{
 	AppServiceKey:    uuid.New().String(),
 	RetryCount:       TestRetryCount,
+	PipelineId:       TestPipelineId,
 	PipelinePosition: TestPipelinePosition,
 	Version:          TestVersion,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 var TestContractNoVersion = contracts.StoredObject{
 	AppServiceKey:    uuid.New().String(),
 	Payload:          TestPayload,
 	RetryCount:       TestRetryCount,
+	PipelineId:       TestPipelineId,
 	PipelinePosition: TestPipelinePosition,
 	CorrelationID:    TestCorrelationID,
-	EventID:          TestEventID,
-	EventChecksum:    TestEventChecksum,
 }
 
 func TestClient_NewClient(t *testing.T) {
@@ -118,7 +115,7 @@ func TestClient_NewClient(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := NewClient(test.config)
+			_, err := NewClient(test.config, bootstrapConfig.Credentials{})
 
 			if test.expectedError {
 				require.Error(t, err)
@@ -140,7 +137,7 @@ func TestClient_Store(t *testing.T) {
 	TestContractNoAppServiceKey := TestContractBase
 	TestContractUUID.ID = uuid.New().String()
 
-	client, _ := NewClient(TestValidNoAuthConfig)
+	client, _ := NewClient(TestValidNoAuthConfig, bootstrapConfig.Credentials{})
 
 	tests := []struct {
 		name          string
@@ -220,7 +217,7 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 	UUIDContract1.ID = uuid.New().String()
 	UUIDContract1.AppServiceKey = UUIDAppServiceKey
 
-	client, _ := NewClient(TestValidNoAuthConfig)
+	client, _ := NewClient(TestValidNoAuthConfig, bootstrapConfig.Credentials{})
 
 	tests := []struct {
 		name          string
@@ -262,7 +259,7 @@ func TestClient_RetrieveFromStore(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			require.NotEqual(t, len(actual), len(test.toStore), "Returned slice length doesn't match expected")
+			require.Equal(t, len(actual), len(test.toStore), "Returned slice length doesn't match expected")
 		})
 	}
 }
@@ -272,7 +269,7 @@ func TestClient_Update(t *testing.T) {
 	TestContractValid.AppServiceKey = uuid.New().String()
 	TestContractValid.Version = uuid.New().String()
 
-	client, _ := NewClient(TestValidNoAuthConfig)
+	client, _ := NewClient(TestValidNoAuthConfig, bootstrapConfig.Credentials{})
 
 	// add the objects we're going to update in the database now so we have a known state
 	TestContractValid.ID, _ = client.Store(TestContractValid)
@@ -331,7 +328,7 @@ func TestClient_RemoveFromStore(t *testing.T) {
 	TestContractValid := TestContractBase
 	TestContractValid.AppServiceKey = uuid.New().String()
 
-	client, _ := NewClient(TestValidNoAuthConfig)
+	client, _ := NewClient(TestValidNoAuthConfig, bootstrapConfig.Credentials{})
 
 	// add the objects we're going to update in the database now so we have a known state
 	TestContractValid.ID, _ = client.Store(TestContractValid)

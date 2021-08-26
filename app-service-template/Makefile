@@ -36,12 +36,11 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/app-functions-sdk-go/v2/internal.SD
 #GIT_SHA=$(shell git rev-parse HEAD)
 GIT_SHA=no-sha
 
-# `go mod tidy` is needed for the Depend a Bot PRs which don't update the go.sum in this folder, causing tests to fail
-# in the pipeline since the tests call this make build.
-# TODO: Remove `go mod tidy` when creating your new app services using this template
-build:
-	go mod tidy
+build: tidy
 	$(GO) build $(GOFLAGS) -o $(MICROSERVICE)
+
+tidy:
+	go mod tidy
 
 # TODO: Change the registries (edgexfoundry, nexus3.edgexfoundry.org:10004) below as needed.
 #       Leave them as is if service is to be upstreamed to EdgeX Foundry

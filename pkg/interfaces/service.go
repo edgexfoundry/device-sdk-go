@@ -37,7 +37,22 @@ const (
 	//		serviceKey = "MyServiceName-" + interfaces.ProfileSuffixPlaceholder
 	//	  )
 	ProfileSuffixPlaceholder = "<profile>"
+
+	// DefaultPipelineId is the ID used for the default pipeline create by SetFunctionsPipeline
+	DefaultPipelineId = "default-pipeline"
 )
+
+// FunctionPipeline defines an instance of a Functions Pipeline
+type FunctionPipeline struct {
+	// Unique identifier for the pipeline.
+	Id string
+	// Collection of App Functions to execute
+	Transforms []AppFunction
+	// Topic to match against the incoming topic to determine if the pipeline will execute on the incoming message
+	Topic string
+	// Hash of the list of transforms set and used internally for Store and Forward
+	Hash string
+}
 
 // UpdatableConfig interface allows services to have custom configuration populated from configuration stored
 // in the Configuration Provider (aka Consul). Services using custom configuration must implement this interface
@@ -65,10 +80,19 @@ type ApplicationService interface {
 	// application setting as a comma separated list. It returns the list of strings.
 	// An error is returned if the specified setting is not found.
 	GetAppSettingStrings(setting string) ([]string, error)
-	// SetFunctionsPipeline set the functions pipeline with the specified list of Application Functions.
+	// SetFunctionsPipeline has been deprecated (Replaced by SetDefaultFunctionsPipeline) and will be removed in a future release
+	// Functions the same as SetDefaultFunctionsPipeline.
+	SetFunctionsPipeline(transforms ...AppFunction) error
+	// SetDefaultFunctionsPipeline sets the default functions pipeline with the specified list of Application Functions.
+	// This pipeline is executed for all message received from the configured trigger.
 	// Note that the functions are executed in the order provided in the list.
 	// An error is returned if the list is empty.
-	SetFunctionsPipeline(transforms ...AppFunction) error
+	SetDefaultFunctionsPipeline(transforms ...AppFunction) error
+	// AddFunctionsPipelineForTopic adds a functions pipeline with the specified unique id and list of Application Functions
+	// to be executed when the incoming topic matches the specified topic. The specified topic may contain the '#' wildcard
+	// so that it matches multiple incoming topics. If just "#" is used for the specified topic it will match all incoming
+	// topics and the specified functions pipeline will execute on every message received.
+	AddFunctionsPipelineForTopic(id string, topic string, transforms ...AppFunction) error
 	// MakeItRun starts the configured trigger to allow the functions pipeline to execute when the trigger
 	// receives data and starts the internal webserver. This is a long running function which does not return until
 	// the service is stopped or MakeItStop() is called.
@@ -124,11 +148,17 @@ type ApplicationService interface {
 	// RegistryClient returns the Registry client. Note the registry must been enable, otherwise this will return nil.
 	// Useful if service needs to add additional health checks or needs to get endpoint of another registered service
 	RegistryClient() registry.Client
-	// LoadConfigurablePipeline loads the function pipeline from configuration.
+	// LoadConfigurablePipeline loads the default function pipeline from configuration.
 	// An error is returned if the configuration is not valid, i.e. missing required function parameters,
 	// invalid function name, etc.
 	// Only useful if pipeline from configuration is always defined in configuration as in App Service Configurable.
+	// Note this API is deprecated, replaced by LoadConfigurableFunctionPipelines and will be removed in a future release
 	LoadConfigurablePipeline() ([]AppFunction, error)
+	// LoadConfigurableFunctionPipelines loads the function pipelines (default and per topic) from configuration.
+	// An error is returned if the configuration is not valid, i.e. missing required function parameters,
+	// invalid function name, etc.
+	// Only useful if pipeline is always defined in configuration as is with App Service Configurable.
+	LoadConfigurableFunctionPipelines() (map[string]FunctionPipeline, error)
 	// LoadCustomConfig loads the service's custom configuration from local file or the Configuration Provider (if enabled)
 	// Configuration Provider will also be seeded with the custom configuration if service is using the Configuration Provider.
 	// UpdateFromRaw interface will be called on the custom configuration when the configuration is loaded from the

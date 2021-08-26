@@ -274,6 +274,20 @@ func (_m *AppFunctionContext) NotificationClient() clientsinterfaces.Notificatio
 	return r0
 }
 
+// PipelineId provides a mock function with given fields:
+func (_m *AppFunctionContext) PipelineId() string {
+	ret := _m.Called()
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func() string); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // PushToCore provides a mock function with given fields: event
 func (_m *AppFunctionContext) PushToCore(event dtos.Event) (common.BaseWithIdResponse, error) {
 	ret := _m.Called(event)

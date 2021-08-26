@@ -204,6 +204,110 @@ func TestInitializeBadConfiguration(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestPipelinePerTopic(t *testing.T) {
+	testClientConfig := types.MessageBusConfig{
+		PublishHost: types.HostInfo{
+			Host:     "*",
+			Port:     6664,
+			Protocol: "tcp",
+		},
+		Type: "zero",
+	}
+
+	testClient, err := messaging.NewMessageClient(testClientConfig)
+	require.NoError(t, err, "Unable to create to publisher")
+
+	config := sdkCommon.ConfigurationStruct{
+		Trigger: sdkCommon.TriggerInfo{
+			Type: TriggerTypeMessageBus,
+			EdgexMessageBus: sdkCommon.MessageBusConfig{
+				Type: "zero",
+				PublishHost: sdkCommon.PublishHostInfo{
+					Host:         "*",
+					Port:         6666,
+					Protocol:     "tcp",
+					PublishTopic: "",
+				},
+				SubscribeHost: sdkCommon.SubscribeHostInfo{
+					Host:            "localhost",
+					Port:            6664,
+					Protocol:        "tcp",
+					SubscribeTopics: "edgex/events/device",
+				},
+			},
+		},
+	}
+
+	dic.Update(di.ServiceConstructorMap{
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config
+		},
+	})
+
+	expectedCorrelationID := "123"
+
+	transform1WasCalled := make(chan bool, 1)
+	transform2WasCalled := make(chan bool, 1)
+
+	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		assert.Equal(t, expectedEvent, data)
+		transform1WasCalled <- true
+		return false, nil
+	}
+
+	transform2 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
+		assert.Equal(t, expectedEvent, data)
+		transform2WasCalled <- true
+		return false, nil
+	}
+
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
+	err = goRuntime.AddFunctionsPipeline("P1", "edgex/events/device/P1/#", []interfaces.AppFunction{transform1})
+	require.NoError(t, err)
+	err = goRuntime.AddFunctionsPipeline("P2", "edgex/events/device/P2/#", []interfaces.AppFunction{transform2})
+	require.NoError(t, err)
+
+	trigger := NewTrigger(dic, goRuntime)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	require.NoError(t, err)
+
+	payload, err := json.Marshal(addEventRequest)
+	require.NoError(t, err)
+
+	message := types.MessageEnvelope{
+		CorrelationID: expectedCorrelationID,
+		Payload:       payload,
+		ContentType:   common.ContentTypeJSON,
+	}
+
+	//transform1 in P1 pipeline should be called after this executes
+	err = testClient.Publish(message, "edgex/events/device/P1/LivingRoomThermostat/temperature")
+	require.NoError(t, err, "Failed to publish message")
+
+	select {
+	case <-transform1WasCalled:
+		// do nothing, just need to fall out.
+	case <-transform2WasCalled:
+		t.Fail() // should not have happened
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
+
+	//transform2 in P2 pipeline should be called after this executes
+	err = testClient.Publish(message, "edgex/events/device/P2/LivingRoomThermostat/temperature")
+	require.NoError(t, err, "Failed to publish message")
+
+	select {
+	case <-transform1WasCalled:
+		t.Fail() // should not have happened
+	case <-transform2WasCalled:
+		// do nothing, just need to fall out.
+	case <-time.After(3 * time.Second):
+		require.Fail(t, "Transform never called")
+	}
+}
+
 func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 
 	config := sdkCommon.ConfigurationStruct{
@@ -243,11 +347,12 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 		return false, nil
 	}
 
-	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(dic)
-	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
+	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
+	require.NoError(t, err)
 	trigger := NewTrigger(dic, goRuntime)
-	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
 	payload, err := json.Marshal(addEventRequest)
@@ -326,9 +431,10 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 
 	}
 
-	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(dic)
-	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
+	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
+	require.NoError(t, err)
 	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
@@ -429,9 +535,11 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 
 	}
 
-	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(dic)
-	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
+	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
+	require.NoError(t, err)
+
 	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
@@ -532,9 +640,11 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 		return false, nil
 	}
 
-	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(dic)
-	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
+	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
+	require.NoError(t, err)
+
 	trigger := NewTrigger(dic, goRuntime)
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -626,8 +736,8 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 
-	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(dic)
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
 	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
@@ -719,11 +829,13 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 		return false, nil
 	}
 
-	goRuntime := &runtime.GolangRuntime{}
-	goRuntime.Initialize(dic)
-	goRuntime.SetTransforms([]interfaces.AppFunction{transform1})
+	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+
+	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
+	require.NoError(t, err)
+
 	trigger := NewTrigger(dic, goRuntime)
-	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(addEventRequest)

@@ -17,7 +17,6 @@
 package transforms
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -113,7 +112,7 @@ func (sender *MQTTSecretSender) initializeMQTTClient(ctx interfaces.AppFunctionC
 	if len(sender.mqttConfig.KeepAlive) > 0 {
 		keepAlive, err := time.ParseDuration(sender.mqttConfig.KeepAlive)
 		if err != nil {
-			return fmt.Errorf("Unable to parse KeepAlive value of '%s': %w", sender.mqttConfig.KeepAlive, err)
+			return fmt.Errorf("in pipeline '%s', unable to parse KeepAlive value of '%s': %s", ctx.PipelineId(), sender.mqttConfig.KeepAlive, err.Error())
 		}
 
 		sender.opts.SetKeepAlive(keepAlive)
@@ -122,7 +121,7 @@ func (sender *MQTTSecretSender) initializeMQTTClient(ctx interfaces.AppFunctionC
 	if len(sender.mqttConfig.ConnectTimeout) > 0 {
 		timeout, err := time.ParseDuration(sender.mqttConfig.ConnectTimeout)
 		if err != nil {
-			return fmt.Errorf("Unable to parse ConnectTimeout value of '%s': %w", sender.mqttConfig.ConnectTimeout, err)
+			return fmt.Errorf("in pipeline '%s', unable to parse ConnectTimeout value of '%s': %s", ctx.PipelineId(), sender.mqttConfig.ConnectTimeout, err.Error())
 		}
 
 		sender.opts.SetConnectTimeout(timeout)
@@ -130,7 +129,7 @@ func (sender *MQTTSecretSender) initializeMQTTClient(ctx interfaces.AppFunctionC
 
 	client, err := mqttFactory.Create(sender.opts)
 	if err != nil {
-		return err
+		return fmt.Errorf("in pipeline '%s', unable to create MQTT Client: %s", ctx.PipelineId(), err.Error())
 	}
 
 	sender.client = client
@@ -156,9 +155,9 @@ func (sender *MQTTSecretSender) connectToBroker(ctx interfaces.AppFunctionContex
 		if sender.persistOnError {
 			subMessage = "persisting Event for later retry"
 		}
-		return fmt.Errorf("Could not connect to mqtt server for export, %s. Error: %s", subMessage, token.Error().Error())
+		return fmt.Errorf("in pipeline '%s', could not connect to mqtt server for export, %s. Error: %s", ctx.PipelineId(), subMessage, token.Error().Error())
 	}
-	ctx.LoggingClient().Info("Connected to mqtt server for export")
+	ctx.LoggingClient().Infof("Connected to mqtt server for export in pipeline '%s'", ctx.PipelineId())
 	return nil
 }
 
@@ -167,7 +166,7 @@ func (sender *MQTTSecretSender) connectToBroker(ctx interfaces.AppFunctionContex
 func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
 		// We didn't receive a result
-		return false, errors.New("No Data Received")
+		return false, fmt.Errorf("function MQTTSend in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	exportData, err := util.CoerceType(data)
@@ -191,7 +190,7 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 	publishTopic, err := sender.topicFormatter.invoke(sender.mqttConfig.Topic, ctx, data)
 
 	if err != nil {
-		return false, fmt.Errorf("MQTT topic formatting failed: %s", err.Error())
+		return false, fmt.Errorf("in pipeline '%s', MQTT topic formatting failed: %s", ctx.PipelineId(), err.Error())
 	}
 
 	token := sender.client.Publish(publishTopic, sender.mqttConfig.QoS, sender.mqttConfig.Retain, exportData)
@@ -201,8 +200,8 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 		return false, token.Error()
 	}
 
-	ctx.LoggingClient().Debug("Sent data to MQTT Broker")
-	ctx.LoggingClient().Trace("Data exported", "Transport", "MQTT", common.CorrelationHeader, ctx.CorrelationID())
+	ctx.LoggingClient().Debugf("Sent data to MQTT Broker in pipeline '%s'", ctx.PipelineId())
+	ctx.LoggingClient().Tracef("Data exported", "Transport", "MQTT", "pipeline", ctx.PipelineId(), common.CorrelationHeader, ctx.CorrelationID())
 
 	return true, nil
 }

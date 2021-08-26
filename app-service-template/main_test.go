@@ -44,6 +44,8 @@ func TestCreateAndRunService_Success(t *testing.T) {
 			Return([]string{"Random-Boolean-Device, Random-Integer-Device"}, nil)
 		mockAppService.On("SetFunctionsPipeline", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
+		mockAppService.On("AddFunctionsPipelineForTopic", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
 		mockAppService.On("LoadCustomConfig", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil).Run(func(args mock.Arguments) {
 			// set the required configuration so validation passes
@@ -147,6 +149,8 @@ func TestCreateAndRunService_MakeItRun_Failed(t *testing.T) {
 		mockAppService.On("ListenForCustomConfigChanges", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		mockAppService.On("SetFunctionsPipeline", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(nil)
+		mockAppService.On("AddFunctionsPipelineForTopic", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 			Return(nil)
 		mockAppService.On("MakeItRun").Return(fmt.Errorf("Failed")).Run(func(args mock.Arguments) {
 			makeItRunCalled = true

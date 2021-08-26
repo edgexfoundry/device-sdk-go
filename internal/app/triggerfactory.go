@@ -74,7 +74,8 @@ func (svc *Service) defaultTriggerMessageProcessor(appContext interfaces.AppFunc
 		return errors.New("App Context must be an instance of internal appfunction.Context. Use NewAppContext to create instance.")
 	}
 
-	messageError := svc.runtime.ProcessMessage(context, envelope)
+	defaultPipeline := svc.runtime.GetDefaultPipeline()
+	messageError := svc.runtime.ProcessMessage(context, envelope, defaultPipeline)
 	if messageError != nil {
 		// ProcessMessage logs the error, so no need to log it here.
 		return messageError.Err

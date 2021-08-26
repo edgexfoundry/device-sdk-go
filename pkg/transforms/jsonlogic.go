@@ -19,7 +19,6 @@ package transforms
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -46,7 +45,7 @@ func NewJSONLogic(rule string) JSONLogic {
 func (logic JSONLogic) Evaluate(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
 		// We didn't receive a result
-		return false, errors.New("No Data Received")
+		return false, fmt.Errorf("function Evaluate in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	coercedData, err := util.CoerceType(data)
@@ -58,20 +57,20 @@ func (logic JSONLogic) Evaluate(ctx interfaces.AppFunctionContext, data interfac
 	rule := strings.NewReader(logic.Rule)
 
 	var logicResult bytes.Buffer
-	ctx.LoggingClient().Debug("Applying JSONLogic Rule")
+	ctx.LoggingClient().Debugf("Applying JSONLogic Rule in pipeline '%s'", ctx.PipelineId())
 	err = jsonlogic.Apply(rule, reader, &logicResult)
 	if err != nil {
-		return false, fmt.Errorf("unable to apply JSONLogic rule: %s", err.Error())
+		return false, fmt.Errorf("unable to apply JSONLogic rule in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 	}
 
 	var result bool
 	decoder := json.NewDecoder(&logicResult)
 	err = decoder.Decode(&result)
 	if err != nil {
-		return false, fmt.Errorf("unable to decode JSONLogic result: %s", err.Error())
+		return false, fmt.Errorf("unable to decode JSONLogic result in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 	}
 
-	ctx.LoggingClient().Debug("Condition met: " + strconv.FormatBool(result))
+	ctx.LoggingClient().Debugf("Condition met in pipeline '%s': %s", ctx.PipelineId(), strconv.FormatBool(result))
 
 	return result, data
 }

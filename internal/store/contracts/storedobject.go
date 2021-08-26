@@ -25,36 +25,32 @@ import (
 type StoredObject struct {
 	// ID uniquely identifies this StoredObject
 	ID string
-
 	// AppServiceKey identifies the app to which this data belongs.
 	AppServiceKey string
-
 	// Payload is the data to be exported
 	Payload []byte
-
 	// RetryCount is how many times this has tried to be exported
 	RetryCount int
-
+	// PipelineId is the ID of the pipeline that needs to be restarted.
+	PipelineId string
 	// PipelinePosition is where to pickup in the pipeline
 	PipelinePosition int
-
 	// Version is a hash of the functions to know if the pipeline has changed.
 	Version string
-
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
 	CorrelationID string
-
 	// ContextData is a snapshot of data used by the pipeline at runtime
 	ContextData map[string]string
 }
 
 // NewStoredObject creates a new instance of StoredObject and is the preferred way to create one.
-func NewStoredObject(appServiceKey string, payload []byte, pipelinePosition int,
+func NewStoredObject(appServiceKey string, payload []byte, pipelineId string, pipelinePosition int,
 	version string, contextData map[string]string) StoredObject {
 	return StoredObject{
 		AppServiceKey:    appServiceKey,
 		Payload:          payload,
 		RetryCount:       0,
+		PipelineId:       pipelineId,
 		PipelinePosition: pipelinePosition,
 		Version:          version,
 		ContextData:      contextData,

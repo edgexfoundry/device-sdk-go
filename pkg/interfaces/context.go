@@ -24,10 +24,13 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 )
 
-const DEVICENAME = "devicename"
-const PROFILENAME = "profilename"
-const SOURCENAME = "sourcename"
-const RECEIVEDTOPIC = "receivedtopic"
+const (
+	DEVICENAME    = "devicename"
+	PROFILENAME   = "profilename"
+	SOURCENAME    = "sourcename"
+	RECEIVEDTOPIC = "receivedtopic"
+	PIPELINEID    = "pipelineid"
+)
 
 // AppFunction is a type alias for a application pipeline function.
 // appCtx is a reference to the AppFunctionContext below.
@@ -107,4 +110,6 @@ type AppFunctionContext interface {
 	// the key in context storage.  An error will be returned if any placeholders
 	// are not matched to a value in the context.
 	ApplyValues(format string) (string, error)
+	// PipelineId returns the ID of the pipeline that is executing
+	PipelineId() string
 }

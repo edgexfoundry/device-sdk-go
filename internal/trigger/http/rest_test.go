@@ -18,8 +18,9 @@
 package http
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"testing"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"

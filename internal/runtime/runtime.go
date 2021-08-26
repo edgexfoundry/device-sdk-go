@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -41,11 +42,27 @@ import (
 	"github.com/fxamacker/cbor/v2"
 )
 
+const (
+	TopicWildCard       = "#"
+	TopicLevelSeparator = "/"
+)
+
+func NewFunctionPipeline(id string, topic string, transforms []interfaces.AppFunction) interfaces.FunctionPipeline {
+	pipeline := interfaces.FunctionPipeline{
+		Id:         id,
+		Transforms: transforms,
+		Topic:      topic,
+		Hash:       calculatePipelineHash(transforms),
+	}
+
+	return pipeline
+}
+
 // GolangRuntime represents the golang runtime environment
 type GolangRuntime struct {
 	TargetType    interface{}
 	ServiceKey    string
-	transforms    []interfaces.AppFunction
+	pipelines     map[string]*interfaces.FunctionPipeline
 	isBusyCopying sync.Mutex
 	storeForward  storeForwardInfo
 	dic           *di.Container
@@ -56,34 +73,67 @@ type MessageError struct {
 	ErrorCode int
 }
 
-// Initialize sets the internal reference to the StoreClient for use when Store and Forward is enabled
-func (gr *GolangRuntime) Initialize(dic *di.Container) {
-	gr.dic = dic
-	gr.storeForward.runtime = gr
+// NewGolangRuntime creates and initializes the GolangRuntime instance
+func NewGolangRuntime(serviceKey string, targetType interface{}, dic *di.Container) *GolangRuntime {
+	gr := &GolangRuntime{
+		ServiceKey: serviceKey,
+		TargetType: targetType,
+		dic:        dic,
+		pipelines:  make(map[string]*interfaces.FunctionPipeline),
+	}
+
 	gr.storeForward.dic = dic
+	gr.storeForward.runtime = gr
+
+	return gr
 }
 
-// SetTransforms is thread safe to set transforms
-func (gr *GolangRuntime) SetTransforms(transforms []interfaces.AppFunction) {
+// SetDefaultFunctionsPipeline sets the default function pipeline
+func (gr *GolangRuntime) SetDefaultFunctionsPipeline(transforms []interfaces.AppFunction) error {
+	pipeline := gr.GetDefaultPipeline()
+	if pipeline.Transforms != nil {
+		gr.isBusyCopying.Lock()
+		pipeline.Transforms = transforms
+		pipeline.Hash = calculatePipelineHash(transforms)
+		gr.isBusyCopying.Unlock()
+		return nil
+	}
+
+	return gr.AddFunctionsPipeline(interfaces.DefaultPipelineId, TopicWildCard, transforms)
+}
+
+// AddFunctionsPipeline is thread safe to set transforms
+func (gr *GolangRuntime) AddFunctionsPipeline(id string, topic string, transforms []interfaces.AppFunction) error {
+	_, exists := gr.pipelines[id]
+	if exists {
+		return fmt.Errorf("pipeline with Id='%s' already exists", id)
+	}
+
+	pipeline := NewFunctionPipeline(id, topic, transforms)
 	gr.isBusyCopying.Lock()
-	gr.transforms = transforms
-	gr.storeForward.pipelineHash = gr.storeForward.calculatePipelineHash() // Only need to calculate hash when the pipeline changes.
+	gr.pipelines[id] = &pipeline
 	gr.isBusyCopying.Unlock()
+
+	return nil
 }
 
-// ProcessMessage sends the contents of the message thru the functions pipeline
-func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelope types.MessageEnvelope) *MessageError {
+// ProcessMessage sends the contents of the message through the functions pipeline
+func (gr *GolangRuntime) ProcessMessage(
+	appContext *appfunction.Context,
+	envelope types.MessageEnvelope,
+	pipeline *interfaces.FunctionPipeline) *MessageError {
 	lc := appContext.LoggingClient()
 
-	if len(gr.transforms) == 0 {
-		err := errors.New("No transforms configured. Please check log for errors loading pipeline")
+	if len(pipeline.Transforms) == 0 {
+		err := fmt.Errorf("no transforms configured for pipleline Id='%s'. Please check log for earlier errors loading pipeline", pipeline.Id)
 		logError(lc, err, envelope.CorrelationID)
 		return &MessageError{Err: err, ErrorCode: http.StatusInternalServerError}
 	}
 
 	appContext.AddValue(interfaces.RECEIVEDTOPIC, envelope.ReceivedTopic)
+	appContext.AddValue(interfaces.PIPELINEID, pipeline.Id)
 
-	lc.Debugf("Processing message %d Transforms", len(gr.transforms))
+	lc.Debugf("Pipeline '%s' processing message %d Transforms", pipeline.Id, len(pipeline.Transforms))
 
 	// Default Target Type for the function pipeline is an Event DTO.
 	// The Event DTO can be wrapped in an AddEventRequest DTO or just be the un-wrapped Event DTO,
@@ -103,11 +153,11 @@ func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelop
 
 	switch target.(type) {
 	case *[]byte:
-		lc.Debug("Pipeline is expecting raw byte data")
+		lc.Debug("Expecting raw byte data")
 		target = &envelope.Payload
 
 	case *dtos.Event:
-		lc.Debug("Pipeline is expecting an AddEventRequest or Event DTO")
+		lc.Debug("Expecting an AddEventRequest or Event DTO")
 
 		// Dynamically process either AddEventRequest or Event DTO
 		event, err := gr.processEventPayload(envelope, lc)
@@ -135,7 +185,7 @@ func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelop
 
 	default:
 		customTypeName := di.TypeInstanceToName(target)
-		lc.Debugf("Pipeline is expecting a custom type of %s", customTypeName)
+		lc.Debugf("Expecting a custom type of %s", customTypeName)
 
 		// Expecting a custom type so just unmarshal into the target type.
 		if err := gr.unmarshalPayload(envelope, target); err != nil {
@@ -153,25 +203,30 @@ func (gr *GolangRuntime) ProcessMessage(appContext *appfunction.Context, envelop
 
 	// Make copy of transform functions to avoid disruption of pipeline when updating the pipeline from registry
 	gr.isBusyCopying.Lock()
-	transforms := make([]interfaces.AppFunction, len(gr.transforms))
-	copy(transforms, gr.transforms)
+	execPipeline := &interfaces.FunctionPipeline{
+		Id:         pipeline.Id,
+		Transforms: make([]interfaces.AppFunction, len(pipeline.Transforms)),
+		Topic:      pipeline.Topic,
+		Hash:       pipeline.Hash,
+	}
+	copy(execPipeline.Transforms, pipeline.Transforms)
 	gr.isBusyCopying.Unlock()
 
-	return gr.ExecutePipeline(target, envelope.ContentType, appContext, transforms, 0, false)
+	return gr.ExecutePipeline(target, envelope.ContentType, appContext, execPipeline, 0, false)
 }
 
 func (gr *GolangRuntime) ExecutePipeline(
 	target interface{},
 	contentType string,
 	appContext *appfunction.Context,
-	transforms []interfaces.AppFunction,
+	pipeline *interfaces.FunctionPipeline,
 	startPosition int,
 	isRetry bool) *MessageError {
 
 	var result interface{}
 	var continuePipeline bool
 
-	for functionIndex, trxFunc := range transforms {
+	for functionIndex, trxFunc := range pipeline.Transforms {
 		if functionIndex < startPosition {
 			continue
 		}
@@ -188,11 +243,15 @@ func (gr *GolangRuntime) ExecutePipeline(
 		if continuePipeline != true {
 			if result != nil {
 				if err, ok := result.(error); ok {
-					appContext.LoggingClient().Error(
-						fmt.Sprintf("Pipeline function #%d resulted in error", functionIndex),
-						"error", err.Error(), common.CorrelationHeader, appContext.CorrelationID())
+					appContext.LoggingClient().Errorf(
+						"Pipeline (%s) function #%d resulted in error: %s (%s=%s)",
+						pipeline.Id,
+						functionIndex,
+						err.Error(),
+						common.CorrelationHeader,
+						appContext.CorrelationID())
 					if appContext.RetryData() != nil && !isRetry {
-						gr.storeForward.storeForLaterRetry(appContext.RetryData(), appContext, functionIndex)
+						gr.storeForward.storeForLaterRetry(appContext.RetryData(), appContext, pipeline, functionIndex)
 					}
 
 					return &MessageError{Err: err, ErrorCode: http.StatusUnprocessableEntity}
@@ -302,6 +361,74 @@ func (gr *GolangRuntime) debugLogEvent(lc logger.LoggingClient, event *dtos.Even
 				reading.Value)
 		}
 	}
+}
+
+func (gr *GolangRuntime) GetDefaultPipeline() *interfaces.FunctionPipeline {
+	pipeline := gr.pipelines[interfaces.DefaultPipelineId]
+	if pipeline == nil {
+		pipeline = &interfaces.FunctionPipeline{
+			Id: interfaces.DefaultPipelineId,
+		}
+	}
+	return pipeline
+}
+
+func (gr *GolangRuntime) GetMatchingPipelines(incomingTopic string) []*interfaces.FunctionPipeline {
+	var matches []*interfaces.FunctionPipeline
+
+	if len(gr.pipelines) == 0 {
+		return matches
+	}
+
+	for _, pipeline := range gr.pipelines {
+		if topicMatches(incomingTopic, pipeline.Topic) {
+			matches = append(matches, pipeline)
+		}
+	}
+
+	return matches
+}
+
+func (gr *GolangRuntime) GetPipelineById(id string) *interfaces.FunctionPipeline {
+	return gr.pipelines[id]
+}
+
+func topicMatches(incomingTopic string, pipelineTopic string) bool {
+	if pipelineTopic == TopicWildCard {
+		return true
+	}
+
+	wildcardCount := strings.Count(pipelineTopic, TopicWildCard)
+	switch wildcardCount {
+	case 0:
+		return incomingTopic == pipelineTopic
+	default:
+		pipelineLevels := strings.Split(pipelineTopic, TopicLevelSeparator)
+		incomingLevels := strings.Split(incomingTopic, TopicLevelSeparator)
+
+		if len(pipelineLevels) > len(incomingLevels) {
+			return false
+		}
+
+		for index, level := range pipelineLevels {
+			if level == TopicWildCard {
+				incomingLevels[index] = TopicWildCard
+			}
+		}
+
+		incomingWithWildCards := strings.Join(incomingLevels, "/")
+		return strings.Index(incomingWithWildCards, pipelineTopic) == 0
+	}
+}
+
+func calculatePipelineHash(transforms []interfaces.AppFunction) string {
+	hash := "Pipeline-functions: "
+	for _, item := range transforms {
+		name := runtime.FuncForPC(reflect.ValueOf(item).Pointer()).Name()
+		hash = hash + " " + name
+	}
+
+	return hash
 }
 
 func logError(lc logger.LoggingClient, err error, correlationID string) {

@@ -31,7 +31,7 @@ func TestBatchNoData(t *testing.T) {
 	bs, _ := NewBatchByCount(1)
 	continuePipeline, err := bs.Batch(ctx, nil)
 	assert.False(t, continuePipeline)
-	assert.Equal(t, "No Data Received", err.(error).Error())
+	assert.Contains(t, err.(error).Error(), "No Data Received")
 
 }
 func TestBatchInCountMode(t *testing.T) {

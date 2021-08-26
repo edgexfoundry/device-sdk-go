@@ -36,17 +36,15 @@ func (_m *ApplicationService) AddBackgroundPublisher(capacity int) (interfaces.B
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(int) error); ok {
-		r1 = rf(1)
+		r1 = rf(capacity)
 	} else {
-		if ret.Get(0) != nil {
-			r1 = ret.Get(1).(error)
-		}
+		r1 = ret.Error(1)
 	}
 
 	return r0, r1
 }
 
-// AddBackgroundPublisher provides a mock function with given fields: capacity, topic
+// AddBackgroundPublisherWithTopic provides a mock function with given fields: capacity, topic
 func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topic string) (interfaces.BackgroundPublisher, error) {
 	ret := _m.Called(capacity, topic)
 
@@ -63,25 +61,28 @@ func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topi
 	if rf, ok := ret.Get(1).(func(int, string) error); ok {
 		r1 = rf(capacity, topic)
 	} else {
-		if ret.Get(0) != nil {
-			r1 = ret.Get(1).(error)
-		}
+		r1 = ret.Error(1)
 	}
 
 	return r0, r1
 }
 
-// AddBackgroundPublisher provides a mock function with given fields: correlationId, contentType
-func (_m *ApplicationService) BuildContext(correlationId string, contentType string) interfaces.AppFunctionContext {
-	ret := _m.Called(correlationId, contentType)
+// AddFunctionsPipelineForTopic provides a mock function with given fields: id, topic, transforms
+func (_m *ApplicationService) AddFunctionsPipelineForTopic(id string, topic string, transforms ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error {
+	_va := make([]interface{}, len(transforms))
+	for _i := range transforms {
+		_va[_i] = transforms[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, id, topic)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
-	var r0 interfaces.AppFunctionContext
-	if rf, ok := ret.Get(0).(func(string, string) interfaces.AppFunctionContext); ok {
-		r0 = rf(correlationId, contentType)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error); ok {
+		r0 = rf(id, topic, transforms...)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(interfaces.AppFunctionContext)
-		}
+		r0 = ret.Error(0)
 	}
 
 	return r0
@@ -118,6 +119,22 @@ func (_m *ApplicationService) ApplicationSettings() map[string]string {
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(map[string]string)
+		}
+	}
+
+	return r0
+}
+
+// BuildContext provides a mock function with given fields: correlationId, contentType
+func (_m *ApplicationService) BuildContext(correlationId string, contentType string) interfaces.AppFunctionContext {
+	ret := _m.Called(correlationId, contentType)
+
+	var r0 interfaces.AppFunctionContext
+	if rf, ok := ret.Get(0).(func(string, string) interfaces.AppFunctionContext); ok {
+		r0 = rf(correlationId, contentType)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(interfaces.AppFunctionContext)
 		}
 	}
 
@@ -292,6 +309,29 @@ func (_m *ApplicationService) ListenForCustomConfigChanges(configToWatch interfa
 	return r0
 }
 
+// LoadConfigurableFunctionPipelines provides a mock function with given fields:
+func (_m *ApplicationService) LoadConfigurableFunctionPipelines() (map[string]interfaces.FunctionPipeline, error) {
+	ret := _m.Called()
+
+	var r0 map[string]interfaces.FunctionPipeline
+	if rf, ok := ret.Get(0).(func() map[string]interfaces.FunctionPipeline); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(map[string]interfaces.FunctionPipeline)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // LoadConfigurablePipeline provides a mock function with given fields:
 func (_m *ApplicationService) LoadConfigurablePipeline() ([]func(interfaces.AppFunctionContext, interface{}) (bool, interface{}), error) {
 	ret := _m.Called()
@@ -405,6 +445,26 @@ func (_m *ApplicationService) RegistryClient() registry.Client {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(registry.Client)
 		}
+	}
+
+	return r0
+}
+
+// SetDefaultFunctionsPipeline provides a mock function with given fields: transforms
+func (_m *ApplicationService) SetDefaultFunctionsPipeline(transforms ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error {
+	_va := make([]interface{}, len(transforms))
+	for _i := range transforms {
+		_va[_i] = transforms[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error); ok {
+		r0 = rf(transforms...)
+	} else {
+		r0 = ret.Error(0)
 	}
 
 	return r0

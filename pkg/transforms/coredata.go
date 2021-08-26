@@ -18,7 +18,7 @@ package transforms
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
@@ -65,12 +65,12 @@ func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data inte
 	ctx.LoggingClient().Info("Pushing To CoreData...")
 
 	if data == nil {
-		return false, errors.New("PushToCoreData - No Data Received")
+		return false, fmt.Errorf("function PushToCoreData in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	client := ctx.EventClient()
 	if client == nil {
-		return false, errors.New("EventClient not initialized. Core Data is missing from clients configuration")
+		return false, fmt.Errorf("function PushToCoreData in pipeline '%s': EventClient not initialized. Core Data is missing from clients configuration", ctx.PipelineId())
 	}
 
 	event := dtos.NewEvent(cdc.profileName, cdc.deviceName, cdc.resourceName)
@@ -85,9 +85,15 @@ func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data inte
 		if err != nil {
 			return false, err
 		}
-		event.AddSimpleReading(cdc.resourceName, cdc.valueType, string(reading))
+		err = event.AddSimpleReading(cdc.resourceName, cdc.valueType, string(reading))
+		if err != nil {
+			return false, fmt.Errorf("error adding Reading in pipeline '%s': %s", ctx.PipelineId(), err.Error())
+		}
 	} else {
-		event.AddSimpleReading(cdc.resourceName, cdc.valueType, data)
+		err := event.AddSimpleReading(cdc.resourceName, cdc.valueType, data)
+		if err != nil {
+			return false, fmt.Errorf("error adding Reading in pipeline '%s': %s", ctx.PipelineId(), err.Error())
+		}
 	}
 
 	request := requests.NewAddEventRequest(event)

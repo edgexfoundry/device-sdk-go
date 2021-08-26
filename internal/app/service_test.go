@@ -18,12 +18,15 @@ package app
 
 import (
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
-	"github.com/google/uuid"
 	"net/http"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/google/uuid"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	builtin "github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/transforms"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
@@ -237,9 +240,10 @@ func TestSetupHTTPTrigger(t *testing.T) {
 			},
 		},
 	}
-	testRuntime := &runtime.GolangRuntime{}
-	testRuntime.Initialize(dic)
-	testRuntime.SetTransforms(sdk.transforms)
+
+	testRuntime := runtime.NewGolangRuntime("", nil, dic)
+	err := testRuntime.SetDefaultFunctionsPipeline(nil)
+	require.NoError(t, err)
 	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of HTTP Trigger")
@@ -254,15 +258,15 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 			},
 		},
 	}
-	testRuntime := &runtime.GolangRuntime{}
-	testRuntime.Initialize(dic)
-	testRuntime.SetTransforms(sdk.transforms)
+	testRuntime := runtime.NewGolangRuntime("", nil, dic)
+	err := testRuntime.SetDefaultFunctionsPipeline(nil)
+	require.NoError(t, err)
 	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }
 
-func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
+func TestSetDefaultFunctionsPipelineNoTransforms(t *testing.T) {
 	sdk := Service{
 		lc: lc,
 		config: &common.ConfigurationStruct{
@@ -271,15 +275,15 @@ func TestSetFunctionsPipelineNoTransforms(t *testing.T) {
 			},
 		},
 	}
-	err := sdk.SetFunctionsPipeline()
+	err := sdk.SetDefaultFunctionsPipeline()
 	require.Error(t, err, "There should be an error")
 	assert.Equal(t, "no transforms provided to pipeline", err.Error())
 }
 
-func TestSetFunctionsPipelineOneTransform(t *testing.T) {
-	sdk := Service{
+func TestSetDefaultFunctionsPipelineOneTransform(t *testing.T) {
+	service := Service{
 		lc:      lc,
-		runtime: &runtime.GolangRuntime{},
+		runtime: runtime.NewGolangRuntime("", nil, dic),
 		config: &common.ConfigurationStruct{
 			Trigger: common.TriggerInfo{
 				Type: TriggerTypeMessageBus,
@@ -290,12 +294,60 @@ func TestSetFunctionsPipelineOneTransform(t *testing.T) {
 		return true, nil
 	}
 
-	sdk.runtime.Initialize(dic)
-	err := sdk.SetFunctionsPipeline(function)
+	err := service.SetDefaultFunctionsPipeline(function)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(sdk.transforms))
 }
 
+func TestService_AddFunctionsPipelineForTopic(t *testing.T) {
+	service := Service{
+		lc:      lc,
+		runtime: runtime.NewGolangRuntime("", nil, nil),
+		config: &common.ConfigurationStruct{
+			Trigger: common.TriggerInfo{
+				Type: TriggerTypeMessageBus,
+			},
+		},
+	}
+
+	tags := builtin.NewTags(nil)
+
+	transforms := []interfaces.AppFunction{tags.AddTags}
+
+	// This sets the Default Pipeline allowing to test for duplicate iD.
+	err := service.SetDefaultFunctionsPipeline(transforms...)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name        string
+		id          string
+		trigger     string
+		topic       string
+		transforms  []interfaces.AppFunction
+		expectError bool
+	}{
+		{"Happy Path", "123", TriggerTypeMessageBus, "#", transforms, false},
+		{"Empty Topic", "123", TriggerTypeMessageBus, " ", transforms, true},
+		{"No Transforms", "123", TriggerTypeMessageBus, "#", nil, true},
+		{"Duplicate Id", interfaces.DefaultPipelineId, TriggerTypeMessageBus, "#", transforms, true},
+		{"Wrong Trigger Type", "123", TriggerTypeHTTP, "#", transforms, true},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service.config.Trigger.Type = test.trigger
+
+			err := service.AddFunctionsPipelineForTopic(test.id, test.topic, test.transforms...)
+			if test.expectError {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			actual := service.runtime.GetPipelineById(test.id)
+			assert.Equal(t, transforms, actual.Transforms)
+		})
+	}
+}
 func TestApplicationSettings(t *testing.T) {
 	expectedSettingKey := "ApplicationName"
 	expectedSettingValue := "simple-filter-xml"
@@ -397,26 +449,50 @@ func TestGetAppSettingStringsNoAppSettings(t *testing.T) {
 	assert.Contains(t, err.Error(), expected, "Error not as expected")
 }
 
-func TestLoadConfigurablePipelineFunctionNotFound(t *testing.T) {
-	sdk := Service{
+func TestLoadConfigurableFunctionPipelinesDefaultNotFound(t *testing.T) {
+	service := Service{
 		lc: lc,
 		config: &common.ConfigurationStruct{
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
-					ExecutionOrder: "Bogus",
-					Functions:      make(map[string]common.PipelineFunction),
+					ExecutionOrder:    "Bogus",
+					PerTopicPipelines: make(map[string]common.TopicPipeline),
+					Functions:         make(map[string]common.PipelineFunction),
 				},
 			},
 		},
 	}
 
-	appFunctions, err := sdk.LoadConfigurablePipeline()
-	require.Error(t, err, "expected error for function not found in config")
-	assert.Equal(t, "function 'Bogus' configuration not found in Pipeline.Functions section", err.Error())
-	assert.Nil(t, appFunctions, "expected app functions list to be nil")
+	tests := []struct {
+		name                   string
+		defaultExecutionOrder  string
+		perTopicExecutionOrder string
+	}{
+		{"Default Not Found", "Bogus", ""},
+		{"PerTopicNotFound", "", "Bogus"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service.config.Writable.Pipeline.ExecutionOrder = test.defaultExecutionOrder
+			if len(test.perTopicExecutionOrder) > 0 {
+				service.config.Writable.Pipeline.PerTopicPipelines["bogus"] = common.TopicPipeline{
+					Id:             "bogus",
+					Topic:          "#",
+					ExecutionOrder: test.perTopicExecutionOrder,
+				}
+			}
+
+			appFunctions, err := service.LoadConfigurableFunctionPipelines()
+			require.Error(t, err, "expected error for function not found in config")
+			assert.Contains(t, err.Error(), "function 'Bogus' configuration not found in Pipeline.Functions section")
+			assert.Nil(t, appFunctions, "expected app functions list to be nil")
+
+		})
+	}
 }
 
-func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
+func TestLoadConfigurableFunctionPipelinesNotABuiltInSdkFunction(t *testing.T) {
 	functions := make(map[string]common.PipelineFunction)
 	functions["Bogus"] = common.PipelineFunction{}
 
@@ -432,21 +508,25 @@ func TestLoadConfigurablePipelineNotABuiltInSdkFunction(t *testing.T) {
 		},
 	}
 
-	appFunctions, err := sdk.LoadConfigurablePipeline()
+	appFunctions, err := sdk.LoadConfigurableFunctionPipelines()
 	require.Error(t, err, "expected error")
-	assert.Equal(t, "function Bogus is not a built in SDK function", err.Error())
+	assert.Contains(t, err.Error(), "function Bogus is not a built in SDK function")
 	assert.Nil(t, appFunctions, "expected app functions list to be nil")
 }
 
-func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
-	functions := make(map[string]common.PipelineFunction)
-	functions["FilterByDeviceName"] = common.PipelineFunction{
+func TestLoadConfigurableFunctionPipelinesNumFunctions(t *testing.T) {
+	expectedPipelinesCount := 2
+	expectedTransformsCount := 3
+	perTopicPipelineId := "pre-topic"
+
+	transforms := make(map[string]common.PipelineFunction)
+	transforms["FilterByDeviceName"] = common.PipelineFunction{
 		Parameters: map[string]string{"DeviceNames": "Random-Float-Device, Random-Integer-Device"},
 	}
-	functions["Transform"] = common.PipelineFunction{
+	transforms["Transform"] = common.PipelineFunction{
 		Parameters: map[string]string{TransformType: TransformXml},
 	}
-	functions["SetResponseData"] = common.PipelineFunction{}
+	transforms["SetResponseData"] = common.PipelineFunction{}
 
 	sdk := Service{
 		lc: lc,
@@ -454,16 +534,31 @@ func TestLoadConfigurablePipelineNumFunctions(t *testing.T) {
 			Writable: common.WritableInfo{
 				Pipeline: common.PipelineInfo{
 					ExecutionOrder: "FilterByDeviceName, Transform, SetResponseData",
-					Functions:      functions,
+					PerTopicPipelines: map[string]common.TopicPipeline{
+						perTopicPipelineId: {
+							Id:             perTopicPipelineId,
+							Topic:          "#",
+							ExecutionOrder: "FilterByDeviceName, Transform, SetResponseData",
+						},
+					},
+					Functions: transforms,
 				},
 			},
 		},
 	}
 
-	appFunctions, err := sdk.LoadConfigurablePipeline()
+	pipelines, err := sdk.LoadConfigurableFunctionPipelines()
 	require.NoError(t, err)
-	require.NotNil(t, appFunctions, "expected app functions list to be set")
-	assert.Equal(t, 3, len(appFunctions))
+	require.NotNil(t, pipelines, "expected app pipelines list to be set")
+	assert.Equal(t, expectedPipelinesCount, len(pipelines))
+
+	pipeline, found := pipelines[interfaces.DefaultPipelineId]
+	require.True(t, found)
+	assert.Equal(t, expectedTransformsCount, len(pipeline.Transforms))
+
+	pipeline, found = pipelines[perTopicPipelineId]
+	require.True(t, found)
+	assert.Equal(t, expectedTransformsCount, len(pipeline.Transforms))
 }
 
 func TestUseTargetTypeOfByteArrayTrue(t *testing.T) {
@@ -798,15 +893,15 @@ func TestService_BuildContext(t *testing.T) {
 
 	contentType := uuid.NewString()
 
-	appctx := sdk.BuildContext(correlationId, contentType)
+	appCtx := sdk.BuildContext(correlationId, contentType)
 
-	require.NotNil(t, appctx)
+	require.NotNil(t, appCtx)
 
-	require.Equal(t, correlationId, appctx.CorrelationID())
-	require.Equal(t, contentType, appctx.InputContentType())
+	require.Equal(t, correlationId, appCtx.CorrelationID())
+	require.Equal(t, contentType, appCtx.InputContentType())
 
-	castctx := appctx.(*appfunction.Context)
+	castCtx := appCtx.(*appfunction.Context)
 
-	require.NotNil(t, castctx)
-	require.Equal(t, dic, castctx.Dic)
+	require.NotNil(t, castCtx)
+	require.Equal(t, dic, castCtx.Dic)
 }

@@ -19,8 +19,6 @@ package runtime
 import (
 	"context"
 	"fmt"
-	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -40,9 +38,8 @@ const (
 )
 
 type storeForwardInfo struct {
-	runtime      *GolangRuntime
-	dic          *di.Container
-	pipelineHash string
+	runtime *GolangRuntime
+	dic     *di.Container
 }
 
 func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
@@ -109,28 +106,27 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 func (sf *storeForwardInfo) storeForLaterRetry(
 	payload []byte,
 	appContext interfaces.AppFunctionContext,
+	pipeline *interfaces.FunctionPipeline,
 	pipelinePosition int) {
 
-	item := contracts.NewStoredObject(sf.runtime.ServiceKey, payload, pipelinePosition, sf.pipelineHash, appContext.GetAllValues())
+	item := contracts.NewStoredObject(sf.runtime.ServiceKey, payload, pipeline.Id, pipelinePosition, pipeline.Hash, appContext.GetAllValues())
 	item.CorrelationID = appContext.CorrelationID()
 
-	appContext.LoggingClient().Trace("Storing data for later retry",
-		common.CorrelationHeader, appContext.CorrelationID())
+	appContext.LoggingClient().Tracef("Storing data for later retry for pipeline '%s' (%s=%s)",
+		pipeline.Id,
+		common.CorrelationHeader,
+		appContext.CorrelationID())
 
 	config := container.ConfigurationFrom(sf.dic.Get)
 	if !config.Writable.StoreAndForward.Enabled {
-		appContext.LoggingClient().Error(
-			"Failed to store item for later retry", "error", "StoreAndForward not enabled",
-			common.CorrelationHeader, item.CorrelationID)
+		appContext.LoggingClient().Errorf("Failed to store item for later retry for pipeline '%s': StoreAndForward not enabled", pipeline.Id)
 		return
 	}
 
 	storeClient := container.StoreClientFrom(sf.dic.Get)
 
 	if _, err := storeClient.Store(item); err != nil {
-		appContext.LoggingClient().Error("Failed to store item for later retry",
-			"error", err,
-			common.CorrelationHeader, item.CorrelationID)
+		appContext.LoggingClient().Errorf("Failed to store item for later retry for pipeline '%s': %s", pipeline.Id, err.Error())
 	}
 }
 
@@ -141,36 +137,33 @@ func (sf *storeForwardInfo) retryStoredData(serviceKey string) {
 
 	items, err := storeClient.RetrieveFromStore(serviceKey)
 	if err != nil {
-		lc.Error("Unable to load store and forward items from DB", "error", err)
+		lc.Errorf("Unable to load store and forward items from DB: %s", err.Error())
 		return
 	}
 
-	lc.Debugf(" %d stored data items found for retrying", len(items))
+	lc.Debugf("%d stored data items found for retrying", len(items))
 
 	if len(items) > 0 {
 		itemsToRemove, itemsToUpdate := sf.processRetryItems(items)
 
-		lc.Debug(
-			fmt.Sprintf(" %d stored data items will be removed post retry", len(itemsToRemove)))
-		lc.Debug(
-			fmt.Sprintf(" %d stored data items will be update post retry", len(itemsToUpdate)))
+		lc.Debugf(" %d stored data items will be removed post retry", len(itemsToRemove))
+		lc.Debugf(" %d stored data items will be update post retry", len(itemsToUpdate))
 
 		for _, item := range itemsToRemove {
 			if err := storeClient.RemoveFromStore(item); err != nil {
-				lc.Error(
-					"Unable to remove stored data item from DB",
-					"error", err,
-					"objectID", item.ID,
-					common.CorrelationHeader, item.CorrelationID)
+				lc.Errorf("Unable to remove stored data item for pipeline '%s' from DB, objectID=%s: %s",
+					item.PipelineId,
+					err.Error(),
+					item.ID)
 			}
 		}
 
 		for _, item := range itemsToUpdate {
 			if err := storeClient.Update(item); err != nil {
-				lc.Error("Unable to update stored data item in DB",
-					"error", err,
-					"objectID", item.ID,
-					common.CorrelationHeader, item.CorrelationID)
+				lc.Errorf("Unable to update stored data item for pipeline '%s' from DB, objectID=%s: %s",
+					item.PipelineId,
+					err.Error(),
+					item.ID)
 			}
 		}
 	}
@@ -183,75 +176,76 @@ func (sf *storeForwardInfo) processRetryItems(items []contracts.StoredObject) ([
 	var itemsToRemove []contracts.StoredObject
 	var itemsToUpdate []contracts.StoredObject
 
+	// Item will be removed from store if:
+	//    - successfully retried
+	//    - max retries exceeded
+	//    - version no longer matches current Pipeline
+	// Item will not be removed if retry failed and more retries available (hit 'continue' above)
 	for _, item := range items {
-		if item.Version == sf.calculatePipelineHash() {
-			if !sf.retryExportFunction(item) {
-				item.RetryCount++
-				if config.Writable.StoreAndForward.MaxRetryCount == 0 ||
-					item.RetryCount < config.Writable.StoreAndForward.MaxRetryCount {
-					lc.Trace("Export retry failed. Incrementing retry count",
-						"retries",
-						item.RetryCount,
-						common.CorrelationHeader,
-						item.CorrelationID)
-					itemsToUpdate = append(itemsToUpdate, item)
-					continue
-				}
+		pipeline := sf.runtime.GetPipelineById(item.PipelineId)
 
-				lc.Trace(
-					"Max retries exceeded. Removing item from DB", "retries",
+		if pipeline == nil {
+			lc.Errorf("Stored data item's pipeline '%s' no longer exists. Removing item from DB", item.PipelineId)
+			itemsToRemove = append(itemsToRemove, item)
+			continue
+		}
+
+		if item.Version != pipeline.Hash {
+			lc.Error("Stored data item's pipeline Version doesn't match '%s' pipeline's Version. Removing item from DB", item.PipelineId)
+			itemsToRemove = append(itemsToRemove, item)
+			continue
+		}
+
+		if !sf.retryExportFunction(item, pipeline) {
+			item.RetryCount++
+			if config.Writable.StoreAndForward.MaxRetryCount == 0 ||
+				item.RetryCount < config.Writable.StoreAndForward.MaxRetryCount {
+				lc.Tracef("Export retry failed for pipeline '%s'. retries=%d, Incrementing retry count (%s=%s)",
+					item.PipelineId,
 					item.RetryCount,
 					common.CorrelationHeader,
 					item.CorrelationID)
-				// Note that item will be removed for DB below.
-			} else {
-				lc.Trace(
-					"Export retry successful. Removing item from DB",
-					common.CorrelationHeader,
-					item.CorrelationID)
+				itemsToUpdate = append(itemsToUpdate, item)
+				continue
 			}
-		} else {
-			lc.Error(
-				"Stored data item's Function Pipeline Version doesn't match current Function Pipeline Version. Removing item from DB",
+
+			lc.Tracef("Max retries exceeded for pipeline '%s'. retries=%d, Removing item from DB (%s=%s)",
+				item.PipelineId,
+				item.RetryCount,
 				common.CorrelationHeader,
 				item.CorrelationID)
-		}
+			itemsToRemove = append(itemsToRemove, item)
 
-		// Item will be remove from store if:
-		//    - successfully retried
-		//    - max retries exceeded
-		//    - version no longer matches current Pipeline
-		// Item will not be removed if retry failed and more retries available (hit 'continue' above)
-		itemsToRemove = append(itemsToRemove, item)
+			// Note that item will be removed for DB below.
+		} else {
+			lc.Tracef("Retry successful for pipeline '%s'. Removing item from DB (%s=%s)",
+				item.PipelineId,
+				common.CorrelationHeader,
+				item.CorrelationID)
+			itemsToRemove = append(itemsToRemove, item)
+		}
 	}
 
 	return itemsToRemove, itemsToUpdate
 }
 
-func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject) bool {
+func (sf *storeForwardInfo) retryExportFunction(item contracts.StoredObject, pipeline *interfaces.FunctionPipeline) bool {
 	appContext := appfunction.NewContext(item.CorrelationID, sf.dic, "")
 
 	for k, v := range item.ContextData {
 		appContext.AddValue(strings.ToLower(k), v)
 	}
 
-	appContext.LoggingClient().Trace("Retrying stored data", common.CorrelationHeader, appContext.CorrelationID())
+	appContext.LoggingClient().Tracef("Retrying stored data for pipeline '%s' (%s=%s)",
+		item.PipelineId,
+		common.CorrelationHeader,
+		appContext.CorrelationID())
 
 	return sf.runtime.ExecutePipeline(
 		item.Payload,
 		"",
 		appContext,
-		sf.runtime.transforms,
+		pipeline,
 		item.PipelinePosition,
 		true) == nil
-}
-
-func (sf *storeForwardInfo) calculatePipelineHash() string {
-	hash := "Pipeline-functions: "
-	for _, item := range sf.runtime.transforms {
-		name := runtime.FuncForPC(reflect.ValueOf(item).Pointer()).Name()
-		hash = hash + " " + name
-	}
-
-	return hash
 }

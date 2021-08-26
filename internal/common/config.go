@@ -17,8 +17,9 @@
 package common
 
 import (
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/store/db"
 )
 
 // WritableInfo is used to hold configuration information that is considered "live" or can be changed on the fly without a restart of the service.
@@ -148,14 +149,33 @@ type ExternalMqttConfig struct {
 	AuthMode string
 }
 
+// PipelineInfo defines the top level data for configurable pipelines
 type PipelineInfo struct {
-	ExecutionOrder           string
+	// ExecutionOrder is a list of functions, in execution order, for the default configurable pipeline
+	ExecutionOrder string
+	// PerTopicPipelines is a collection of pipelines that only execute if the incoming topic matched the pipelines configured topic
+	PerTopicPipelines map[string]TopicPipeline
+	// UseTargetTypeOfByteArray indicates if raw []byte type is to be used for the TargetType
 	UseTargetTypeOfByteArray bool
-	Functions                map[string]PipelineFunction
+	// Functions is a collection of pipeline functions with configured parameters to be used in the ExecutionOrder of one
+	// of the configured pipelines (default or pre topic)
+	Functions map[string]PipelineFunction
 }
 
+// TopicPipeline define the data to a Pre Topic functions pipeline
+type TopicPipeline struct {
+	// Id is the unique ID of the pipeline instance
+	Id string
+	// Topic is the topic which must match the incoming topic inorder for the pipeline to execute
+	Topic string
+	// ExecutionOrder is a list of functions, in execution order, for the pipeline instance
+	ExecutionOrder string
+}
+
+// PipelineFunction is a collection of built-in pipeline functions configurations.
+// The map key must be unique start with the name of one of the built-in configurable functions
 type PipelineFunction struct {
-	// Name	string
+	// Parameters is the collection of configurable parameters specific to the built-in configurable function specified by the map key.
 	Parameters map[string]string
 }
 

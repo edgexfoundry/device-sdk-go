@@ -235,7 +235,7 @@ func TestHTTPPostPutWithSecrets(t *testing.T) {
 
 			assert.Equal(t, test.ExpectToContinue, continuePipeline)
 			if !test.ExpectToContinue {
-				require.EqualError(t, err.(error), test.ExpectedErrorMessage)
+				require.Contains(t, err.(error).Error(), test.ExpectedErrorMessage)
 			}
 			assert.Equal(t, test.ExpectedMethod, methodUsed)
 			ctx.RemoveValue("test")
@@ -249,7 +249,7 @@ func TestHTTPPostNoParameterPassed(t *testing.T) {
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
-	assert.Equal(t, "No Data Received", result.(error).Error())
+	assert.Contains(t, result.(error).Error(), "No Data Received")
 }
 
 func TestHTTPPutNoParameterPassed(t *testing.T) {
@@ -258,7 +258,7 @@ func TestHTTPPutNoParameterPassed(t *testing.T) {
 
 	assert.False(t, continuePipeline, "Pipeline should stop")
 	assert.Error(t, result.(error), "Result should be an error")
-	assert.Equal(t, "No Data Received", result.(error).Error())
+	assert.Contains(t, result.(error).Error(), "No Data Received")
 }
 
 func TestHTTPPostInvalidParameter(t *testing.T) {

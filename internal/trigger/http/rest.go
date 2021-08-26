@@ -20,10 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"io"
 	"net/http"
 	"sync"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
@@ -97,7 +98,7 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 		Payload:       data,
 	}
 
-	messageError := trigger.Runtime.ProcessMessage(appContext, envelope)
+	messageError := trigger.Runtime.ProcessMessage(appContext, envelope, trigger.Runtime.GetDefaultPipeline())
 	if messageError != nil {
 		// ProcessMessage logs the error, so no need to log it here.
 		writer.WriteHeader(messageError.ErrorCode)

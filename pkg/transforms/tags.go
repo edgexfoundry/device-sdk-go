@@ -17,7 +17,7 @@
 package transforms
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
@@ -38,15 +38,15 @@ func NewTags(tags map[string]string) Tags {
 
 // AddTags adds the pre-configured list of tags to the Event's tags collection.
 func (t *Tags) AddTags(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-	ctx.LoggingClient().Debug("Adding tags to Event")
+	ctx.LoggingClient().Debugf("Adding tags to Event in pipeline '%s'", ctx.PipelineId())
 
 	if data == nil {
-		return false, errors.New("no Event Received")
+		return false, fmt.Errorf("function AddTags in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	event, ok := data.(dtos.Event)
 	if !ok {
-		return false, errors.New("type received is not an Event")
+		return false, fmt.Errorf("function AddTags in pipeline '%s', type received is not an Event", ctx.PipelineId())
 	}
 
 	if len(t.tags) > 0 {
@@ -57,9 +57,9 @@ func (t *Tags) AddTags(ctx interfaces.AppFunctionContext, data interface{}) (boo
 		for tag, value := range t.tags {
 			event.Tags[tag] = value
 		}
-		ctx.LoggingClient().Debugf("Tags added to Event. Event tags=%v", event.Tags)
+		ctx.LoggingClient().Debugf("Tags added to Event in pipeline '%s'. Event tags=%v", ctx.PipelineId(), event.Tags)
 	} else {
-		ctx.LoggingClient().Debug("No tags added to Event. Add tags list is empty.")
+		ctx.LoggingClient().Debugf("No tags added to Event in pipeline '%s'. Add tags list is empty.", ctx.PipelineId())
 	}
 
 	return true, event

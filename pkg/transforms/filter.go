@@ -29,16 +29,17 @@ import (
 type Filter struct {
 	FilterValues []string
 	FilterOut    bool
+	ctx          interfaces.AppFunctionContext
 }
 
 // NewFilterFor creates, initializes and returns a new instance of Filter
-// that defaults FilterOut to false so it is filtering for specified values
+// that defaults FilterOut to false, so it is filtering for specified values
 func NewFilterFor(filterValues []string) Filter {
 	return Filter{FilterValues: filterValues, FilterOut: false}
 }
 
 // NewFilterOut creates, initializes and returns a new instance of Filter
-// that defaults FilterOut to ture so it is filtering out specified values
+// that defaults FilterOut to true, so it is filtering out specified values
 func NewFilterOut(filterValues []string) Filter {
 	return Filter{FilterValues: filterValues, FilterOut: true}
 }
@@ -47,6 +48,7 @@ func NewFilterOut(filterValues []string) Filter {
 // If FilterOut is false, it filters out those Events not associated with the specified Device Profile listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Profile listed in FilterValues.
 func (f Filter) FilterByProfileName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	f.ctx = ctx
 	event, err := f.setupForFiltering("FilterByProfileName", "ProfileName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
@@ -65,6 +67,7 @@ func (f Filter) FilterByProfileName(ctx interfaces.AppFunctionContext, data inte
 // If FilterOut is false, it filters out those Events not associated with the specified Device Names listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Device Names listed in FilterValues.
 func (f Filter) FilterByDeviceName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	f.ctx = ctx
 	event, err := f.setupForFiltering("FilterByDeviceName", "DeviceName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
@@ -82,6 +85,7 @@ func (f Filter) FilterByDeviceName(ctx interfaces.AppFunctionContext, data inter
 // If FilterOut is false, it filters out those Events not associated with the specified Source listed in FilterValues.
 // If FilterOut is true, it out those Events that are associated with the specified Source listed in FilterValues.
 func (f Filter) FilterBySourceName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	f.ctx = ctx
 	event, err := f.setupForFiltering("FilterBySourceName", "SourceName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
@@ -100,12 +104,13 @@ func (f Filter) FilterBySourceName(ctx interfaces.AppFunctionContext, data inter
 // If FilterOut is true, it out those Event Readings that are associated with the specified Resource Names listed in FilterValues.
 // This function will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Filter) FilterByResourceName(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, result interface{}) {
+	f.ctx = ctx
 	existingEvent, err := f.setupForFiltering("FilterByResourceName", "ResourceName", ctx.LoggingClient(), data)
 	if err != nil {
 		return false, err
 	}
 
-	// No filter values, so pass all event and all readings thru, rather than filtering them all out.
+	// No filter values, so pass all event and all readings through, rather than filtering them all out.
 	if len(f.FilterValues) == 0 {
 		return true, *existingEvent
 	}
@@ -127,10 +132,10 @@ func (f Filter) FilterByResourceName(ctx interfaces.AppFunctionContext, data int
 			}
 
 			if !readingFilteredOut {
-				ctx.LoggingClient().Debugf("Reading accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading accepted in pipeline '%s' for resource %s", f.ctx.PipelineId(), reading.ResourceName)
 				auxEvent.Readings = append(auxEvent.Readings, reading)
 			} else {
-				ctx.LoggingClient().Debugf("Reading not accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading not accepted in pipeline '%s' for resource %s", f.ctx.PipelineId(), reading.ResourceName)
 			}
 		}
 	} else {
@@ -144,20 +149,20 @@ func (f Filter) FilterByResourceName(ctx interfaces.AppFunctionContext, data int
 			}
 
 			if readingFilteredFor {
-				ctx.LoggingClient().Debugf("Reading accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading accepted in pipeline '%s' for resource %s", f.ctx.PipelineId(), reading.ResourceName)
 				auxEvent.Readings = append(auxEvent.Readings, reading)
 			} else {
-				ctx.LoggingClient().Debugf("Reading not accepted: %s", reading.ResourceName)
+				ctx.LoggingClient().Debugf("Reading not accepted in pipeline '%s' for resource %s", f.ctx.PipelineId(), reading.ResourceName)
 			}
 		}
 	}
 
 	if len(auxEvent.Readings) > 0 {
-		ctx.LoggingClient().Debugf("Event accepted: %d remaining reading(s)", len(auxEvent.Readings))
+		ctx.LoggingClient().Debugf("Event accepted: %d remaining reading(s) in pipeline '%s'", len(auxEvent.Readings), f.ctx.PipelineId())
 		return true, auxEvent
 	}
 
-	ctx.LoggingClient().Debug("Event not accepted: 0 remaining readings")
+	ctx.LoggingClient().Debugf("Event not accepted: 0 remaining readings in pipeline '%s'", f.ctx.PipelineId())
 	return false, nil
 }
 
@@ -166,22 +171,22 @@ func (f Filter) setupForFiltering(funcName string, filterProperty string, lc log
 	if f.FilterOut {
 		mode = "Out"
 	}
-	lc.Debugf("Filtering %s by %s. FilterValues are: '[%v]'", mode, filterProperty, f.FilterValues)
+	lc.Debugf("Filtering %s by %s in. FilterValues are: '[%v]'", mode, filterProperty, f.FilterValues)
 
 	if data == nil {
-		return nil, fmt.Errorf("%s: no Event Received", funcName)
+		return nil, fmt.Errorf("%s: no Event Received in pipeline '%s'", funcName, f.ctx.PipelineId())
 	}
 
 	event, ok := data.(dtos.Event)
 	if !ok {
-		return nil, fmt.Errorf("%s: type received is not an Event", funcName)
+		return nil, fmt.Errorf("%s: type received is not an Event in pipeline '%s'", funcName, f.ctx.PipelineId())
 	}
 
 	return &event, nil
 }
 
 func (f Filter) doEventFilter(filterProperty string, value string, lc logger.LoggingClient) bool {
-	// No names to filter for, so pass events thru rather than filtering them all out.
+	// No names to filter for, so pass events through rather than filtering them all out.
 	if len(f.FilterValues) == 0 {
 		return true
 	}
@@ -189,10 +194,10 @@ func (f Filter) doEventFilter(filterProperty string, value string, lc logger.Log
 	for _, name := range f.FilterValues {
 		if value == name {
 			if f.FilterOut {
-				lc.Debugf("Event not accepted for %s=%s", filterProperty, value)
+				lc.Debugf("Event not accepted for %s=%s in pipeline '%s'", filterProperty, value, f.ctx.PipelineId())
 				return false
 			} else {
-				lc.Debugf("Event accepted for %s=%s", filterProperty, value)
+				lc.Debugf("Event accepted for %s=%s in pipeline '%s'", filterProperty, value, f.ctx.PipelineId())
 				return true
 			}
 		}
@@ -200,10 +205,10 @@ func (f Filter) doEventFilter(filterProperty string, value string, lc logger.Log
 
 	// Will only get here if Event's SourceName didn't match any names in FilterValues
 	if f.FilterOut {
-		lc.Debugf("Event accepted for %s=%s", filterProperty, value)
+		lc.Debugf("Event accepted for %s=%s in pipeline '%s'", filterProperty, value, f.ctx.PipelineId())
 		return true
 	} else {
-		lc.Debugf("Event not accepted for %s=%s", filterProperty, value)
+		lc.Debugf("Event not accepted for %s=%s in pipeline '%s'", filterProperty, value, f.ctx.PipelineId())
 		return false
 	}
 }

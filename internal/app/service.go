@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	nethttp "net/http"
 	"os"
 	"os/signal"
@@ -30,6 +29,7 @@ import (
 	"syscall"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/handlers"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
@@ -77,7 +77,6 @@ type Service struct {
 	targetType                interface{}
 	config                    *common.ConfigurationStruct
 	lc                        logger.LoggingClient
-	transforms                []interfaces.AppFunction
 	usingConfigurablePipeline bool
 	runtime                   *runtime.GolangRuntime
 	webserver                 *webserver.WebServer
@@ -135,11 +134,11 @@ func (svc *Service) AddBackgroundPublisherWithTopic(capacity int, topic string) 
 	// for custom triggers we don't know if background publishing available or not
 	// but probably makes sense to trust the caller.
 	if svc.config.Trigger.Type == TriggerTypeHTTP || svc.config.Trigger.Type == TriggerTypeMQTT {
-		return nil, fmt.Errorf("Background publishing not supported for %s trigger.", svc.config.Trigger.Type)
+		return nil, fmt.Errorf("background publishing not supported for %s trigger", svc.config.Trigger.Type)
 	}
 
-	bgchan, pub := newBackgroundPublisher(topic, capacity)
-	svc.backgroundPublishChannel = bgchan
+	bgChan, pub := newBackgroundPublisher(topic, capacity)
+	svc.backgroundPublishChannel = bgChan
 	return pub, nil
 }
 
@@ -160,28 +159,20 @@ func (svc *Service) MakeItRun() error {
 
 	svc.ctx.stop = stop
 
-	svc.runtime = &runtime.GolangRuntime{
-		TargetType: svc.targetType,
-		ServiceKey: svc.serviceKey,
-	}
-
-	svc.runtime.Initialize(svc.dic)
-	svc.runtime.SetTransforms(svc.transforms)
-
 	// determine input type and create trigger for it
 	t := svc.setupTrigger(svc.config, svc.runtime)
 	if t == nil {
-		return errors.New("Failed to create Trigger")
+		return errors.New("failed to create Trigger")
 	}
 
 	// Initialize the trigger (i.e. start a web server, or connect to message bus)
 	deferred, err := t.Initialize(svc.ctx.appWg, svc.ctx.appCtx, svc.backgroundPublishChannel)
 	if err != nil {
 		svc.lc.Error(err.Error())
-		return errors.New("Failed to initialize Trigger")
+		return errors.New("failed to initialize Trigger")
 	}
 
-	// deferred is a a function that needs to be called when services exits.
+	// deferred is a function that needs to be called when services exits.
 	svc.addDeferred(deferred)
 
 	if svc.config.Writable.StoreAndForward.Enabled {
@@ -219,7 +210,7 @@ func (svc *Service) MakeItRun() error {
 		svc.ctx.storeForwardWg.Wait()
 	}
 
-	svc.ctx.appCancelCtx() // Cancel all long running go funcs
+	svc.ctx.appCancelCtx() // Cancel all long-running go funcs
 	svc.ctx.appWg.Wait()
 	// Call all the deferred funcs that need to happen when exiting.
 	// These are things like un-register from the Registry, disconnect from the Message Bus, etc
@@ -231,8 +222,25 @@ func (svc *Service) MakeItRun() error {
 }
 
 // LoadConfigurablePipeline sets the function pipeline from configuration
+// Note this API has been deprecated, replaced by LoadConfigurableFunctionPipelines and will be removed in a future release
+// TODO: Remove this API in 3.0 release
 func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error) {
-	var pipeline []interfaces.AppFunction
+	pipelines, err := svc.LoadConfigurableFunctionPipelines()
+	if err != nil {
+		return nil, err
+	}
+
+	defaultPipeline, found := pipelines[interfaces.DefaultPipelineId]
+	if !found {
+		return nil, fmt.Errorf("default functions pipeline not configured")
+	}
+
+	return defaultPipeline.Transforms, nil
+}
+
+// LoadConfigurableFunctionPipelines return the configured function pipelines (default and per topic) from configuration.
+func (svc *Service) LoadConfigurableFunctionPipelines() (map[string]interfaces.FunctionPipeline, error) {
+	pipelines := make(map[string]interfaces.FunctionPipeline)
 
 	svc.usingConfigurablePipeline = true
 
@@ -244,25 +252,70 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 
 	configurable := reflect.ValueOf(NewConfigurable(svc.lc))
 	pipelineConfig := svc.config.Writable.Pipeline
-	executionOrder := util.DeleteEmptyAndTrim(strings.FieldsFunc(pipelineConfig.ExecutionOrder, util.SplitComma))
 
-	if len(executionOrder) <= 0 {
-		return nil, errors.New(
-			"execution Order has 0 functions specified. You must have a least one function in the pipeline")
+	defaultExecutionOrder := strings.TrimSpace(pipelineConfig.ExecutionOrder)
+
+	if len(defaultExecutionOrder) == 0 && len(pipelineConfig.PerTopicPipelines) == 0 {
+		return nil, errors.New("default ExecutionOrder has 0 functions specified and PerTopicPipelines is empty")
 	}
 
-	svc.lc.Debugf("Function Pipeline Execution Order: [%s]", pipelineConfig.ExecutionOrder)
+	if len(defaultExecutionOrder) > 0 {
+		svc.lc.Debugf("Default Function Pipeline Execution Order: [%s]", pipelineConfig.ExecutionOrder)
+		functionNames := util.DeleteEmptyAndTrim(strings.FieldsFunc(defaultExecutionOrder, util.SplitComma))
+
+		transforms, err := svc.loadConfigurablePipelineTransforms(interfaces.DefaultPipelineId, functionNames, pipelineConfig.Functions, configurable)
+		if err != nil {
+			return nil, err
+		}
+		pipeline := interfaces.FunctionPipeline{
+			Id:         interfaces.DefaultPipelineId,
+			Transforms: transforms,
+			Topic:      runtime.TopicWildCard,
+		}
+		pipelines[pipeline.Id] = pipeline
+	}
+
+	if len(pipelineConfig.PerTopicPipelines) > 0 {
+		for _, perTopicPipeline := range pipelineConfig.PerTopicPipelines {
+			svc.lc.Debugf("'%s' Function Pipeline Execution Order: [%s]", perTopicPipeline.Id, perTopicPipeline.ExecutionOrder)
+
+			functionNames := util.DeleteEmptyAndTrim(strings.FieldsFunc(perTopicPipeline.ExecutionOrder, util.SplitComma))
+
+			transforms, err := svc.loadConfigurablePipelineTransforms(perTopicPipeline.Id, functionNames, pipelineConfig.Functions, configurable)
+			if err != nil {
+				return nil, err
+			}
+
+			pipeline := interfaces.FunctionPipeline{
+				Id:         perTopicPipeline.Id,
+				Transforms: transforms,
+				Topic:      perTopicPipeline.Topic,
+			}
+
+			pipelines[pipeline.Id] = pipeline
+		}
+	}
+
+	return pipelines, nil
+}
+
+func (svc *Service) loadConfigurablePipelineTransforms(
+	pipelineId string,
+	executionOrder []string,
+	functions map[string]common.PipelineFunction,
+	configurable reflect.Value) ([]interfaces.AppFunction, error) {
+	var transforms []interfaces.AppFunction
 
 	for _, functionName := range executionOrder {
 		functionName = strings.TrimSpace(functionName)
-		configuration, ok := pipelineConfig.Functions[functionName]
+		configuration, ok := functions[functionName]
 		if !ok {
-			return nil, fmt.Errorf("function '%s' configuration not found in Pipeline.Functions section", functionName)
+			return nil, fmt.Errorf("function '%s' configuration not found in Pipeline.Functions section for pipeline '%s'", functionName, pipelineId)
 		}
 
 		functionValue, functionType, err := svc.findMatchingFunction(configurable, functionName)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s for pipeline '%s'", err.Error(), pipelineId)
 		}
 
 		// determine number of parameters required for function call
@@ -282,7 +335,8 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 
 			default:
 				return nil, fmt.Errorf(
-					"function %s has an unsupported parameter type: %s",
+					"function %s for pipeline '%s' has an unsupported parameter type: %s",
+					pipelineId,
 					functionName,
 					parameter.String(),
 				)
@@ -291,36 +345,68 @@ func (svc *Service) LoadConfigurablePipeline() ([]interfaces.AppFunction, error)
 
 		function, ok := functionValue.Call(inputParameters)[0].Interface().(interfaces.AppFunction)
 		if !ok {
-			return nil, fmt.Errorf("failed to cast function %s as AppFunction type", functionName)
+			return nil, fmt.Errorf("failed to cast function %s as AppFunction type for pipeline '%s'", functionName, pipelineId)
 		}
 
 		if function == nil {
-			return nil, fmt.Errorf("%s from configuration failed", functionName)
+			return nil, fmt.Errorf("%s from configuration failed for pipeline '%s'", functionName, pipelineId)
 		}
 
-		pipeline = append(pipeline, function)
-		svc.lc.Debugf(
-			"%s function added to configurable pipeline with parameters: [%s]",
+		transforms = append(transforms, function)
+		svc.lc.Debugf("%s function added to '%s' configurable pipeline with parameters: [%s]",
 			functionName,
+			pipelineId,
 			listParameters(configuration.Parameters))
 	}
 
-	return pipeline, nil
+	return transforms, nil
 }
 
-// SetFunctionsPipeline sets the function pipeline to the list of specified functions in the order provided.
+// SetFunctionsPipeline has been deprecated and replaced by SetDefaultFunctionsPipeline.
 func (svc *Service) SetFunctionsPipeline(transforms ...interfaces.AppFunction) error {
+	return svc.SetDefaultFunctionsPipeline(transforms...)
+}
+
+// SetDefaultFunctionsPipeline sets the default functions pipeline to the list of specified functions in the order provided.
+func (svc *Service) SetDefaultFunctionsPipeline(transforms ...interfaces.AppFunction) error {
 	if len(transforms) == 0 {
 		return errors.New("no transforms provided to pipeline")
 	}
 
-	svc.transforms = transforms
-
-	if svc.runtime != nil {
-		svc.runtime.SetTransforms(transforms)
-		svc.runtime.TargetType = svc.targetType
+	svc.runtime.TargetType = svc.targetType
+	err := svc.runtime.SetDefaultFunctionsPipeline(transforms)
+	if err != nil {
+		return err
 	}
 
+	svc.lc.Debugf("Default pipeline added with %d transform(s)", len(transforms))
+
+	return nil
+}
+
+// AddFunctionsPipelineForTopic adds a functions pipeline for the specified for the specified id and topic
+func (svc *Service) AddFunctionsPipelineForTopic(id string, topic string, transforms ...interfaces.AppFunction) error {
+	switch strings.ToUpper(svc.config.Trigger.Type) {
+	case TriggerTypeMessageBus:
+	case TriggerTypeMQTT:
+	default:
+		return errors.New("pipeline per topic only valid with EdgeX MessageBus and External MQTT")
+	}
+
+	if len(transforms) == 0 {
+		return errors.New("no transforms provided to pipeline")
+	}
+
+	if len(strings.TrimSpace(topic)) == 0 {
+		return errors.New("topic for pipeline can not be blank")
+	}
+
+	err := svc.runtime.AddFunctionsPipeline(id, topic, transforms)
+	if err != nil {
+		return err
+	}
+
+	svc.lc.Debugf("Pipeline '%s' added for topic '%s' with %d transform(s)", id, topic, len(transforms))
 	return nil
 }
 
@@ -417,12 +503,14 @@ func (svc *Service) Initialize() error {
 		},
 	)
 
-	// deferred is a a function that needs to be called when services exits.
+	// deferred is a function that needs to be called when services exits.
 	svc.addDeferred(deferred)
 
 	if !successful {
 		return fmt.Errorf("boostrapping failed")
 	}
+
+	svc.runtime = runtime.NewGolangRuntime(svc.serviceKey, svc.targetType, svc.dic)
 
 	// Bootstrapping is complete, so now need to retrieve the needed objects from the containers.
 	svc.lc = bootstrapContainer.LoggingClientFrom(svc.dic.Get)
@@ -569,7 +657,7 @@ func (svc *Service) setServiceKey(profile string) {
 		return
 	}
 
-	// Have to handle environment override here before common bootstrap is used so it is passed the proper service key
+	// Have to handle environment override here before common bootstrap is used, so it is passed the proper service key
 	profileOverride := os.Getenv(envProfile)
 	if len(profileOverride) > 0 {
 		profile = profileOverride
@@ -584,7 +672,7 @@ func (svc *Service) setServiceKey(profile string) {
 	svc.serviceKey = strings.Replace(svc.serviceKey, svc.profileSuffixPlaceholder, "", 1)
 }
 
-// BuildContext allows external callers that may need a context (eg background publishers)
+// BuildContext allows external callers that may need a context (e.g. background publishers)
 // to easily create one around the service's dic
 func (svc *Service) BuildContext(correlationId string, contentType string) interfaces.AppFunctionContext {
 	return appfunction.NewContext(correlationId, svc.dic, contentType)

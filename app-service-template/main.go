@@ -97,9 +97,11 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 		return -1
 	}
 
-	// TODO: Replace below functions with built in and/or your custom functions for your use case.
-	//       See https://docs.edgexfoundry.org/2.0/microservices/application/BuiltIn/ for list of built-in functions
 	sample := functions.NewSample()
+
+	// TODO: Replace below functions with built in and/or your custom functions for your use case
+	//       or remove is using Pipeline By Topic below.
+	//       See https://docs.edgexfoundry.org/2.0/microservices/application/BuiltIn/ for list of built-in functions
 	err = app.service.SetFunctionsPipeline(
 		transforms.NewFilterFor(deviceNames).FilterByDeviceName,
 		sample.LogEventDetails,
@@ -107,6 +109,36 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 		sample.OutputXML)
 	if err != nil {
 		app.lc.Errorf("SetFunctionsPipeline returned error: %s", err.Error())
+		return -1
+	}
+
+	// TODO: Remove adding functions pipelines by topic if default pipeline above is all your Use Case needs.
+	//       Or remove default above if your use case needs multiple pipelines by topic.
+	// Example of adding functions pipelines by topic.
+	// These pipelines will only execute if the specified topic match the incoming topic.
+	// Note: Device services publish to the 'edgex/events/device/<profile-name>/<device-name>/<source-name>' topic
+	//       Core Data publishes to the 'edgex/events/core/<profile-name>/<device-name>/<source-name>' topic
+	// Note: This example with default above causes Events from Random-Float-Device device to be processed twice
+	//       resulting in the XML to be published back to the MessageBus twice.
+	// See <Pipeline By Topic documentation url TBD> for more details.
+	err = app.service.AddFunctionsPipelineForTopic("Floats", "edgex/events/#/#/Random-Float-Device/#",
+		transforms.NewFilterFor(deviceNames).FilterByDeviceName,
+		sample.LogEventDetails,
+		sample.ConvertEventToXML,
+		sample.OutputXML)
+	if err != nil {
+		app.lc.Errorf("AddFunctionsPipelineForTopic returned error: %s", err.Error())
+		return -1
+	}
+	// Note: This example with default above causes Events from Int32 source to be processed twice
+	//       resulting in the XML to be published back to the MessageBus twice.
+	err = app.service.AddFunctionsPipelineForTopic("Int32s", "edgex/events/#/#/#/Int32",
+		transforms.NewFilterFor(deviceNames).FilterByDeviceName,
+		sample.LogEventDetails,
+		sample.ConvertEventToXML,
+		sample.OutputXML)
+	if err != nil {
+		app.lc.Errorf("AddFunctionsPipelineForTopic returned error: %s", err.Error())
 		return -1
 	}
 
@@ -120,10 +152,10 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 	return 0
 }
 
-// TODO: Update using your Custom configuration 'writeable' type or remove if not using ListenForCustomConfigChanges
 // ProcessConfigUpdates processes the updated configuration for the service's writable configuration.
 // At a minimum it must copy the updated configuration into the service's current configuration. Then it can
 // do any special processing for changes that require more.
+// TODO: Update using your Custom configuration 'writeable' type or remove if not using ListenForCustomConfigChanges
 func (app *myApp) ProcessConfigUpdates(rawWritableConfig interface{}) {
 	updated, ok := rawWritableConfig.(*config.AppCustomConfig)
 	if !ok {

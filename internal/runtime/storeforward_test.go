@@ -86,7 +86,6 @@ func TestProcessRetryItems(t *testing.T) {
 		require.Equal(t, contextData, appContext.GetAllValues())
 		return false, errors.New("I failed")
 	}
-	runtime := GolangRuntime{}
 
 	tests := []struct {
 		Name                     string
@@ -98,25 +97,42 @@ func TestProcessRetryItems(t *testing.T) {
 		RemoveCount              int
 		BadVersion               bool
 		ContextData              map[string]string
+		UsePerTopic              bool
 	}{
-		{"Happy Path", successTransform, true, expectedPayload, 0, 0, 1, false, contextData},
-		{"RetryCount Increased", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData},
-		{"Max Retries", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData},
-		{"Bad Version", successTransform, false, expectedPayload, 0, 0, 1, true, contextData},
+		{"Happy Path - Default", successTransform, true, expectedPayload, 0, 0, 1, false, contextData, false},
+		{"RetryCount Increased - Default", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData, false},
+		{"Max Retries - Default", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData, false},
+		{"Bad Version - Default", successTransform, false, expectedPayload, 0, 0, 1, true, contextData, false},
+		{"Happy Path - Per Topic", successTransform, true, expectedPayload, 0, 0, 1, false, contextData, true},
+		{"RetryCount Increased - Per Topic", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData, true},
+		{"Max Retries - Per Topic", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData, true},
+		{"Bad Version - Per Topic", successTransform, false, expectedPayload, 0, 0, 1, true, contextData, true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
 			targetTransformWasCalled = false
+			runtime := NewGolangRuntime(serviceKey, nil, dic)
 
-			runtime.Initialize(dic)
-			runtime.SetTransforms([]interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
+			var pipeline *interfaces.FunctionPipeline
 
-			version := runtime.storeForward.pipelineHash
+			if test.UsePerTopic {
+				err := runtime.AddFunctionsPipeline("per-topic", "#", []interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
+				require.NoError(t, err)
+				pipeline = runtime.GetPipelineById("per-topic")
+				require.NotNil(t, pipeline)
+			} else {
+				err := runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
+				require.NoError(t, err)
+				pipeline = runtime.GetDefaultPipeline()
+				require.NotNil(t, pipeline)
+			}
+
+			version := pipeline.Hash
 			if test.BadVersion {
 				version = "some bad version"
 			}
-			storedObject := contracts.NewStoredObject("dummy", []byte(test.ExpectedPayload), 2, version, contextData)
+			storedObject := contracts.NewStoredObject("dummy", []byte(test.ExpectedPayload), pipeline.Id, 2, version, contextData)
 			storedObject.RetryCount = test.RetryCount
 
 			removes, updates := runtime.storeForward.processRetryItems([]contracts.StoredObject{storedObject})
@@ -132,7 +148,6 @@ func TestProcessRetryItems(t *testing.T) {
 }
 
 func TestDoStoreAndForwardRetry(t *testing.T) {
-	serviceKey := "AppService-UnitTest"
 	payload := []byte("My Payload")
 
 	httpPost := transforms.NewHTTPSender("http://nowhere", "", true).HTTPPost
@@ -149,19 +164,35 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 		RetryCount          int
 		ExpectedRetryCount  int
 		ExpectedObjectCount int
+		UsePerTopic         bool
 	}{
-		{"RetryCount Increased", httpPost, 1, 2, 1},
-		{"Max Retries", httpPost, 9, 0, 0},
-		{"Retry Success", successTransform, 1, 0, 0},
+		{"RetryCount Increased - Default", httpPost, 1, 2, 1, false},
+		{"Max Retries - Default", httpPost, 9, 0, 0, false},
+		{"Retry Success - Default", successTransform, 1, 0, 0, false},
+		{"RetryCount Increased - Per Topic", httpPost, 1, 2, 1, true},
+		{"Max Retries - Per Topic", httpPost, 9, 0, 0, true},
+		{"Retry Success - Per Topic", successTransform, 1, 0, 0, true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			runtime := GolangRuntime{ServiceKey: serviceKey}
-			runtime.Initialize(updateDicWithMockStoreClient())
-			runtime.SetTransforms([]interfaces.AppFunction{transformPassthru, test.TargetTransform})
+			runtime := NewGolangRuntime(serviceKey, nil, updateDicWithMockStoreClient())
 
-			object := contracts.NewStoredObject(serviceKey, payload, 1, runtime.storeForward.calculatePipelineHash(), nil)
+			var pipeline *interfaces.FunctionPipeline
+
+			if test.UsePerTopic {
+				err := runtime.AddFunctionsPipeline("per-topic", "#", []interfaces.AppFunction{transformPassthru, test.TargetTransform})
+				require.NoError(t, err)
+				pipeline = runtime.GetPipelineById("per-topic")
+				require.NotNil(t, pipeline)
+			} else {
+				err := runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassthru, test.TargetTransform})
+				require.NoError(t, err)
+				pipeline = runtime.GetDefaultPipeline()
+				require.NotNil(t, pipeline)
+			}
+
+			object := contracts.NewStoredObject(serviceKey, payload, pipeline.Id, 1, pipeline.Hash, nil)
 			object.CorrelationID = "CorrelationID"
 			object.RetryCount = test.RetryCount
 

@@ -68,7 +68,7 @@ func TestJSONLogicValidJSONBadRule(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.False(t, continuePipeline)
 	require.IsType(t, fmt.Errorf(""), result)
-	assert.Equal(t, "unable to apply JSONLogic rule: The operator \"notAnOperator\" is not supported", result.(error).Error())
+	assert.Contains(t, result.(error).Error(), "unable to apply JSONLogic rule")
 }
 
 func TestJSONLogicNoData(t *testing.T) {

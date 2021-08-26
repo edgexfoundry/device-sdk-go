@@ -17,6 +17,8 @@
 package transforms
 
 import (
+	"fmt"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 )
@@ -35,11 +37,11 @@ func NewResponseData() ResponseData {
 // It will return an error and stop the pipeline if the input data is not of type []byte, string or json.Marshaller
 func (f ResponseData) SetResponseData(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 
-	ctx.LoggingClient().Debug("Setting response data")
+	ctx.LoggingClient().Debugf("Setting response data in pipeline '%s'", ctx.PipelineId())
 
 	if data == nil {
 		// We didn't receive a result
-		return false, nil
+		return false, fmt.Errorf("function SetResponseData in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	byteData, err := util.CoerceType(data)

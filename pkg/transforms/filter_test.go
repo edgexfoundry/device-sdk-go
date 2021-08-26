@@ -78,7 +78,7 @@ func TestFilter_FilterByProfileName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterByProfileName(ctx, nil)
-				assert.EqualError(t, result.(error), "FilterByProfileName: no Event Received")
+				assert.Contains(t, result.(error).Error(), "FilterByProfileName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				continuePipeline, result := filter.FilterByProfileName(ctx, *test.EventIn)
@@ -128,7 +128,7 @@ func TestFilter_FilterByDeviceName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterByDeviceName(ctx, nil)
-				assert.EqualError(t, result.(error), "FilterByDeviceName: no Event Received")
+				assert.Contains(t, result.(error).Error(), "FilterByDeviceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				continuePipeline, result := filter.FilterByDeviceName(ctx, *test.EventIn)
@@ -178,7 +178,7 @@ func TestFilter_FilterBySourceName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterBySourceName(ctx, nil)
-				assert.EqualError(t, result.(error), "FilterBySourceName: no Event Received")
+				assert.Contains(t, result.(error).Error(), "FilterBySourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				continuePipeline, result := filter.FilterBySourceName(ctx, *test.EventIn)
@@ -258,7 +258,7 @@ func TestFilter_FilterByResourceName(t *testing.T) {
 
 			if test.EventIn == nil {
 				continuePipeline, result := filter.FilterByResourceName(ctx, nil)
-				assert.EqualError(t, result.(error), "FilterByResourceName: no Event Received")
+				assert.Contains(t, result.(error).Error(), "FilterByResourceName: no Event Received")
 				assert.False(t, continuePipeline)
 			} else {
 				continuePipeline, result := filter.FilterByResourceName(ctx, *test.EventIn)

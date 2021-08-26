@@ -18,7 +18,6 @@ package transforms
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
@@ -40,39 +39,43 @@ func NewConversion() Conversion {
 // It will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Conversion) TransformToXML(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, stringType interface{}) {
 	if data == nil {
-		return false, errors.New("No Event Received")
+		return false, fmt.Errorf("function TransformToXML in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
-	ctx.LoggingClient().Debug("Transforming to XML")
+	ctx.LoggingClient().Debugf("Transforming to XML in pipeline '%s'", ctx.PipelineId())
+
 	if event, ok := data.(dtos.Event); ok {
 		xml, err := event.ToXML()
 		if err != nil {
-			return false, fmt.Errorf("unable to marshal Event to XML: %s", err.Error())
+			return false, fmt.Errorf("unable to marshal Event to XML in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 		}
 
 		ctx.SetResponseContentType(common.ContentTypeXML)
 		return true, xml
 	}
 
-	return false, errors.New("Unexpected type received")
+	return false, fmt.Errorf("function TransformToXML in pipeline '%s': unexpected type received", ctx.PipelineId())
 }
 
 // TransformToJSON transforms an EdgeX event to JSON.
 // It will return an error and stop the pipeline if a non-edgex event is received or if no data is received.
 func (f Conversion) TransformToJSON(ctx interfaces.AppFunctionContext, data interface{}) (continuePipeline bool, stringType interface{}) {
 	if data == nil {
-		return false, errors.New("No Event Received")
+		return false, fmt.Errorf("function TransformToJSON in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
-	ctx.LoggingClient().Debug("Transforming to JSON")
+
+	ctx.LoggingClient().Debugf("Transforming to JSON in pipeline '%s'", ctx.PipelineId())
+
 	if result, ok := data.(dtos.Event); ok {
 		b, err := json.Marshal(result)
 		if err != nil {
-			return false, errors.New("Error marshalling JSON")
+			return false, fmt.Errorf("unable to marshal Event to JSON in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 		}
 		ctx.SetResponseContentType(common.ContentTypeJSON)
 		// should we return a byte[] or string?
 		// return b
 		return true, string(b)
 	}
-	return false, errors.New("Unexpected type received")
+
+	return false, fmt.Errorf("function TransformToJSON in pipeline '%s': unexpected type received", ctx.PipelineId())
 }

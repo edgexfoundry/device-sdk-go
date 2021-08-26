@@ -21,6 +21,9 @@ GO=CGO_ENABLED=1 GO111MODULE=on go
 build:
 	make -C ./app-service-template build
 
+tidy:
+	go mod tidy
+
 test-template:
 	make -C ./app-service-template test
 

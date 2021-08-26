@@ -17,7 +17,7 @@
 package functions
 
 import (
-	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
@@ -28,32 +28,35 @@ import (
 
 // TODO: Create your custom type and function(s) and remove these samples
 
+// NewSample ...
 // TODO: Add parameters that the function(s) will need each time one is executed
 func NewSample() Sample {
 	return Sample{}
 }
 
+// Sample ...
 type Sample struct {
 	// TODO: Add properties that the function(s) will need each time one is executed
 }
 
-// LogEventDetails is example of processing an Event and passing the original Event to to next function in the pipeline
+// LogEventDetails is example of processing an Event and passing the original Event to next function in the pipeline
 // For more details on the Context API got here: https://docs.edgexfoundry.org/1.3/microservices/application/ContextAPI/
 func (s *Sample) LogEventDetails(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	lc := ctx.LoggingClient()
-	lc.Debug("LogEventDetails called")
+	lc.Debugf("LogEventDetails called in pipeline '%s'", ctx.PipelineId())
 
 	if data == nil {
 		// Go here for details on Error Handle: https://docs.edgexfoundry.org/1.3/microservices/application/ErrorHandling/
-		return false, errors.New("no Event Received")
+		return false, fmt.Errorf("function LogEventDetails in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	event, ok := data.(dtos.Event)
 	if !ok {
-		return false, errors.New("type received is not an Event")
+		return false, fmt.Errorf("function LogEventDetails in pipeline '%s', type received is not an Event", ctx.PipelineId())
 	}
 
-	lc.Infof("Event received: ID=%s, Device=%s, and ReadingCount=%d",
+	lc.Infof("Event received in pipeline '%s': ID=%s, Device=%s, and ReadingCount=%d",
+		ctx.PipelineId(),
 		event.Id,
 		event.DeviceName,
 		len(event.Readings))
@@ -61,16 +64,18 @@ func (s *Sample) LogEventDetails(ctx interfaces.AppFunctionContext, data interfa
 		switch strings.ToLower(reading.ValueType) {
 		case strings.ToLower(common.ValueTypeBinary):
 			lc.Infof(
-				"Reading #%d received with ID=%s, Resource=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
+				"Reading #%d received in pipeline '%s' with ID=%s, Resource=%s, ValueType=%s, MediaType=%s and BinaryValue of size=`%d`",
 				index+1,
+				ctx.PipelineId(),
 				reading.Id,
 				reading.ResourceName,
 				reading.ValueType,
 				reading.MediaType,
 				len(reading.BinaryValue))
 		default:
-			lc.Infof("Reading #%d received with ID=%s, Resource=%s, ValueType=%s, Value=`%s`",
+			lc.Infof("Reading #%d received in pipeline '%s' with ID=%s, Resource=%s, ValueType=%s, Value=`%s`",
 				index+1,
+				ctx.PipelineId(),
 				reading.Id,
 				reading.ResourceName,
 				reading.ValueType,
@@ -83,29 +88,29 @@ func (s *Sample) LogEventDetails(ctx interfaces.AppFunctionContext, data interfa
 	return true, event
 }
 
-// ConvertEventToXML is example of transforming an Event and passing the transformed data to to next function in the pipeline
+// ConvertEventToXML is example of transforming an Event and passing the transformed data to next function in the pipeline
 func (s *Sample) ConvertEventToXML(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	lc := ctx.LoggingClient()
-	lc.Debug("ConvertEventToXML called")
+	lc.Debugf("ConvertEventToXML called in pipeline '%s'", ctx.PipelineId())
 
 	if data == nil {
-		return false, errors.New("no Event Received")
+		return false, fmt.Errorf("function ConvertEventToXML in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	event, ok := data.(dtos.Event)
 	if !ok {
-		return false, errors.New("type received is not an Event")
+		return false, fmt.Errorf("function ConvertEventToXML in pipeline '%s': type received is not an Event", ctx.PipelineId())
 	}
 
 	xml, err := event.ToXML()
 	if err != nil {
-		return false, errors.New("failed to convert event to XML")
+		return false, fmt.Errorf("function ConvertEventToXML in pipeline '%s': failed to convert event to XML", ctx.PipelineId())
 	}
 
 	// Example of DEBUG message which by default you don't want to be logged.
 	//     To see debug log messages, Set WRITABLE_LOGLEVEL=DEBUG environment variable or
 	//     change LogLevel in configuration.toml before running app service.
-	lc.Debug("Event converted to XML: " + xml)
+	lc.Debugf("Event converted to XML in pipeline '%s': %s", ctx.PipelineId(), xml)
 
 	// Returning true indicates that the pipeline execution should continue with the next function
 	// using the event passed as input in this case.
@@ -115,18 +120,18 @@ func (s *Sample) ConvertEventToXML(ctx interfaces.AppFunctionContext, data inter
 // OutputXML is an example of processing transformed data
 func (s *Sample) OutputXML(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	lc := ctx.LoggingClient()
-	lc.Debug("OutputXML called")
+	lc.Debugf("OutputXML called in pipeline '%s'", ctx.PipelineId())
 
 	if data == nil {
-		return false, errors.New("no XML Received")
+		return false, fmt.Errorf("function OutputXML in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
 	xml, ok := data.(string)
 	if !ok {
-		return false, errors.New("type received is not an string")
+		return false, fmt.Errorf("function ConvertEventToXML in pipeline '%s': type received is not an string", ctx.PipelineId())
 	}
 
-	lc.Debugf("Outputting the following XML: %s", xml)
+	lc.Debugf("Outputting the following XML in pipeline '%s': %s", ctx.PipelineId(), xml)
 
 	// This sends the XML as a response. i.e. publish for MessageBus/MQTT triggers as configured or
 	// HTTP response to for the HTTP Trigger

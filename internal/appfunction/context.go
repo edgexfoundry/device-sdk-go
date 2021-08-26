@@ -24,11 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
+
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
+	clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
@@ -39,7 +41,7 @@ import (
 func NewContext(correlationID string, dic *di.Container, inputContentType string) *Context {
 	return &Context{
 		correlationID: correlationID,
-		// Dic is public so we can confirm it is set correctly
+		// Dic is public, so we can confirm it is set correctly
 		Dic:                  dic,
 		inputContentType:     inputContentType,
 		contextData:          make(map[string]string, 0),
@@ -49,7 +51,7 @@ func NewContext(correlationID string, dic *di.Container, inputContentType string
 
 // Context contains the data functions that implement the interfaces.AppFunctionContext
 type Context struct {
-	// Dic is public so we can confirm it is set correctly
+	// Dic is public, so we can confirm it is set correctly
 	Dic                  *di.Container
 	correlationID        string
 	inputContentType     string
@@ -134,37 +136,37 @@ func (appContext *Context) LoggingClient() logger.LoggingClient {
 }
 
 // EventClient returns the Event client, which may be nil, from the dependency injection container
-func (appContext *Context) EventClient() interfaces.EventClient {
+func (appContext *Context) EventClient() clients.EventClient {
 	return container.EventClientFrom(appContext.Dic.Get)
 }
 
 // CommandClient returns the Command client, which may be nil, from the dependency injection container
-func (appContext *Context) CommandClient() interfaces.CommandClient {
+func (appContext *Context) CommandClient() clients.CommandClient {
 	return container.CommandClientFrom(appContext.Dic.Get)
 }
 
 // DeviceServiceClient returns the DeviceService client, which may be nil, from the dependency injection container
-func (appContext *Context) DeviceServiceClient() interfaces.DeviceServiceClient {
+func (appContext *Context) DeviceServiceClient() clients.DeviceServiceClient {
 	return container.DeviceServiceClientFrom(appContext.Dic.Get)
 }
 
 // DeviceProfileClient returns the DeviceProfile client, which may be nil, from the dependency injection container
-func (appContext *Context) DeviceProfileClient() interfaces.DeviceProfileClient {
+func (appContext *Context) DeviceProfileClient() clients.DeviceProfileClient {
 	return container.DeviceProfileClientFrom(appContext.Dic.Get)
 }
 
 // DeviceClient returns the Device client, which may be nil, from the dependency injection container
-func (appContext *Context) DeviceClient() interfaces.DeviceClient {
+func (appContext *Context) DeviceClient() clients.DeviceClient {
 	return container.DeviceClientFrom(appContext.Dic.Get)
 }
 
 // NotificationClient returns the Notification client, which may be nil, from the dependency injection container
-func (appContext *Context) NotificationClient() interfaces.NotificationClient {
+func (appContext *Context) NotificationClient() clients.NotificationClient {
 	return container.NotificationClientFrom(appContext.Dic.Get)
 }
 
 // SubscriptionClient returns the Subscription client, which may be nil, from the dependency injection container
-func (appContext *Context) SubscriptionClient() interfaces.SubscriptionClient {
+func (appContext *Context) SubscriptionClient() clients.SubscriptionClient {
 	return container.SubscriptionClientFrom(appContext.Dic.Get)
 }
 
@@ -252,4 +254,10 @@ func (appContext *Context) ApplyValues(format string) (string, error) {
 	}
 
 	return result, nil
+}
+
+// PipelineId returns the ID of the pipeline that is executing
+func (appContext *Context) PipelineId() string {
+	id, _ := appContext.GetValue(interfaces.PIPELINEID)
+	return id
 }

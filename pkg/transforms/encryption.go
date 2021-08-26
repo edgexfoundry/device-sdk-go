@@ -23,7 +23,6 @@ import (
 	"crypto/cipher"
 	"crypto/sha1"
 	"encoding/base64"
-	"errors"
 	"fmt"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
@@ -62,18 +61,18 @@ const blockSize = 16
 
 func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 	padding := blockSize - len(ciphertext)%blockSize
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padtext...)
+	padText := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(ciphertext, padText...)
 }
 
 // EncryptWithAES encrypts a string, []byte, or json.Marshaller type using AES encryption.
 // It will return a Base64 encode []byte of the encrypted data.
 func (aesData Encryption) EncryptWithAES(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
-		return false, errors.New("no data received to encrypt")
+		return false, fmt.Errorf("function EncryptWithAES in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
-	ctx.LoggingClient().Debug("Encrypting with AES")
+	ctx.LoggingClient().Debugf("Encrypting with AES in pipeline '%s'", ctx.PipelineId())
 
 	byteData, err := util.CoerceType(data)
 	if err != nil {
@@ -92,26 +91,31 @@ func (aesData Encryption) EncryptWithAES(ctx interfaces.AppFunctionContext, data
 		secretData, err := ctx.GetSecret(aesData.SecretPath, aesData.SecretName)
 		if err != nil {
 			return false, fmt.Errorf(
-				"unable to retieve encryption key at secret path=%s and name=%s",
+				"unable to retieve encryption key at secret path=%s and name=%s in pipeline '%s'",
 				aesData.SecretPath,
-				aesData.SecretName)
+				aesData.SecretName,
+				ctx.PipelineId())
 		}
 
 		key, ok := secretData[aesData.SecretName]
 		if !ok {
-			return false, fmt.Errorf("unable find encryption key in secret data for name=%s", aesData.SecretName)
+			return false, fmt.Errorf(
+				"unable find encryption key in secret data for name=%s in pipeline '%s'",
+				aesData.SecretName,
+				ctx.PipelineId())
 		}
 
 		ctx.LoggingClient().Debugf(
-			"Using encryption key from Secret Store at path=%s & name=%s",
+			"Using encryption key from Secret Store at path=%s & name=%s in pipeline '%s'",
 			aesData.SecretPath,
-			aesData.SecretName)
+			aesData.SecretName,
+			ctx.PipelineId())
 
 		aesData.EncryptionKey = key
 	}
 
 	if len(aesData.EncryptionKey) == 0 {
-		return false, fmt.Errorf("AES encryption key not set")
+		return false, fmt.Errorf("AES encryption key not set in pipeline '%s'", ctx.PipelineId())
 	}
 
 	hash.Write([]byte((aesData.EncryptionKey)))
@@ -120,7 +124,7 @@ func (aesData Encryption) EncryptWithAES(ctx interfaces.AppFunctionContext, data
 
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to create new AES Cipher in pipeline '%s': %s", ctx.PipelineId(), err)
 	}
 
 	ecb := cipher.NewCBCEncrypter(block, iv)

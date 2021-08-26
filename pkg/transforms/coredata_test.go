@@ -36,6 +36,6 @@ func TestPushToCore_NoData(t *testing.T) {
 	continuePipeline, result := coreData.PushToCoreData(ctx, nil)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, "PushToCoreData - No Data Received", result.(error).Error())
+	assert.Contains(t, result.(error).Error(), "No Data Received")
 	assert.False(t, continuePipeline)
 }

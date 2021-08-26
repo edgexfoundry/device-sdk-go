@@ -72,7 +72,7 @@ func TestSetResponseDataEvent(t *testing.T) {
 func TestSetResponseDataNoData(t *testing.T) {
 	target := NewResponseData()
 	continuePipeline, result := target.SetResponseData(ctx, nil)
-	assert.Nil(t, result)
+	assert.Contains(t, result.(error).Error(), "No Data Received")
 	assert.False(t, continuePipeline)
 }
 

@@ -25,25 +25,20 @@ import (
 type StoredObject struct {
 	// ID uniquely identifies this StoredObject
 	ID string `json:"id"`
-
 	// AppServiceKey identifies the app to which this data belongs.
 	AppServiceKey string `json:"appServiceKey"`
-
 	// Payload is the data to be exported
 	Payload []byte `json:"payload"`
-
 	// RetryCount is how many times this has tried to be exported
 	RetryCount int `json:"retryCount"`
-
+	// PipelineId is the ID of the pipeline that needs to be restarted.
+	PipelineId string `json:"pipelineId"`
 	// PipelinePosition is where to pickup in the pipeline
 	PipelinePosition int `json:"pipelinePosition"`
-
 	// Version is a hash of the functions to know if the pipeline has changed.
 	Version string `json:"version"`
-
 	// CorrelationID is an identifier provided by EdgeX to track this record as it moves
 	CorrelationID string `json:"correlationID"`
-
 	// ContextData is a snapshot of data used by the pipeline at runtime
 	ContextData map[string]string
 }
@@ -55,6 +50,7 @@ func (o StoredObject) ToContract() contracts.StoredObject {
 		AppServiceKey:    o.AppServiceKey,
 		Payload:          o.Payload,
 		RetryCount:       o.RetryCount,
+		PipelineId:       o.PipelineId,
 		PipelinePosition: o.PipelinePosition,
 		Version:          o.Version,
 		CorrelationID:    o.CorrelationID,
@@ -68,6 +64,7 @@ func (o *StoredObject) FromContract(c contracts.StoredObject) {
 	o.AppServiceKey = c.AppServiceKey
 	o.Payload = c.Payload
 	o.RetryCount = c.RetryCount
+	o.PipelineId = c.PipelineId
 	o.PipelinePosition = c.PipelinePosition
 	o.Version = c.Version
 	o.CorrelationID = c.CorrelationID
@@ -81,6 +78,7 @@ func (o StoredObject) MarshalJSON() ([]byte, error) {
 		AppServiceKey    *string           `json:"appServiceKey,omitempty"`
 		Payload          []byte            `json:"payload,omitempty"`
 		RetryCount       int               `json:"retryCount,omitempty"`
+		PipelineId       string            `json:"pipelineId,omitempty"`
 		PipelinePosition int               `json:"pipelinePosition,omitempty"`
 		Version          *string           `json:"version,omitempty"`
 		CorrelationID    *string           `json:"correlationID,omitempty"`
@@ -90,6 +88,7 @@ func (o StoredObject) MarshalJSON() ([]byte, error) {
 	}{
 		Payload:          o.Payload,
 		RetryCount:       o.RetryCount,
+		PipelineId:       o.PipelineId,
 		PipelinePosition: o.PipelinePosition,
 		ContextData:      o.ContextData,
 	}
@@ -118,6 +117,7 @@ func (o *StoredObject) UnmarshalJSON(data []byte) error {
 		AppServiceKey    *string           `json:"appServiceKey"`
 		Payload          []byte            `json:"payload"`
 		RetryCount       int               `json:"retryCount"`
+		PipelineId       string            `json:"pipelineId"`
 		PipelinePosition int               `json:"pipelinePosition"`
 		Version          *string           `json:"version"`
 		CorrelationID    *string           `json:"correlationID"`
@@ -147,6 +147,7 @@ func (o *StoredObject) UnmarshalJSON(data []byte) error {
 
 	o.Payload = alias.Payload
 	o.RetryCount = alias.RetryCount
+	o.PipelineId = alias.PipelineId
 	o.PipelinePosition = alias.PipelinePosition
 	o.ContextData = alias.ContextData
 

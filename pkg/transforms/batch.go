@@ -17,7 +17,7 @@
 package transforms
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -127,10 +127,10 @@ func NewBatchByTimeAndCount(timeInterval string, batchThreshold int) (*BatchConf
 func (batch *BatchConfig) Batch(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
 		// We didn't receive a result
-		return false, errors.New("No Data Received")
+		return false, fmt.Errorf("function Batch in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
 
-	ctx.LoggingClient().Debug("Batching Data")
+	ctx.LoggingClient().Debugf("Batching Data in pipeline '%s'", ctx.PipelineId())
 	byteData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
@@ -144,9 +144,9 @@ func (batch *BatchConfig) Batch(ctx interfaces.AppFunctionContext, data interfac
 			batch.timerActive.Set(true)
 			select {
 			case <-batch.done:
-				ctx.LoggingClient().Debug("Batch count has been reached")
+				ctx.LoggingClient().Debugf("Batch count has been reached in pipeline '%s'", ctx.PipelineId())
 			case <-time.After(batch.parsedDuration):
-				ctx.LoggingClient().Debug("Timer has elapsed")
+				ctx.LoggingClient().Debugf("Timer has elapsed in pipeline '%s'", ctx.PipelineId())
 			}
 			batch.timerActive.Set(false)
 		} else {
@@ -171,7 +171,7 @@ func (batch *BatchConfig) Batch(ctx interfaces.AppFunctionContext, data interfac
 		}
 	}
 
-	ctx.LoggingClient().Debug("Forwarding Batched Data...")
+	ctx.LoggingClient().Debugf("Forwarding Batched Data in pipeline '%s'", ctx.PipelineId())
 	// we've met the threshold, lets clear out the buffer and send it forward in the pipeline
 	if batch.batchData.length() > 0 {
 		copyOfData := batch.batchData.all()

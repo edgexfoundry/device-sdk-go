@@ -22,8 +22,9 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"encoding/base64"
-	"errors"
 	"fmt"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
@@ -46,9 +47,9 @@ func NewCompression() Compression {
 func (compression *Compression) CompressWithGZIP(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
 		// We didn't receive a result
-		return false, errors.New("No Data Received")
+		return false, fmt.Errorf("function CompressWithGZIP in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
-	ctx.LoggingClient().Debug("Compression with GZIP")
+	ctx.LoggingClient().Debugf("Compression with GZIP in pipeline '%s'", ctx.PipelineId())
 	rawData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
@@ -63,18 +64,18 @@ func (compression *Compression) CompressWithGZIP(ctx interfaces.AppFunctionConte
 
 	_, err = compression.gzipWriter.Write(rawData)
 	if err != nil {
-		return false, fmt.Errorf("unable to write GZIP data: %s", err.Error())
+		return false, fmt.Errorf("unable to write GZIP data in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 	}
 
 	err = compression.gzipWriter.Close()
 	if err != nil {
-		return false, fmt.Errorf("unable to close GZIP data: %s", err.Error())
+		return false, fmt.Errorf("unable to close GZIP data in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 	}
 
 	// Set response "content-type" header to "text/plain"
 	ctx.SetResponseContentType(common.ContentTypeText)
 
-	return true, bytesBufferToBase64(buf)
+	return true, bytesBufferToBase64(ctx.LoggingClient(), buf)
 
 }
 
@@ -83,9 +84,9 @@ func (compression *Compression) CompressWithGZIP(ctx interfaces.AppFunctionConte
 func (compression *Compression) CompressWithZLIB(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
 		// We didn't receive a result
-		return false, errors.New("No Data Received")
+		return false, fmt.Errorf("function CompressWithZLIB in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
-	ctx.LoggingClient().Debug("Compression with ZLIB")
+	ctx.LoggingClient().Debugf("Compression with ZLIB in pipeline '%s'", ctx.PipelineId())
 	byteData, err := util.CoerceType(data)
 	if err != nil {
 		return false, err
@@ -100,23 +101,26 @@ func (compression *Compression) CompressWithZLIB(ctx interfaces.AppFunctionConte
 
 	_, err = compression.zlibWriter.Write(byteData)
 	if err != nil {
-		return false, fmt.Errorf("unable to write ZLIB data: %s", err.Error())
+		return false, fmt.Errorf("unable to write ZLIB data in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 	}
 
 	err = compression.zlibWriter.Close()
 	if err != nil {
-		return false, fmt.Errorf("unable to close ZLIB data: %s", err.Error())
+		return false, fmt.Errorf("unable to close ZLIB data in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 	}
 
 	// Set response "content-type" header to "text/plain"
 	ctx.SetResponseContentType(common.ContentTypeText)
 
-	return true, bytesBufferToBase64(buf)
+	return true, bytesBufferToBase64(ctx.LoggingClient(), buf)
 
 }
 
-func bytesBufferToBase64(buf bytes.Buffer) []byte {
+func bytesBufferToBase64(lc logger.LoggingClient, buf bytes.Buffer) []byte {
+	lc.Debugf("Encoding compressed bytes of length %d vs %d", len(buf.Bytes()), buf.Len())
 	dst := make([]byte, base64.StdEncoding.EncodedLen(buf.Len()))
 	base64.StdEncoding.Encode(dst, buf.Bytes())
+	lc.Debugf("Encoding compressed bytes complete. New length is %d", len(dst))
+
 	return dst
 }

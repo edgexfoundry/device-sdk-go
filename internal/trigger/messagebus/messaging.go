@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 	"strings"
 	"sync"
+
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
@@ -109,7 +110,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 			config.Trigger.EdgexMessageBus.PublishHost.Port)
 	}
 
-	// Need to have a go func for each subscription so we know with topic the data was received for.
+	// Need to have a go func for each subscription, so we know with topic the data was received for.
 	for _, topic := range trigger.topics {
 		appWg.Add(1)
 		go func(triggerTopic types.TopicChannel) {
@@ -121,8 +122,8 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 				case <-appCtx.Done():
 					lc.Infof("Exiting waiting for MessageBus '%s' topic messages", triggerTopic.Topic)
 					return
-				case msgs := <-triggerTopic.Messages:
-					go trigger.processMessage(lc, triggerTopic, msgs)
+				case message := <-triggerTopic.Messages:
+					trigger.messageHandler(lc, triggerTopic, message)
 				}
 			}
 		}(topic)
@@ -173,13 +174,24 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	return deferred, nil
 }
 
-func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic types.TopicChannel, message types.MessageEnvelope) {
-	logger.Debugf("Received message from MessageBus on topic '%s'. Content-Type=%s", triggerTopic.Topic, message.ContentType)
-	logger.Tracef("%s=%s", common.CorrelationHeader, message.CorrelationID)
+func (trigger *Trigger) messageHandler(logger logger.LoggingClient, _ types.TopicChannel, message types.MessageEnvelope) {
+	logger.Debugf("MessageBus Trigger: Received message with %d bytes on topic '%s'. Content-Type=%s",
+		len(message.Payload),
+		message.ReceivedTopic,
+		message.ContentType)
+	logger.Tracef("MessageBus Trigger: Received message with %s=%s", common.CorrelationHeader, message.CorrelationID)
 
+	pipelines := trigger.runtime.GetMatchingPipelines(message.ReceivedTopic)
+	logger.Debugf("MessageBus Trigger found %d pipeline(s) that match the incoming topic '%s'", len(pipelines), message.ReceivedTopic)
+	for _, pipeline := range pipelines {
+		go trigger.processMessageWithPipeline(logger, message, pipeline)
+	}
+}
+
+func (trigger *Trigger) processMessageWithPipeline(logger logger.LoggingClient, message types.MessageEnvelope, pipeline *interfaces.FunctionPipeline) {
 	appContext := appfunction.NewContext(message.CorrelationID, trigger.dic, message.ContentType)
 
-	messageError := trigger.runtime.ProcessMessage(appContext, message)
+	messageError := trigger.runtime.ProcessMessage(appContext, message, pipeline)
 	if messageError != nil {
 		// ProcessMessage logs the error, so no need to log it here.
 		return
@@ -207,18 +219,27 @@ func (trigger *Trigger) processMessage(logger logger.LoggingClient, triggerTopic
 		publishTopic, err := appContext.ApplyValues(config.Trigger.EdgexMessageBus.PublishHost.PublishTopic)
 
 		if err != nil {
-			logger.Errorf("Unable to format output topic '%s': %s", config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, err.Error())
+			logger.Errorf("MessageBus Trigger: Unable to format output topic '%s' for pipeline '%s': %s",
+				config.Trigger.EdgexMessageBus.PublishHost.PublishTopic,
+				pipeline.Id,
+				err.Error())
 			return
 		}
 
 		err = trigger.client.Publish(outputEnvelope, publishTopic)
 		if err != nil {
-			logger.Errorf("Failed to publish Message to bus, %v", err)
+			logger.Errorf("MessageBus trigger: Could not publish to topic '%s' for pipeline '%s': %s",
+				publishTopic,
+				pipeline.Id,
+				err.Error())
 			return
 		}
 
-		logger.Debugf("Published message to bus on '%s' topic", publishTopic)
-		logger.Tracef("%s=%s", common.CorrelationHeader, message.CorrelationID)
+		logger.Debugf("MessageBus Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
+			pipeline.Id,
+			publishTopic,
+			len(appContext.ResponseData()))
+		logger.Tracef("MessageBus Trigger published message: %s=%s", common.CorrelationHeader, message.CorrelationID)
 	}
 }
 
@@ -258,11 +279,11 @@ func (trigger *Trigger) setOptionalAuthData(messageBusConfig *types.MessageBusCo
 
 	secretData, err := bootstrapMessaging.GetSecretData(authMode, secretName, secretProvider)
 	if err != nil {
-		return fmt.Errorf("Unable to get Secret Data for secure message bus: %w", err)
+		return fmt.Errorf("unable to get Secret Data for secure message bus: %w", err)
 	}
 
 	if err := bootstrapMessaging.ValidateSecretData(authMode, secretName, secretData); err != nil {
-		return fmt.Errorf("Secret Data for secure message bus invalid: %w", err)
+		return fmt.Errorf("secret Data for secure message bus invalid: %w", err)
 	}
 
 	if messageBusConfig.Optional == nil {

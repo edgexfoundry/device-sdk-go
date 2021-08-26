@@ -18,7 +18,6 @@ package transforms
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -120,19 +119,19 @@ func (sender HTTPSender) HTTPPut(ctx interfaces.AppFunctionContext, data interfa
 func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interface{}, method string) (bool, interface{}) {
 	lc := ctx.LoggingClient()
 
-	lc.Debug("HTTP Exporting")
+	lc.Debugf("HTTP Exporting in pipeline '%s'", ctx.PipelineId())
 
 	if data == nil {
 		// We didn't receive a result
-		return false, errors.New("No Data Received")
+		return false, fmt.Errorf("function HTTP%s in pipeline '%s': No Data Received", method, ctx.PipelineId())
 	}
 
 	if sender.persistOnError && sender.continueOnSendError {
-		return false, errors.New("persistOnError & continueOnSendError can not both be set to true for HTTP Export")
+		return false, fmt.Errorf("in pipeline '%s' persistOnError & continueOnSendError can not both be set to true for HTTP Export", ctx.PipelineId())
 	}
 
 	if sender.continueOnSendError && !sender.returnInputData {
-		return false, errors.New("continueOnSendError can only be used in conjunction returnInputData for multiple HTTP Export")
+		return false, fmt.Errorf("in pipeline '%s' continueOnSendError can only be used in conjunction returnInputData for multiple HTTP Export", ctx.PipelineId())
 	}
 
 	if sender.mimeType == "" {
@@ -144,7 +143,7 @@ func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interf
 		return false, err
 	}
 
-	usingSecrets, err := sender.determineIfUsingSecrets()
+	usingSecrets, err := sender.determineIfUsingSecrets(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -173,25 +172,26 @@ func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interf
 			return false, err
 		}
 
-		lc.Debugf("Setting HTTP Header '%s' with secret value from SecretStore at path='%s' & name='%s",
+		lc.Debugf("Setting HTTP Header '%s' with secret value from SecretStore at path='%s' & name='%s in pipeline '%s'",
 			sender.httpHeaderName,
 			sender.secretPath,
-			sender.secretName)
+			sender.secretName,
+			ctx.PipelineId())
 
 		req.Header.Set(sender.httpHeaderName, theSecrets[sender.secretName])
 	}
 
 	req.Header.Set("Content-Type", sender.mimeType)
 
-	ctx.LoggingClient().Debugf("POSTing data to %s", sender.url)
+	ctx.LoggingClient().Debugf("POSTing data to %s in pipeline '%s'", sender.url, ctx.PipelineId())
 
 	response, err := client.Do(req)
 	// Pipeline continues if we get a 2xx response, non-2xx response may stop pipeline
 	if err != nil || response.StatusCode < 200 || response.StatusCode >= 300 {
 		if err == nil {
-			err = fmt.Errorf("export failed with %d HTTP status code", response.StatusCode)
+			err = fmt.Errorf("export failed with %d HTTP status code in pipeline '%s'", response.StatusCode, ctx.PipelineId())
 		} else {
-			err = fmt.Errorf("export failed: %w", err)
+			err = fmt.Errorf("export failed in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 		}
 
 		// If continuing on send error then can't be persisting on error since Store and Forward retries starting
@@ -203,14 +203,14 @@ func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interf
 
 		// Continuing pipeline on error
 		// This is in support of sending to multiple export destinations by chaining export functions in the pipeline.
-		ctx.LoggingClient().Errorf("Continuing pipeline on error: %s", err.Error())
+		ctx.LoggingClient().Errorf("Continuing pipeline on error in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 
 		// Return the input data since must have some data for the next function to operate on.
 		return true, data
 	}
 
-	ctx.LoggingClient().Debugf("Sent %s bytes of data. Response status is %s", len(exportData), response.Status)
-	ctx.LoggingClient().Trace("Data exported", "Transport", "HTTP", common.CorrelationHeader, ctx.CorrelationID())
+	ctx.LoggingClient().Debugf("Sent %d bytes of data in pipeline '%s'. Response status is %s", len(exportData), ctx.PipelineId(), response.Status)
+	ctx.LoggingClient().Tracef("Data exported for pipeline '%s' (%s=%s)", ctx.PipelineId(), common.CorrelationHeader, ctx.CorrelationID())
 
 	// This allows multiple HTTP Exports to be chained in the pipeline to send the same data to different destinations
 	// Don't need to read the response data since not going to return it so just return now.
@@ -229,26 +229,26 @@ func (sender HTTPSender) httpSend(ctx interfaces.AppFunctionContext, data interf
 	return true, responseData
 }
 
-func (sender HTTPSender) determineIfUsingSecrets() (bool, error) {
+func (sender HTTPSender) determineIfUsingSecrets(ctx interfaces.AppFunctionContext) (bool, error) {
 	// not using secrets if both are empty
 	if len(sender.secretPath) == 0 && len(sender.secretName) == 0 {
 		if len(sender.httpHeaderName) == 0 {
 			return false, nil
 		}
 
-		return false, errors.New("secretPath & secretName must be specified when HTTP Header Name is specified")
+		return false, fmt.Errorf("in pipeline '%s', secretPath & secretName must be specified when HTTP Header Name is specified", ctx.PipelineId())
 	}
 
 	//check if one field but not others are provided for secrets
 	if len(sender.secretPath) != 0 && len(sender.secretName) == 0 {
-		return false, errors.New("secretPath was specified but no secretName was provided")
+		return false, fmt.Errorf("in pipeline '%s', secretPath was specified but no secretName was provided", ctx.PipelineId())
 	}
 	if len(sender.secretName) != 0 && len(sender.secretPath) == 0 {
-		return false, errors.New("HTTP Header secretName was provided but no secretPath was provided")
+		return false, fmt.Errorf("in pipeline '%s', HTTP Header secretName was provided but no secretPath was provided", ctx.PipelineId())
 	}
 
 	if len(sender.httpHeaderName) == 0 {
-		return false, errors.New("HTTP Header Name required when using secrets")
+		return false, fmt.Errorf("in pipeline '%s', HTTP Header Name required when using secrets", ctx.PipelineId())
 	}
 
 	// using secrets, all required fields are provided

@@ -58,8 +58,8 @@ func TestTags_AddTags(t *testing.T) {
 		{"Happy path - no existing Event tags", dtos.Event{}, tagsToAdd, tagsToAdd, false, ""},
 		{"Happy path - Event has existing tags", eventWithExistingTags, tagsToAdd, allTagsAdded, false, ""},
 		{"Happy path - No tags added", eventWithExistingTags, map[string]string{}, eventWithExistingTags.Tags, false, ""},
-		{"Error - No data", nil, nil, nil, true, "no Event Received"},
-		{"Error - Input not event", "Not an Event", nil, nil, true, "not an Event"},
+		{"Error - No data", nil, nil, nil, true, "No Data Received"},
+		{"Error - Input not event", "Not an Event", nil, nil, true, "type received is not an Event"},
 	}
 
 	for _, testCase := range tests {

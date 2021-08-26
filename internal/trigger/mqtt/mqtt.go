@@ -46,10 +46,13 @@ import (
 
 // Trigger implements Trigger to support Triggers
 type Trigger struct {
-	dic        *di.Container
-	lc         logger.LoggingClient
-	mqttClient pahoMqtt.Client
-	runtime    *runtime.GolangRuntime
+	dic          *di.Container
+	lc           logger.LoggingClient
+	mqttClient   pahoMqtt.Client
+	runtime      *runtime.GolangRuntime
+	qos          byte
+	retain       bool
+	publishTopic string
 }
 
 func NewTrigger(dic *di.Container, runtime *runtime.GolangRuntime) *Trigger {
@@ -68,6 +71,10 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	brokerConfig := config.Trigger.ExternalMqtt
 	topics := config.Trigger.ExternalMqtt.SubscribeTopics
 
+	trigger.qos = brokerConfig.QoS
+	trigger.retain = brokerConfig.Retain
+	trigger.publishTopic = config.Trigger.ExternalMqtt.PublishTopic
+
 	lc.Info("Initializing MQTT Trigger")
 
 	if background != nil {
@@ -75,7 +82,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	}
 
 	if len(strings.TrimSpace(topics)) == 0 {
-		return nil, fmt.Errorf("missing SubscribeTopics for MQTT Trigger. Must be present in [Trigger.ExternalMqtt] section.")
+		return nil, fmt.Errorf("missing SubscribeTopics for MQTT Trigger. Must be present in [Trigger.ExternalMqtt] section")
 	}
 
 	brokerUrl, err := url.Parse(brokerConfig.Url)
@@ -148,14 +155,11 @@ func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 	lc.Infof("Subscribed to topic(s) '%s' for MQTT trigger", config.Trigger.ExternalMqtt.SubscribeTopics)
 }
 
-func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.Message) {
+func (trigger *Trigger) messageHandler(_ pahoMqtt.Client, mqttMessage pahoMqtt.Message) {
 	// Convenience short cuts
 	lc := trigger.lc
-	config := container.ConfigurationFrom(trigger.dic.Get)
-	brokerConfig := config.Trigger.ExternalMqtt
-	topic := config.Trigger.ExternalMqtt.PublishTopic
 
-	data := message.Payload()
+	data := mqttMessage.Payload()
 	contentType := common.ContentTypeJSON
 	if data[0] != byte('{') && data[0] != byte('[') {
 		// If not JSON then assume it is CBOR
@@ -164,37 +168,57 @@ func (trigger *Trigger) messageHandler(client pahoMqtt.Client, message pahoMqtt.
 
 	correlationID := uuid.New().String()
 
-	appContext := appfunction.NewContext(correlationID, trigger.dic, contentType)
-
-	lc.Debugf("Received message from MQTT Trigger with %d bytes from topic '%s'. Content-Type=%s", len(data), message.Topic(), contentType)
-	lc.Tracef("%s=%s", common.CorrelationHeader, correlationID)
-
-	envelope := types.MessageEnvelope{
+	message := types.MessageEnvelope{
 		CorrelationID: correlationID,
 		ContentType:   contentType,
 		Payload:       data,
-		ReceivedTopic: message.Topic(),
+		ReceivedTopic: mqttMessage.Topic(),
 	}
 
-	messageError := trigger.runtime.ProcessMessage(appContext, envelope)
+	lc.Debugf("MQTT Trigger: Received message with %d bytes on topic '%s'. Content-Type=%s",
+		len(message.Payload),
+		message.ReceivedTopic,
+		message.ContentType)
+	lc.Tracef("%s=%s", common.CorrelationHeader, correlationID)
+
+	pipelines := trigger.runtime.GetMatchingPipelines(message.ReceivedTopic)
+	lc.Debugf("MQTT Trigger found %d pipeline(s) that match the incoming topic '%s'", len(pipelines), message.ReceivedTopic)
+	for _, pipeline := range pipelines {
+		go trigger.processMessageWithPipeline(message, pipeline)
+	}
+}
+
+func (trigger *Trigger) processMessageWithPipeline(envelope types.MessageEnvelope, pipeline *interfaces.FunctionPipeline) {
+	appContext := appfunction.NewContext(envelope.CorrelationID, trigger.dic, envelope.ContentType)
+
+	messageError := trigger.runtime.ProcessMessage(appContext, envelope, pipeline)
 	if messageError != nil {
 		// ProcessMessage logs the error, so no need to log it here.
 		// ToDo: Do we want to publish the error back to the Broker?
 		return
 	}
 
-	if len(appContext.ResponseData()) > 0 && len(topic) > 0 {
-		formattedTopic, err := appContext.ApplyValues(topic)
+	if len(appContext.ResponseData()) > 0 && len(trigger.publishTopic) > 0 {
+		formattedTopic, err := appContext.ApplyValues(trigger.publishTopic)
 
 		if err != nil {
-			lc.Errorf("could not format topic '%s' for MQTT trigger output: %s", topic, err.Error())
+			trigger.lc.Errorf("MQTT trigger: Unable to format topic '%s' for pipeline '%s': %s",
+				trigger.publishTopic,
+				pipeline.Id,
+				err.Error())
 		}
 
-		if token := client.Publish(formattedTopic, brokerConfig.QoS, brokerConfig.Retain, appContext.ResponseData()); token.Wait() && token.Error() != nil {
-			lc.Errorf("could not publish to topic '%s' for MQTT trigger: %s", topic, token.Error().Error())
+		if token := trigger.mqttClient.Publish(formattedTopic, trigger.qos, trigger.retain, appContext.ResponseData()); token.Wait() && token.Error() != nil {
+			trigger.lc.Errorf("MQTT trigger: Could not publish to topic '%s' for pipeline '%s': %s",
+				formattedTopic,
+				pipeline.Id,
+				token.Error().Error())
 		} else {
-			lc.Trace("Sent MQTT Trigger response message", common.CorrelationHeader, correlationID)
-			lc.Debugf("Sent MQTT Trigger response message on topic '%s' with %d bytes", topic, len(appContext.ResponseData()))
+			trigger.lc.Debugf("MQTT Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
+				pipeline.Id,
+				formattedTopic,
+				len(appContext.ResponseData()))
+			trigger.lc.Tracef("MQTT Trigger published message: %s=%s", common.CorrelationHeader, envelope.CorrelationID)
 		}
 	}
 }
