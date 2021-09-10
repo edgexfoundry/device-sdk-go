@@ -21,7 +21,9 @@ package app
 import (
 	"errors"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"strings"
+	"sync"
 
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
@@ -61,6 +63,7 @@ func (svc *Service) RegisterCustomTriggerFactory(name string,
 			Logger:           sdk.lc,
 			ContextBuilder:   sdk.defaultTriggerContextBuilder,
 			MessageProcessor: sdk.defaultTriggerMessageProcessor,
+			ProcessMessage:   sdk.processMessageOnRuntime,
 			ConfigLoader:     sdk.defaultConfigLoader,
 		})
 	}
@@ -68,6 +71,61 @@ func (svc *Service) RegisterCustomTriggerFactory(name string,
 	return nil
 }
 
+func (svc *Service) buildContextForRuntime(envelope types.MessageEnvelope) *appfunction.Context {
+	context := appfunction.NewContext(envelope.CorrelationID, svc.dic, envelope.ContentType)
+
+	if envelope.ReceivedTopic != "" {
+		context.AddValue(interfaces.RECEIVEDTOPIC, envelope.ReceivedTopic)
+	}
+
+	return context
+}
+func (svc *Service) processMessageOnRuntime(envelope types.MessageEnvelope) error {
+	context := svc.buildContextForRuntime(envelope)
+	defaultPipeline := svc.runtime.GetDefaultPipeline()
+
+	if defaultPipeline != nil { // then we aren't configured for topic matching, use default
+		context.LoggingClient().Debug("trigger using default pipeline")
+
+		messageError := svc.runtime.ProcessMessage(context, envelope, defaultPipeline)
+		if messageError != nil {
+			// ProcessMessage logs the error, so no need to log it here.
+			return messageError.Err
+		}
+	} else { // route to pipeline(s) via topic match
+		context.LoggingClient().Debug("trigger attempting to find pipeline(s) for topic %s", envelope.ReceivedTopic)
+
+		pipelines := svc.runtime.GetMatchingPipelines(envelope.ReceivedTopic)
+
+		context.LoggingClient().Debugf("trigger found %d pipeline(s) that match the incoming topic '%s'", len(pipelines), envelope.ReceivedTopic)
+
+		var finalErr error
+
+		pipelinesWaitGroup := sync.WaitGroup{}
+
+		for _, pipeline := range pipelines {
+			go func(p *interfaces.FunctionPipeline, e error, wg *sync.WaitGroup) {
+				wg.Add(1)
+				ctx := svc.buildContextForRuntime(envelope)
+				if msgErr := svc.runtime.ProcessMessage(ctx, envelope, p); msgErr != nil {
+					e = multierror.Append(e, msgErr.Err)
+				}
+
+				wg.Done()
+			}(pipeline, finalErr, &pipelinesWaitGroup)
+		}
+
+		pipelinesWaitGroup.Wait()
+
+		if finalErr != nil {
+			return finalErr
+		}
+	}
+
+	return nil
+}
+
+//Deprecated
 func (svc *Service) defaultTriggerMessageProcessor(appContext interfaces.AppFunctionContext, envelope types.MessageEnvelope) error {
 	context, ok := appContext.(*appfunction.Context)
 	if !ok {
@@ -84,6 +142,7 @@ func (svc *Service) defaultTriggerMessageProcessor(appContext interfaces.AppFunc
 	return nil
 }
 
+// Deprecated
 func (svc *Service) defaultTriggerContextBuilder(env types.MessageEnvelope) interfaces.AppFunctionContext {
 	return appfunction.NewContext(env.CorrelationID, svc.dic, env.ContentType)
 }
