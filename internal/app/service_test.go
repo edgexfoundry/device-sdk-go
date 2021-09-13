@@ -326,10 +326,12 @@ func TestService_AddFunctionsPipelineForTopic(t *testing.T) {
 		expectError bool
 	}{
 		{"Happy Path", "123", TriggerTypeMessageBus, "#", transforms, false},
-		{"Empty Topic", "123", TriggerTypeMessageBus, " ", transforms, true},
-		{"No Transforms", "123", TriggerTypeMessageBus, "#", nil, true},
-		{"Duplicate Id", interfaces.DefaultPipelineId, TriggerTypeMessageBus, "#", transforms, true},
-		{"Wrong Trigger Type", "123", TriggerTypeHTTP, "#", transforms, true},
+		{"Happy Path Custom", "124", "CUSTOM TRIGGER", "#", transforms, false},
+		{"Empty Topic", "125", TriggerTypeMessageBus, " ", transforms, true},
+		{"No Transforms", "126", TriggerTypeMessageBus, "#", nil, true},
+		{"Default Id", interfaces.DefaultPipelineId, TriggerTypeMessageBus, "#", transforms, true},
+		{"Duplicate Id", "123", TriggerTypeMessageBus, "#", transforms, true},
+		{"HTTP Trigger Type", "127", TriggerTypeHTTP, "#", transforms, true},
 	}
 
 	for _, test := range tests {

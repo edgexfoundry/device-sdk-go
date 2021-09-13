@@ -386,11 +386,8 @@ func (svc *Service) SetDefaultFunctionsPipeline(transforms ...interfaces.AppFunc
 
 // AddFunctionsPipelineForTopic adds a functions pipeline for the specified for the specified id and topic
 func (svc *Service) AddFunctionsPipelineForTopic(id string, topic string, transforms ...interfaces.AppFunction) error {
-	switch strings.ToUpper(svc.config.Trigger.Type) {
-	case TriggerTypeMessageBus:
-	case TriggerTypeMQTT:
-	default:
-		return errors.New("pipeline per topic only valid with EdgeX MessageBus and External MQTT")
+	if strings.ToUpper(svc.config.Trigger.Type) == TriggerTypeHTTP {
+		return errors.New("pipeline per topic not valid with HTTP trigger")
 	}
 
 	if len(transforms) == 0 {
