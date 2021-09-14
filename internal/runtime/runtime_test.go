@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -531,42 +532,46 @@ func TestTopicMatches(t *testing.T) {
 	incomingTopic := "edgex/events/P/D/S"
 
 	tests := []struct {
-		name          string
-		incomingTopic string
-		pipelineTopic string
-		expected      bool
+		name           string
+		incomingTopic  string
+		pipelineTopics []string
+		expected       bool
 	}{
-		{"Match - Default all", incomingTopic, TopicWildCard, true},
-		{"Match - Exact", incomingTopic, incomingTopic, true},
-		{"Match - Any Profile for Device and Source", incomingTopic, "edgex/events/#/D/S", true},
-		{"Match - Any Device for Profile and Source", incomingTopic, "edgex/events/P/#/S", true},
-		{"Match - Any Source for Profile and Device", incomingTopic, "edgex/events/P/D/#", true},
-		{"Match - All Events ", incomingTopic, "edgex/events/#", true},
-		{"Match - All Devices and Sources for Profile ", incomingTopic, "edgex/events/P/#", true},
-		{"Match - All Sources for Profile and Device ", incomingTopic, "edgex/events/P/D/#", true},
-		{"Match - All Sources for a Device for any Profile ", incomingTopic, "edgex/events/#/D/#", true},
-		{"Match - Source for any Profile and any Device ", incomingTopic, "edgex/events/#/#/S", true},
-		{"NoMatch - SourceX for any Profile and any Device ", incomingTopic, "edgex/events/#/#/Sx", false},
-		{"NoMatch - All Sources for DeviceX and any Profile ", incomingTopic, "edgex/events/#/Dx/#", false},
-		{"NoMatch - All Sources for ProfileX and Device ", incomingTopic, "edgex/events/Px/D/#", false},
-		{"NoMatch - All Sources for Profile and DeviceX ", incomingTopic, "edgex/events/P/Dx/#", false},
-		{"NoMatch - All Sources for ProfileX and DeviceX ", incomingTopic, "edgex/events/Px/Dx/#", false},
-		{"NoMatch - All Devices and Sources for ProfileX ", incomingTopic, "edgex/events/Px/#", false},
-		{"NoMatch - Any Profile for DeviceX and Source", incomingTopic, "edgex/events/#/Dx/S", false},
-		{"NoMatch - Any Profile for DeviceX and Source", incomingTopic, "edgex/events/#/Dx/S", false},
-		{"NoMatch - Any Profile for Device and SourceX", incomingTopic, "edgex/events/#/D/Sx", false},
-		{"NoMatch - Any Profile for DeviceX and SourceX", incomingTopic, "edgex/events/#/Dx/Sx", false},
-		{"NoMatch - Any Device for Profile and SourceX", incomingTopic, "edgex/events/P/#/Sx", false},
-		{"NoMatch - Any Device for ProfileX and Source", incomingTopic, "edgex/events/Px/#/S", false},
-		{"NoMatch - Any Device for ProfileX and SourceX", incomingTopic, "edgex/events/Px/#/Sx", false},
-		{"NoMatch - Any Source for ProfileX and Device", incomingTopic, "edgex/events/Px/D/#", false},
-		{"NoMatch - Any Source for Profile and DeviceX", incomingTopic, "edgex/events/P/Dx/#", false},
-		{"NoMatch - Any Source for ProfileX and DeviceX", incomingTopic, "edgex/events/Px/Dx/#", false},
+		{"Match - Default all", incomingTopic, []string{TopicWildCard}, true},
+		{"Match - Not First Topic", incomingTopic, []string{"not-edgex/#", TopicWildCard}, true},
+		{"Match - Exact", incomingTopic, []string{incomingTopic}, true},
+		{"Match - Any Profile for Device and Source", incomingTopic, []string{"edgex/events/#/D/S"}, true},
+		{"Match - Any Profile for Device and Source", incomingTopic, []string{"edgex/events/#/D/S"}, true},
+		{"Match - Any Device for Profile and Source", incomingTopic, []string{"edgex/events/P/#/S"}, true},
+		{"Match - Any Source for Profile and Device", incomingTopic, []string{"edgex/events/P/D/#"}, true},
+		{"Match - All Events ", incomingTopic, []string{"edgex/events/#"}, true},
+		{"Match - First Topic Deeper ", incomingTopic, []string{"edgex/events/P/D/S/Z", "edgex/events/#"}, true},
+		{"Match - All Devices and Sources for Profile ", incomingTopic, []string{"edgex/events/P/#"}, true},
+		{"Match - All Sources for Profile and Device ", incomingTopic, []string{"edgex/events/P/D/#"}, true},
+		{"Match - All Sources for a Device for any Profile ", incomingTopic, []string{"edgex/events/#/D/#"}, true},
+		{"Match - Source for any Profile and any Device ", incomingTopic, []string{"edgex/events/#/#/S"}, true},
+		{"NoMatch - SourceX for any Profile and any Device ", incomingTopic, []string{"edgex/events/#/#/Sx"}, false},
+		{"NoMatch - All Sources for DeviceX and any Profile ", incomingTopic, []string{"edgex/events/#/Dx/#"}, false},
+		{"NoMatch - All Sources for ProfileX and Device ", incomingTopic, []string{"edgex/events/Px/D/#"}, false},
+		{"NoMatch - All Sources for Profile and DeviceX ", incomingTopic, []string{"edgex/events/P/Dx/#"}, false},
+		{"NoMatch - All Sources for ProfileX and DeviceX ", incomingTopic, []string{"edgex/events/Px/Dx/#"}, false},
+		{"NoMatch - All Devices and Sources for ProfileX ", incomingTopic, []string{"edgex/events/Px/#"}, false},
+		{"NoMatch - Any Profile for DeviceX and Source", incomingTopic, []string{"edgex/events/#/Dx/S"}, false},
+		{"NoMatch - Any Profile for DeviceX and Source", incomingTopic, []string{"edgex/events/#/Dx/S"}, false},
+		{"NoMatch - Any Profile for Device and SourceX", incomingTopic, []string{"edgex/events/#/D/Sx"}, false},
+		{"NoMatch - Any Profile for DeviceX and SourceX", incomingTopic, []string{"edgex/events/#/Dx/Sx"}, false},
+		{"NoMatch - Any Device for Profile and SourceX", incomingTopic, []string{"edgex/events/P/#/Sx"}, false},
+		{"NoMatch - Any Device for ProfileX and Source", incomingTopic, []string{"edgex/events/Px/#/S"}, false},
+		{"NoMatch - Any Device for ProfileX and SourceX", incomingTopic, []string{"edgex/events/Px/#/Sx"}, false},
+		{"NoMatch - Any Source for ProfileX and Device", incomingTopic, []string{"edgex/events/Px/D/#"}, false},
+		{"NoMatch - Any Source for Profile and DeviceX", incomingTopic, []string{"edgex/events/P/Dx/#"}, false},
+		{"NoMatch - Any Source for ProfileX and DeviceX", incomingTopic, []string{"edgex/events/Px/Dx/#"}, false},
+		{"NoMatch - Pipeline Topic Deeper", incomingTopic, []string{"edgex/events/P/D/S/Z"}, false},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			actual := topicMatches(test.incomingTopic, test.pipelineTopic)
+			actual := topicMatches(test.incomingTopic, test.pipelineTopics)
 			assert.Equal(t, test.expected, actual)
 		})
 	}
@@ -576,7 +581,7 @@ func TestGetPipelineById(t *testing.T) {
 	target := NewGolangRuntime(serviceKey, nil, nil)
 
 	expectedId := "my-pipeline"
-	expectedTopic := "edgex/events/#"
+	expectedTopics := []string{"edgex/events/#"}
 	expectedTransforms := []interfaces.AppFunction{
 		transforms.NewResponseData().SetResponseData,
 	}
@@ -585,20 +590,20 @@ func TestGetPipelineById(t *testing.T) {
 	err := target.SetDefaultFunctionsPipeline(expectedTransforms)
 	require.NoError(t, err)
 
-	err = target.AddFunctionsPipeline(expectedId, expectedTopic, expectedTransforms)
+	err = target.AddFunctionsPipeline(expectedId, expectedTopics, expectedTransforms)
 	require.NoError(t, err)
 
 	actual := target.GetPipelineById(interfaces.DefaultPipelineId)
 	require.NotNil(t, actual)
 	assert.Equal(t, interfaces.DefaultPipelineId, actual.Id)
-	assert.Equal(t, TopicWildCard, actual.Topic)
+	assert.Equal(t, []string{TopicWildCard}, actual.Topics)
 	assert.Equal(t, expectedTransforms, actual.Transforms)
 	assert.NotEmpty(t, actual.Hash)
 
 	actual = target.GetPipelineById(expectedId)
 	require.NotNil(t, actual)
 	assert.Equal(t, expectedId, actual.Id)
-	assert.Equal(t, expectedTopic, actual.Topic)
+	assert.Equal(t, expectedTopics, actual.Topics)
 	assert.Equal(t, expectedTransforms, actual.Transforms)
 	assert.NotEmpty(t, actual.Hash)
 
@@ -613,11 +618,11 @@ func TestGetMatchingPipelines(t *testing.T) {
 		transforms.NewResponseData().SetResponseData,
 	}
 
-	err := target.AddFunctionsPipeline("one", "edgex/events/#/D1/#", expectedTransforms)
+	err := target.AddFunctionsPipeline("one", []string{"edgex/events/#/D1/#"}, expectedTransforms)
 	require.NoError(t, err)
-	err = target.AddFunctionsPipeline("two", "edgex/events/P1/#", expectedTransforms)
+	err = target.AddFunctionsPipeline("two", []string{"edgex/events/P1/#"}, expectedTransforms)
 	require.NoError(t, err)
-	err = target.AddFunctionsPipeline("three", "edgex/events/P1/D1/S1", expectedTransforms)
+	err = target.AddFunctionsPipeline("three", []string{"edgex/events/P1/D1/S1"}, expectedTransforms)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -650,7 +655,7 @@ func TestGolangRuntime_GetDefaultPipeline(t *testing.T) {
 	actual := target.GetDefaultPipeline()
 	require.NotNil(t, actual)
 	assert.Equal(t, interfaces.DefaultPipelineId, actual.Id)
-	assert.Empty(t, actual.Topic)
+	assert.Empty(t, actual.Topics)
 	assert.Nil(t, actual.Transforms)
 	assert.Empty(t, actual.Hash)
 
@@ -660,7 +665,7 @@ func TestGolangRuntime_GetDefaultPipeline(t *testing.T) {
 	actual = target.GetDefaultPipeline()
 	require.NotNil(t, actual)
 	assert.Equal(t, interfaces.DefaultPipelineId, actual.Id)
-	assert.Equal(t, TopicWildCard, actual.Topic)
+	assert.Equal(t, []string{TopicWildCard}, actual.Topics)
 	assert.Equal(t, expectedTransforms, actual.Transforms)
 	assert.NotEmpty(t, actual.Hash)
 }

@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,11 +48,11 @@ const (
 	TopicLevelSeparator = "/"
 )
 
-func NewFunctionPipeline(id string, topic string, transforms []interfaces.AppFunction) interfaces.FunctionPipeline {
+func NewFunctionPipeline(id string, topics []string, transforms []interfaces.AppFunction) interfaces.FunctionPipeline {
 	pipeline := interfaces.FunctionPipeline{
 		Id:         id,
 		Transforms: transforms,
-		Topic:      topic,
+		Topics:     topics,
 		Hash:       calculatePipelineHash(transforms),
 	}
 
@@ -99,17 +100,17 @@ func (gr *GolangRuntime) SetDefaultFunctionsPipeline(transforms []interfaces.App
 		return nil
 	}
 
-	return gr.AddFunctionsPipeline(interfaces.DefaultPipelineId, TopicWildCard, transforms)
+	return gr.AddFunctionsPipeline(interfaces.DefaultPipelineId, []string{TopicWildCard}, transforms)
 }
 
 // AddFunctionsPipeline is thread safe to set transforms
-func (gr *GolangRuntime) AddFunctionsPipeline(id string, topic string, transforms []interfaces.AppFunction) error {
+func (gr *GolangRuntime) AddFunctionsPipeline(id string, topics []string, transforms []interfaces.AppFunction) error {
 	_, exists := gr.pipelines[id]
 	if exists {
 		return fmt.Errorf("pipeline with Id='%s' already exists", id)
 	}
 
-	pipeline := NewFunctionPipeline(id, topic, transforms)
+	pipeline := NewFunctionPipeline(id, topics, transforms)
 	gr.isBusyCopying.Lock()
 	gr.pipelines[id] = &pipeline
 	gr.isBusyCopying.Unlock()
@@ -206,7 +207,7 @@ func (gr *GolangRuntime) ProcessMessage(
 	execPipeline := &interfaces.FunctionPipeline{
 		Id:         pipeline.Id,
 		Transforms: make([]interfaces.AppFunction, len(pipeline.Transforms)),
-		Topic:      pipeline.Topic,
+		Topics:     pipeline.Topics,
 		Hash:       pipeline.Hash,
 	}
 	copy(execPipeline.Transforms, pipeline.Transforms)
@@ -381,7 +382,7 @@ func (gr *GolangRuntime) GetMatchingPipelines(incomingTopic string) []*interface
 	}
 
 	for _, pipeline := range gr.pipelines {
-		if topicMatches(incomingTopic, pipeline.Topic) {
+		if topicMatches(incomingTopic, pipeline.Topics) {
 			matches = append(matches, pipeline)
 		}
 	}
@@ -393,32 +394,39 @@ func (gr *GolangRuntime) GetPipelineById(id string) *interfaces.FunctionPipeline
 	return gr.pipelines[id]
 }
 
-func topicMatches(incomingTopic string, pipelineTopic string) bool {
-	if pipelineTopic == TopicWildCard {
-		return true
-	}
-
-	wildcardCount := strings.Count(pipelineTopic, TopicWildCard)
-	switch wildcardCount {
-	case 0:
-		return incomingTopic == pipelineTopic
-	default:
-		pipelineLevels := strings.Split(pipelineTopic, TopicLevelSeparator)
-		incomingLevels := strings.Split(incomingTopic, TopicLevelSeparator)
-
-		if len(pipelineLevels) > len(incomingLevels) {
-			return false
+func topicMatches(incomingTopic string, pipelineTopics []string) bool {
+	for _, pipelineTopic := range pipelineTopics {
+		if pipelineTopic == TopicWildCard {
+			return true
 		}
 
-		for index, level := range pipelineLevels {
-			if level == TopicWildCard {
-				incomingLevels[index] = TopicWildCard
+		wildcardCount := strings.Count(pipelineTopic, TopicWildCard)
+		switch wildcardCount {
+		case 0:
+			if incomingTopic == pipelineTopic {
+				return true
+			}
+		default:
+			pipelineLevels := strings.Split(pipelineTopic, TopicLevelSeparator)
+			incomingLevels := strings.Split(incomingTopic, TopicLevelSeparator)
+
+			if len(pipelineLevels) > len(incomingLevels) {
+				continue
+			}
+
+			for index, level := range pipelineLevels {
+				if level == TopicWildCard {
+					incomingLevels[index] = TopicWildCard
+				}
+			}
+
+			incomingWithWildCards := strings.Join(incomingLevels, "/")
+			if strings.Index(incomingWithWildCards, pipelineTopic) == 0 {
+				return true
 			}
 		}
-
-		incomingWithWildCards := strings.Join(incomingLevels, "/")
-		return strings.Index(incomingWithWildCards, pipelineTopic) == 0
 	}
+	return false
 }
 
 func calculatePipelineHash(transforms []interfaces.AppFunction) string {

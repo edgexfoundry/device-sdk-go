@@ -263,9 +263,9 @@ func TestPipelinePerTopic(t *testing.T) {
 
 	goRuntime := runtime.NewGolangRuntime("", nil, dic)
 
-	err = goRuntime.AddFunctionsPipeline("P1", "edgex/events/device/P1/#", []interfaces.AppFunction{transform1})
+	err = goRuntime.AddFunctionsPipeline("P1", []string{"edgex/events/device/P1/#"}, []interfaces.AppFunction{transform1})
 	require.NoError(t, err)
-	err = goRuntime.AddFunctionsPipeline("P2", "edgex/events/device/P2/#", []interfaces.AppFunction{transform2})
+	err = goRuntime.AddFunctionsPipeline("P2", []string{"edgex/events/device/P2/#"}, []interfaces.AppFunction{transform2})
 	require.NoError(t, err)
 
 	trigger := NewTrigger(dic, goRuntime)

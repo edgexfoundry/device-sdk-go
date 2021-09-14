@@ -100,9 +100,9 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 	sample := functions.NewSample()
 
 	// TODO: Replace below functions with built in and/or your custom functions for your use case
-	//       or remove is using Pipeline By Topic below.
+	//       or remove if using Pipeline By Topics below.
 	//       See https://docs.edgexfoundry.org/2.0/microservices/application/BuiltIn/ for list of built-in functions
-	err = app.service.SetFunctionsPipeline(
+	err = app.service.SetDefaultFunctionsPipeline(
 		transforms.NewFilterFor(deviceNames).FilterByDeviceName,
 		sample.LogEventDetails,
 		sample.ConvertEventToXML,
@@ -120,8 +120,8 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 	//       Core Data publishes to the 'edgex/events/core/<profile-name>/<device-name>/<source-name>' topic
 	// Note: This example with default above causes Events from Random-Float-Device device to be processed twice
 	//       resulting in the XML to be published back to the MessageBus twice.
-	// See <Pipeline By Topic documentation url TBD> for more details.
-	err = app.service.AddFunctionsPipelineForTopic("Floats", "edgex/events/#/#/Random-Float-Device/#",
+	// See https://docs.edgexfoundry.org/2.0/microservices/application/AdvancedTopics/#pipeline-per-topics for more details.
+	err = app.service.AddFunctionsPipelineForTopics("Floats", []string{"edgex/events/#/#/Random-Float-Device/#"},
 		transforms.NewFilterFor(deviceNames).FilterByDeviceName,
 		sample.LogEventDetails,
 		sample.ConvertEventToXML,
@@ -132,7 +132,7 @@ func (app *myApp) CreateAndRunAppService(serviceKey string, newServiceFactory fu
 	}
 	// Note: This example with default above causes Events from Int32 source to be processed twice
 	//       resulting in the XML to be published back to the MessageBus twice.
-	err = app.service.AddFunctionsPipelineForTopic("Int32s", "edgex/events/#/#/#/Int32",
+	err = app.service.AddFunctionsPipelineForTopics("Int32s", []string{"edgex/events/#/#/#/Int32"},
 		transforms.NewFilterFor(deviceNames).FilterByDeviceName,
 		sample.LogEventDetails,
 		sample.ConvertEventToXML,

@@ -67,20 +67,20 @@ func (_m *ApplicationService) AddBackgroundPublisherWithTopic(capacity int, topi
 	return r0, r1
 }
 
-// AddFunctionsPipelineForTopic provides a mock function with given fields: id, topic, transforms
-func (_m *ApplicationService) AddFunctionsPipelineForTopic(id string, topic string, transforms ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error {
+// AddFunctionsPipelineForTopics provides a mock function with given fields: id, topic, transforms
+func (_m *ApplicationService) AddFunctionsPipelineForTopics(id string, topics []string, transforms ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error {
 	_va := make([]interface{}, len(transforms))
 	for _i := range transforms {
 		_va[_i] = transforms[_i]
 	}
 	var _ca []interface{}
-	_ca = append(_ca, id, topic)
+	_ca = append(_ca, id, topics)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error); ok {
-		r0 = rf(id, topic, transforms...)
+	if rf, ok := ret.Get(0).(func(string, []string, ...func(interfaces.AppFunctionContext, interface{}) (bool, interface{})) error); ok {
+		r0 = rf(id, topics, transforms...)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -270,7 +270,7 @@ func (svc *Service) LoadConfigurableFunctionPipelines() (map[string]interfaces.F
 		pipeline := interfaces.FunctionPipeline{
 			Id:         interfaces.DefaultPipelineId,
 			Transforms: transforms,
-			Topic:      runtime.TopicWildCard,
+			Topics:     []string{runtime.TopicWildCard},
 		}
 		pipelines[pipeline.Id] = pipeline
 	}
@@ -289,7 +289,7 @@ func (svc *Service) LoadConfigurableFunctionPipelines() (map[string]interfaces.F
 			pipeline := interfaces.FunctionPipeline{
 				Id:         perTopicPipeline.Id,
 				Transforms: transforms,
-				Topic:      perTopicPipeline.Topic,
+				Topics:     util.DeleteEmptyAndTrim(strings.FieldsFunc(perTopicPipeline.Topics, util.SplitComma)),
 			}
 
 			pipelines[pipeline.Id] = pipeline
@@ -384,26 +384,27 @@ func (svc *Service) SetDefaultFunctionsPipeline(transforms ...interfaces.AppFunc
 	return nil
 }
 
-// AddFunctionsPipelineForTopic adds a functions pipeline for the specified for the specified id and topic
-func (svc *Service) AddFunctionsPipelineForTopic(id string, topic string, transforms ...interfaces.AppFunction) error {
-	if strings.ToUpper(svc.config.Trigger.Type) == TriggerTypeHTTP {
-		return errors.New("pipeline per topic not valid with HTTP trigger")
-	}
-
+// AddFunctionsPipelineForTopics adds a functions pipeline for the specified for the specified id and topics
+func (svc *Service) AddFunctionsPipelineForTopics(id string, topics []string, transforms ...interfaces.AppFunction) error {
 	if len(transforms) == 0 {
 		return errors.New("no transforms provided to pipeline")
 	}
 
-	if len(strings.TrimSpace(topic)) == 0 {
-		return errors.New("topic for pipeline can not be blank")
+	if len(topics) == 0 {
+		return errors.New("topics for pipeline can not be empty")
 	}
 
-	err := svc.runtime.AddFunctionsPipeline(id, topic, transforms)
+	for _, t := range topics {
+		if strings.TrimSpace(t) == "" {
+			return errors.New("blank topic not allowed")
+		}
+	}
+	err := svc.runtime.AddFunctionsPipeline(id, topics, transforms)
 	if err != nil {
 		return err
 	}
 
-	svc.lc.Debugf("Pipeline '%s' added for topic '%s' with %d transform(s)", id, topic, len(transforms))
+	svc.lc.Debugf("Pipeline '%s' added for topics '%v' with %d transform(s)", id, topics, len(transforms))
 	return nil
 }
 

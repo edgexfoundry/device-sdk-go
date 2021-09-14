@@ -103,10 +103,10 @@ func TestProcessRetryItems(t *testing.T) {
 		{"RetryCount Increased - Default", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData, false},
 		{"Max Retries - Default", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData, false},
 		{"Bad Version - Default", successTransform, false, expectedPayload, 0, 0, 1, true, contextData, false},
-		{"Happy Path - Per Topic", successTransform, true, expectedPayload, 0, 0, 1, false, contextData, true},
-		{"RetryCount Increased - Per Topic", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData, true},
-		{"Max Retries - Per Topic", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData, true},
-		{"Bad Version - Per Topic", successTransform, false, expectedPayload, 0, 0, 1, true, contextData, true},
+		{"Happy Path - Per Topics", successTransform, true, expectedPayload, 0, 0, 1, false, contextData, true},
+		{"RetryCount Increased - Per Topics", failureTransform, true, expectedPayload, 4, 5, 0, false, contextData, true},
+		{"Max Retries - Per Topics", failureTransform, true, expectedPayload, 9, 9, 1, false, contextData, true},
+		{"Bad Version - Per Topics", successTransform, false, expectedPayload, 0, 0, 1, true, contextData, true},
 	}
 
 	for _, test := range tests {
@@ -117,7 +117,7 @@ func TestProcessRetryItems(t *testing.T) {
 			var pipeline *interfaces.FunctionPipeline
 
 			if test.UsePerTopic {
-				err := runtime.AddFunctionsPipeline("per-topic", "#", []interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
+				err := runtime.AddFunctionsPipeline("per-topic", []string{"#"}, []interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
 				require.NoError(t, err)
 				pipeline = runtime.GetPipelineById("per-topic")
 				require.NotNil(t, pipeline)
@@ -169,9 +169,9 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 		{"RetryCount Increased - Default", httpPost, 1, 2, 1, false},
 		{"Max Retries - Default", httpPost, 9, 0, 0, false},
 		{"Retry Success - Default", successTransform, 1, 0, 0, false},
-		{"RetryCount Increased - Per Topic", httpPost, 1, 2, 1, true},
-		{"Max Retries - Per Topic", httpPost, 9, 0, 0, true},
-		{"Retry Success - Per Topic", successTransform, 1, 0, 0, true},
+		{"RetryCount Increased - Per Topics", httpPost, 1, 2, 1, true},
+		{"Max Retries - Per Topics", httpPost, 9, 0, 0, true},
+		{"Retry Success - Per Topics", successTransform, 1, 0, 0, true},
 	}
 
 	for _, test := range tests {
@@ -181,7 +181,7 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 			var pipeline *interfaces.FunctionPipeline
 
 			if test.UsePerTopic {
-				err := runtime.AddFunctionsPipeline("per-topic", "#", []interfaces.AppFunction{transformPassthru, test.TargetTransform})
+				err := runtime.AddFunctionsPipeline("per-topic", []string{"#"}, []interfaces.AppFunction{transformPassthru, test.TargetTransform})
 				require.NoError(t, err)
 				pipeline = runtime.GetPipelineById("per-topic")
 				require.NotNil(t, pipeline)

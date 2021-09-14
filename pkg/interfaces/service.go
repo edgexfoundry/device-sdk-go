@@ -48,8 +48,8 @@ type FunctionPipeline struct {
 	Id string
 	// Collection of App Functions to execute
 	Transforms []AppFunction
-	// Topic to match against the incoming topic to determine if the pipeline will execute on the incoming message
-	Topic string
+	// Topics to match against the incoming topic to determine if the pipeline will execute on the incoming message
+	Topics []string
 	// Hash of the list of transforms set and used internally for Store and Forward
 	Hash string
 }
@@ -88,11 +88,11 @@ type ApplicationService interface {
 	// Note that the functions are executed in the order provided in the list.
 	// An error is returned if the list is empty.
 	SetDefaultFunctionsPipeline(transforms ...AppFunction) error
-	// AddFunctionsPipelineForTopic adds a functions pipeline with the specified unique id and list of Application Functions
-	// to be executed when the incoming topic matches the specified topic. The specified topic may contain the '#' wildcard
+	// AddFunctionsPipelineForTopics adds a functions pipeline with the specified unique id and list of Application Functions
+	// to be executed when the incoming topic matches any of the specified topics. The specified topic may contain the '#' wildcard
 	// so that it matches multiple incoming topics. If just "#" is used for the specified topic it will match all incoming
 	// topics and the specified functions pipeline will execute on every message received.
-	AddFunctionsPipelineForTopic(id string, topic string, transforms ...AppFunction) error
+	AddFunctionsPipelineForTopics(id string, topic []string, transforms ...AppFunction) error
 	// MakeItRun starts the configured trigger to allow the functions pipeline to execute when the trigger
 	// receives data and starts the internal webserver. This is a long running function which does not return until
 	// the service is stopped or MakeItStop() is called.

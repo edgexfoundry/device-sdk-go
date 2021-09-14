@@ -298,7 +298,7 @@ func TestSetDefaultFunctionsPipelineOneTransform(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestService_AddFunctionsPipelineForTopic(t *testing.T) {
+func TestService_AddFunctionsPipelineForTopics(t *testing.T) {
 	service := Service{
 		lc:      lc,
 		runtime: runtime.NewGolangRuntime("", nil, nil),
@@ -313,32 +313,33 @@ func TestService_AddFunctionsPipelineForTopic(t *testing.T) {
 
 	transforms := []interfaces.AppFunction{tags.AddTags}
 
-	// This sets the Default Pipeline allowing to test for duplicate iD.
 	err := service.SetDefaultFunctionsPipeline(transforms...)
+
 	require.NoError(t, err)
+
+	defaultTopics := []string{"#"}
 
 	tests := []struct {
 		name        string
 		id          string
 		trigger     string
-		topic       string
+		topics      []string
 		transforms  []interfaces.AppFunction
 		expectError bool
 	}{
-		{"Happy Path", "123", TriggerTypeMessageBus, "#", transforms, false},
-		{"Happy Path Custom", "124", "CUSTOM TRIGGER", "#", transforms, false},
-		{"Empty Topic", "125", TriggerTypeMessageBus, " ", transforms, true},
-		{"No Transforms", "126", TriggerTypeMessageBus, "#", nil, true},
-		{"Default Id", interfaces.DefaultPipelineId, TriggerTypeMessageBus, "#", transforms, true},
-		{"Duplicate Id", "123", TriggerTypeMessageBus, "#", transforms, true},
-		{"HTTP Trigger Type", "127", TriggerTypeHTTP, "#", transforms, true},
+		{"Happy Path", "123", TriggerTypeMessageBus, defaultTopics, transforms, false},
+		{"Duplicate Id", interfaces.DefaultPipelineId, TriggerTypeMessageBus, defaultTopics, transforms, true},
+		{"Happy Path Custom", "124", "CUSTOM TRIGGER", defaultTopics, transforms, false},
+		{"Empty Topic", "125", TriggerTypeMessageBus, []string{" "}, transforms, true},
+		{"Empty Topics", "126", TriggerTypeMessageBus, nil, transforms, true},
+		{"No Transforms", "127", TriggerTypeMessageBus, defaultTopics, nil, true},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			service.config.Trigger.Type = test.trigger
 
-			err := service.AddFunctionsPipelineForTopic(test.id, test.topic, test.transforms...)
+			err := service.AddFunctionsPipelineForTopics(test.id, test.topics, test.transforms...)
 			if test.expectError {
 				require.Error(t, err)
 				return
@@ -480,7 +481,7 @@ func TestLoadConfigurableFunctionPipelinesDefaultNotFound(t *testing.T) {
 			if len(test.perTopicExecutionOrder) > 0 {
 				service.config.Writable.Pipeline.PerTopicPipelines["bogus"] = common.TopicPipeline{
 					Id:             "bogus",
-					Topic:          "#",
+					Topics:         "#",
 					ExecutionOrder: test.perTopicExecutionOrder,
 				}
 			}
@@ -539,7 +540,7 @@ func TestLoadConfigurableFunctionPipelinesNumFunctions(t *testing.T) {
 					PerTopicPipelines: map[string]common.TopicPipeline{
 						perTopicPipelineId: {
 							Id:             perTopicPipelineId,
-							Topic:          "#",
+							Topics:         "#",
 							ExecutionOrder: "FilterByDeviceName, Transform, SetResponseData",
 						},
 					},

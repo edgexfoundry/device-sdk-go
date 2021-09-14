@@ -162,12 +162,12 @@ type PipelineInfo struct {
 	Functions map[string]PipelineFunction
 }
 
-// TopicPipeline define the data to a Pre Topic functions pipeline
+// TopicPipeline define the data to a Per Topics functions pipeline
 type TopicPipeline struct {
 	// Id is the unique ID of the pipeline instance
 	Id string
-	// Topic is the topic which must match the incoming topic inorder for the pipeline to execute
-	Topic string
+	// Topics is the set of comma separated topics matched against the incoming to determine if pipeline should execute
+	Topics string
 	// ExecutionOrder is a list of functions, in execution order, for the pipeline instance
 	ExecutionOrder string
 }
