@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ package appfunction
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -462,4 +464,41 @@ func TestContext_GetDeviceResource_Error(t *testing.T) {
 
 	_, err := target.GetDeviceResource("MyProfile", "MyResource")
 	require.Error(t, err)
+}
+
+func TestContext_Clone(t *testing.T) {
+	sut := Context{
+		Dic:                 dic,
+		correlationID:       uuid.NewString(),
+		inputContentType:    common.ContentTypeJSON,
+		responseData:        nil,
+		retryData:           nil,
+		responseContentType: common.ContentTypeJSON,
+		contextData: map[string]string{
+			"test":  "val1",
+			"test2": "val2",
+		},
+		valuePlaceholderSpec: regexp.MustCompile(""),
+	}
+
+	clone, ok := sut.Clone().(*Context)
+
+	require.True(t, ok)
+	require.NotNil(t, clone)
+	require.NotSame(t, sut, clone)
+
+	assert.Equal(t, sut.correlationID, clone.correlationID)
+	assert.Equal(t, sut.inputContentType, clone.inputContentType)
+	assert.Equal(t, sut.responseData, clone.responseData)
+	assert.Equal(t, sut.retryData, clone.retryData)
+	assert.Equal(t, sut.responseContentType, clone.responseContentType)
+	assert.Equal(t, sut.valuePlaceholderSpec, clone.valuePlaceholderSpec)
+
+	require.NotSame(t, sut.contextData, clone.contextData)
+
+	assert.Equal(t, len(sut.contextData), len(clone.contextData))
+
+	for k, v := range sut.contextData {
+		assert.Equal(t, v, clone.contextData[k])
+	}
 }

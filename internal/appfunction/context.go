@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,6 +61,26 @@ type Context struct {
 	responseContentType  string
 	contextData          map[string]string
 	valuePlaceholderSpec *regexp.Regexp
+}
+
+// Clone returns a copy of the context that can be manipulated independently.
+func (appContext *Context) Clone() interfaces.AppFunctionContext {
+	contextCopy := make(map[string]string, len(appContext.contextData))
+
+	for k, v := range appContext.contextData {
+		contextCopy[k] = v
+	}
+
+	return &Context{
+		Dic:                  appContext.Dic,
+		correlationID:        appContext.correlationID,
+		inputContentType:     appContext.inputContentType,
+		responseData:         appContext.responseData,
+		retryData:            appContext.retryData,
+		responseContentType:  appContext.responseContentType,
+		contextData:          contextCopy,
+		valuePlaceholderSpec: appContext.valuePlaceholderSpec,
+	}
 }
 
 // SetCorrelationID sets the correlationID. This function is not part of the AppFunctionContext interface,

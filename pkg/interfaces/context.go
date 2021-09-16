@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +44,8 @@ type AppFunction = func(appCxt AppFunctionContext, data interface{}) (bool, inte
 // AppFunctionContext defines the interface for an Edgex Application Service Context provided to
 // App Functions when executing in the Functions Pipeline.
 type AppFunctionContext interface {
+	// Clone returns a copy of the context that can be manipulated independently.
+	Clone() AppFunctionContext
 	// CorrelationID returns the correlation ID associated with the context.
 	CorrelationID() string
 	// InputContentType returns the content type of the data that initiated the pipeline execution. Only useful when
