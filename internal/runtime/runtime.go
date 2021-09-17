@@ -320,7 +320,9 @@ func (gr *GolangRuntime) processEventPayload(envelope types.MessageEnvelope, lc 
 func (gr *GolangRuntime) unmarshalPayload(envelope types.MessageEnvelope, target interface{}) error {
 	var err error
 
-	switch envelope.ContentType {
+	contentType := strings.Split(envelope.ContentType, ";")[0]
+
+	switch contentType {
 	case common.ContentTypeJSON:
 		err = json.Unmarshal(envelope.Payload, target)
 
