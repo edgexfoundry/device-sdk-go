@@ -52,8 +52,8 @@ docker:
 		-f Dockerfile \
 		--label "git_sha=$(GIT_SHA)" \
 		-t edgexfoundry/new-app-service:$(GIT_SHA) \
-		-t edgexfoundry/new-app-service:master-dev \
-		-t nexus3.edgexfoundry.org:10004/new-app-service:master-dev \
+		-t edgexfoundry/new-app-service:${APPVERSION}-dev \
+		-t nexus3.edgexfoundry.org:10004/new-app-service:${APPVERSION}-dev \
 		.
 
 # The test-attribution-txt.sh scripts are required for upstreaming to EdgeX Foundry.
