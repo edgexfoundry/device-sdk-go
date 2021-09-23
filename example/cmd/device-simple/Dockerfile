@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=golang:1.16-alpine3.12
+ARG BASE=golang:1.16-alpine3.14
 FROM ${BASE} AS builder
 
 WORKDIR /device-sdk-go
@@ -33,7 +33,7 @@ RUN go mod download
 RUN make build
 
 # Next image - Copy built Go binary into new workspace
-FROM alpine:3.12
+FROM alpine:3.14
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2020: Intel'
 
