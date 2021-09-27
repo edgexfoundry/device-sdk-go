@@ -22,5 +22,5 @@ func Bootstrap(serviceName string, serviceVersion string, driver interface{}) {
 	s := r.PathPrefix("/api/v2").Subrouter()
 	s.Handle("/metrics", promhttp.Handler())
 
-	service.Main(serviceName, serviceVersion, driver, ctx, cancel, mux.NewRouter())
+	service.Main(serviceName, serviceVersion, driver, ctx, cancel, r)
 }
