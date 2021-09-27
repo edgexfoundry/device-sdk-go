@@ -1,6 +1,7 @@
 //
 // Copyright (c) 2020 Technotects
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +21,14 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/app/mocks"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+	"github.com/hashicorp/go-multierror"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"strings"
 	"sync"
 	"testing"
@@ -155,7 +164,7 @@ func (*mockCustomTrigger) Initialize(_ *sync.WaitGroup, _ context.Context, _ <-c
 	return nil, nil
 }
 
-func TestSetupTrigger_CustomType(t *testing.T) {
+func Test_Service_setupTrigger_CustomType(t *testing.T) {
 	triggerName := uuid.New().String()
 
 	sdk := Service{
@@ -178,7 +187,7 @@ func TestSetupTrigger_CustomType(t *testing.T) {
 	require.IsType(t, &mockCustomTrigger{}, trigger, "should be a custom trigger")
 }
 
-func TestSetupTrigger_CustomType_Error(t *testing.T) {
+func Test_Service_SetupTrigger_CustomTypeError(t *testing.T) {
 	triggerName := uuid.New().String()
 
 	sdk := Service{
@@ -200,7 +209,7 @@ func TestSetupTrigger_CustomType_Error(t *testing.T) {
 	require.Nil(t, trigger, "should be nil")
 }
 
-func TestSetupTrigger_CustomType_NotFound(t *testing.T) {
+func Test_Service_SetupTrigger_CustomTypeNotFound(t *testing.T) {
 	triggerName := uuid.New().String()
 
 	sdk := Service{
@@ -215,4 +224,123 @@ func TestSetupTrigger_CustomType_NotFound(t *testing.T) {
 	trigger := sdk.setupTrigger(sdk.config, sdk.runtime)
 
 	require.Nil(t, trigger, "should be nil")
+}
+
+func Test_customTriggerBinding_buildContext(t *testing.T) {
+	container := &di.Container{}
+	correlationId := uuid.NewString()
+	contentType := uuid.NewString()
+
+	bnd := &customTriggerBinding{
+		dic: container,
+	}
+
+	got := bnd.buildContext(types.MessageEnvelope{CorrelationID: correlationId, ContentType: contentType})
+
+	require.NotNil(t, got)
+
+	assert.Equal(t, correlationId, got.CorrelationID())
+	assert.Equal(t, contentType, got.InputContentType())
+
+	ctx, ok := got.(*appfunction.Context)
+	require.True(t, ok)
+	assert.Equal(t, container, ctx.Dic)
+}
+
+func Test_customTriggerBinding_processMessage(t *testing.T) {
+	type returns struct {
+		runtimeProcessor interface{}
+		pipelineMatcher  interface{}
+	}
+	type args struct {
+		ctx      interfaces.AppFunctionContext
+		envelope types.MessageEnvelope
+	}
+	tests := []struct {
+		name    string
+		setup   returns
+		args    args
+		wantErr int
+	}{
+		{
+			name:    "no pipelines",
+			setup:   returns{},
+			args:    args{envelope: types.MessageEnvelope{CorrelationID: uuid.NewString(), ContentType: uuid.NewString(), ReceivedTopic: uuid.NewString()}, ctx: &appfunction.Context{}},
+			wantErr: 0,
+		},
+		{
+			name: "single pipeline",
+			setup: returns{
+				pipelineMatcher: []*interfaces.FunctionPipeline{{}},
+			},
+			args:    args{envelope: types.MessageEnvelope{CorrelationID: uuid.NewString(), ContentType: uuid.NewString(), ReceivedTopic: uuid.NewString()}, ctx: &appfunction.Context{}},
+			wantErr: 0,
+		},
+		{
+			name: "single pipeline error",
+			setup: returns{
+				pipelineMatcher:  []*interfaces.FunctionPipeline{{}},
+				runtimeProcessor: &runtime.MessageError{Err: fmt.Errorf("some error")},
+			},
+			args:    args{envelope: types.MessageEnvelope{CorrelationID: uuid.NewString(), ContentType: uuid.NewString(), ReceivedTopic: uuid.NewString()}, ctx: &appfunction.Context{}},
+			wantErr: 1,
+		},
+		{
+			name: "multi pipeline",
+			setup: returns{
+				pipelineMatcher: []*interfaces.FunctionPipeline{{}, {}, {}},
+			},
+			args:    args{envelope: types.MessageEnvelope{CorrelationID: uuid.NewString(), ContentType: uuid.NewString(), ReceivedTopic: uuid.NewString()}, ctx: &appfunction.Context{}},
+			wantErr: 0,
+		},
+		{
+			name: "multi pipeline single err",
+			setup: returns{
+				pipelineMatcher: []*interfaces.FunctionPipeline{{}, {Id: "errorid"}, {}},
+				runtimeProcessor: func(appContext *appfunction.Context, envelope types.MessageEnvelope, pipeline *interfaces.FunctionPipeline) *runtime.MessageError {
+					if pipeline.Id == "errorid" {
+						return &runtime.MessageError{Err: fmt.Errorf("new error")}
+					}
+					return nil
+				},
+			},
+			args:    args{envelope: types.MessageEnvelope{CorrelationID: uuid.NewString(), ContentType: uuid.NewString(), ReceivedTopic: uuid.NewString()}, ctx: &appfunction.Context{}},
+			wantErr: 1,
+		},
+		{
+			name: "multi pipeline multi err",
+			setup: returns{
+				pipelineMatcher:  []*interfaces.FunctionPipeline{{}, {}, {}},
+				runtimeProcessor: &runtime.MessageError{Err: fmt.Errorf("new error")},
+			},
+			args:    args{envelope: types.MessageEnvelope{CorrelationID: uuid.NewString(), ContentType: uuid.NewString(), ReceivedTopic: uuid.NewString()}, ctx: &appfunction.Context{}},
+			wantErr: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tsb := mocks.TriggerServiceBinding{}
+
+			tsb.On("ProcessMessage", mock.Anything, mock.Anything, mock.Anything).Return(tt.setup.runtimeProcessor)
+			tsb.On("GetMatchingPipelines", tt.args.envelope.ReceivedTopic).Return(tt.setup.pipelineMatcher)
+
+			bnd := &customTriggerBinding{
+				TriggerServiceBinding: &tsb,
+				log:                   logger.NewMockClient(),
+			}
+
+			err := bnd.processMessage(tt.args.ctx, tt.args.envelope)
+
+			require.Equal(t, err == nil, tt.wantErr == 0)
+
+			if err != nil {
+				merr, ok := err.(*multierror.Error)
+
+				require.True(t, ok)
+
+				assert.Equal(t, tt.wantErr, merr.Len())
+			}
+		})
+	}
 }
