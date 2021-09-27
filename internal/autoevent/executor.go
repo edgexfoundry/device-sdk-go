@@ -84,12 +84,12 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 					e.sourceName,
 				).Inc()
 
-				respSum := 0
+				respSize := 0
 				for _, reading := range evt.Readings {
 					if reading.BinaryValue != nil {
-						respSum += len(reading.BinaryValue)
+						respSize += len(reading.BinaryValue)
 					} else {
-						respSum += len(reading.Value)
+						respSize += len(reading.Value)
 					}
 				}
 
@@ -97,7 +97,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 					"",
 					e.deviceName,
 					e.sourceName,
-				).Set(float64(respSum))
+				).Set(float64(respSize))
 
 				if e.onChange {
 					if e.compareReadings(evt.Readings) {
