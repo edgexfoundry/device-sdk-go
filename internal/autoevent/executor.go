@@ -29,7 +29,7 @@ import (
 var (
 	resourceReadCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "resource_read_count_total",
+			Name: "resource_read_counts",
 			Help: "How many read resource requests processed, partitioned by device name, resource name.",
 		},
 		[]string{"service", "device", "resource"},
