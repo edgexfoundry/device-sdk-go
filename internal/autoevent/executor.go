@@ -71,25 +71,25 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 			lc.Debugf("AutoEvent - reading %s", e.sourceName)
 			evt, err := readResource(e, dic)
 
-			//sent promutheus statitics，modified by jacktian
-			go resourceReadCount.WithLabelValues(
-				"",
-				e.deviceName,
-				e.sourceName,
-			).Inc()
-
-			go resourceReadResponse.WithLabelValues(
-				"",
-				e.deviceName,
-				e.sourceName,
-			).Set(float64(len(evt.Readings)))
-
 			if err != nil {
 				lc.Errorf("AutoEvent - error occurs when reading resource %s: %v", e.sourceName, err)
 				continue
 			}
 
 			if evt != nil {
+				//sent promutheus statitics，modified by jacktian
+				go resourceReadCount.WithLabelValues(
+					"",
+					e.deviceName,
+					e.sourceName,
+				).Inc()
+
+				go resourceReadResponse.WithLabelValues(
+					"",
+					e.deviceName,
+					e.sourceName,
+				).Set(float64(len(evt.Readings)))
+
 				if e.onChange {
 					if e.compareReadings(evt.Readings) {
 						lc.Debugf("AutoEvent - readings are the same as previous one")
