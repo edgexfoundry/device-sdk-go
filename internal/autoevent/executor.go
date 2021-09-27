@@ -9,6 +9,8 @@ package autoevent
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"sync"
 	"time"
 
@@ -22,6 +24,24 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+)
+
+var (
+	resourceReadCount = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "resource_read_count_total",
+			Help: "How many read resource requests processed, partitioned by device name, resource name.",
+		},
+		[]string{"service", "device", "resource"},
+	)
+
+	resourceReadResponse = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "resource_read_response_bytes",
+			Help: "Response data from device , partitioned by device name, resource name.",
+		},
+		[]string{"service", "device", "resource"},
+	)
 )
 
 type Executor struct {
@@ -50,6 +70,20 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 			}
 			lc.Debugf("AutoEvent - reading %s", e.sourceName)
 			evt, err := readResource(e, dic)
+
+			//sent promutheus statitics，modified by jacktian
+			go resourceReadCount.WithLabelValues(
+				"",
+				e.deviceName,
+				e.sourceName,
+			).Inc()
+
+			go resourceReadResponse.WithLabelValues(
+				"",
+				e.deviceName,
+				e.sourceName,
+			).Set(float64(len(evt.Readings)))
+
 			if err != nil {
 				lc.Errorf("AutoEvent - error occurs when reading resource %s: %v", e.sourceName, err)
 				continue
