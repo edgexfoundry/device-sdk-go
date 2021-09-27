@@ -84,11 +84,20 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 					e.sourceName,
 				).Inc()
 
+				respSum := 0
+				for _, reading := range evt.Readings {
+					if reading.BinaryValue != nil {
+						respSum += len(reading.BinaryValue)
+					} else {
+						respSum += len(reading.Value)
+					}
+				}
+
 				go resourceReadResponse.WithLabelValues(
 					"",
 					e.deviceName,
 					e.sourceName,
-				).Set(float64(len(evt.Readings)))
+				).Set(float64(respSum))
 
 				if e.onChange {
 					if e.compareReadings(evt.Readings) {
