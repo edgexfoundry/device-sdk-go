@@ -1,4 +1,4 @@
-module github.com/edgegoy/device-sdk-go/v2
+module github.com/edgego/device-sdk-go/v2
 
 require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
