@@ -431,10 +431,9 @@ func (cv *CommandValue) BinaryValue() ([]byte, error) {
 
 // ObjectValue returns the value in object data type, and returns error if the Type is not Object.
 func (cv *CommandValue) ObjectValue() (interface{}, error) {
-	var value float64
 	if cv.Type != common.ValueTypeObject {
 		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, common.ValueTypeObject)
-		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 	return cv.Value, nil
 }
