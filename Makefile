@@ -30,7 +30,7 @@ test-template:
 test-sdk:
 	$(GO) test ./... -coverprofile=coverage.out ./...
 	$(GO) vet ./...
-	gofmt -l .
-	[ "`gofmt -l .`" = "" ]
+	gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")
+	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]
 
 test: build test-template test-sdk
