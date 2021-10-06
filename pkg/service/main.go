@@ -25,6 +25,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/messaging"
 
 	"github.com/gorilla/mux"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/prometheus"
 )
 
 var instanceName string
@@ -78,6 +79,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			messaging.BootstrapHandler,
 			clients.BootstrapHandler,
 			autoevent.BootstrapHandler,
+			prometheus.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
 			handlers.NewStartMessage(serviceName, serviceVersion).BootstrapHandler,
