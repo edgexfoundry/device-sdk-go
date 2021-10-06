@@ -113,8 +113,14 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	lc.Debugf("starting AutoEvents for device %s", device.Name)
-	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
+	autoEventManager := container.ManagerFrom(dic.Get)
+	if device.AdminState == models.Locked {
+		lc.Debugf("stopping AutoEvents for the locked device %s", device.Name)
+		autoEventManager.StopForDevice(device.Name)
+	} else {
+		lc.Debugf("starting AutoEvents for device %s", device.Name)
+		autoEventManager.RestartForDevice(device.Name)
+	}
 	return nil
 }
 
