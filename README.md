@@ -44,39 +44,9 @@ The following command line options are available
 
 ## Float value encoding
 
-In EdgeX, float values have two kinds of encoding, [Base64](#base64), and [scientific notation (`eNotation`)](#scientific-notation-e-notation).
+In EdgeX v1, float values had two kinds of encoding, [Base64](#base64), and [scientific notation (`eNotation`)](#scientific-notation-e-notation).
 
-> When EdgeX is given (or returns) a float32 or float64 value as a string, the format of the string is by default a base64 encoded little-endian of the float32 or float64 value, but the `floatEncoding` attribute relating to the value may instead specify `eNotation` in which case the representation is a decimal with exponent (eg `1.234e-5`)
-
-The above quote is from the official EdgeX device service requirements document, viewable [on Google Docs here](https://docs.google.com/document/d/1aMIQ0kb46VE5eeCpDlaTg8PP29-DBSBTlgeWrv6LuYk), under the "Device readings" section.
-
-### base64
-
-Currently, the [C device service SDK](https://github.com/edgexfoundry/device-sdk-c) converts float values to [little-endian](https://en.wikipedia.org/wiki/Endianness) binary, which is consistent with the [EdgeX device service specifications](https://docs.google.com/document/d/1aMIQ0kb46VE5eeCpDlaTg8PP29-DBSBTlgeWrv6LuYk). However, the Go device service SDK converts float values to big-endian binary. This inconsistency is due to the fact that the device service specifications changed in the [EdgeX Fuji release](https://www.edgexfoundry.org/release-1-1-fuji/whats-new/) - to track the status of this, please review issue [#457](https://github.com/edgexfoundry/device-sdk-go/issues/457).
-
-In the device profile ([example here](https://github.com/edgexfoundry/device-sdk-go/blob/master/example/cmd/device-simple/res/Simple-Driver.yaml)), configure a [profile property](https://docs.edgexfoundry.org/1.2/microservices/device/profile/Ch-DeviceProfileRef/#profileproperty) with [property values](https://docs.edgexfoundry.org/1.2/microservices/device/profile/Ch-DeviceProfileRef/#propertyvalue) as follows:
-
-```yaml
-- name: "Temperature"
-  description: "Temperature value"
-  properties:
-    value: { type: "FLOAT64", readWrite: "RW", floatEncoding: "Base64" }
-    units: { type: "String", readWrite: "R", defaultValue: "degrees Celsius" }
-```
-
-### Scientific Notation (e-notation)
-
-The SDK will convert incoming string values with [scientific notation (aka e-notation)](https://en.wikipedia.org/wiki/Scientific_notation) representation to float values. To enable this, the `floatEncoding` field should be set to the value `eNotation`, detailed below.
-
-In the device profile ([example here](https://github.com/edgexfoundry/device-sdk-go/blob/master/example/cmd/device-simple/res/Simple-Driver.yaml)), configure a [profile property](https://docs.edgexfoundry.org/1.2/microservices/device/profile/Ch-DeviceProfileRef/#profileproperty) with [property values](https://docs.edgexfoundry.org/1.2/microservices/device/profile/Ch-DeviceProfileRef/#propertyvalue) as follows:
-
-```yaml
-- name: "Temperature"
-  description: "Temperature value"
-  properties:
-    value: { type: "FLOAT64", readWrite: "RW", floatEncoding: "eNotation" }
-    units: { type: "String", readWrite: "R", defaultValue: "degrees Celsius" }
-```
+After v2, EdgeX only uses [scientific notation (`eNotation`)](#scientific-notation-e-notation) to present float values.
 
 ## Community
 
