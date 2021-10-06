@@ -43,7 +43,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 
 	var transformsOK = true
 	origin := getUniqueOrigin()
-	tags := make(map[string]string)
+	tags := make(map[string]interface{})
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	config := container.ConfigurationFrom(dic.Get)
 	readings := make([]dtos.BaseReading, 0, config.Device.MaxCmdOps)
@@ -145,6 +145,8 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 			return reading, errors.NewCommonEdgeXWrapper(err)
 		}
 		reading = dtos.NewBinaryReading(profileName, deviceName, cv.DeviceResourceName, binary, mediaType)
+	} else if cv.Type == common.ValueTypeObject {
+		reading = dtos.NewObjectReading(profileName, deviceName, cv.DeviceResourceName, cv.Value)
 	} else {
 		reading, err = dtos.NewSimpleReading(profileName, deviceName, cv.DeviceResourceName, cv.Type, cv.Value)
 		if err != nil {
