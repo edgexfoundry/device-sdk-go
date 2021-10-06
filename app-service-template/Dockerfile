@@ -26,11 +26,9 @@ RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/reposi
 RUN apk add --update --no-cache ${ALPINE_PKG_BASE} ${ALPINE_PKG_EXTRA}
 WORKDIR /app
 
-COPY go.mod .
-
-RUN go mod download
-
 COPY . .
+
+RUN [ ! -d "vendor" ] && go mod download all || echo "skipping..."
 
 ARG MAKE="make build"
 RUN $MAKE

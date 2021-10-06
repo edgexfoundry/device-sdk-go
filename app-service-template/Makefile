@@ -36,7 +36,7 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/app-functions-sdk-go/v2/internal.SD
 #GIT_SHA=$(shell git rev-parse HEAD)
 GIT_SHA=no-sha
 
-build: tidy
+build:
 	$(GO) build $(GOFLAGS) -o $(MICROSERVICE)
 
 tidy:
@@ -61,11 +61,12 @@ docker:
 test:
 	$(GO) test -coverprofile=coverage.out ./...
 	$(GO) vet ./...
-	gofmt -l .
-	[ "`gofmt -l .`" = "" ]
+	gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")
+	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]
 	./bin/test-attribution-txt.sh
 
 clean:
 	rm -f $(MICROSERVICE)
 
-
+vendor:
+	$(GO) mod vendor
