@@ -34,3 +34,7 @@ test-sdk:
 	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]
 
 test: build test-template test-sdk
+
+vendor:
+	make -C ./app-service-template vendor
+	$(GO) mod vendor
