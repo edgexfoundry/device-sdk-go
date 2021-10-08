@@ -14,11 +14,13 @@ GOTESTFLAGS?=-race
 
 GIT_SHA=$(shell git rev-parse HEAD)
 
+tidy:
+	go mod tidy
+
 build: $(MICROSERVICES)
 	$(GOCGO) install -tags=safe
 
 example/cmd/device-simple/device-simple:
-	go mod tidy
 	$(GOCGO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
 
 docker:
@@ -30,13 +32,14 @@ docker:
 		.
 
 test:
-	go mod tidy
 	GO111MODULE=on go test $(GOTESTFLAGS) -coverprofile=coverage.out ./...
 	GO111MODULE=on go vet ./...
-	gofmt -l .
-	[ "`gofmt -l .`" = "" ]
+	gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")
+	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]
 	./bin/test-attribution-txt.sh
-	./bin/test-go-mod-tidy.sh
 
 clean:
 	rm -f $(MICROSERVICES)
+
+vendor:
+	$(GO) mod vendor
