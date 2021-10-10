@@ -77,7 +77,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 			}
 
 			if evt != nil {
-				//sent promutheus statitics，modified by jacktian
+				//add promutheus metrics
 				go resourceReadCount.WithLabelValues(
 					"",
 					e.deviceName,
