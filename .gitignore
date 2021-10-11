@@ -5,7 +5,6 @@ glide.lock
 vendor
 .idea
 .vscode
-go.sum
 coverage.out
 *.snap
 prime/

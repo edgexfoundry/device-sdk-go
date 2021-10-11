@@ -17,6 +17,8 @@
 ARG BASE=golang:1.16-alpine3.14
 FROM ${BASE} AS builder
 
+ARG MAKE=make build
+
 WORKDIR /device-sdk-go
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
@@ -27,10 +29,9 @@ RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/reposi
 RUN apk add --update --no-cache make git gcc libc-dev zeromq-dev libsodium-dev
 
 COPY . .
+RUN [ ! -d "vendor" ] && go mod download all || echo "skipping..."
 
-RUN go mod download
-
-RUN make build
+RUN ${MAKE}
 
 # Next image - Copy built Go binary into new workspace
 FROM alpine:3.14

@@ -37,6 +37,7 @@ type SimpleDriver struct {
 	xRotation     int32
 	yRotation     int32
 	zRotation     int32
+	counter       interface{}
 	serviceConfig *config.ServiceConfig
 }
 
@@ -79,6 +80,10 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 	s.asyncCh = asyncCh
 	s.deviceCh = deviceCh
 	s.serviceConfig = &config.ServiceConfig{}
+	s.counter = map[string]interface{}{
+		"f1": "ABC",
+		"f2": 123,
+	}
 
 	ds := service.RunningService()
 
@@ -160,6 +165,9 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			res[0] = cvb
 		} else if reqs[0].DeviceResourceName == "Uint8Array" {
 			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeUint8Array, []uint8{0, 1, 2})
+			res[0] = cv
+		} else if reqs[0].DeviceResourceName == "Counter" {
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeObject, s.counter)
 			res[0] = cv
 		}
 	} else if len(reqs) == 3 {
