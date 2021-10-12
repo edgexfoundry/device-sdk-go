@@ -429,6 +429,15 @@ func (cv *CommandValue) BinaryValue() ([]byte, error) {
 	return value, nil
 }
 
+// ObjectValue returns the value in object data type, and returns error if the Type is not Object.
+func (cv *CommandValue) ObjectValue() (interface{}, error) {
+	if cv.Type != common.ValueTypeObject {
+		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, common.ValueTypeObject)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	return cv.Value, nil
+}
+
 // validate checks if the given value can be converted to specified valueType by
 // performing type assertion
 func validate(valueType string, value interface{}) error {
@@ -486,6 +495,8 @@ func validate(valueType string, value interface{}) error {
 			errMsg := fmt.Sprintf("value payload exceeds limit for binary readings (%v bytes)", MaxBinaryBytes)
 			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
+	case common.ValueTypeObject:
+		_, ok = value.(interface{})
 	default:
 		return errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

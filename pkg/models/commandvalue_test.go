@@ -720,3 +720,32 @@ func TestCommandValue_Float64ArrayValue(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandValue_ObjectValue(t *testing.T) {
+	var value interface{} = map[string]interface{}{
+		"f1": "ABC",
+		"f2": 123,
+	}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeObject, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+
+	tests := []struct {
+		name        string
+		cv          *CommandValue
+		expected    interface{}
+		expectedErr bool
+	}{
+		{"valid - CommandValue with interface{} Value", valid, value, false},
+		{"invalid - ValueType is not Object", invalidType, value, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.cv.ObjectValue()
+			if tt.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.Equal(t, res, tt.expected)
+			}
+		})
+	}
+}

@@ -51,6 +51,13 @@ deviceResources:
     properties:
         valueType: "Uint8Array"
         readWrite: "RW"
+  -
+    name: "Counter"
+    isHidden: false
+    description: "Counter data"
+    properties:
+      valueType: "Object"
+      readWrite: "R"
 
 deviceCommands:
   -
