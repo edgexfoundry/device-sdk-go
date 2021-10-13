@@ -575,7 +575,7 @@ func (app *Configurable) AddTags(parameters map[string]string) interfaces.AppFun
 
 	tagKeyValues := util.DeleteEmptyAndTrim(strings.FieldsFunc(tagsSpec, util.SplitComma))
 
-	tags := make(map[string]string)
+	tags := make(map[string]interface{})
 	for _, tag := range tagKeyValues {
 		keyValue := util.DeleteEmptyAndTrim(strings.FieldsFunc(tag, util.SplitColon))
 		if len(keyValue) != 2 {
@@ -595,7 +595,7 @@ func (app *Configurable) AddTags(parameters map[string]string) interfaces.AppFun
 		tags[keyValue[0]] = keyValue[1]
 	}
 
-	transform := transforms.NewTags(tags)
+	transform := transforms.NewGenericTags(tags)
 	return transform.AddTags
 }
 

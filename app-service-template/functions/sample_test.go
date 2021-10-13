@@ -99,7 +99,7 @@ func createTestEvent(t *testing.T) dtos.Event {
 	err := event.AddSimpleReading(resourceName, common.ValueTypeInt32, int32(1234))
 	require.NoError(t, err)
 
-	event.Tags = map[string]string{
+	event.Tags = map[string]interface{}{
 		"WhereAmI": "NotKansas",
 	}
 
