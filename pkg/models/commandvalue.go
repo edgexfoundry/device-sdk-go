@@ -55,6 +55,17 @@ func NewCommandValue(deviceResourceName string, valueType string, value interfac
 		Tags:               make(map[string]string)}, nil
 }
 
+// NewCommandValueWithOrigin wraps NewCommandValue, create a CommandValue and add the Origin field.
+func NewCommandValueWithOrigin(deviceResourceName string, valueType string, value interface{}, origin int64) (*CommandValue, error) {
+	cv, err := NewCommandValue(deviceResourceName, valueType, value)
+	if err != nil {
+		return nil, errors.NewCommonEdgeXWrapper(err)
+	}
+
+	cv.Origin = origin
+	return cv, nil
+}
+
 // ValueToString returns the string format of the value.
 func (cv *CommandValue) ValueToString() string {
 	if cv.Type == common.ValueTypeBinary {
