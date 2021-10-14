@@ -14,7 +14,7 @@ components:
       description: "Identifies a resource which will be read automatically by the device service."
       type: object
       properties:
-        frequency:
+        interval:
           description: "Specifies a time interval between reading requests. This may be in a combination of hours, minutes, seconds and milliseconds (h/m/s/ms)"
           type: string
           example: "1m30s"
@@ -46,6 +46,10 @@ components:
           type: string
           format: uuid
           example: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+        apiVersion:
+          description: "A version number shows the API version in DTOs."
+          type: string
+          example: "v2"
     NewBinaryReading:
       description: "An event reading for a binary data type"
       allOf:
@@ -100,11 +104,11 @@ components:
           description: "A free-format descriptive field for additional device information"
         adminState:
           type: string
-          enum: [locked, unlocked]
+          enum: [LOCKED, UNLOCKED]
           description: "Administrative state of the device, allowing it to be locked for policy reasons"
         operatingState:
           type: string
-          enum: [enabled, disabled]
+          enum: [UP, DOWN, UNKNOWN]
           description: "Operating state of the device, indicating whether it is currently responsive"
         lastConnected:
           type: integer
@@ -201,7 +205,7 @@ components:
           description: BaseAddress is a fully qualified URI, e.g. <protocol>:\\<hostname>:<port>/<optional path>
         adminState:
           type: string
-          enum: [locked, unlocked]
+          enum: [LOCKED, UNLOCKED]
           description: Device Service Admin State
     DeviceResource:
       description: "DeviceResource represents a value on a device that can be read or written."
@@ -553,6 +557,7 @@ components:
           description: "The device profile to which to associate devices which match this watcher"
         adminState:
           type: string
+          enum: [LOCKED, UNLOCKED]
           description: "The initial administrative state to apply to devices which match this watcher"
         autoEvents:
           type: array
