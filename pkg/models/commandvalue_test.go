@@ -11,11 +11,28 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewCommandValue(t *testing.T) {
+	resource := "test-resource"
+	value := "test"
+	cv, err := NewCommandValue(resource, common.ValueTypeString, value)
+	assert.NoError(t, err)
+	assert.Equal(t, cv.DeviceResourceName, resource)
+	assert.Equal(t, cv.Value, value)
+}
+
+func TestNewCommandValueWithOrigin(t *testing.T) {
+	origin := time.Now().UnixNano()
+	cv, err := NewCommandValueWithOrigin("test-resource", common.ValueTypeString, "test", origin)
+	assert.NoError(t, err)
+	assert.Equal(t, cv.Origin, origin)
+}
 
 func Test_validate(t *testing.T) {
 	exceedBinary := make([]byte, MaxBinaryBytes+1)
