@@ -117,7 +117,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 			defer appWg.Done()
 			lc.Infof("Waiting for messages from the MessageBus on the '%s' topic", triggerTopic.Topic)
 
-			for true {
+			for {
 				select {
 				case <-appCtx.Done():
 					lc.Infof("Exiting waiting for MessageBus '%s' topic messages", triggerTopic.Topic)
@@ -133,7 +133,7 @@ func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context
 	appWg.Add(1)
 	go func() {
 		defer appWg.Done()
-		for true {
+		for {
 			select {
 			case <-appCtx.Done():
 				lc.Info("Exiting waiting for MessageBus errors and background publishing")

@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha1"
+	"crypto/sha1" //nolint: gosec
 	"encoding/base64"
 	"fmt"
 
@@ -82,7 +82,7 @@ func (aesData Encryption) EncryptWithAES(ctx interfaces.AppFunctionContext, data
 	iv := make([]byte, blockSize)
 	copy(iv, aesData.InitializationVector)
 
-	hash := sha1.New()
+	hash := sha1.New() //nolint: gosec
 
 	// If using Secret Store for the encryption key
 	if len(aesData.SecretPath) != 0 && len(aesData.SecretName) != 0 {

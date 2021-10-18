@@ -44,14 +44,6 @@ var eventWithExistingTags = dtos.Event{
 	},
 }
 
-var allStringTagsAdded = map[string]string{
-	"Tag1":      "1",
-	"Tag2":      "2",
-	"GatewayId": "HoustonStore000123",
-	"Latitude":  "29.630771",
-	"Longitude": "-95.377603",
-}
-
 var expectedAllStringTagsAdded = map[string]interface{}{
 	"Tag1":      "1",
 	"Tag2":      "2",

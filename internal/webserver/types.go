@@ -16,12 +16,6 @@
 
 package webserver
 
-import (
-	"errors"
-	"fmt"
-	"net/url"
-)
-
 // SecretData the structure to store post secret requests
 type SecretData struct {
 	Path    string     `json:"path"`
@@ -32,27 +26,4 @@ type SecretData struct {
 type KeyValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
-}
-
-func (secretData SecretData) validateSecretData() error {
-
-	if len(secretData.Secrets) == 0 {
-		return errors.New("Missing required field 'Secrets'")
-	}
-
-	for _, kv := range secretData.Secrets {
-		if kv.Key == "" {
-			return errors.New("'Secrets' key should not be empty")
-		}
-	}
-
-	if len(secretData.Path) == 0 {
-		return errors.New("'Secrets' path should not be empty")
-	}
-
-	if _, err := url.Parse(secretData.Path); err != nil {
-		return fmt.Errorf("'Path' is invalid %v", err)
-	}
-
-	return nil
 }

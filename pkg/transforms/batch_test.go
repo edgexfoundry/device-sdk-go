@@ -155,7 +155,7 @@ func TestBatchInTimeMode(t *testing.T) {
 
 	go func() {
 		go func() {
-			time.Sleep(100)
+			time.Sleep(1000)
 			wgFirst.Done()
 		}()
 

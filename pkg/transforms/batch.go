@@ -70,14 +70,13 @@ func (d *atomicBatchData) length() int {
 
 // BatchConfig ...
 type BatchConfig struct {
-	timeInterval                string
-	parsedDuration              time.Duration
-	batchThreshold              int
-	batchMode                   BatchMode
-	batchData                   atomicBatchData
-	continuedPipelineTransforms []interfaces.AppFunction
-	timerActive                 common.AtomicBool
-	done                        chan bool
+	timeInterval   string
+	parsedDuration time.Duration
+	batchThreshold int
+	batchMode      BatchMode
+	batchData      atomicBatchData
+	timerActive    common.AtomicBool
+	done           chan bool
 }
 
 // NewBatchByTime create, initializes  and returns a new instance for BatchConfig

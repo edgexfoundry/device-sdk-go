@@ -135,7 +135,7 @@ func TestStoredObject_MarshalJSON(t *testing.T) {
 			}
 
 			expected := []byte(test.expectedResult)
-			if bytes.Compare(actual, expected) != 0 {
+			if !bytes.Equal(actual, expected) {
 				t.Fatalf("Return value doesn't match expected.\nExpected: %v\nActual: %v\n", test.expectedResult, string(actual))
 			}
 		})

@@ -37,7 +37,7 @@ func TestPublish_Plain_Topic(t *testing.T) {
 	correlationId := "id"
 	contentType := "type"
 
-	pub.Publish(payload, appfunction.NewContext(correlationId, nil, contentType))
+	_ = pub.Publish(payload, appfunction.NewContext(correlationId, nil, contentType))
 
 	waiting := true
 

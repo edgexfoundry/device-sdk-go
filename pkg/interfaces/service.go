@@ -27,6 +27,7 @@ import (
 const (
 	// AppServiceContextKey is the context key for getting the reference to the ApplicationService from the context passed to
 	// a custom REST Handler
+	// TODO: use custom type for this key in v3.0
 	AppServiceContextKey = "AppService"
 
 	// ProfileSuffixPlaceholder is the placeholder text to use in an application service's service key if the

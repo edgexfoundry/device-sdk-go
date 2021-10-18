@@ -90,7 +90,7 @@ func TestConfigureMQTTClientForAuth(t *testing.T) {
 			result := target.configureMQTTClientForAuth(&test.secrets)
 			if test.ErrorExpectation {
 				assert.Error(t, result, "Result should be an error")
-				assert.Equal(t, test.ErrorMessage, result.(error).Error())
+				assert.Equal(t, test.ErrorMessage, result.Error())
 			} else {
 				assert.Nil(t, result, "Should be nil")
 			}

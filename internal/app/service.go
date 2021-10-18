@@ -183,7 +183,7 @@ func (svc *Service) MakeItRun() error {
 
 	svc.lc.Info(svc.config.Service.StartupMsg)
 
-	signals := make(chan os.Signal)
+	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
 	httpErrors := make(chan error)
@@ -624,7 +624,7 @@ func listParameters(parameters map[string]string) string {
 
 func (svc *Service) addContext(next func(nethttp.ResponseWriter, *nethttp.Request)) func(nethttp.ResponseWriter, *nethttp.Request) {
 	return func(w nethttp.ResponseWriter, r *nethttp.Request) {
-		ctx := context.WithValue(r.Context(), interfaces.AppServiceContextKey, svc)
+		ctx := context.WithValue(r.Context(), interfaces.AppServiceContextKey, svc) //nolint: staticcheck
 		next(w, r.WithContext(ctx))
 	}
 }

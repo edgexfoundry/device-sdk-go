@@ -20,7 +20,7 @@ package transforms
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/sha1"
+	"crypto/sha1" //nolint: gosec
 	"encoding/base64"
 	"testing"
 
@@ -50,7 +50,7 @@ var aesData = encryptionDetails{
 }
 
 func aesDecrypt(crypt []byte, aesData encryptionDetails) []byte {
-	hash := sha1.New()
+	hash := sha1.New() //nolint: gosec
 
 	hash.Write([]byte((aesData.Key)))
 	key := hash.Sum(nil)

@@ -37,7 +37,6 @@ import (
 const (
 	msgStr        = "test message"
 	path          = "/some-path/foo"
-	path2         = "/some-path/foo2"
 	badPath       = "/some-path/bad"
 	formatPath    = "/some-path/{test}"
 	badFormatPath = "/some-path/{test}/{test2}"

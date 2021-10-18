@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 	target.dic = dic
 	target.lc = lc
 
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func IsInstanceOf(objectPtr, typePtr interface{}) bool {

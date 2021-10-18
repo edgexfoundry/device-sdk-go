@@ -88,7 +88,8 @@ func TestSetResponseDataBadType(t *testing.T) {
 
 func getExpectedEventXml(t *testing.T) string {
 	event := dtos.NewEvent("profile1", "dev1", "source1")
-	event.AddSimpleReading("resource1", common.ValueTypeInt32, int32(32))
+	err := event.AddSimpleReading("resource1", common.ValueTypeInt32, int32(32))
+	require.NoError(t, err)
 
 	xml, err := event.ToXML()
 	require.NoError(t, err)

@@ -28,14 +28,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 )
 
-type mqttSecrets struct {
-	username     string
-	password     string
-	keyPemBlock  []byte
-	certPemBlock []byte
-	caPemBlock   []byte
-}
-
 type MqttFactory struct {
 	appContext     interfaces.AppFunctionContext
 	logger         logger.LoggingClient
@@ -89,7 +81,9 @@ func (factory MqttFactory) configureMQTTClientForAuth(secretData *messaging.Secr
 	var err error
 	caCertPool := x509.NewCertPool()
 	tlsConfig := &tls.Config{
+		// nolint: gosec
 		InsecureSkipVerify: factory.skipCertVerify,
+		MinVersion:         tls.VersionTLS12,
 	}
 	switch factory.authMode {
 	case messaging.AuthModeUsernamePassword:

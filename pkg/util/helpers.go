@@ -49,13 +49,13 @@ func CoerceType(param interface{}) ([]byte, error) {
 	var data []byte
 	var err error
 
-	switch param.(type) {
+	switch p := param.(type) {
 	case string:
-		input := param.(string)
+		input := p
 		data = []byte(input)
 
 	case []byte:
-		data = param.([]byte)
+		data = p
 
 	default:
 		data, err = json.Marshal(param)

@@ -241,7 +241,7 @@ func (gr *GolangRuntime) ExecutePipeline(
 			continuePipeline, result = trxFunc(appContext, result)
 		}
 
-		if continuePipeline != true {
+		if !continuePipeline {
 			if result != nil {
 				if err, ok := result.(error); ok {
 					appContext.LoggingClient().Errorf(

@@ -19,6 +19,7 @@ package messagebus
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -66,7 +67,7 @@ func TestMain(m *testing.M) {
 			return logger.NewMockClient()
 		},
 	})
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestInitializeNotSecure(t *testing.T) {

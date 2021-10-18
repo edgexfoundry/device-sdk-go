@@ -45,7 +45,7 @@ func NewContext(correlationID string, dic *di.Container, inputContentType string
 		// Dic is public, so we can confirm it is set correctly
 		Dic:                  dic,
 		inputContentType:     inputContentType,
-		contextData:          make(map[string]string, 0),
+		contextData:          make(map[string]string),
 		valuePlaceholderSpec: regexp.MustCompile("{[^}]*}"),
 	}
 }

@@ -73,8 +73,7 @@ func (sf *storeForwardInfo) startStoreAndForwardRetryLoop(
 		}
 
 		if config.Writable.StoreAndForward.MaxRetryCount < 0 {
-			lc.Warn(
-				fmt.Sprintf("StoreAndForward MaxRetryCount can not be less than 0, defaulting to 1"))
+			lc.Warn("StoreAndForward MaxRetryCount can not be less than 0, defaulting to 1")
 			config.Writable.StoreAndForward.MaxRetryCount = 1
 		}
 

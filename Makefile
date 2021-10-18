@@ -14,12 +14,18 @@
 # limitations under the License.
 #
 
+ARCH=$(shell uname -m)
+
 .PHONY: test
 
 GO=CGO_ENABLED=1 GO111MODULE=on go
 
 build:
 	make -C ./app-service-template build
+
+lint:
+	@which golangci-lint >/dev/null || echo "WARNING: go linter not installed. To install, run\n  curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b \$$(go env GOPATH)/bin v1.42.1"
+	@if [ "z${ARCH}" = "zx86_64" ] && which golangci-lint >/dev/null ; then golangci-lint run --config .golangci.yml ; else echo "WARNING: Linting skipped (not on x86_64 or linter not installed)"; fi
 
 tidy:
 	go mod tidy
@@ -29,11 +35,15 @@ test-template:
 
 test-sdk:
 	$(GO) test ./... -coverprofile=coverage.out ./...
+
+vet:
 	$(GO) vet ./...
+
+fmt:
 	gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")
 	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]
 
-test: build test-template test-sdk
+test: build test-template test-sdk vet fmt lint
 
 vendor:
 	make -C ./app-service-template vendor
