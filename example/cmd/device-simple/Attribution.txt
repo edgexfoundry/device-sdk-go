@@ -152,3 +152,9 @@ https://github.com/golang/crypto/blob/master/LICENSE
 
 golang.org/x/text (Unspecified) https://github.com/golang/text
 https://github.com/golang/text/blob/master/LICENSE
+
+hashicorp/errwrap (Mozilla Public License 2.0) https://github.com/hashicorp/errwrap
+https://github.com/hashicorp/errwrap/blob/master/LICENSE
+
+hashicorp/go-multierror (Mozilla Public License 2.0) https://github.com/hashicorp/go-multierror
+https://github.com/hashicorp/go-multierror/blob/master/LICENSE
