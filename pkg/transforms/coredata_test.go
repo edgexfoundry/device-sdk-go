@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019 Intel Corporation
+// Copyright (c) 2021 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -38,4 +37,22 @@ func TestPushToCore_NoData(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Contains(t, result.(error).Error(), "No Data Received")
 	assert.False(t, continuePipeline)
+}
+
+func TestPushToCore_Object(t *testing.T) {
+	myObject := struct {
+		Name  string
+		Value int32
+	}{
+		Name:  "my-object",
+		Value: 1234,
+	}
+
+	coreData := NewCoreDataObjectReading("MyProfile", "MyDevice", "MyResource")
+	continuePipeline, result := coreData.PushToCoreData(ctx, myObject)
+
+	assert.NotNil(t, result)
+	assert.True(t, continuePipeline)
+	_, isError := result.(error)
+	assert.False(t, isError)
 }

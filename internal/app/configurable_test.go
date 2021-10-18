@@ -424,6 +424,7 @@ func TestConfigurable_PushToCore(t *testing.T) {
 	resourceName := "MyResource"
 	simpleValueType := "int64"
 	binaryValueType := "binary"
+	objectValueType := "object"
 	badValueType := "bogus"
 	mediaType := "application/mxl"
 	emptyMediaType := ""
@@ -446,6 +447,7 @@ func TestConfigurable_PushToCore(t *testing.T) {
 		{"Valid binary", &profileName, &deviceName, &resourceName, &binaryValueType, &mediaType, false},
 		{"Invalid binary - empty MediaType", &profileName, &deviceName, &resourceName, &binaryValueType, &emptyMediaType, true},
 		{"Invalid binary - missing MediaType", &profileName, &deviceName, &resourceName, &binaryValueType, nil, true},
+		{"Valid object", &profileName, &deviceName, &resourceName, &objectValueType, nil, false},
 	}
 
 	for _, testCase := range tests {

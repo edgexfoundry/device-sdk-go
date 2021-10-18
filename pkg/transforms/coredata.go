@@ -59,6 +59,17 @@ func NewCoreDataBinaryReading(profileName string, deviceName string, resourceNam
 	return coreData
 }
 
+// NewCoreDataObjectReading Is provided to interact with CoreData to add a object reading type
+func NewCoreDataObjectReading(profileName string, deviceName string, resourceName string) *CoreData {
+	coreData := &CoreData{
+		profileName:  profileName,
+		deviceName:   deviceName,
+		resourceName: resourceName,
+		valueType:    common.ValueTypeObject,
+	}
+	return coreData
+}
+
 // PushToCoreData pushes the provided value as an event to CoreData using the device name and reading name that have been set. If validation is turned on in
 // CoreServices then your deviceName and readingName must exist in the CoreMetadata and be properly registered in EdgeX.
 func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
@@ -74,13 +85,16 @@ func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data inte
 	}
 
 	event := dtos.NewEvent(cdc.profileName, cdc.deviceName, cdc.resourceName)
-	if cdc.valueType == common.ValueTypeBinary {
+
+	switch cdc.valueType {
+	case common.ValueTypeBinary:
 		reading, err := util.CoerceType(data)
 		if err != nil {
 			return false, err
 		}
 		event.AddBinaryReading(cdc.resourceName, reading, cdc.mediaType)
-	} else if cdc.valueType == common.ValueTypeString {
+
+	case common.ValueTypeString:
 		reading, err := util.CoerceType(data)
 		if err != nil {
 			return false, err
@@ -89,11 +103,16 @@ func (cdc *CoreData) PushToCoreData(ctx interfaces.AppFunctionContext, data inte
 		if err != nil {
 			return false, fmt.Errorf("error adding Reading in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 		}
-	} else {
+
+	case common.ValueTypeObject:
+		event.AddObjectReading(cdc.resourceName, data)
+
+	default:
 		err := event.AddSimpleReading(cdc.resourceName, cdc.valueType, data)
 		if err != nil {
 			return false, fmt.Errorf("error adding Reading in pipeline '%s': %s", ctx.PipelineId(), err.Error())
 		}
+
 	}
 
 	request := requests.NewAddEventRequest(event)

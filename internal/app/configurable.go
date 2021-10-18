@@ -228,7 +228,8 @@ func (app *Configurable) PushToCore(parameters map[string]string) interfaces.App
 		return nil
 	}
 
-	if valueType == common.ValueTypeBinary {
+	switch valueType {
+	case common.ValueTypeBinary:
 		mediaType, ok := parameters[MediaType]
 		if !ok {
 			app.lc.Error("Could not find " + MediaType)
@@ -243,7 +244,10 @@ func (app *Configurable) PushToCore(parameters map[string]string) interfaces.App
 		}
 
 		transform = transforms.NewCoreDataBinaryReading(profileName, deviceName, resourceName, mediaType)
-	} else {
+	case common.ValueTypeObject:
+		transform = transforms.NewCoreDataObjectReading(profileName, deviceName, resourceName)
+
+	default:
 		transform = transforms.NewCoreDataSimpleReading(profileName, deviceName, resourceName, valueType)
 	}
 

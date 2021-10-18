@@ -20,32 +20,36 @@ import (
 	"os"
 	"testing"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces/mocks"
+	commonDtos "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 )
 
 var lc logger.LoggingClient
 var dic *di.Container
 var ctx *appfunction.Context
+var mockEventClient *mocks.EventClient
 
 func TestMain(m *testing.M) {
 	lc = logger.NewMockClient()
-	eventClient := http.NewEventClient("http://test")
 
-	config := &common.ConfigurationStruct{}
+	mockEventClient = &mocks.EventClient{}
+	mockEventClient.On("Add", mock.Anything, mock.Anything).Return(commonDtos.BaseWithIdResponse{}, nil)
 
 	dic = di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
-			return config
+			return &common.ConfigurationStruct{}
 		},
 		container.EventClientName: func(get di.Get) interface{} {
-			return eventClient
+			return mockEventClient
 		},
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return lc
