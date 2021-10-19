@@ -34,14 +34,14 @@ type CommandProcessor struct {
 	device        models.Device
 	sourceName    string
 	correlationID string
-	setParamsMap  map[string]string
+	setParamsMap  map[string]interface{}
 	attributes    string
 	dic           *di.Container
 }
 
-func NewCommandProcessor(device models.Device, sourceName string, correlationID string, setParamsMap map[string]string, attributes string, dic *di.Container) *CommandProcessor {
+func NewCommandProcessor(device models.Device, sourceName string, correlationID string, setParamsMap map[string]interface{}, attributes string, dic *di.Container) *CommandProcessor {
 	if setParamsMap == nil {
-		setParamsMap = make(map[string]string)
+		setParamsMap = make(map[string]interface{})
 	}
 	return &CommandProcessor{
 		device:        device,
@@ -53,7 +53,7 @@ func NewCommandProcessor(device models.Device, sourceName string, correlationID 
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, setParamsMap map[string]string, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, setParamsMap map[string]interface{}, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
 	// check device service AdminState
 	ds := container.DeviceServiceFrom(dic.Get)
 	if ds.AdminState == models.Locked {
@@ -382,9 +382,11 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	return nil
 }
 
-func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*sdkModels.CommandValue, errors.EdgeX) {
+func createCommandValueFromDeviceResource(dr models.DeviceResource, value interface{}) (*sdkModels.CommandValue, errors.EdgeX) {
 	var err error
 	var result *sdkModels.CommandValue
+
+	v := fmt.Sprint(value)
 
 	switch dr.Properties.ValueType {
 	case common.ValueTypeString:
@@ -616,6 +618,8 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64Array, arr)
+	case common.ValueTypeObject:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeObject, value)
 	default:
 		err = errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

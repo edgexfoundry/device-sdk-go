@@ -227,6 +227,11 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 			} else {
 				return err
 			}
+		case "Counter":
+			if s.counter, err = params[i].ObjectValue(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Object, parameter: %s", params[i].String())
+				return err
+			}
 		}
 	}
 
