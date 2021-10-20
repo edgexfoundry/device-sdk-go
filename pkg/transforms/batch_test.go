@@ -21,7 +21,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var dataToBatch = [3]string{"Test1", "Test2", "Test3"}
@@ -178,4 +182,69 @@ func TestBatchInTimeMode(t *testing.T) {
 		wgAll.Done()
 	}()
 	wgAll.Wait()
+}
+
+func TestBatchIsEventData(t *testing.T) {
+	events := []dtos.Event{
+		dtos.NewEvent("p1", "d1", "s1"),
+		dtos.NewEvent("p1", "d1", "s1"),
+		dtos.NewEvent("p1", "d1", "s1"),
+	}
+	err := events[0].AddSimpleReading("r1", common.ValueTypeString, "Hello")
+	require.NoError(t, err)
+	err = events[1].AddSimpleReading("r2", common.ValueTypeInt8, int8(34))
+	require.NoError(t, err)
+	err = events[2].AddSimpleReading("r3", common.ValueTypeFloat64, 89.90)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name        string
+		isEventData bool
+	}{
+		{"Is Events", true},
+		{"Is Not Events", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			bbc, err := NewBatchByCount(3)
+			require.NoError(t, err)
+			bbc.IsEventData = test.isEventData
+
+			if test.isEventData {
+				continuePipeline, result := bbc.Batch(ctx, events[0])
+				require.False(t, continuePipeline)
+				require.Nil(t, result)
+
+				continuePipeline, result = bbc.Batch(ctx, events[1])
+				require.False(t, continuePipeline)
+				require.Nil(t, result)
+
+				continuePipeline, result = bbc.Batch(ctx, events[2])
+				require.True(t, continuePipeline)
+				require.NotNil(t, result)
+
+				batchedEvents, ok := result.([]dtos.Event)
+				require.True(t, ok)
+				assert.Equal(t, events, batchedEvents)
+			} else {
+				continuePipeline, result := bbc.Batch(ctx, dataToBatch[0])
+				require.False(t, continuePipeline)
+				require.Nil(t, result)
+
+				continuePipeline, result = bbc.Batch(ctx, dataToBatch[1])
+				require.False(t, continuePipeline)
+				require.Nil(t, result)
+
+				continuePipeline, result = bbc.Batch(ctx, dataToBatch[2])
+				require.True(t, continuePipeline)
+				require.NotNil(t, result)
+
+				_, ok := result.([]dtos.Event)
+				require.False(t, ok)
+				_, ok = result.([][]byte)
+				require.True(t, ok)
+			}
+		})
+	}
 }

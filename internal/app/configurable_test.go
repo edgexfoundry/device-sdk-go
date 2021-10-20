@@ -278,6 +278,8 @@ func TestBatchByCount(t *testing.T) {
 	params := make(map[string]string)
 	params[Mode] = BatchByCount
 	params[BatchThreshold] = "30"
+	params[IsEventData] = "true"
+
 	transform := configurable.Batch(params)
 	assert.NotNil(t, transform, "return result for BatchByCount should not be nil")
 }
@@ -288,6 +290,8 @@ func TestBatchByTime(t *testing.T) {
 	params := make(map[string]string)
 	params[Mode] = BatchByTime
 	params[TimeInterval] = "10s"
+	params[IsEventData] = "false"
+
 	transform := configurable.Batch(params)
 	assert.NotNil(t, transform, "return result for BatchByTime should not be nil")
 }
@@ -298,7 +302,7 @@ func TestBatchByTimeAndCount(t *testing.T) {
 	params := make(map[string]string)
 	params[Mode] = BatchByTimeAndCount
 	params[BatchThreshold] = "30"
-	params[TimeInterval] = "10"
+	params[TimeInterval] = "10s"
 
 	trx := configurable.Batch(params)
 	assert.NotNil(t, trx, "return result for BatchByTimeAndCount should not be nil")

@@ -79,6 +79,7 @@ const (
 	BatchByCount        = "bycount"
 	BatchByTime         = "bytime"
 	BatchByTimeAndCount = "bytimecount"
+	IsEventData         = "iseventdata"
 )
 
 // Configurable contains the helper functions that return the function pointers for building the configurable function pipeline.
@@ -489,6 +490,8 @@ func (app *Configurable) Batch(parameters map[string]string) interfaces.AppFunct
 		return nil
 	}
 
+	var err error
+	var transform *transforms.BatchConfig
 	switch strings.ToLower(mode) {
 	case BatchByCount:
 		batchThreshold, ok := parameters[BatchThreshold]
@@ -505,11 +508,11 @@ func (app *Configurable) Batch(parameters map[string]string) interfaces.AppFunct
 			return nil
 		}
 
-		transform, err := transforms.NewBatchByCount(thresholdValue)
+		transform, err = transforms.NewBatchByCount(thresholdValue)
 		if err != nil {
 			app.lc.Error(err.Error())
+			return nil
 		}
-		return transform.Batch
 
 	case BatchByTime:
 		timeInterval, ok := parameters[TimeInterval]
@@ -518,11 +521,11 @@ func (app *Configurable) Batch(parameters map[string]string) interfaces.AppFunct
 			return nil
 		}
 
-		transform, err := transforms.NewBatchByTime(timeInterval)
+		transform, err = transforms.NewBatchByTime(timeInterval)
 		if err != nil {
 			app.lc.Error(err.Error())
+			return nil
 		}
-		return transform.Batch
 
 	case BatchByTimeAndCount:
 		timeInterval, ok := parameters[TimeInterval]
@@ -538,12 +541,14 @@ func (app *Configurable) Batch(parameters map[string]string) interfaces.AppFunct
 		thresholdValue, err := strconv.Atoi(batchThreshold)
 		if err != nil {
 			app.lc.Errorf("Could not parse '%s' to an int for '%s' parameter: %s", batchThreshold, BatchThreshold, err.Error())
+			return nil
 		}
-		transform, err := transforms.NewBatchByTimeAndCount(timeInterval, thresholdValue)
+
+		transform, err = transforms.NewBatchByTimeAndCount(timeInterval, thresholdValue)
 		if err != nil {
 			app.lc.Error(err.Error())
+			return nil
 		}
-		return transform.Batch
 
 	default:
 		app.lc.Errorf(
@@ -554,6 +559,20 @@ func (app *Configurable) Batch(parameters map[string]string) interfaces.AppFunct
 			BatchByTimeAndCount)
 		return nil
 	}
+
+	// IsEventData is optional
+	isEventDataValue, ok := parameters[IsEventData]
+	if ok {
+		isEventData, err := strconv.ParseBool(isEventDataValue)
+		if err != nil {
+			app.lc.Errorf("Could not parse '%s' to a bool for '%s' parameter: %s", isEventDataValue, isEventData, err.Error())
+			return nil
+		}
+
+		transform.IsEventData = isEventData
+	}
+
+	return transform.Batch
 }
 
 // JSONLogic ...

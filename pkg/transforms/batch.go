@@ -17,9 +17,12 @@
 package transforms
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
@@ -70,6 +73,7 @@ func (d *atomicBatchData) length() int {
 
 // BatchConfig ...
 type BatchConfig struct {
+	IsEventData    bool
 	timeInterval   string
 	parsedDuration time.Duration
 	batchThreshold int
@@ -173,9 +177,25 @@ func (batch *BatchConfig) Batch(ctx interfaces.AppFunctionContext, data interfac
 	ctx.LoggingClient().Debugf("Forwarding Batched Data in pipeline '%s'", ctx.PipelineId())
 	// we've met the threshold, lets clear out the buffer and send it forward in the pipeline
 	if batch.batchData.length() > 0 {
+		var resultData interface{}
 		copyOfData := batch.batchData.all()
+		resultData = copyOfData
+		if batch.IsEventData {
+			ctx.LoggingClient().Debug("Marshaling batched data to []Event")
+			var events []dtos.Event
+			for _, data := range copyOfData {
+				event := dtos.Event{}
+				if err := json.Unmarshal(data, &event); err != nil {
+					return false, fmt.Errorf("unable to marshal batched data to slice of Events in pipeline '%s': %s", ctx.PipelineId(), err.Error())
+				}
+				events = append(events, event)
+			}
+
+			resultData = events
+		}
+
 		batch.batchData.removeAll()
-		return true, copyOfData
+		return true, resultData
 	}
 	return false, nil
 }
