@@ -34,7 +34,7 @@ type CommandProcessor struct {
 	device        models.Device
 	sourceName    string
 	correlationID string
-	setParamsMap  map[string]interface{}
+	paramsMap     map[string]interface{}
 	attributes    string
 	dic           *di.Container
 }
@@ -47,7 +47,7 @@ func NewCommandProcessor(device models.Device, sourceName string, correlationID 
 		device:        device,
 		sourceName:    sourceName,
 		correlationID: correlationID,
-		setParamsMap:  setParamsMap,
+		paramsMap:     setParamsMap,
 		attributes:    attributes,
 		dic:           dic,
 	}
@@ -138,6 +138,9 @@ func (c *CommandProcessor) ReadDeviceResource() (res *dtos.Event, e errors.EdgeX
 		}
 		req.Attributes[sdkCommon.URLRawQuery] = c.attributes
 	}
+	if len(c.paramsMap) != 0 {
+		req.Attributes = mergeMap(req.Attributes, c.paramsMap)
+	}
 	req.Type = dr.Properties.ValueType
 	reqs = append(reqs, req)
 
@@ -198,6 +201,9 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 			}
 			reqs[i].Attributes[sdkCommon.URLRawQuery] = c.attributes
 		}
+		if len(c.paramsMap) != 0 {
+			reqs[i].Attributes = mergeMap(reqs[i].Attributes, c.paramsMap)
+		}
 		reqs[i].Type = dr.Properties.ValueType
 	}
 
@@ -218,6 +224,16 @@ func (c *CommandProcessor) ReadDeviceCommand() (res *dtos.Event, e errors.EdgeX)
 	return
 }
 
+func mergeMap(m1, m2 map[string]interface{}) map[string]interface{} {
+	if m1 == nil {
+		m1 = make(map[string]interface{})
+	}
+	for k, v := range m2 {
+		m1[k] = v
+	}
+	return m1
+}
+
 func (c *CommandProcessor) WriteDeviceResource() (e errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(c.device.ProfileName, c.sourceName)
 	if !ok {
@@ -234,7 +250,7 @@ func (c *CommandProcessor) WriteDeviceResource() (e errors.EdgeX) {
 	lc.Debugf("Application - writeDeviceResource: writing deviceResource: %s; %s: %s", dr.Name, common.CorrelationHeader, c.correlationID)
 
 	// check request body contains provided deviceResource
-	v, ok := c.setParamsMap[dr.Name]
+	v, ok := c.paramsMap[dr.Name]
 	if !ok {
 		if dr.Properties.DefaultValue != "" {
 			v = dr.Properties.DefaultValue
@@ -304,7 +320,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	lc.Debugf("Application - writeCmd: writing command: %s; %s: %s", dc.Name, common.CorrelationHeader, c.correlationID)
 
 	// create CommandValues
-	cvs := make([]*sdkModels.CommandValue, 0, len(c.setParamsMap))
+	cvs := make([]*sdkModels.CommandValue, 0, len(c.paramsMap))
 	for _, ro := range dc.ResourceOperations {
 		drName := ro.DeviceResource
 		// check the deviceResource in ResourceOperation actually exist
@@ -315,7 +331,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 		}
 
 		// check request body contains the deviceResource
-		value, ok := c.setParamsMap[ro.DeviceResource]
+		value, ok := c.paramsMap[ro.DeviceResource]
 		if !ok {
 			if ro.DefaultValue != "" {
 				value = ro.DefaultValue

@@ -7,6 +7,7 @@ package application
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
@@ -39,9 +40,19 @@ var testDevice = models.Device{
 	ProfileName:    "test-profile",
 }
 
+var parameters = map[string]interface{}{
+	"foo":    "bar",
+	"foobar": map[string]interface{}{"val": "123"},
+}
+
 func mockDic() *di.Container {
 	driverMock := &mocks.ProtocolDriver{}
 	cr := sdkModels.CommandRequest{
+		DeviceResourceName: "test-resource",
+		Attributes:         parameters,
+		Type:               "String",
+	}
+	wr := sdkModels.CommandRequest{
 		DeviceResourceName: "test-resource",
 		Attributes:         nil,
 		Type:               "String",
@@ -64,11 +75,11 @@ func mockDic() *di.Container {
 		Tags:               make(map[string]string),
 	}
 	driverMock.On("HandleReadCommands", "test-device", testProtocols, []sdkModels.CommandRequest{cr}).Return(nil, nil)
-	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{cr}, []*sdkModels.CommandValue{cv}).Return(nil)
+	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{wr}, []*sdkModels.CommandValue{cv}).Return(nil)
 	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{objectRequest}, []*sdkModels.CommandValue{objectValue}).Return(nil)
 
 	devices := responses.MultiDevicesResponse{
-		BaseResponse: dtoCommon.BaseResponse{},
+		BaseWithTotalCountResponse: dtoCommon.NewBaseWithTotalCountResponse("", "", http.StatusOK, uint32(2)),
 		Devices: []dtos.Device{
 			dtos.FromDeviceModelToDTO(testDevice),
 		},
@@ -178,7 +189,7 @@ func TestCommandProcessor_ReadDeviceResource(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), nil, "", dic)
+	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), parameters, "", dic)
 	invalidDeviceResource := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
 	writeOnlyDeviceResource := NewCommandProcessor(testDevice, "wo-resource", uuid.NewString(), nil, "", dic)
 
@@ -209,7 +220,7 @@ func TestCommandProcessor_ReadDeviceCommand(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), nil, "", dic)
+	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), parameters, "", dic)
 	invalidDeviceCommand := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
 	writeOnlyDeviceCommand := NewCommandProcessor(testDevice, "wo-command", uuid.NewString(), nil, "", dic)
 	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), nil, "", dic)

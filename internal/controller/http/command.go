@@ -38,13 +38,11 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 		correlationID, _ = request.Context().Value(common.CorrelationHeader).(string)
 	}
 
-	// read request body for SET command
-	if request.Method == http.MethodPut {
-		requestParamsMap, err = parseRequestBody(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
-		if err != nil {
-			c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
-			return
-		}
+	// read request body
+	requestParamsMap, err = parseRequestBody(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
+	if err != nil {
+		c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
+		return
 	}
 	// parse query parameter
 	queryParams, reserved, err = filterQueryParams(request.URL.RawQuery)
