@@ -13,8 +13,9 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	dtoCommon "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/google/uuid"
@@ -51,11 +52,23 @@ func mockDic() *di.Container {
 		Value:              "test-value",
 		Tags:               make(map[string]string),
 	}
+	objectRequest := sdkModels.CommandRequest{
+		DeviceResourceName: "rw-object",
+		Attributes:         nil,
+		Type:               common.ValueTypeObject,
+	}
+	objectValue := &sdkModels.CommandValue{
+		DeviceResourceName: "rw-object",
+		Type:               common.ValueTypeObject,
+		Value:              map[string]interface{}{"foo": "bar"},
+		Tags:               make(map[string]string),
+	}
 	driverMock.On("HandleReadCommands", "test-device", testProtocols, []sdkModels.CommandRequest{cr}).Return(nil, nil)
 	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{cr}, []*sdkModels.CommandValue{cv}).Return(nil)
+	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{objectRequest}, []*sdkModels.CommandValue{objectValue}).Return(nil)
 
 	devices := responses.MultiDevicesResponse{
-		BaseResponse: common.BaseResponse{},
+		BaseResponse: dtoCommon.BaseResponse{},
 		Devices: []dtos.Device{
 			dtos.FromDeviceModelToDTO(testDevice),
 		},
@@ -64,7 +77,7 @@ func mockDic() *di.Container {
 	dcMock.On("DevicesByServiceName", context.Background(), "test-service", 0, -1).Return(devices, nil)
 
 	profile := responses.DeviceProfileResponse{
-		BaseResponse: common.BaseResponse{},
+		BaseResponse: dtoCommon.BaseResponse{},
 		Profile: dtos.DeviceProfile{
 			Name: "test-profile",
 			DeviceResources: []dtos.DeviceResource{
@@ -88,6 +101,13 @@ func mockDic() *di.Container {
 					Properties: dtos.ResourceProperties{
 						ValueType: "String",
 						ReadWrite: "W",
+					},
+				},
+				dtos.DeviceResource{
+					Name: "rw-object",
+					Properties: dtos.ResourceProperties{
+						ValueType: common.ValueTypeObject,
+						ReadWrite: "RW",
 					},
 				},
 			},
@@ -222,11 +242,12 @@ func TestCommandProcessor_WriteDeviceResource(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]string{"test-resource": "test-value"}, "", dic)
+	valid := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]interface{}{"test-resource": "test-value"}, "", dic)
+	validObjectValue := NewCommandProcessor(testDevice, "rw-object", uuid.NewString(), map[string]interface{}{"rw-object": map[string]interface{}{"foo": "bar"}}, "", dic)
 	invalidDeviceResource := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
 	readOnlyDeviceResource := NewCommandProcessor(testDevice, "ro-resource", uuid.NewString(), nil, "", dic)
 	noRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), nil, "", dic)
-	invalidRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]string{"wrong-resource": "wrong-value"}, "", dic)
+	invalidRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]interface{}{"wrong-resource": "wrong-value"}, "", dic)
 
 	tests := []struct {
 		name             string
@@ -234,6 +255,7 @@ func TestCommandProcessor_WriteDeviceResource(t *testing.T) {
 		expectedErr      bool
 	}{
 		{"valid", valid, false},
+		{"valid object value", validObjectValue, false},
 		{"invalid - DeviceResource name not found", invalidDeviceResource, true},
 		{"invalid - writing read-only DeviceResource", readOnlyDeviceResource, true},
 		{"valid - no set parameter specified but default value exists", noRequestBody, false},
@@ -257,12 +279,12 @@ func TestCommandProcessor_WriteDeviceCommand(t *testing.T) {
 	err := cache.InitCache("test-service", dic)
 	require.NoError(t, err)
 
-	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]string{"test-resource": "test-value"}, "", dic)
+	valid := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]interface{}{"test-resource": "test-value"}, "", dic)
 	invalidDeviceCommand := NewCommandProcessor(testDevice, "invalid", uuid.NewString(), nil, "", dic)
 	readOnlyDeviceCommand := NewCommandProcessor(testDevice, "ro-command", uuid.NewString(), nil, "", dic)
 	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), nil, "", dic)
 	noRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), nil, "", dic)
-	invalidRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]string{"wrong-resource": "wrong-value"}, "", dic)
+	invalidRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]interface{}{"wrong-resource": "wrong-value"}, "", dic)
 
 	tests := []struct {
 		name             string

@@ -57,7 +57,7 @@ deviceResources:
     description: "Counter data"
     properties:
       valueType: "Object"
-      readWrite: "R"
+      readWrite: "RW"
 
 deviceCommands:
   -
