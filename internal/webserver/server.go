@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
@@ -82,6 +84,8 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 	router.HandleFunc(common.ApiMetricsRoute, controller.Metrics).Methods(http.MethodGet)
 	router.HandleFunc(common.ApiConfigRoute, controller.Config).Methods(http.MethodGet)
 	router.HandleFunc(internal.ApiAddSecretRoute, controller.AddSecret).Methods(http.MethodPost)
+
+	router.Use(handlers.ProcessCORS(webserver.config.Service.CORSConfiguration))
 
 	/// Trigger is not considered a standard route. Trigger route (when configured) is setup by the HTTP Trigger
 	//  in internal/trigger/http/rest.go
