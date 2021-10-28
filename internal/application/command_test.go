@@ -68,7 +68,7 @@ func mockDic() *di.Container {
 	driverMock.On("HandleWriteCommands", "test-device", testProtocols, []sdkModels.CommandRequest{objectRequest}, []*sdkModels.CommandValue{objectValue}).Return(nil)
 
 	devices := responses.MultiDevicesResponse{
-		BaseResponse: dtoCommon.BaseResponse{},
+		BaseWithTotalCountResponse: dtoCommon.BaseWithTotalCountResponse{},
 		Devices: []dtos.Device{
 			dtos.FromDeviceModelToDTO(testDevice),
 		},

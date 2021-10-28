@@ -18,6 +18,14 @@ StartupMsg = "device simple started"
 # MaxRequestSize limit the request body size in byte of put command
 MaxRequestSize = 0 # value 0 unlimit the request size.
 RequestTimeout = "20s"
+  [Service.CORSConfiguration]
+  EnableCORS = false
+  CORSAllowCredentials = false
+  CORSAllowedOrigin = "https://localhost"
+  CORSAllowedMethods = "GET, POST, PUT, PATCH, DELETE"
+  CORSAllowedHeaders = "Authorization, Accept, Accept-Language, Content-Language, Content-Type, X-Correlation-ID"
+  CORSExposeHeaders = "Cache-Control, Content-Language, Content-Length, Content-Type, Expires, Last-Modified, Pragma, X-Correlation-ID"
+  CORSMaxAge = 3600
 
 [Registry]
 Host = "localhost"
@@ -67,6 +75,8 @@ Path = "device-simple/"
 Protocol = "http"
 RootCaCertPath = ""
 ServerName = ""
+SecretsFile = ""
+DisableScrubSecretsFile = false
 TokenFile = "/tmp/edgex/secrets/device-simple/secrets-token.json"
   [SecretStore.Authentication]
   AuthType = "X-Vault-Token"
