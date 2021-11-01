@@ -75,6 +75,7 @@ const (
 	CompressGZIP        = "gzip"
 	CompressZLIB        = "zlib"
 	EncryptAES          = "aes"
+	EncryptAES256       = "aes256"
 	Mode                = "mode"
 	BatchByCount        = "bycount"
 	BatchByTime         = "bytime"
@@ -317,21 +318,32 @@ func (app *Configurable) Encrypt(parameters map[string]string) interfaces.AppFun
 		return nil
 	}
 
-	transform := transforms.Encryption{
-		EncryptionKey:        encryptionKey,
-		InitializationVector: initVector,
-		SecretPath:           secretPath,
-		SecretName:           secretName,
-	}
-
 	switch strings.ToLower(algorithm) {
 	case EncryptAES:
+		//nolint: staticcheck
+		transform := transforms.Encryption{
+			EncryptionKey:        encryptionKey,
+			InitializationVector: initVector,
+			SecretPath:           secretPath,
+			SecretName:           secretName,
+		}
 		return transform.EncryptWithAES
+	case EncryptAES256:
+		if len(secretPath) > 0 && len(secretName) > 0 {
+			protector := transforms.AESProtection{
+				SecretPath: secretPath,
+				SecretName: secretName,
+			}
+			return protector.Encrypt
+		}
+		app.lc.Error("secretPath / secretKey are required for AES 256 encryption")
+		return nil
 	default:
 		app.lc.Errorf(
-			"Invalid encryption algorithm '%s'. Must be '%s'",
+			"Invalid encryption algorithm '%s'. Must be one of '%s', '%s",
 			algorithm,
-			EncryptAES)
+			EncryptAES,
+			EncryptAES256)
 		return nil
 	}
 }

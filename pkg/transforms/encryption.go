@@ -31,6 +31,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 )
 
+// Deprecated: use AESProtection
 type Encryption struct {
 	SecretPath           string
 	SecretName           string
@@ -39,6 +40,7 @@ type Encryption struct {
 }
 
 // NewEncryption creates, initializes and returns a new instance of Encryption
+// Deprecated: use NewAESProtection
 func NewEncryption(encryptionKey string, initializationVector string) Encryption {
 	return Encryption{
 		EncryptionKey:        encryptionKey,
@@ -48,6 +50,7 @@ func NewEncryption(encryptionKey string, initializationVector string) Encryption
 
 // NewEncryptionWithSecrets creates, initializes and returns a new instance of Encryption configured
 // to retrieve the encryption key from the Secret Store
+// Deprecated: use NewAESProtection
 func NewEncryptionWithSecrets(secretPath string, secretName string, initializationVector string) Encryption {
 	return Encryption{
 		SecretPath:           secretPath,
@@ -67,10 +70,13 @@ func pkcs5Padding(ciphertext []byte, blockSize int) []byte {
 
 // EncryptWithAES encrypts a string, []byte, or json.Marshaller type using AES encryption.
 // It will return a Base64 encode []byte of the encrypted data.
+// Deprecated: use AESProtection.Encrypt
 func (aesData Encryption) EncryptWithAES(ctx interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
 	if data == nil {
 		return false, fmt.Errorf("function EncryptWithAES in pipeline '%s': No Data Received", ctx.PipelineId())
 	}
+
+	ctx.LoggingClient().Warnf("EncryptWithAES has been deprecated - please use the new AESProtection.Encrypt in pipeline '%s'", ctx.PipelineId())
 
 	ctx.LoggingClient().Debugf("Encrypting with AES in pipeline '%s'", ctx.PipelineId())
 

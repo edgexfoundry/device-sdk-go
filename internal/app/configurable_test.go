@@ -16,6 +16,7 @@
 package app
 
 import (
+	"github.com/google/uuid"
 	"net/http"
 	"testing"
 
@@ -393,6 +394,8 @@ func TestEncrypt(t *testing.T) {
 		{"Bad - No Key or secrets ", EncryptAES, "", vector, "", "", true},
 		{"Bad - Missing secretPath", EncryptAES, "", vector, "", secretName, true},
 		{"Bad - Missing secretName", EncryptAES, "", vector, secretsPath, "", true},
+		{"AES256 - Bad - No secrets ", EncryptAES256, "", vector, "", "", true},
+		{"AES256 - good - secrets", EncryptAES256, "", vector, uuid.NewString(), uuid.NewString(), false},
 	}
 
 	for _, testCase := range tests {
