@@ -87,6 +87,11 @@ func (webserver *WebServer) ConfigureStandardRoutes() {
 
 	router.Use(handlers.ProcessCORS(webserver.config.Service.CORSConfiguration))
 
+	// Handle the CORS preflight request
+	router.Methods(http.MethodOptions).MatcherFunc(func(r *http.Request, rm *mux.RouteMatch) bool {
+		return r.Header.Get(handlers.AccessControlRequestMethod) != ""
+	}).HandlerFunc(handlers.HandlePreflight(webserver.config.Service.CORSConfiguration))
+
 	/// Trigger is not considered a standard route. Trigger route (when configured) is setup by the HTTP Trigger
 	//  in internal/trigger/http/rest.go
 }
