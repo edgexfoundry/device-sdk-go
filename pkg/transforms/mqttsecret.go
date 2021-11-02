@@ -180,6 +180,7 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 			return false, err
 		}
 	}
+
 	if !sender.client.IsConnected() {
 		err := sender.connectToBroker(ctx, exportData)
 		if err != nil {
@@ -187,8 +188,16 @@ func (sender *MQTTSecretSender) MQTTSend(ctx interfaces.AppFunctionContext, data
 		}
 	}
 
-	publishTopic, err := sender.topicFormatter.invoke(sender.mqttConfig.Topic, ctx, data)
+	if !sender.client.IsConnectionOpen() {
+		sender.setRetryData(ctx, exportData)
+		subMessage := "dropping event"
+		if sender.persistOnError {
+			subMessage = "persisting Event for later retry"
+		}
+		return false, fmt.Errorf("in pipeline '%s', connection to mqtt server for export not open, %s", ctx.PipelineId(), subMessage)
+	}
 
+	publishTopic, err := sender.topicFormatter.invoke(sender.mqttConfig.Topic, ctx, data)
 	if err != nil {
 		return false, fmt.Errorf("in pipeline '%s', MQTT topic formatting failed: %s", ctx.PipelineId(), err.Error())
 	}
