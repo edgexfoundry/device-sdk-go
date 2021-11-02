@@ -26,14 +26,16 @@ import (
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
 
-// TriggerConfig provides a container to pass context needed for user defined triggers
 type TriggerConfig struct {
 	// Logger exposes the logging client passed from the service
 	Logger logger.LoggingClient
 	// ContextBuilder contructs a context the trigger can specify for processing the received message
 	ContextBuilder TriggerContextBuilder
 	// MessageProcessor processes a message on the services default pipeline
+	// Deprecated: use MessageReceived for multi-pipeline support
 	MessageProcessor TriggerMessageProcessor
+	// MessageReceived sends a message to the runtime for processing.
+	MessageReceived TriggerMessageHandler
 	// ConfigLoader is a function of type TriggerConfigLoader that can be used to load custom configuration sections for the trigger.s
 	ConfigLoader TriggerConfigLoader
 }
@@ -47,8 +49,14 @@ type Trigger interface {
 // TriggerMessageProcessor provides an interface that can be used by custom triggers to invoke the runtime
 type TriggerMessageProcessor func(ctx AppFunctionContext, envelope types.MessageEnvelope) error
 
+// TriggerMessageHandler provides an interface that can be used by custom triggers to invoke the runtime
+type TriggerMessageHandler func(ctx AppFunctionContext, envelope types.MessageEnvelope, responseHandler PipelineResponseHandler) error
+
 // TriggerContextBuilder provides an interface to construct an AppFunctionContext for message
 type TriggerContextBuilder func(env types.MessageEnvelope) AppFunctionContext
 
 // TriggerConfigLoader provides an interface that can be used by custom triggers to load custom configuration elements
 type TriggerConfigLoader func(config UpdatableConfig, sectionName string) error
+
+// PipelineResponseHandler provides a function signature that can be passed to MessageProcessor to handle pipeline output(s)
+type PipelineResponseHandler func(ctx AppFunctionContext, pipeline *FunctionPipeline) error
