@@ -391,6 +391,14 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, value interf
 	switch dr.Properties.ValueType {
 	case common.ValueTypeString:
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeString, v)
+	case common.ValueTypeStringArray:
+		var arr []string
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeStringArray, arr)
 	case common.ValueTypeBool:
 		var value bool
 		value, err = strconv.ParseBool(v)

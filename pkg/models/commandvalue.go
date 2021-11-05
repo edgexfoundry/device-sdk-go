@@ -125,6 +125,21 @@ func (cv *CommandValue) StringValue() (string, error) {
 	return value, nil
 }
 
+// StringArrayValue returns the value in an array of bool type, and returns error if the Type is not BoolArray.
+func (cv *CommandValue) StringArrayValue() ([]string, error) {
+	var value []string
+	if cv.Type != common.ValueTypeStringArray {
+		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, common.ValueTypeStringArray)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	value, ok := cv.Value.([]string)
+	if !ok {
+		errMsg := fmt.Sprintf("failed to transfrom %v to %T", cv.Value, value)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	return value, nil
+}
+
 // Uint8Value returns the value in uint8 data type, and returns error if the Type is not Uint8.
 func (cv *CommandValue) Uint8Value() (uint8, error) {
 	var value uint8
@@ -456,6 +471,8 @@ func validate(valueType string, value interface{}) error {
 	switch valueType {
 	case common.ValueTypeString:
 		_, ok = value.(string)
+	case common.ValueTypeStringArray:
+		_, ok = value.([]string)
 	case common.ValueTypeBool:
 		_, ok = value.(bool)
 	case common.ValueTypeBoolArray:
