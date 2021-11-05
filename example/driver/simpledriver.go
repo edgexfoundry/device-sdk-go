@@ -38,6 +38,7 @@ type SimpleDriver struct {
 	yRotation     int32
 	zRotation     int32
 	counter       interface{}
+	stringArray   []string
 	serviceConfig *config.ServiceConfig
 }
 
@@ -84,6 +85,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 		"f1": "ABC",
 		"f2": 123,
 	}
+	s.stringArray = []string{"foo", "bar"}
 
 	ds := service.RunningService()
 
@@ -163,6 +165,9 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			}
 			cvb, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeBinary, buf.Bytes())
 			res[0] = cvb
+		} else if reqs[0].DeviceResourceName == "StringArray" {
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeStringArray, s.stringArray)
+			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Uint8Array" {
 			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeUint8Array, []uint8{0, 1, 2})
 			res[0] = cv
@@ -218,6 +223,11 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 		case "Zrotation":
 			if s.zRotation, err = params[i].Int32Value(); err != nil {
 				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
+				return err
+			}
+		case "StringArray":
+			if s.stringArray, err = params[i].StringArrayValue(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[i].String())
 				return err
 			}
 		case "Uint8Array":
