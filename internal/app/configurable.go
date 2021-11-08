@@ -312,14 +312,14 @@ func (app *Configurable) Encrypt(parameters map[string]string) interfaces.AppFun
 		return nil
 	}
 
-	initVector, ok := parameters[InitVector]
-	if !ok {
-		app.lc.Error("Could not find " + InitVector)
-		return nil
-	}
-
 	switch strings.ToLower(algorithm) {
 	case EncryptAES:
+		initVector, ok := parameters[InitVector]
+		if !ok {
+			app.lc.Error("Could not find " + InitVector)
+			return nil
+		}
+
 		//nolint: staticcheck
 		transform := transforms.Encryption{
 			EncryptionKey:        encryptionKey,
