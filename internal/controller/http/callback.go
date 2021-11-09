@@ -121,7 +121,7 @@ func (c *RestController) AddProvisionWatcher(writer http.ResponseWriter, request
 		return
 	}
 
-	edgexErr := application.AddProvisionWatcher(addProvisionWatcherRequest, c.lc)
+	edgexErr := application.AddProvisionWatcher(addProvisionWatcherRequest, c.lc, c.dic)
 	if edgexErr == nil {
 		res := commonDTO.NewBaseResponse(addProvisionWatcherRequest.RequestId, "", http.StatusOK)
 		c.sendResponse(writer, request, common.ApiWatcherCallbackRoute, res, http.StatusOK)

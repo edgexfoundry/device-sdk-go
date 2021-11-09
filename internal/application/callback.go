@@ -168,10 +168,15 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	return nil
 }
 
-func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcherRequest, lc logger.LoggingClient) errors.EdgeX {
+func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcherRequest, lc logger.LoggingClient, dic *di.Container) errors.EdgeX {
 	provisionWatcher := dtos.ToProvisionWatcherModel(addProvisionWatcherRequest.ProvisionWatcher)
 
-	edgexErr := cache.ProvisionWatchers().Add(provisionWatcher)
+	edgexErr := updateAssociatedProfile(provisionWatcher.ProfileName, dic)
+	if edgexErr != nil {
+		return errors.NewCommonEdgeXWrapper(edgexErr)
+	}
+
+	edgexErr = cache.ProvisionWatchers().Add(provisionWatcher)
 	if edgexErr != nil {
 		errMsg := fmt.Sprintf("failed to add provision watcher %s", provisionWatcher.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
@@ -191,7 +196,7 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 			var newProvisionWatcher models.ProvisionWatcher
 			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
 			req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher))
-			return AddProvisionWatcher(req, lc)
+			return AddProvisionWatcher(req, lc, dic)
 		} else {
 			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)
 			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
@@ -202,8 +207,12 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 	}
 
 	requests.ReplaceProvisionWatcherModelFieldsWithDTO(&provisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
+	edgexErr := updateAssociatedProfile(provisionWatcher.ProfileName, dic)
+	if edgexErr != nil {
+		return errors.NewCommonEdgeXWrapper(edgexErr)
+	}
 
-	edgexErr := cache.ProvisionWatchers().Update(provisionWatcher)
+	edgexErr = cache.ProvisionWatchers().Update(provisionWatcher)
 	if edgexErr != nil {
 		errMsg := fmt.Sprintf("failed to update provision watcher %s", provisionWatcher.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, edgexErr)
@@ -243,7 +252,7 @@ func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceService
 	return nil
 }
 
-// updateAssociatedProfile updates the profile specified in AddDeviceRequest or UpdateDeviceRequest
+// updateAssociatedProfile updates the profile specified in AddDeviceRequest or UpdateDeviceRequest or AddProvisionWatcherRequest or UpdateProvisionWatcherRequest
 // to stay consistent with core metadata.
 func updateAssociatedProfile(profileName string, dic *di.Container) errors.EdgeX {
 	dpc := bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)

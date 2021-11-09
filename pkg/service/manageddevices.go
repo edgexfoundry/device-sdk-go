@@ -31,11 +31,15 @@ func (s *DeviceService) AddDevice(device models.Device) (string, error) {
 
 	_, cacheExist := cache.Profiles().ForName(device.ProfileName)
 	if !cacheExist {
-		_, err := s.edgexClients.DeviceProfileClient.DeviceProfileByName(context.Background(), device.ProfileName)
+		res, err := s.edgexClients.DeviceProfileClient.DeviceProfileByName(context.Background(), device.ProfileName)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to find Profile %s for Device %s", device.ProfileName, device.Name)
 			s.LoggingClient.Error(errMsg)
 			return "", err
+		}
+		err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
+		if err != nil {
+			return "", errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
 		}
 	}
 	device.ServiceName = s.ServiceName
