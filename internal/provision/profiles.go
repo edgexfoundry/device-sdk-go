@@ -10,16 +10,19 @@ package provision
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
@@ -80,9 +83,16 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 			continue
 		}
 
-		_, err = dpc.DeviceProfileByName(context.Background(), profile.Name)
+		res, err := dpc.DeviceProfileByName(context.Background(), profile.Name)
 		if err == nil {
 			lc.Infof("Profile %s exists, using the existing one", profile.Name)
+			_, exist := cache.Profiles().ForName(profile.Name)
+			if !exist {
+				err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
+				if err != nil {
+					return errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
+				}
+			}
 		} else {
 			lc.Infof("Profile %s not found in Metadata, adding it ...", profile.Name)
 			req := requests.NewDeviceProfileRequest(profile)
