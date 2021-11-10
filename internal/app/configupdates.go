@@ -144,18 +144,17 @@ func (processor *ConfigUpdateProcessor) processConfigChangedPipeline() {
 	sdk := processor.svc
 
 	if sdk.usingConfigurablePipeline {
-		transforms, err := sdk.LoadConfigurablePipeline()
+		pipelines, err := sdk.LoadConfigurableFunctionPipelines()
 		if err != nil {
-			sdk.LoggingClient().Error("unable to reload Configurable Pipeline from new configuration: " + err.Error())
-			// Reset the default pipeline transforms to nil so error occurs when attempting to execute the pipeline.
-			_ = sdk.runtime.SetDefaultFunctionsPipeline(nil)
+			sdk.LoggingClient().Errorf("unable to reload Configurable Pipeline(s) from new configuration: %s: all pipelines have been disabled", err.Error())
+			// Clear the pipeline transforms so error occurs when attempting to execute the pipeline(s).
+			sdk.runtime.ClearAllFunctionsPipelineTransforms()
 			return
 		}
 
-		err = sdk.SetFunctionsPipeline(transforms...)
-		if err != nil {
-			sdk.LoggingClient().Error("unable to set Configurable Pipeline functions from new configuration: " + err.Error())
-			return
+		// Update the pipelines with their new transforms
+		for _, pipeline := range pipelines {
+			sdk.runtime.SetFunctionsPipelineTransforms(pipeline.Id, pipeline.Transforms)
 		}
 
 		sdk.LoggingClient().Info("Configurable Pipeline successfully reloaded from new configuration")

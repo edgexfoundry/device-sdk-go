@@ -28,6 +28,8 @@ import (
 	"strings"
 	"sync"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
@@ -90,17 +92,36 @@ func NewGolangRuntime(serviceKey string, targetType interface{}, dic *di.Contain
 }
 
 // SetDefaultFunctionsPipeline sets the default function pipeline
-func (gr *GolangRuntime) SetDefaultFunctionsPipeline(transforms []interfaces.AppFunction) error {
-	pipeline := gr.GetDefaultPipeline()
-	if pipeline.Transforms != nil {
+func (gr *GolangRuntime) SetDefaultFunctionsPipeline(transforms []interfaces.AppFunction) {
+	pipeline := gr.GetDefaultPipeline() // ensures the default pipeline exists
+	gr.SetFunctionsPipelineTransforms(pipeline.Id, transforms)
+}
+
+// SetFunctionsPipelineTransforms sets the transforms for an existing function pipeline.
+// Non-existent pipelines are ignored
+func (gr *GolangRuntime) SetFunctionsPipelineTransforms(id string, transforms []interfaces.AppFunction) {
+	lc := bootstrapContainer.LoggingClientFrom(gr.dic.Get)
+
+	pipeline := gr.pipelines[id]
+	if pipeline != nil {
 		gr.isBusyCopying.Lock()
 		pipeline.Transforms = transforms
 		pipeline.Hash = calculatePipelineHash(transforms)
 		gr.isBusyCopying.Unlock()
-		return nil
+		lc.Infof("Transforms set for `%s` pipeline", id)
+	} else {
+		lc.Warnf("Unable to set transforms for `%s` pipeline: Pipeline not found", id)
 	}
+}
 
-	return gr.AddFunctionsPipeline(interfaces.DefaultPipelineId, []string{TopicWildCard}, transforms)
+// ClearAllFunctionsPipelineTransforms clears the transforms for all existing function pipelines.
+func (gr *GolangRuntime) ClearAllFunctionsPipelineTransforms() {
+	gr.isBusyCopying.Lock()
+	for index := range gr.pipelines {
+		gr.pipelines[index].Transforms = nil
+		gr.pipelines[index].Hash = ""
+	}
+	gr.isBusyCopying.Unlock()
 }
 
 // AddFunctionsPipeline is thread safe to set transforms
@@ -110,12 +131,18 @@ func (gr *GolangRuntime) AddFunctionsPipeline(id string, topics []string, transf
 		return fmt.Errorf("pipeline with Id='%s' already exists", id)
 	}
 
+	gr.addFunctionsPipeline(id, topics, transforms)
+
+	return nil
+}
+
+func (gr *GolangRuntime) addFunctionsPipeline(id string, topics []string, transforms []interfaces.AppFunction) *interfaces.FunctionPipeline {
 	pipeline := NewFunctionPipeline(id, topics, transforms)
 	gr.isBusyCopying.Lock()
 	gr.pipelines[id] = &pipeline
 	gr.isBusyCopying.Unlock()
 
-	return nil
+	return &pipeline
 }
 
 // ProcessMessage sends the contents of the message through the functions pipeline
@@ -369,9 +396,7 @@ func (gr *GolangRuntime) debugLogEvent(lc logger.LoggingClient, event *dtos.Even
 func (gr *GolangRuntime) GetDefaultPipeline() *interfaces.FunctionPipeline {
 	pipeline := gr.pipelines[interfaces.DefaultPipelineId]
 	if pipeline == nil {
-		pipeline = &interfaces.FunctionPipeline{
-			Id: interfaces.DefaultPipelineId,
-		}
+		pipeline = gr.addFunctionsPipeline(interfaces.DefaultPipelineId, []string{TopicWildCard}, nil)
 	}
 	return pipeline
 }

@@ -242,8 +242,7 @@ func TestSetupHTTPTrigger(t *testing.T) {
 	}
 
 	testRuntime := runtime.NewGolangRuntime("", nil, dic)
-	err := testRuntime.SetDefaultFunctionsPipeline(nil)
-	require.NoError(t, err)
+	testRuntime.SetDefaultFunctionsPipeline(nil)
 	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of HTTP Trigger")
@@ -259,8 +258,7 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 		},
 	}
 	testRuntime := runtime.NewGolangRuntime("", nil, dic)
-	err := testRuntime.SetDefaultFunctionsPipeline(nil)
-	require.NoError(t, err)
+	testRuntime.SetDefaultFunctionsPipeline(nil)
 	trigger := sdk.setupTrigger(sdk.config, testRuntime)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
@@ -301,7 +299,8 @@ func TestSetDefaultFunctionsPipelineOneTransform(t *testing.T) {
 func TestService_AddFunctionsPipelineForTopics(t *testing.T) {
 	service := Service{
 		lc:      lc,
-		runtime: runtime.NewGolangRuntime("", nil, nil),
+		dic:     dic,
+		runtime: runtime.NewGolangRuntime("", nil, dic),
 		config: &common.ConfigurationStruct{
 			Trigger: common.TriggerInfo{
 				Type: TriggerTypeMessageBus,

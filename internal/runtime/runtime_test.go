@@ -74,9 +74,8 @@ func TestProcessMessageBusRequest(t *testing.T) {
 		return true, "Hello"
 	}
 
-	runtime := NewGolangRuntime("", nil, nil)
-	err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{dummyTransform})
-	require.NoError(t, err)
+	runtime := NewGolangRuntime("", nil, dic)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{dummyTransform})
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	require.NotNil(t, result)
 	assert.Equal(t, expected, result.ErrorCode)
@@ -94,7 +93,7 @@ func TestProcessMessageNoTransforms(t *testing.T) {
 	}
 	context := appfunction.NewContext("testId", dic, "")
 
-	runtime := NewGolangRuntime("", nil, nil)
+	runtime := NewGolangRuntime("", nil, dic)
 
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	require.NotNil(t, result)
@@ -123,9 +122,8 @@ func TestProcessMessageOneCustomTransform(t *testing.T) {
 		transform1WasCalled = true
 		return true, "Hello"
 	}
-	runtime := NewGolangRuntime("", nil, nil)
-	err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
+	runtime := NewGolangRuntime("", nil, dic)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	require.Nil(t, result)
 	require.True(t, transform1WasCalled, "transform1 should have been called")
@@ -164,9 +162,8 @@ func TestProcessMessageTwoCustomTransforms(t *testing.T) {
 
 		return true, "Hello"
 	}
-	runtime := NewGolangRuntime("", nil, nil)
-	err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1, transform2})
-	require.NoError(t, err)
+	runtime := NewGolangRuntime("", nil, dic)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1, transform2})
 
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	require.Nil(t, result)
@@ -213,9 +210,8 @@ func TestProcessMessageThreeCustomTransformsOneFail(t *testing.T) {
 		require.Equal(t, "Transform1Result", data, "Did not receive result from previous transform")
 		return true, "Hello"
 	}
-	runtime := NewGolangRuntime("", nil, nil)
-	err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1, transform2, transform3})
-	require.NoError(t, err)
+	runtime := NewGolangRuntime("", nil, dic)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1, transform2, transform3})
 
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	require.Nil(t, result)
@@ -245,10 +241,9 @@ func TestProcessMessageTransformError(t *testing.T) {
 	context := appfunction.NewContext("testId", dic, "")
 
 	// Let the Runtime know we are sending a RegistryInfo, so it passes it to the first function
-	runtime := NewGolangRuntime("", &config.RegistryInfo{}, nil)
+	runtime := NewGolangRuntime("", &config.RegistryInfo{}, dic)
 	// FilterByDeviceName with return an error if it doesn't receive and Event
-	err := runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transforms.NewFilterFor([]string{"SomeDevice"}).FilterByDeviceName})
-	require.NoError(t, err)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transforms.NewFilterFor([]string{"SomeDevice"}).FilterByDeviceName})
 	msgErr := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 
 	require.NotNil(t, msgErr, "Expected an error")
@@ -311,10 +306,8 @@ func TestProcessMessageJSON(t *testing.T) {
 		return false, nil
 	}
 
-	runtime := NewGolangRuntime("", nil, nil)
-
-	err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
+	runtime := NewGolangRuntime("", nil, dic)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	assert.Nilf(t, result, "result should be null. Got %v", result)
@@ -351,10 +344,8 @@ func TestProcessMessageCBOR(t *testing.T) {
 		return false, nil
 	}
 
-	runtime := NewGolangRuntime("", nil, nil)
-
-	err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
+	runtime := NewGolangRuntime("", nil, dic)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
 	result := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 	assert.Nil(t, result, "result should be null")
@@ -422,10 +413,8 @@ func TestProcessMessageTargetType(t *testing.T) {
 
 			context := appfunction.NewContext("testing", dic, "")
 
-			runtime := NewGolangRuntime("", currentTest.TargetType, nil)
-
-			err = runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transforms.NewResponseData().SetResponseData})
-			require.NoError(t, err)
+			runtime := NewGolangRuntime("", currentTest.TargetType, dic)
+			runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transforms.NewResponseData().SetResponseData})
 
 			err := runtime.ProcessMessage(context, envelope, runtime.GetDefaultPipeline())
 			if currentTest.ErrorExpected {
@@ -461,8 +450,7 @@ func TestExecutePipelinePersist(t *testing.T) {
 	runtime := NewGolangRuntime(serviceKey, nil, updateDicWithMockStoreClient())
 
 	httpPost := transforms.NewHTTPSender("http://nowhere", "", true).HTTPPost
-	err := runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassThru, httpPost})
-	require.NoError(t, err)
+	runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassThru, httpPost})
 
 	payload := []byte("My Payload")
 
@@ -578,7 +566,7 @@ func TestTopicMatches(t *testing.T) {
 }
 
 func TestGetPipelineById(t *testing.T) {
-	target := NewGolangRuntime(serviceKey, nil, nil)
+	target := NewGolangRuntime(serviceKey, nil, dic)
 
 	expectedId := "my-pipeline"
 	expectedTopics := []string{"edgex/events/#"}
@@ -587,10 +575,9 @@ func TestGetPipelineById(t *testing.T) {
 	}
 	badId := "bogus"
 
-	err := target.SetDefaultFunctionsPipeline(expectedTransforms)
-	require.NoError(t, err)
+	target.SetDefaultFunctionsPipeline(expectedTransforms)
 
-	err = target.AddFunctionsPipeline(expectedId, expectedTopics, expectedTransforms)
+	err := target.AddFunctionsPipeline(expectedId, expectedTopics, expectedTransforms)
 	require.NoError(t, err)
 
 	actual := target.GetPipelineById(interfaces.DefaultPipelineId)
@@ -612,7 +599,7 @@ func TestGetPipelineById(t *testing.T) {
 }
 
 func TestGetMatchingPipelines(t *testing.T) {
-	target := NewGolangRuntime(serviceKey, nil, nil)
+	target := NewGolangRuntime(serviceKey, nil, dic)
 
 	expectedTransforms := []interfaces.AppFunction{
 		transforms.NewResponseData().SetResponseData,
@@ -645,8 +632,9 @@ func TestGetMatchingPipelines(t *testing.T) {
 }
 
 func TestGolangRuntime_GetDefaultPipeline(t *testing.T) {
-	target := NewGolangRuntime(serviceKey, nil, nil)
+	target := NewGolangRuntime(serviceKey, nil, dic)
 
+	expectedNilTransformsHash := "Pipeline-functions: "
 	expectedTransforms := []interfaces.AppFunction{
 		transforms.NewResponseData().SetResponseData,
 	}
@@ -655,12 +643,11 @@ func TestGolangRuntime_GetDefaultPipeline(t *testing.T) {
 	actual := target.GetDefaultPipeline()
 	require.NotNil(t, actual)
 	assert.Equal(t, interfaces.DefaultPipelineId, actual.Id)
-	assert.Empty(t, actual.Topics)
+	assert.Equal(t, []string{TopicWildCard}, actual.Topics)
 	assert.Nil(t, actual.Transforms)
-	assert.Empty(t, actual.Hash)
+	assert.Equal(t, expectedNilTransformsHash, actual.Hash)
 
-	err := target.SetDefaultFunctionsPipeline(expectedTransforms)
-	require.NoError(t, err)
+	target.SetDefaultFunctionsPipeline(expectedTransforms)
 
 	actual = target.GetDefaultPipeline()
 	require.NotNil(t, actual)
@@ -668,4 +655,63 @@ func TestGolangRuntime_GetDefaultPipeline(t *testing.T) {
 	assert.Equal(t, []string{TopicWildCard}, actual.Topics)
 	assert.Equal(t, expectedTransforms, actual.Transforms)
 	assert.NotEmpty(t, actual.Hash)
+	assert.NotEqual(t, expectedNilTransformsHash, actual.Hash)
+
+}
+
+func TestGolangRuntime_SetFunctionsPipelineTransforms(t *testing.T) {
+	target := NewGolangRuntime(serviceKey, nil, dic)
+
+	id := "my-pipeline"
+	topics := []string{"edgex/events/#"}
+	initialTransforms := []interfaces.AppFunction{
+		transforms.NewResponseData().SetResponseData,
+	}
+
+	compress := transforms.NewCompression()
+
+	expectedTransforms := []interfaces.AppFunction{
+		compress.CompressWithGZIP,
+		transforms.NewResponseData().SetResponseData,
+	}
+
+	err := target.AddFunctionsPipeline(id, topics, initialTransforms)
+	require.NoError(t, err)
+	pipeline := target.GetPipelineById(id)
+	require.NotEqual(t, expectedTransforms, pipeline.Transforms)
+
+	target.SetFunctionsPipelineTransforms(id, expectedTransforms)
+	pipeline = target.GetPipelineById(id)
+	require.Equal(t, expectedTransforms, pipeline.Transforms)
+}
+
+func TestGolangRuntime_ClearAllFunctionsPipelineTransforms(t *testing.T) {
+	target := NewGolangRuntime(serviceKey, nil, dic)
+
+	id1 := "pipeline1"
+	id2 := "pipeline2"
+	topics := []string{"edgex/events/#"}
+	transforms := []interfaces.AppFunction{
+		transforms.NewResponseData().SetResponseData,
+	}
+
+	target.SetDefaultFunctionsPipeline(transforms)
+	err := target.AddFunctionsPipeline(id1, topics, transforms)
+	require.NoError(t, err)
+	err = target.AddFunctionsPipeline(id2, topics, transforms)
+	require.NoError(t, err)
+	pipeline := target.GetDefaultPipeline()
+	require.NotNil(t, pipeline.Transforms)
+	pipeline = target.GetPipelineById(id1)
+	require.NotNil(t, pipeline.Transforms)
+	pipeline = target.GetPipelineById(id2)
+	require.NotNil(t, pipeline.Transforms)
+
+	target.ClearAllFunctionsPipelineTransforms()
+	pipeline = target.GetDefaultPipeline()
+	require.Nil(t, pipeline.Transforms)
+	pipeline = target.GetPipelineById(id1)
+	assert.Nil(t, pipeline.Transforms)
+	pipeline = target.GetPipelineById(id2)
+	assert.Nil(t, pipeline.Transforms)
 }

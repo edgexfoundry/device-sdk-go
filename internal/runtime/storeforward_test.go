@@ -122,8 +122,7 @@ func TestProcessRetryItems(t *testing.T) {
 				pipeline = runtime.GetPipelineById("per-topic")
 				require.NotNil(t, pipeline)
 			} else {
-				err := runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
-				require.NoError(t, err)
+				runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassthru, transformPassthru, test.TargetTransform})
 				pipeline = runtime.GetDefaultPipeline()
 				require.NotNil(t, pipeline)
 			}
@@ -186,8 +185,7 @@ func TestDoStoreAndForwardRetry(t *testing.T) {
 				pipeline = runtime.GetPipelineById("per-topic")
 				require.NotNil(t, pipeline)
 			} else {
-				err := runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassthru, test.TargetTransform})
-				require.NoError(t, err)
+				runtime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transformPassthru, test.TargetTransform})
 				pipeline = runtime.GetDefaultPipeline()
 				require.NotNil(t, pipeline)
 			}

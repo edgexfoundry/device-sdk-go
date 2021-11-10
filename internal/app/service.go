@@ -374,10 +374,7 @@ func (svc *Service) SetDefaultFunctionsPipeline(transforms ...interfaces.AppFunc
 	}
 
 	svc.runtime.TargetType = svc.targetType
-	err := svc.runtime.SetDefaultFunctionsPipeline(transforms)
-	if err != nil {
-		return err
-	}
+	svc.runtime.SetDefaultFunctionsPipeline(transforms)
 
 	svc.lc.Debugf("Default pipeline added with %d transform(s)", len(transforms))
 

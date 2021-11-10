@@ -349,11 +349,10 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	}
 
 	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
-	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
 	trigger := NewTrigger(dic, goRuntime)
-	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
 	payload, err := json.Marshal(addEventRequest)
@@ -433,9 +432,8 @@ func TestInitializeAndProcessEventWithOutput(t *testing.T) {
 	}
 
 	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
-	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
 	trigger := NewTrigger(dic, goRuntime)
 
 	testClientConfig := types.MessageBusConfig{
@@ -537,9 +535,7 @@ func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
 	}
 
 	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-
-	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
+	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
 	trigger := NewTrigger(dic, goRuntime)
 
@@ -642,9 +638,7 @@ func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
 	}
 
 	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-
-	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
+	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
 	trigger := NewTrigger(dic, goRuntime)
 	testClientConfig := types.MessageBusConfig{
@@ -831,12 +825,10 @@ func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
 	}
 
 	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-
-	err := goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-	require.NoError(t, err)
+	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
 
 	trigger := NewTrigger(dic, goRuntime)
-	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
+	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
 	payload, _ := json.Marshal(addEventRequest)
