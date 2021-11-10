@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: EdgeX Foundry - Device Service API
   description: This is the definition of the API for Device services in the EdgeX Foundry IOT microservice platform. Device Services are responsible for obtaining Readings from target devices, and for writing values (settings) to them.
-  version: 2.0.0
+  version: 2.1.0
 
 servers:
   - url: http://0:49999/api/v2
