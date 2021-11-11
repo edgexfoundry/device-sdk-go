@@ -2,6 +2,39 @@
 ## App Functions SDK (in Go)
 [Github repository](https://github.com/edgexfoundry/app-functions-sdk-go)
 
+### Change Logs for EdgeX Dependencies
+
+- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/main/CHANGELOG.md)
+- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/main/CHANGELOG.md)
+- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/main/CHANGELOG.md)
+- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/main/CHANGELOG.md) 
+- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
+- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
+
+## [v2.1.0] Jakarta - 2021-11-17 (Only compatible with the 2.x releases)
+
+### Features ✨
+
+- Updated CORs implementation to handle preflight request ([#990](https://github.com/edgexfoundry/app-functions-sdk-go/issues/990)) ([#d9713a4](https://github.com/edgexfoundry/app-functions-sdk-go/commits/d9713a4))
+- Add CORS support ([#983](https://github.com/edgexfoundry/app-functions-sdk-go/issues/983)) ([#2f5b3cf](https://github.com/edgexfoundry/app-functions-sdk-go/commits/2f5b3cf))
+- Add Pipeline per Topic capability ([#938](https://github.com/edgexfoundry/app-functions-sdk-go/issues/938)) ([#262cc6a](https://github.com/edgexfoundry/app-functions-sdk-go/commits/262cc6a))
+- Add Clone to Context ([#950](https://github.com/edgexfoundry/app-functions-sdk-go/issues/950)) ([#b86fbeb](https://github.com/edgexfoundry/app-functions-sdk-go/commits/b86fbeb))
+- Support Multi-Topic Pipeline Configuration ([#947](https://github.com/edgexfoundry/app-functions-sdk-go/issues/947)) ([#0793683](https://github.com/edgexfoundry/app-functions-sdk-go/commits/0793683))
+- Custom Trigger Multi-Pipeline Support ([#941](https://github.com/edgexfoundry/app-functions-sdk-go/issues/941)) ([#18ff6e1](https://github.com/edgexfoundry/app-functions-sdk-go/commits/18ff6e1))
+- **transforms:** Enable Batch to optionally marshal data as Events ([#977](https://github.com/edgexfoundry/app-functions-sdk-go/issues/977)) ([#b877746](https://github.com/edgexfoundry/app-functions-sdk-go/commits/b877746))
+- **transforms:** Add support for Object type to PushToCore function ([#973](https://github.com/edgexfoundry/app-functions-sdk-go/issues/973)) ([#162e49c](https://github.com/edgexfoundry/app-functions-sdk-go/commits/162e49c))
+- **transforms:** Add ability to use generic Event tags ([#969](https://github.com/edgexfoundry/app-functions-sdk-go/issues/969)) ([#83cc0a2](https://github.com/edgexfoundry/app-functions-sdk-go/commits/83cc0a2))
+- **transforms:** new AES 256 Encryption Transform ([#984](https://github.com/edgexfoundry/app-functions-sdk-go/issues/984)) ([#8fa13c6](https://github.com/edgexfoundry/app-functions-sdk-go/commits/8fa13c6))
+
+### Bug Fixes 🐛
+
+- Update docs links in README to 2.0 version of links ([#943](https://github.com/edgexfoundry/app-functions-sdk-go/issues/943)) ([#a082b2d](https://github.com/edgexfoundry/app-functions-sdk-go/commits/a082b2d))
+- **runtime:** ignore charset in unmarshalPayload for Content-Type comparison ([#951](https://github.com/edgexfoundry/app-functions-sdk-go/issues/951)) ([#952](https://github.com/edgexfoundry/app-functions-sdk-go/issues/952)) ([#be777dc](https://github.com/edgexfoundry/app-functions-sdk-go/commits/be777dc))
+
+### Code Refactoring ♻
+
+- Clean up TOML quotes and add LF MD files ([#63ccb94](https://github.com/edgexfoundry/app-functions-sdk-go/commits/63ccb94))
+
 ## [v2.0.1] Ireland - 2021-07-28 (Not Compatible with 1.x releases)
 
 ### Bug Fixes 🐛
@@ -15,15 +48,6 @@
 - Change swagger to publish version to 2.0.0 ([#919](https://github.com/edgexfoundry/app-functions-sdk-go/issues/919)) ([#b10469f](https://github.com/edgexfoundry/app-functions-sdk-go/commits/b10469f))
 
 ## [v2.0.0] Ireland - 2021-06-30 (Not Compatible with 1.x releases)
-
-### Change Logs for EdgeX Dependencies
-
-- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/master/CHANGELOG.md)
-- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/master/CHANGELOG.md)
-- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/master/CHANGELOG.md)
-- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/master/CHANGELOG.md) 
-- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration) (indirect dependency)
-- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/master/CHANGELOG.md) (indirect dependency)
 
 ### Features ✨
 
