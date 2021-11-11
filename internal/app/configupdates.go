@@ -152,6 +152,8 @@ func (processor *ConfigUpdateProcessor) processConfigChangedPipeline() {
 			return
 		}
 
+		sdk.runtime.TargetType = sdk.targetType
+
 		// Update the pipelines with their new transforms
 		for _, pipeline := range pipelines {
 			sdk.runtime.SetFunctionsPipelineTransforms(pipeline.Id, pipeline.Transforms)
