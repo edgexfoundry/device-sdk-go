@@ -3,14 +3,37 @@
 ## EdgeX Device SDK Go
 [Github repository](https://github.com/edgexfoundry/device-sdk-go)
 
-## [v2.0.0] Ireland - 2021-06-30  (Not Compatible with 1.x releases)
 ### Change Logs for EdgeX Dependencies
+
 - [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/v2.0.0/CHANGELOG.md)
 - [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/v2.0.0/CHANGELOG.md)
 - [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/v2.0.1/CHANGELOG.md)
 - [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/v2.0.0/CHANGELOG.md)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
+
+## [v2.1.0] Jakarta - 2021-11-17 (Only compatible with the 2.x releases)
+
+### Features ✨
+
+- Support object value type in Set Command ([#801bc03](https://github.com/edgexfoundry/device-sdk-go/commits/801bc03))
+- Add NewCommandValueWithOrigin function ([#c6c2082](https://github.com/edgexfoundry/device-sdk-go/commits/c6c2082))
+- Support Object value type in Reading ([#1025](https://github.com/edgexfoundry/device-sdk-go/issues/1025)) ([#d245461](https://github.com/edgexfoundry/device-sdk-go/commits/d245461))
+
+### Bug Fixes 🐛
+
+- Stop AutoEvents if the Device is locked ([#1027](https://github.com/edgexfoundry/device-sdk-go/issues/1027)) ([#c02be29](https://github.com/edgexfoundry/device-sdk-go/commits/c02be29))
+- Fix nil pointer error when executing SET command with empty value ([#0f89794](https://github.com/edgexfoundry/device-sdk-go/commits/0f89794))
+- Fix device yaml  to Json  error ([#cf13810](https://github.com/edgexfoundry/device-sdk-go/commits/cf13810))
+- Update all TOML to use quote and not single-quote ([#9e077e8](https://github.com/edgexfoundry/device-sdk-go/commits/9e077e8))
+
+### Documentation 📖
+
+- Add apiVersion to request body example ([#1a6f6b9](https://github.com/edgexfoundry/device-sdk-go/commits/1a6f6b9))
+- Remove the description about base64 encoding ([#df04f74](https://github.com/edgexfoundry/device-sdk-go/commits/df04f74))
+- update device-simple README and ProvisionWatcher example ([#76abb45](https://github.com/edgexfoundry/device-sdk-go/commits/76abb45))
+
+## [v2.0.0] Ireland - 2021-06-30  (Not Compatible with 1.x releases)
 
 ### Features ✨
 - Enable using MessageBus as the default ([#eca11b8](https://github.com/edgexfoundry/device-sdk-go/commits/eca11b8))
