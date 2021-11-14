@@ -4,13 +4,13 @@
 
 ## Overview
 
-This repository is a set of Go packages that can be used to build Go-based [device services](https://docs.edgexfoundry.org/1.2/microservices/device/Ch-DeviceServices/) for use within the EdgeX framework.
+This repository is a set of Go packages that can be used to build Go-based [device services](https://docs.edgexfoundry.org/2.1/microservices/device/Ch-DeviceServices/) for use within the EdgeX framework.
 
 ## Usage
 
-Developers can make their own device service by implementing the [`ProtocolDriver`](https://github.com/edgexfoundry/device-sdk-go/blob/master/pkg/models/protocoldriver.go) interface for their desired IoT protocol, and the `main` function to start the Device Service. To implement the `main` function, the [`startup`](https://github.com/edgexfoundry/device-sdk-go/tree/master/pkg/startup) package can be optionally leveraged, or developers can write customized bootstrap code by themselves.
+Developers can make their own device service by implementing the [`ProtocolDriver`](https://github.com/edgexfoundry/device-sdk-go/blob/jakarta/pkg/models/protocoldriver.go) interface for their desired IoT protocol, and the `main` function to start the Device Service. To implement the `main` function, the [`startup`](https://github.com/edgexfoundry/device-sdk-go/tree/jakarta/pkg/startup) package can be optionally leveraged, or developers can write customized bootstrap code by themselves.
 
-Please see the provided [simple device service](https://github.com/edgexfoundry/device-sdk-go/tree/master/example) as an example, included in this repository.
+Please see the provided [simple device service](https://github.com/edgexfoundry/device-sdk-go/tree/jakarta/example) as an example, included in this repository.
 
 ## Command Line Options
 
@@ -63,4 +63,4 @@ Please refer to the EdgeX Foundry [versioning policy](https://wiki.edgexfoundry.
 
 ## Long Term Support
 
-Please refer to the EdgeX Foundry [LTS policy](https://wiki.edgexfoundry.org/display/FA/Long+Term+Support) for information on support of EdgeX releases. The EdgeX community does not offer support on any non-LTS release outside of the latest release.
+Please refer to the EdgeX Foundry [LTS policy](https://wiki.edgexfoundry.org/pages/viewpage.action?pageId=69173332) for information on support of EdgeX releases. The EdgeX community does not offer support on any non-LTS release outside of the latest release.
