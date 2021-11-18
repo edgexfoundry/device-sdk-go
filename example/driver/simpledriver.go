@@ -37,6 +37,8 @@ type SimpleDriver struct {
 	xRotation     int32
 	yRotation     int32
 	zRotation     int32
+	counter       interface{}
+	stringArray   []string
 	serviceConfig *config.ServiceConfig
 }
 
@@ -79,6 +81,11 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 	s.asyncCh = asyncCh
 	s.deviceCh = deviceCh
 	s.serviceConfig = &config.ServiceConfig{}
+	s.counter = map[string]interface{}{
+		"f1": "ABC",
+		"f2": 123,
+	}
+	s.stringArray = []string{"foo", "bar"}
 
 	ds := service.RunningService()
 
@@ -158,8 +165,14 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			}
 			cvb, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeBinary, buf.Bytes())
 			res[0] = cvb
+		} else if reqs[0].DeviceResourceName == "StringArray" {
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeStringArray, s.stringArray)
+			res[0] = cv
 		} else if reqs[0].DeviceResourceName == "Uint8Array" {
 			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeUint8Array, []uint8{0, 1, 2})
+			res[0] = cv
+		} else if reqs[0].DeviceResourceName == "Counter" {
+			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeObject, s.counter)
 			res[0] = cv
 		}
 	} else if len(reqs) == 3 {
@@ -212,11 +225,21 @@ func (s *SimpleDriver) HandleWriteCommands(deviceName string, protocols map[stri
 				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Int32, parameter: %s", params[i].String())
 				return err
 			}
+		case "StringArray":
+			if s.stringArray, err = params[i].StringArrayValue(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be string array, parameter: %s", params[i].String())
+				return err
+			}
 		case "Uint8Array":
 			v, err := params[i].Uint8ArrayValue()
 			if err == nil {
 				s.lc.Debugf("Uint8 array value from write command: ", v)
 			} else {
+				return err
+			}
+		case "Counter":
+			if s.counter, err = params[i].ObjectValue(); err != nil {
+				err := fmt.Errorf("SimpleDriver.HandleWriteCommands; the data type of parameter should be Object, parameter: %s", params[i].String())
 				return err
 			}
 		}

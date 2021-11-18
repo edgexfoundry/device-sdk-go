@@ -28,7 +28,7 @@ import (
 func (c *RestController) Command(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
 
-	var requestParamsMap map[string]string
+	var requestParamsMap map[string]interface{}
 	var queryParams string
 	var err errors.EdgeX
 	var reserved url.Values
@@ -77,7 +77,7 @@ func (c *RestController) Command(writer http.ResponseWriter, request *http.Reque
 	}
 }
 
-func parseRequestBody(req *http.Request, maxRequestSize int64) (map[string]string, errors.EdgeX) {
+func parseRequestBody(req *http.Request, maxRequestSize int64) (map[string]interface{}, errors.EdgeX) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -88,7 +88,7 @@ func parseRequestBody(req *http.Request, maxRequestSize int64) (map[string]strin
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
 	}
 
-	var paramMap = make(map[string]string)
+	var paramMap = make(map[string]interface{})
 	if len(body) == 0 {
 		return paramMap, nil
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/google/uuid"
 
 	"github.com/edgego/device-sdk-go/v2/internal/application"
 	sdkCommon "github.com/edgego/device-sdk-go/v2/internal/common"
@@ -111,7 +112,9 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				// By adding a buffer here, the user can use the Service.AsyncBufferSize configuration to control the goroutine for sending events.
 				go func() {
 					buffer <- true
-					sdkCommon.SendEvent(evt, "", dic)
+					correlationId := uuid.NewString()
+					sdkCommon.SendEvent(evt, correlationId, dic)
+					lc.Tracef("AutoEvent - Sent new Event/Reading for '%s' source with Correlation Id '%s'", evt.SourceName, correlationId)
 					<-buffer
 				}()
 			} else {

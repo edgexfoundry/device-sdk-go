@@ -45,12 +45,26 @@ deviceResources:
         valueType: "Int32"
         readWrite: "RW"
   -
+    name: "StringArray"
+    isHidden: false
+    description: "String array"
+    properties:
+      valueType: "StringArray"
+      readWrite: "RW"
+  -
     name: "Uint8Array"
     isHidden: false
     description: "Unsigned 8bit array"
     properties:
         valueType: "Uint8Array"
         readWrite: "RW"
+  -
+    name: "Counter"
+    isHidden: false
+    description: "Counter data"
+    properties:
+      valueType: "Object"
+      readWrite: "RW"
 
 deviceCommands:
   -

@@ -34,14 +34,14 @@ type CommandProcessor struct {
 	device        models.Device
 	sourceName    string
 	correlationID string
-	setParamsMap  map[string]string
+	setParamsMap  map[string]interface{}
 	attributes    string
 	dic           *di.Container
 }
 
-func NewCommandProcessor(device models.Device, sourceName string, correlationID string, setParamsMap map[string]string, attributes string, dic *di.Container) *CommandProcessor {
+func NewCommandProcessor(device models.Device, sourceName string, correlationID string, setParamsMap map[string]interface{}, attributes string, dic *di.Container) *CommandProcessor {
 	if setParamsMap == nil {
-		setParamsMap = make(map[string]string)
+		setParamsMap = make(map[string]interface{})
 	}
 	return &CommandProcessor{
 		device:        device,
@@ -53,7 +53,7 @@ func NewCommandProcessor(device models.Device, sourceName string, correlationID 
 	}
 }
 
-func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, setParamsMap map[string]string, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
+func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[string]string, setParamsMap map[string]interface{}, attributes string, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
 	// check device service AdminState
 	ds := container.DeviceServiceFrom(dic.Get)
 	if ds.AdminState == models.Locked {
@@ -382,15 +382,26 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 	return nil
 }
 
-func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*sdkModels.CommandValue, errors.EdgeX) {
+func createCommandValueFromDeviceResource(dr models.DeviceResource, value interface{}) (*sdkModels.CommandValue, errors.EdgeX) {
 	var err error
 	var result *sdkModels.CommandValue
+
+	v := fmt.Sprint(value)
 
 	switch dr.Properties.ValueType {
 	case common.ValueTypeString:
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeString, v)
+	case common.ValueTypeStringArray:
+		var arr []string
+		err = json.Unmarshal([]byte(v), &arr)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeStringArray, arr)
 	case common.ValueTypeBool:
-		value, err := strconv.ParseBool(v)
+		var value bool
+		value, err = strconv.ParseBool(v)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -398,14 +409,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeBool, value)
 	case common.ValueTypeBoolArray:
 		var arr []bool
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeBoolArray, arr)
 	case common.ValueTypeUint8:
-		n, err := strconv.ParseUint(v, 10, 8)
+		var n uint64
+		n, err = strconv.ParseUint(v, 10, 8)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -424,7 +436,8 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint8Array, arr)
 	case common.ValueTypeUint16:
-		n, err := strconv.ParseUint(v, 10, 16)
+		var n uint64
+		n, err = strconv.ParseUint(v, 10, 16)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -443,7 +456,8 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint16Array, arr)
 	case common.ValueTypeUint32:
-		n, err := strconv.ParseUint(v, 10, 32)
+		var n uint64
+		n, err = strconv.ParseUint(v, 10, 32)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -462,7 +476,8 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint32Array, arr)
 	case common.ValueTypeUint64:
-		n, err := strconv.ParseUint(v, 10, 64)
+		var n uint64
+		n, err = strconv.ParseUint(v, 10, 64)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -481,7 +496,8 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeUint64Array, arr)
 	case common.ValueTypeInt8:
-		n, err := strconv.ParseInt(v, 10, 8)
+		var n int64
+		n, err = strconv.ParseInt(v, 10, 8)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -489,14 +505,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt8, int8(n))
 	case common.ValueTypeInt8Array:
 		var arr []int8
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt8Array, arr)
 	case common.ValueTypeInt16:
-		n, err := strconv.ParseInt(v, 10, 16)
+		var n int64
+		n, err = strconv.ParseInt(v, 10, 16)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -504,14 +521,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt16, int16(n))
 	case common.ValueTypeInt16Array:
 		var arr []int16
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt16Array, arr)
 	case common.ValueTypeInt32:
-		n, err := strconv.ParseInt(v, 10, 32)
+		var n int64
+		n, err = strconv.ParseInt(v, 10, 32)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -519,14 +537,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt32, int32(n))
 	case common.ValueTypeInt32Array:
 		var arr []int32
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt32Array, arr)
 	case common.ValueTypeInt64:
-		n, err := strconv.ParseInt(v, 10, 64)
+		var n int64
+		n, err = strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -534,14 +553,15 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt64, n)
 	case common.ValueTypeInt64Array:
 		var arr []int64
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeInt64Array, arr)
 	case common.ValueTypeFloat32:
-		val, err := strconv.ParseFloat(v, 32)
+		var val float64
+		val, err = strconv.ParseFloat(v, 32)
 		if err == nil {
 			result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat32, float32(val))
 			break
@@ -567,7 +587,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 	case common.ValueTypeFloat32Array:
 		var arr []float32
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
@@ -575,7 +595,7 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat32Array, arr)
 	case common.ValueTypeFloat64:
 		var val float64
-		val, err := strconv.ParseFloat(v, 64)
+		val, err = strconv.ParseFloat(v, 64)
 		if err == nil {
 			result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64, val)
 			break
@@ -600,12 +620,14 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, v string) (*
 		}
 	case common.ValueTypeFloat64Array:
 		var arr []float64
-		err := json.Unmarshal([]byte(v), &arr)
+		err = json.Unmarshal([]byte(v), &arr)
 		if err != nil {
 			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, dr.Properties.ValueType)
 			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64Array, arr)
+	case common.ValueTypeObject:
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeObject, value)
 	default:
 		err = errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

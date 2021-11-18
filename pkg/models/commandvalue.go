@@ -55,6 +55,17 @@ func NewCommandValue(deviceResourceName string, valueType string, value interfac
 		Tags:               make(map[string]string)}, nil
 }
 
+// NewCommandValueWithOrigin wraps NewCommandValue, create a CommandValue and add the Origin field.
+func NewCommandValueWithOrigin(deviceResourceName string, valueType string, value interface{}, origin int64) (*CommandValue, error) {
+	cv, err := NewCommandValue(deviceResourceName, valueType, value)
+	if err != nil {
+		return nil, errors.NewCommonEdgeXWrapper(err)
+	}
+
+	cv.Origin = origin
+	return cv, nil
+}
+
 // ValueToString returns the string format of the value.
 func (cv *CommandValue) ValueToString() string {
 	if cv.Type == common.ValueTypeBinary {
@@ -107,6 +118,21 @@ func (cv *CommandValue) StringValue() (string, error) {
 		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 	value, ok := cv.Value.(string)
+	if !ok {
+		errMsg := fmt.Sprintf("failed to transfrom %v to %T", cv.Value, value)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	return value, nil
+}
+
+// StringArrayValue returns the value in an array of bool type, and returns error if the Type is not BoolArray.
+func (cv *CommandValue) StringArrayValue() ([]string, error) {
+	var value []string
+	if cv.Type != common.ValueTypeStringArray {
+		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, common.ValueTypeStringArray)
+		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	value, ok := cv.Value.([]string)
 	if !ok {
 		errMsg := fmt.Sprintf("failed to transfrom %v to %T", cv.Value, value)
 		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
@@ -429,6 +455,15 @@ func (cv *CommandValue) BinaryValue() ([]byte, error) {
 	return value, nil
 }
 
+// ObjectValue returns the value in object data type, and returns error if the Type is not Object.
+func (cv *CommandValue) ObjectValue() (interface{}, error) {
+	if cv.Type != common.ValueTypeObject {
+		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, common.ValueTypeObject)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	return cv.Value, nil
+}
+
 // validate checks if the given value can be converted to specified valueType by
 // performing type assertion
 func validate(valueType string, value interface{}) error {
@@ -436,6 +471,8 @@ func validate(valueType string, value interface{}) error {
 	switch valueType {
 	case common.ValueTypeString:
 		_, ok = value.(string)
+	case common.ValueTypeStringArray:
+		_, ok = value.([]string)
 	case common.ValueTypeBool:
 		_, ok = value.(bool)
 	case common.ValueTypeBoolArray:
@@ -486,6 +523,8 @@ func validate(valueType string, value interface{}) error {
 			errMsg := fmt.Sprintf("value payload exceeds limit for binary readings (%v bytes)", MaxBinaryBytes)
 			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
+	case common.ValueTypeObject:
+		_, ok = value.(interface{})
 	default:
 		return errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

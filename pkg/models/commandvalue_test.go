@@ -11,11 +11,28 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewCommandValue(t *testing.T) {
+	resource := "test-resource"
+	value := "test"
+	cv, err := NewCommandValue(resource, common.ValueTypeString, value)
+	assert.NoError(t, err)
+	assert.Equal(t, cv.DeviceResourceName, resource)
+	assert.Equal(t, cv.Value, value)
+}
+
+func TestNewCommandValueWithOrigin(t *testing.T) {
+	origin := time.Now().UnixNano()
+	cv, err := NewCommandValueWithOrigin("test-resource", common.ValueTypeString, "test", origin)
+	assert.NoError(t, err)
+	assert.Equal(t, cv.Origin, origin)
+}
 
 func Test_validate(t *testing.T) {
 	exceedBinary := make([]byte, MaxBinaryBytes+1)
@@ -31,6 +48,7 @@ func Test_validate(t *testing.T) {
 		{"invalid - binary payload exceeds MaxBinaryBytes size", common.ValueTypeBinary, exceedBinary, true},
 		{"valid - binary payload doesn't exceed MaxBinaryBytes size", common.ValueTypeBinary, []byte{1, 2, 3}, false},
 		{"valid - normal type", common.ValueTypeInt8, int8(8), false},
+		{"valid - string array value type", common.ValueTypeStringArray, []string{"foo", "bar"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -59,6 +77,9 @@ func TestCommandValue_ValueToString(t *testing.T) {
 	rand.Read(binaryValue)
 	binaryCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBinary, binaryValue)
 	require.NoError(t, err)
+	stringArrayValue := []string{"foo", "bar"}
+	stringArrayCommandValue, err := NewCommandValue("test-resource", common.ValueTypeStringArray, stringArrayValue)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
@@ -71,6 +92,7 @@ func TestCommandValue_ValueToString(t *testing.T) {
 		{"valid - CommandValue with string Value", stringCommandValue, "string"},
 		{"valid - CommandValue with boolean Value", boolCommandValue, "true"},
 		{"valid - CommandValue with binary Value", binaryCommandValue, fmt.Sprintf("Binary: [%v...]", string(binaryValue[:20]))},
+		{"valid - CommandValue with string array Value", stringArrayCommandValue, fmt.Sprintf("%v", stringArrayValue)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -152,6 +174,34 @@ func TestCommandValue_StringValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.cv.StringValue()
+			if tt.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.Equal(t, res, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCommandValue_StringArrayValue(t *testing.T) {
+	value := []string{"foo", "bar"}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeStringArray, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeStringArray, Value: true}
+
+	tests := []struct {
+		name        string
+		cv          *CommandValue
+		expected    []string
+		expectedErr bool
+	}{
+		{"valid - CommandValue with []string Value", valid, value, false},
+		{"invalid - ValueType is not StringArray", invalidType, value, true},
+		{"invalid - Value is not []string", invalidValue, value, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.cv.StringArrayValue()
 			if tt.expectedErr {
 				require.Error(t, err)
 			} else {
@@ -712,6 +762,35 @@ func TestCommandValue_Float64ArrayValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.cv.Float64ArrayValue()
+			if tt.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.Equal(t, res, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCommandValue_ObjectValue(t *testing.T) {
+	var value interface{} = map[string]interface{}{
+		"f1": "ABC",
+		"f2": 123,
+	}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeObject, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+
+	tests := []struct {
+		name        string
+		cv          *CommandValue
+		expected    interface{}
+		expectedErr bool
+	}{
+		{"valid - CommandValue with interface{} Value", valid, value, false},
+		{"invalid - ValueType is not Object", invalidType, value, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.cv.ObjectValue()
 			if tt.expectedErr {
 				require.Error(t, err)
 			} else {
