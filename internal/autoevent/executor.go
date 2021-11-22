@@ -76,30 +76,31 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				lc.Errorf("AutoEvent - error occurs when reading resource %s: %v", e.sourceName, err)
 				continue
 			}
+			
+			//add promutheus metrics
+			go resourceReadCount.WithLabelValues(
+				"",
+				e.deviceName,
+				e.sourceName,
+			).Inc()
+
+			respSize := 0
+			for _, reading := range evt.Readings {
+				if reading.BinaryValue != nil {
+					respSize += len(reading.BinaryValue)
+				} else {
+					respSize += len(reading.Value)
+				}
+			}
+
+			go resourceReadResponse.WithLabelValues(
+				"",
+				e.deviceName,
+				e.sourceName,
+			).Set(float64(respSize))
 
 			if evt != nil {
-				//add promutheus metrics
-				go resourceReadCount.WithLabelValues(
-					"",
-					e.deviceName,
-					e.sourceName,
-				).Inc()
-
-				respSize := 0
-				for _, reading := range evt.Readings {
-					if reading.BinaryValue != nil {
-						respSize += len(reading.BinaryValue)
-					} else {
-						respSize += len(reading.Value)
-					}
-				}
-
-				go resourceReadResponse.WithLabelValues(
-					"",
-					e.deviceName,
-					e.sourceName,
-				).Set(float64(respSize))
-
+				
 				if e.onChange {
 					if e.compareReadings(evt.Readings) {
 						lc.Debugf("AutoEvent - readings are the same as previous one")
