@@ -23,8 +23,8 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/google/uuid"
 
-	"github.com/edgego/device-sdk-go/v2/internal/application"
-	sdkCommon "github.com/edgego/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 )
 
 var (
