@@ -36,7 +36,7 @@ import (
 
 var lc logger.LoggingClient
 var dic *di.Container
-var context *appfunction.Context
+var secretDataProvider messaging.SecretDataProvider
 
 func TestMain(m *testing.M) {
 	lc = logger.NewMockClient()
@@ -46,7 +46,10 @@ func TestMain(m *testing.M) {
 		},
 	})
 
-	context = appfunction.NewContext("123", dic, "")
+	ctx := appfunction.NewContext("123", dic, "")
+
+	secretDataProvider = ctx
+	lc = ctx.LoggingClient()
 
 	os.Exit(m.Run())
 }
@@ -55,7 +58,7 @@ func TestNewMqttFactory(t *testing.T) {
 	expectedMode := "none"
 	expectedPath := "myPath"
 	expectedSkipVerify := true
-	target := NewMqttFactory(context, expectedMode, expectedPath, expectedSkipVerify)
+	target := NewMqttFactory(secretDataProvider, lc, expectedMode, expectedPath, expectedSkipVerify)
 
 	assert.NotNil(t, target.logger)
 	assert.Equal(t, expectedMode, target.authMode)
@@ -66,7 +69,7 @@ func TestNewMqttFactory(t *testing.T) {
 }
 
 func TestConfigureMQTTClientForAuth(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	tests := []struct {
 		Name             string
@@ -98,7 +101,7 @@ func TestConfigureMQTTClientForAuth(t *testing.T) {
 	}
 }
 func TestConfigureMQTTClientForAuthWithUsernamePassword(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = messaging.AuthModeUsernamePassword
 	err := target.configureMQTTClientForAuth(&messaging.SecretData{
@@ -113,7 +116,7 @@ func TestConfigureMQTTClientForAuthWithUsernamePassword(t *testing.T) {
 
 }
 func TestConfigureMQTTClientForAuthWithUsernamePasswordAndCA(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = messaging.AuthModeUsernamePassword
 	err := target.configureMQTTClientForAuth(&messaging.SecretData{
@@ -129,7 +132,7 @@ func TestConfigureMQTTClientForAuthWithUsernamePasswordAndCA(t *testing.T) {
 }
 
 func TestConfigureMQTTClientForAuthWithCACert(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = messaging.AuthModeCA
 	err := target.configureMQTTClientForAuth(&messaging.SecretData{
@@ -145,7 +148,7 @@ func TestConfigureMQTTClientForAuthWithCACert(t *testing.T) {
 	assert.Nil(t, target.opts.TLSConfig.Certificates)
 }
 func TestConfigureMQTTClientForAuthWithClientCert(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = messaging.AuthModeCert
 	err := target.configureMQTTClientForAuth(&messaging.SecretData{
@@ -163,7 +166,7 @@ func TestConfigureMQTTClientForAuthWithClientCert(t *testing.T) {
 }
 
 func TestConfigureMQTTClientForAuthWithClientCertNoCA(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = messaging.AuthModeCert
 	err := target.configureMQTTClientForAuth(&messaging.SecretData{
@@ -180,7 +183,7 @@ func TestConfigureMQTTClientForAuthWithClientCertNoCA(t *testing.T) {
 	assert.Nil(t, target.opts.TLSConfig.ClientCAs)
 }
 func TestConfigureMQTTClientForAuthWithNone(t *testing.T) {
-	target := NewMqttFactory(context, "", "", false)
+	target := NewMqttFactory(secretDataProvider, lc, "", "", false)
 	target.opts = mqtt.NewClientOptions()
 	target.authMode = messaging.AuthModeNone
 	err := target.configureMQTTClientForAuth(&messaging.SecretData{})

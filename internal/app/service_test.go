@@ -243,7 +243,10 @@ func TestSetupHTTPTrigger(t *testing.T) {
 
 	testRuntime := runtime.NewGolangRuntime("", nil, dic)
 	testRuntime.SetDefaultFunctionsPipeline(nil)
-	trigger := sdk.setupTrigger(sdk.config, testRuntime)
+
+	sdk.runtime = testRuntime
+
+	trigger := sdk.setupTrigger(sdk.config)
 	result := IsInstanceOf(trigger, (*triggerHttp.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of HTTP Trigger")
 }
@@ -259,7 +262,10 @@ func TestSetupMessageBusTrigger(t *testing.T) {
 	}
 	testRuntime := runtime.NewGolangRuntime("", nil, dic)
 	testRuntime.SetDefaultFunctionsPipeline(nil)
-	trigger := sdk.setupTrigger(sdk.config, testRuntime)
+
+	sdk.runtime = testRuntime
+
+	trigger := sdk.setupTrigger(sdk.config)
 	result := IsInstanceOf(trigger, (*messagebus.Trigger)(nil))
 	assert.True(t, result, "Expected Instance of Message Bus Trigger")
 }

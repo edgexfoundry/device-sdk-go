@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,24 +21,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/secure"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonContracts "github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
 	pahoMqtt "github.com/eclipse/paho.mqtt.golang"
@@ -46,28 +43,31 @@ import (
 
 // Trigger implements Trigger to support Triggers
 type Trigger struct {
-	dic          *di.Container
-	lc           logger.LoggingClient
-	mqttClient   pahoMqtt.Client
-	runtime      *runtime.GolangRuntime
-	qos          byte
-	retain       bool
-	publishTopic string
+	messageProcessor trigger.MessageProcessor
+	serviceBinding   trigger.ServiceBinding
+	lc               logger.LoggingClient
+	mqttClient       pahoMqtt.Client
+	qos              byte
+	retain           bool
+	publishTopic     string
+	config           *common.ConfigurationStruct
 }
 
-func NewTrigger(dic *di.Container, runtime *runtime.GolangRuntime) *Trigger {
-	return &Trigger{
-		dic:     dic,
-		runtime: runtime,
-		lc:      bootstrapContainer.LoggingClientFrom(dic.Get),
+func NewTrigger(bnd trigger.ServiceBinding, mp trigger.MessageProcessor) *Trigger {
+	t := &Trigger{
+		messageProcessor: mp,
+		serviceBinding:   bnd,
 	}
+
+	return t
 }
 
 // Initialize initializes the Trigger for an external MQTT broker
 func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, background <-chan interfaces.BackgroundMessage) (bootstrap.Deferred, error) {
 	// Convenience short cuts
 	lc := trigger.lc
-	config := container.ConfigurationFrom(trigger.dic.Get)
+	config := trigger.config
+
 	brokerConfig := config.Trigger.ExternalMqtt
 	topics := config.Trigger.ExternalMqtt.SubscribeTopics
 
@@ -104,10 +104,9 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 	opts.KeepAlive = brokerConfig.KeepAlive
 	opts.Servers = []*url.URL{brokerUrl}
 
-	// Since this factory is shared between the MQTT pipeline function and this trigger we must provide
-	// a dummy AppFunctionContext which will provide access to GetSecret
 	mqttFactory := secure.NewMqttFactory(
-		appfunction.NewContext("", trigger.dic, ""),
+		trigger.serviceBinding.SecretProvider(),
+		trigger.serviceBinding.LoggingClient(),
 		brokerConfig.AuthMode,
 		brokerConfig.SecretPath,
 		brokerConfig.SkipCertVerify,
@@ -139,7 +138,7 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 	// Convenience short cuts
 	lc := trigger.lc
-	config := container.ConfigurationFrom(trigger.dic.Get)
+	config := trigger.config
 	topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(config.Trigger.ExternalMqtt.SubscribeTopics, util.SplitComma))
 	qos := config.Trigger.ExternalMqtt.QoS
 
@@ -160,10 +159,10 @@ func (trigger *Trigger) messageHandler(_ pahoMqtt.Client, mqttMessage pahoMqtt.M
 	lc := trigger.lc
 
 	data := mqttMessage.Payload()
-	contentType := common.ContentTypeJSON
+	contentType := commonContracts.ContentTypeJSON
 	if data[0] != byte('{') && data[0] != byte('[') {
 		// If not JSON then assume it is CBOR
-		contentType = common.ContentTypeCBOR
+		contentType = commonContracts.ContentTypeCBOR
 	}
 
 	correlationID := uuid.New().String()
@@ -179,25 +178,19 @@ func (trigger *Trigger) messageHandler(_ pahoMqtt.Client, mqttMessage pahoMqtt.M
 		len(message.Payload),
 		message.ReceivedTopic,
 		message.ContentType)
-	lc.Tracef("%s=%s", common.CorrelationHeader, correlationID)
+	lc.Tracef("%s=%s", commonContracts.CorrelationHeader, correlationID)
 
-	pipelines := trigger.runtime.GetMatchingPipelines(message.ReceivedTopic)
-	lc.Debugf("MQTT Trigger found %d pipeline(s) that match the incoming topic '%s'", len(pipelines), message.ReceivedTopic)
-	for _, pipeline := range pipelines {
-		go trigger.processMessageWithPipeline(message, pipeline)
-	}
+	ctx := trigger.serviceBinding.BuildContext(message)
+
+	go func() {
+		processErr := trigger.messageProcessor.MessageReceived(ctx, message, trigger.responseHandler)
+		if processErr != nil {
+			lc.Errorf("MQTT Trigger: Failed to process message on pipeline(s): %s", processErr.Error())
+		}
+	}()
 }
 
-func (trigger *Trigger) processMessageWithPipeline(envelope types.MessageEnvelope, pipeline *interfaces.FunctionPipeline) {
-	appContext := appfunction.NewContext(envelope.CorrelationID, trigger.dic, envelope.ContentType)
-
-	messageError := trigger.runtime.ProcessMessage(appContext, envelope, pipeline)
-	if messageError != nil {
-		// ProcessMessage logs the error, so no need to log it here.
-		// ToDo: Do we want to publish the error back to the Broker?
-		return
-	}
-
+func (trigger *Trigger) responseHandler(appContext interfaces.AppFunctionContext, pipeline *interfaces.FunctionPipeline) error {
 	if len(appContext.ResponseData()) > 0 && len(trigger.publishTopic) > 0 {
 		formattedTopic, err := appContext.ApplyValues(trigger.publishTopic)
 
@@ -206,19 +199,22 @@ func (trigger *Trigger) processMessageWithPipeline(envelope types.MessageEnvelop
 				trigger.publishTopic,
 				pipeline.Id,
 				err.Error())
+			return err
 		}
 
 		if token := trigger.mqttClient.Publish(formattedTopic, trigger.qos, trigger.retain, appContext.ResponseData()); token.Wait() && token.Error() != nil {
 			trigger.lc.Errorf("MQTT trigger: Could not publish to topic '%s' for pipeline '%s': %s",
 				formattedTopic,
 				pipeline.Id,
-				token.Error().Error())
+				token.Error())
+			return token.Error()
 		} else {
 			trigger.lc.Debugf("MQTT Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
 				pipeline.Id,
 				formattedTopic,
 				len(appContext.ResponseData()))
-			trigger.lc.Tracef("MQTT Trigger published message: %s=%s", common.CorrelationHeader, envelope.CorrelationID)
+			trigger.lc.Tracef("MQTT Trigger published message: %s=%s", commonContracts.CorrelationHeader, appContext.CorrelationID())
 		}
 	}
+	return nil
 }

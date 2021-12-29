@@ -128,7 +128,7 @@ func Test_triggerMessageProcessor_MessageReceived(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tsb := triggerMocks.ServiceBinding{}
 
-			tsb.On("ProcessMessage", mock.Anything, mock.Anything, mock.Anything).Return(tt.setup.runtimeProcessor)
+			tsb.On("ProcessMessage", mock.AnythingOfType("*appfunction.Context"), mock.AnythingOfType("types.MessageEnvelope"), mock.AnythingOfType("*interfaces.FunctionPipeline")).Return(tt.setup.runtimeProcessor)
 			tsb.On("GetMatchingPipelines", tt.args.envelope.ReceivedTopic).Return(tt.setup.pipelineMatcher)
 			tsb.On("LoggingClient").Return(lc)
 

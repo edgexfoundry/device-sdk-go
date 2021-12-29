@@ -160,7 +160,7 @@ func (svc *Service) MakeItRun() error {
 	svc.ctx.stop = stop
 
 	// determine input type and create trigger for it
-	t := svc.setupTrigger(svc.config, svc.runtime)
+	t := svc.setupTrigger(svc.config)
 	if t == nil {
 		return errors.New("failed to create Trigger")
 	}

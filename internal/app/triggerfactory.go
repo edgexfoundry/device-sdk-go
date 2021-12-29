@@ -21,7 +21,6 @@ package app
 import (
 	"fmt"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/mqtt"
@@ -36,21 +35,24 @@ const (
 	TriggerTypeHTTP       = "HTTP"
 )
 
-func (svc *Service) setupTrigger(configuration *common.ConfigurationStruct, runtime *runtime.GolangRuntime) interfaces.Trigger {
+func (svc *Service) setupTrigger(configuration *common.ConfigurationStruct) interfaces.Trigger {
 	var t interfaces.Trigger
+
+	bnd := NewTriggerServiceBinding(svc)
+	mp := &triggerMessageProcessor{bnd}
 
 	switch triggerType := strings.ToUpper(configuration.Trigger.Type); triggerType {
 	case TriggerTypeHTTP:
 		svc.LoggingClient().Info("HTTP trigger selected")
-		t = http.NewTrigger(svc.dic, svc.runtime, svc.webserver)
+		t = http.NewTrigger(bnd, mp, svc.webserver)
 
 	case TriggerTypeMessageBus:
 		svc.LoggingClient().Info("EdgeX MessageBus trigger selected")
-		t = messagebus.NewTrigger(svc.dic, svc.runtime)
+		t = messagebus.NewTrigger(bnd, mp)
 
 	case TriggerTypeMQTT:
 		svc.LoggingClient().Info("External MQTT trigger selected")
-		t = mqtt.NewTrigger(svc.dic, svc.runtime)
+		t = mqtt.NewTrigger(bnd, mp)
 
 	default:
 		if factory, found := svc.customTriggerFactories[triggerType]; found {

@@ -102,7 +102,7 @@ func TestSetupTrigger_HTTP(t *testing.T) {
 		lc: logger.MockLogger{},
 	}
 
-	trigger := sdk.setupTrigger(sdk.config, nil)
+	trigger := sdk.setupTrigger(sdk.config)
 
 	require.NotNil(t, trigger, "should be defined")
 	require.IsType(t, &http.Trigger{}, trigger, "should be an http trigger")
@@ -118,7 +118,7 @@ func TestSetupTrigger_EdgeXMessageBus(t *testing.T) {
 		lc: logger.MockLogger{},
 	}
 
-	trigger := sdk.setupTrigger(sdk.config, nil)
+	trigger := sdk.setupTrigger(sdk.config)
 
 	require.NotNil(t, trigger, "should be defined")
 	require.IsType(t, &messagebus.Trigger{}, trigger, "should be an edgex-messagebus trigger")
@@ -143,7 +143,7 @@ func TestSetupTrigger_MQTT(t *testing.T) {
 		lc:     lc,
 	}
 
-	trigger := sdk.setupTrigger(sdk.config, nil)
+	trigger := sdk.setupTrigger(sdk.config)
 
 	require.NotNil(t, trigger, "should be defined")
 	require.IsType(t, &mqtt.Trigger{}, trigger, "should be an external-MQTT trigger")
@@ -173,7 +173,7 @@ func Test_Service_setupTrigger_CustomType(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	trigger := sdk.setupTrigger(sdk.config, nil)
+	trigger := sdk.setupTrigger(sdk.config)
 
 	require.NotNil(t, trigger, "should be defined")
 	require.IsType(t, &mockCustomTrigger{}, trigger, "should be a custom trigger")
@@ -196,7 +196,7 @@ func Test_Service_SetupTrigger_CustomTypeError(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	trigger := sdk.setupTrigger(sdk.config, nil)
+	trigger := sdk.setupTrigger(sdk.config)
 
 	require.Nil(t, trigger, "should be nil")
 }
@@ -213,7 +213,7 @@ func Test_Service_SetupTrigger_CustomTypeNotFound(t *testing.T) {
 		lc: logger.MockLogger{},
 	}
 
-	trigger := sdk.setupTrigger(sdk.config, nil)
+	trigger := sdk.setupTrigger(sdk.config)
 
 	require.Nil(t, trigger, "should be nil")
 }

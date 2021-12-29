@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,20 +20,21 @@ package messagebus
 import (
 	"context"
 	"encoding/json"
-	"os"
+	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/messagebus/mocks"
+	interfaceMocks "github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces/mocks"
+	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
+	"github.com/stretchr/testify/mock"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
+	triggerMocks "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/mocks"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
-	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	bootstrapMocks "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -50,24 +52,12 @@ import (
 const TriggerTypeMessageBus = "EDGEX-MESSAGEBUS"
 
 var addEventRequest = createTestEventRequest()
-var expectedEvent = addEventRequest.Event
 
 func createTestEventRequest() requests.AddEventRequest {
 	event := dtos.NewEvent("thermostat", "LivingRoomThermostat", "temperature")
 	_ = event.AddSimpleReading("temperature", common.ValueTypeInt64, int64(38))
 	request := requests.NewAddEventRequest(event)
 	return request
-}
-
-var dic *di.Container
-
-func TestMain(m *testing.M) {
-	dic = di.NewContainer(di.ServiceConstructorMap{
-		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return logger.NewMockClient()
-		},
-	})
-	os.Exit(m.Run())
 }
 
 func TestInitializeNotSecure(t *testing.T) {
@@ -94,15 +84,11 @@ func TestInitializeNotSecure(t *testing.T) {
 		},
 	}
 
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
+	serviceBinding := &triggerMocks.ServiceBinding{}
+	serviceBinding.On("Config").Return(&config)
+	serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
 
-	goRuntime := &runtime.GolangRuntime{}
-
-	trigger := NewTrigger(dic, goRuntime)
+	trigger := NewTrigger(serviceBinding, nil)
 
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
@@ -141,24 +127,18 @@ func TestInitializeSecure(t *testing.T) {
 		},
 	}
 
-	mock := mocks.SecretProvider{}
+	mock := bootstrapMocks.SecretProvider{}
 	mock.On("GetSecret", secretName).Return(map[string]string{
 		bootstrapMessaging.SecretUsernameKey: "user",
 		bootstrapMessaging.SecretPasswordKey: "password",
 	}, nil)
 
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-		bootstrapContainer.SecretProviderName: func(get di.Get) interface{} {
-			return &mock
-		},
-	})
+	serviceBinding := &triggerMocks.ServiceBinding{}
+	serviceBinding.On("Config").Return(&config)
+	serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
+	serviceBinding.On("SecretProvider").Return(&mock)
 
-	goRuntime := &runtime.GolangRuntime{}
-
-	trigger := NewTrigger(dic, goRuntime)
+	trigger := NewTrigger(serviceBinding, nil)
 
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
@@ -192,124 +172,17 @@ func TestInitializeBadConfiguration(t *testing.T) {
 		},
 	}
 
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
+	serviceBinding := &triggerMocks.ServiceBinding{}
+	serviceBinding.On("Config").Return(&config)
+	serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
 
-	goRuntime := &runtime.GolangRuntime{}
+	trigger := NewTrigger(serviceBinding, nil)
 
-	trigger := NewTrigger(dic, goRuntime)
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	assert.Error(t, err)
 }
 
-func TestPipelinePerTopic(t *testing.T) {
-	testClientConfig := types.MessageBusConfig{
-		PublishHost: types.HostInfo{
-			Host:     "*",
-			Port:     6664,
-			Protocol: "tcp",
-		},
-		Type: "zero",
-	}
-
-	testClient, err := messaging.NewMessageClient(testClientConfig)
-	require.NoError(t, err, "Unable to create to publisher")
-
-	config := sdkCommon.ConfigurationStruct{
-		Trigger: sdkCommon.TriggerInfo{
-			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: sdkCommon.MessageBusConfig{
-				Type: "zero",
-				PublishHost: sdkCommon.PublishHostInfo{
-					Host:         "*",
-					Port:         6666,
-					Protocol:     "tcp",
-					PublishTopic: "",
-				},
-				SubscribeHost: sdkCommon.SubscribeHostInfo{
-					Host:            "localhost",
-					Port:            6664,
-					Protocol:        "tcp",
-					SubscribeTopics: "edgex/events/device",
-				},
-			},
-		},
-	}
-
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
-	expectedCorrelationID := "123"
-
-	transform1WasCalled := make(chan bool, 1)
-	transform2WasCalled := make(chan bool, 1)
-
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		assert.Equal(t, expectedEvent, data)
-		transform1WasCalled <- true
-		return false, nil
-	}
-
-	transform2 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		assert.Equal(t, expectedEvent, data)
-		transform2WasCalled <- true
-		return false, nil
-	}
-
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-
-	err = goRuntime.AddFunctionsPipeline("P1", []string{"edgex/events/device/P1/#"}, []interfaces.AppFunction{transform1})
-	require.NoError(t, err)
-	err = goRuntime.AddFunctionsPipeline("P2", []string{"edgex/events/device/P2/#"}, []interfaces.AppFunction{transform2})
-	require.NoError(t, err)
-
-	trigger := NewTrigger(dic, goRuntime)
-	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
-	require.NoError(t, err)
-
-	payload, err := json.Marshal(addEventRequest)
-	require.NoError(t, err)
-
-	message := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       payload,
-		ContentType:   common.ContentTypeJSON,
-	}
-
-	//transform1 in P1 pipeline should be called after this executes
-	err = testClient.Publish(message, "edgex/events/device/P1/LivingRoomThermostat/temperature")
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transform1WasCalled:
-		// do nothing, just need to fall out.
-	case <-transform2WasCalled:
-		t.Fail() // should not have happened
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
-	}
-
-	//transform2 in P2 pipeline should be called after this executes
-	err = testClient.Publish(message, "edgex/events/device/P2/LivingRoomThermostat/temperature")
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transform1WasCalled:
-		t.Fail() // should not have happened
-	case <-transform2WasCalled:
-		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
-	}
-}
-
-func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
+func TestInitializeAndProcessEvent(t *testing.T) {
 
 	config := sdkCommon.ConfigurationStruct{
 		Trigger: sdkCommon.TriggerInfo{
@@ -332,26 +205,25 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 		},
 	}
 
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
 	expectedCorrelationID := "123"
 
-	transformWasCalled := make(chan bool, 1)
+	messageProcessed := make(chan bool, 1)
 
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		assert.Equal(t, expectedEvent, data)
-		transformWasCalled <- true
-		return false, nil
-	}
+	expectedContext := appfunction.NewContext(uuid.NewString(), nil, "")
 
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
+	serviceBinding := &triggerMocks.ServiceBinding{}
+	serviceBinding.On("Config").Return(&config)
+	serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
+	serviceBinding.On("BuildContext", mock.Anything).Return(expectedContext)
 
-	trigger := NewTrigger(dic, goRuntime)
+	messageProcessor := &triggerMocks.MessageProcessor{}
+	messageProcessor.On("MessageReceived", expectedContext, mock.Anything, mock.AnythingOfType("interfaces.PipelineResponseHandler")).Return(func(interfaces.AppFunctionContext, types.MessageEnvelope, interfaces.PipelineResponseHandler) error {
+		messageProcessed <- true
+		return nil
+	})
+
+	trigger := NewTrigger(serviceBinding, messageProcessor)
+
 	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
 	require.NoError(t, err)
 
@@ -380,321 +252,10 @@ func TestInitializeAndProcessEventWithNoOutput(t *testing.T) {
 	require.NoError(t, err, "Failed to publish message")
 
 	select {
-	case <-transformWasCalled:
+	case <-messageProcessed:
 		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
-	}
-}
-
-func TestInitializeAndProcessEventWithOutput(t *testing.T) {
-
-	config := sdkCommon.ConfigurationStruct{
-		Trigger: sdkCommon.TriggerInfo{
-			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: sdkCommon.MessageBusConfig{
-				Type: "zero",
-				PublishHost: sdkCommon.PublishHostInfo{
-					Host:         "*",
-					Port:         5586,
-					Protocol:     "tcp",
-					PublishTopic: "PublishTopic",
-				},
-				SubscribeHost: sdkCommon.SubscribeHostInfo{
-					Host:            "localhost",
-					Port:            5584,
-					Protocol:        "tcp",
-					SubscribeTopics: "SubscribeTopic",
-				},
-			},
-		},
-	}
-
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
-	responseContentType := uuid.New().String()
-
-	expectedCorrelationID := "123"
-
-	transformWasCalled := make(chan bool, 1)
-
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		assert.Equal(t, expectedEvent, data)
-		appContext.SetResponseContentType(responseContentType)
-		appContext.SetResponseData([]byte("Transformed")) //transformed message published to message bus
-		transformWasCalled <- true
-		return false, nil
-
-	}
-
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-
-	trigger := NewTrigger(dic, goRuntime)
-
-	testClientConfig := types.MessageBusConfig{
-		SubscribeHost: types.HostInfo{
-			Host:     "localhost",
-			Port:     5586,
-			Protocol: "tcp",
-		},
-		PublishHost: types.HostInfo{
-			Host:     "*",
-			Port:     5584,
-			Protocol: "tcp",
-		},
-		Type: "zero",
-	}
-	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
-	require.NoError(t, err, "Failed to create test client")
-
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
-	testMessageErrors := make(chan error)
-
-	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
-	require.NoError(t, err)
-	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
-	require.NoError(t, err)
-
-	payload, err := json.Marshal(addEventRequest)
-	require.NoError(t, err)
-
-	message := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       payload,
-		ContentType:   common.ContentTypeJSON,
-	}
-
-	err = testClient.Publish(message, "SubscribeTopic")
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transformWasCalled:
-		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
-	}
-	receiveMessage := true
-
-	for receiveMessage {
-		select {
-		case msgErr := <-testMessageErrors:
-			receiveMessage = false
-			assert.Error(t, msgErr)
-		case msgs := <-testTopics[0].Messages:
-			receiveMessage = false
-			assert.Equal(t, "Transformed", string(msgs.Payload))
-			assert.Equal(t, responseContentType, msgs.ContentType)
-		}
-	}
-}
-
-func TestInitializeAndProcessEventWithOutput_InferJSON(t *testing.T) {
-
-	config := sdkCommon.ConfigurationStruct{
-		Trigger: sdkCommon.TriggerInfo{
-			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: sdkCommon.MessageBusConfig{
-				Type: "zero",
-				PublishHost: sdkCommon.PublishHostInfo{
-					Host:         "*",
-					Port:         5701,
-					Protocol:     "tcp",
-					PublishTopic: "PublishTopic",
-				},
-				SubscribeHost: sdkCommon.SubscribeHostInfo{
-					Host:            "localhost",
-					Port:            5702,
-					Protocol:        "tcp",
-					SubscribeTopics: "SubscribeTopic",
-				},
-			},
-		},
-	}
-
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
-	expectedCorrelationID := "123"
-
-	transformWasCalled := make(chan bool, 1)
-
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		assert.Equal(t, expectedEvent, data)
-		appContext.SetResponseData([]byte("{;)Transformed")) //transformed message published to message bus
-		transformWasCalled <- true
-		return false, nil
-
-	}
-
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-
-	trigger := NewTrigger(dic, goRuntime)
-
-	testClientConfig := types.MessageBusConfig{
-		SubscribeHost: types.HostInfo{
-			Host:     "localhost",
-			Port:     5701,
-			Protocol: "tcp",
-		},
-		PublishHost: types.HostInfo{
-			Host:     "*",
-			Port:     5702,
-			Protocol: "tcp",
-		},
-		Type: "zero",
-	}
-	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
-	require.NoError(t, err, "Failed to create test client")
-
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
-	testMessageErrors := make(chan error)
-
-	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
-	require.NoError(t, err)
-	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
-	require.NoError(t, err)
-
-	payload, err := json.Marshal(addEventRequest)
-	require.NoError(t, err)
-
-	message := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       payload,
-		ContentType:   common.ContentTypeJSON,
-	}
-
-	err = testClient.Publish(message, "SubscribeTopic")
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transformWasCalled:
-		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
-	}
-
-	receiveMessage := true
-
-	for receiveMessage {
-		select {
-		case msgErr := <-testMessageErrors:
-			receiveMessage = false
-			assert.Error(t, msgErr)
-		case msgs := <-testTopics[0].Messages:
-			receiveMessage = false
-			assert.Equal(t, "{;)Transformed", string(msgs.Payload))
-			assert.Equal(t, common.ContentTypeJSON, msgs.ContentType)
-		}
-	}
-}
-
-func TestInitializeAndProcessEventWithOutput_AssumeCBOR(t *testing.T) {
-
-	config := sdkCommon.ConfigurationStruct{
-		Trigger: sdkCommon.TriggerInfo{
-			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: sdkCommon.MessageBusConfig{
-				Type: "zero",
-				PublishHost: sdkCommon.PublishHostInfo{
-					Host:         "*",
-					Port:         5703,
-					Protocol:     "tcp",
-					PublishTopic: "PublishTopic",
-				},
-				SubscribeHost: sdkCommon.SubscribeHostInfo{
-					Host:            "localhost",
-					Port:            5704,
-					Protocol:        "tcp",
-					SubscribeTopics: "SubscribeTopic",
-				},
-			},
-		},
-	}
-
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
-	expectedCorrelationID := "123"
-
-	transformWasCalled := make(chan bool, 1)
-
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		assert.Equal(t, expectedEvent, data)
-		appContext.SetResponseData([]byte("Transformed")) //transformed message published to message bus
-		transformWasCalled <- true
-		return false, nil
-	}
-
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-
-	trigger := NewTrigger(dic, goRuntime)
-	testClientConfig := types.MessageBusConfig{
-		SubscribeHost: types.HostInfo{
-			Host:     "localhost",
-			Port:     5703,
-			Protocol: "tcp",
-		},
-		PublishHost: types.HostInfo{
-			Host:     "*",
-			Port:     5704,
-			Protocol: "tcp",
-		},
-		Type: "zero",
-	}
-	testClient, err := messaging.NewMessageClient(testClientConfig) //new client to publish & subscribe
-	require.NoError(t, err, "Failed to create test client")
-
-	testTopics := []types.TopicChannel{{Topic: config.Trigger.EdgexMessageBus.PublishHost.PublishTopic, Messages: make(chan types.MessageEnvelope)}}
-	testMessageErrors := make(chan error)
-
-	err = testClient.Subscribe(testTopics, testMessageErrors) //subscribe in order to receive transformed output to the bus
-	require.NoError(t, err)
-	_, err = trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
-	require.NoError(t, err)
-
-	payload, _ := json.Marshal(addEventRequest)
-
-	message := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       payload,
-		ContentType:   common.ContentTypeJSON,
-	}
-
-	err = testClient.Publish(message, "SubscribeTopic")
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transformWasCalled:
-		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called")
-	}
-
-	receiveMessage := true
-
-	for receiveMessage {
-		select {
-		case msgErr := <-testMessageErrors:
-			receiveMessage = false
-			assert.Error(t, msgErr)
-		case msgs := <-testTopics[0].Messages:
-			receiveMessage = false
-			assert.Equal(t, "Transformed", string(msgs.Payload))
-			assert.Equal(t, common.ContentTypeCBOR, msgs.ContentType)
-		}
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "Message never processed")
 	}
 }
 
@@ -721,19 +282,15 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 		},
 	}
 
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
 	expectedCorrelationID := "123"
 
 	expectedPayload := []byte(`{"id":"5888dea1bd36573f4681d6f9","origin":1471806386919,"pushed":0,"device":"livingroomthermostat","readings":[{"id":"5888dea0bd36573f4681d6f8","created":1485364896983,"modified":1485364896983,"origin":1471806386919,"pushed":0,"name":"temperature","value":"38","device":"livingroomthermostat"}]}`)
 
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
+	serviceBinding := &triggerMocks.ServiceBinding{}
+	serviceBinding.On("Config").Return(&config)
+	serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
 
-	trigger := NewTrigger(dic, goRuntime)
+	trigger := NewTrigger(serviceBinding, nil)
 
 	testClientConfig := types.MessageBusConfig{
 		SubscribeHost: types.HostInfo{
@@ -787,91 +344,6 @@ func TestInitializeAndProcessBackgroundMessage(t *testing.T) {
 	}
 }
 
-func TestInitializeAndProcessEventMultipleTopics(t *testing.T) {
-	config := sdkCommon.ConfigurationStruct{
-		Trigger: sdkCommon.TriggerInfo{
-			Type: TriggerTypeMessageBus,
-			EdgexMessageBus: sdkCommon.MessageBusConfig{
-				Type: "zero",
-				PublishHost: sdkCommon.PublishHostInfo{
-					Host:         "*",
-					Port:         5592,
-					Protocol:     "tcp",
-					PublishTopic: "",
-				},
-				SubscribeHost: sdkCommon.SubscribeHostInfo{
-					Host:            "localhost",
-					Port:            5594,
-					Protocol:        "tcp",
-					SubscribeTopics: "t1,t2",
-				},
-			},
-		},
-	}
-
-	dic.Update(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
-			return &config
-		},
-	})
-
-	expectedCorrelationID := "123"
-
-	transformWasCalled := make(chan bool, 1)
-	transform1 := func(appContext interfaces.AppFunctionContext, data interface{}) (bool, interface{}) {
-		require.Equal(t, expectedEvent, data)
-		transformWasCalled <- true
-		return false, nil
-	}
-
-	goRuntime := runtime.NewGolangRuntime("", nil, dic)
-	goRuntime.SetDefaultFunctionsPipeline([]interfaces.AppFunction{transform1})
-
-	trigger := NewTrigger(dic, goRuntime)
-	_, err := trigger.Initialize(&sync.WaitGroup{}, context.Background(), nil)
-	require.NoError(t, err)
-
-	payload, _ := json.Marshal(addEventRequest)
-
-	message := types.MessageEnvelope{
-		CorrelationID: expectedCorrelationID,
-		Payload:       payload,
-		ContentType:   common.ContentTypeJSON,
-	}
-
-	testClientConfig := types.MessageBusConfig{
-		PublishHost: types.HostInfo{
-			Host:     "*",
-			Port:     5594,
-			Protocol: "tcp",
-		},
-		Type: "zero",
-	}
-
-	testClient, err := messaging.NewMessageClient(testClientConfig)
-	require.NoError(t, err, "Unable to create to publisher")
-
-	err = testClient.Publish(message, "t1") //transform1 should be called after this executes
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transformWasCalled:
-		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called for t1")
-	}
-
-	err = testClient.Publish(message, "t2") //transform1 should be called after this executes
-	require.NoError(t, err, "Failed to publish message")
-
-	select {
-	case <-transformWasCalled:
-		// do nothing, just need to fall out.
-	case <-time.After(3 * time.Second):
-		require.Fail(t, "Transform never called t2")
-	}
-}
-
 type mockBackgroundMessage struct {
 	DeliverToTopic string
 	Payload        types.MessageEnvelope
@@ -883,4 +355,116 @@ func (bg mockBackgroundMessage) Topic() string {
 
 func (bg mockBackgroundMessage) Message() types.MessageEnvelope {
 	return bg.Payload
+}
+
+func TestTrigger_responseHandler(t *testing.T) {
+	const topicWithPlaceholder = "/topic/with/{ph}/placeholder"
+	const formattedTopic = "topic/with/ph-value/placeholder"
+	const setContentType = "content-type"
+	const correlationId = "corrid-1233523"
+	var setContentTypePayload = []byte("not-empty")
+	var inferJsonPayload = []byte("{not-empty")
+	var inferJsonArrayPayload = []byte("[not-empty")
+
+	type fields struct {
+		publishTopic string
+	}
+	type args struct {
+		pipeline *interfaces.FunctionPipeline
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+		setup   func(*triggerMocks.ServiceBinding, *interfaceMocks.AppFunctionContext, *mocks.MessageClient)
+	}{
+		{name: "no response data", wantErr: false, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, _ *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(nil)
+		}},
+		{name: "topic format failed", fields: fields{publishTopic: topicWithPlaceholder}, args: args{pipeline: &interfaces.FunctionPipeline{}}, wantErr: true, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, _ *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(setContentTypePayload)
+			functionContext.On("ApplyValues", topicWithPlaceholder).Return("", fmt.Errorf("apply values failed"))
+		}},
+		{name: "publish failed", fields: fields{publishTopic: topicWithPlaceholder}, args: args{pipeline: &interfaces.FunctionPipeline{}}, wantErr: true, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, client *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(setContentTypePayload)
+			functionContext.On("ResponseContentType").Return(setContentType)
+			functionContext.On("CorrelationID").Return(correlationId)
+			functionContext.On("ApplyValues", topicWithPlaceholder).Return(formattedTopic, nil)
+			client.On("Publish", mock.Anything, mock.Anything).Return(func(envelope types.MessageEnvelope, s string) error {
+				return fmt.Errorf("publish failed")
+			})
+		}},
+		{name: "happy", fields: fields{publishTopic: topicWithPlaceholder}, args: args{pipeline: &interfaces.FunctionPipeline{}}, wantErr: false, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, client *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(setContentTypePayload)
+			functionContext.On("ResponseContentType").Return(setContentType)
+			functionContext.On("CorrelationID").Return(correlationId)
+			functionContext.On("ApplyValues", topicWithPlaceholder).Return(formattedTopic, nil)
+			client.On("Publish", mock.Anything, mock.Anything).Return(func(envelope types.MessageEnvelope, s string) error {
+				assert.Equal(t, correlationId, envelope.CorrelationID)
+				assert.Equal(t, setContentType, envelope.ContentType)
+				assert.Equal(t, setContentTypePayload, envelope.Payload)
+				return nil
+			})
+		}},
+		{name: "happy assume CBOR", fields: fields{publishTopic: topicWithPlaceholder}, args: args{pipeline: &interfaces.FunctionPipeline{}}, wantErr: false, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, client *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(setContentTypePayload)
+			functionContext.On("ResponseContentType").Return("")
+			functionContext.On("CorrelationID").Return(correlationId)
+			functionContext.On("ApplyValues", topicWithPlaceholder).Return(formattedTopic, nil)
+			client.On("Publish", mock.Anything, mock.Anything).Return(func(envelope types.MessageEnvelope, s string) error {
+				assert.Equal(t, correlationId, envelope.CorrelationID)
+				assert.Equal(t, common.ContentTypeCBOR, envelope.ContentType)
+				assert.Equal(t, setContentTypePayload, envelope.Payload)
+				return nil
+			})
+		}},
+		{name: "happy infer JSON", fields: fields{publishTopic: topicWithPlaceholder}, args: args{pipeline: &interfaces.FunctionPipeline{}}, wantErr: false, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, client *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(inferJsonPayload)
+			functionContext.On("ResponseContentType").Return("")
+			functionContext.On("CorrelationID").Return(correlationId)
+			functionContext.On("ApplyValues", topicWithPlaceholder).Return(formattedTopic, nil)
+			client.On("Publish", mock.Anything, mock.Anything).Return(func(envelope types.MessageEnvelope, s string) error {
+				assert.Equal(t, correlationId, envelope.CorrelationID)
+				assert.Equal(t, common.ContentTypeJSON, envelope.ContentType)
+				assert.Equal(t, inferJsonPayload, envelope.Payload)
+				return nil
+			})
+		}},
+		{name: "happy infer JSON array", fields: fields{publishTopic: topicWithPlaceholder}, args: args{pipeline: &interfaces.FunctionPipeline{}}, wantErr: false, setup: func(processor *triggerMocks.ServiceBinding, functionContext *interfaceMocks.AppFunctionContext, client *mocks.MessageClient) {
+			functionContext.On("ResponseData").Return(inferJsonArrayPayload)
+			functionContext.On("ResponseContentType").Return("")
+			functionContext.On("CorrelationID").Return(correlationId)
+			functionContext.On("ApplyValues", topicWithPlaceholder).Return(formattedTopic, nil)
+			client.On("Publish", mock.Anything, mock.Anything).Return(func(envelope types.MessageEnvelope, s string) error {
+				assert.Equal(t, correlationId, envelope.CorrelationID)
+				assert.Equal(t, common.ContentTypeJSON, envelope.ContentType)
+				assert.Equal(t, inferJsonArrayPayload, envelope.Payload)
+				return nil
+			})
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			serviceBinding := &triggerMocks.ServiceBinding{}
+
+			serviceBinding.On("Config").Return(&sdkCommon.ConfigurationStruct{Trigger: sdkCommon.TriggerInfo{EdgexMessageBus: sdkCommon.MessageBusConfig{PublishHost: sdkCommon.PublishHostInfo{PublishTopic: tt.fields.publishTopic}}}})
+			serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
+
+			ctx := &interfaceMocks.AppFunctionContext{}
+			client := &mocks.MessageClient{}
+
+			if tt.setup != nil {
+				tt.setup(serviceBinding, ctx, client)
+			}
+
+			trigger := &Trigger{
+				serviceBinding: serviceBinding,
+				client:         client,
+			}
+			if err := trigger.responseHandler(ctx, tt.args.pipeline); (err != nil) != tt.wantErr {
+				t.Errorf("responseHandler() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

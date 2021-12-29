@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2021 One Track Consulting
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,21 +21,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger"
 	"strings"
 	"sync"
 
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/bootstrap/container"
 	sdkCommon "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	bootstrapMessaging "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-messaging/v2/messaging"
@@ -43,24 +40,25 @@ import (
 
 // Trigger implements Trigger to support MessageBusData
 type Trigger struct {
-	dic     *di.Container
-	runtime *runtime.GolangRuntime
-	topics  []types.TopicChannel
-	client  messaging.MessageClient
+	messageProcessor trigger.MessageProcessor
+	serviceBinding   trigger.ServiceBinding
+	topics           []types.TopicChannel
+	client           messaging.MessageClient
 }
 
-func NewTrigger(dic *di.Container, runtime *runtime.GolangRuntime) *Trigger {
+func NewTrigger(bnd trigger.ServiceBinding, mp trigger.MessageProcessor) *Trigger {
 	return &Trigger{
-		dic:     dic,
-		runtime: runtime,
+		messageProcessor: mp,
+		serviceBinding:   bnd,
 	}
 }
 
 // Initialize ...
 func (trigger *Trigger) Initialize(appWg *sync.WaitGroup, appCtx context.Context, background <-chan interfaces.BackgroundMessage) (bootstrap.Deferred, error) {
 	var err error
-	lc := bootstrapContainer.LoggingClientFrom(trigger.dic.Get)
-	config := container.ConfigurationFrom(trigger.dic.Get)
+
+	lc := trigger.serviceBinding.LoggingClient()
+	config := trigger.serviceBinding.Config()
 
 	lc.Infof("Initializing Message Bus Trigger for '%s'", config.Trigger.EdgexMessageBus.Type)
 
@@ -181,23 +179,31 @@ func (trigger *Trigger) messageHandler(logger logger.LoggingClient, _ types.Topi
 		message.ContentType)
 	logger.Tracef("MessageBus Trigger: Received message with %s=%s", common.CorrelationHeader, message.CorrelationID)
 
-	pipelines := trigger.runtime.GetMatchingPipelines(message.ReceivedTopic)
-	logger.Debugf("MessageBus Trigger found %d pipeline(s) that match the incoming topic '%s'", len(pipelines), message.ReceivedTopic)
-	for _, pipeline := range pipelines {
-		go trigger.processMessageWithPipeline(logger, message, pipeline)
-	}
+	appContext := trigger.serviceBinding.BuildContext(message)
+
+	go func() {
+		processErr := trigger.messageProcessor.MessageReceived(appContext, message, trigger.responseHandler)
+		if processErr != nil {
+			trigger.serviceBinding.LoggingClient().Errorf("MQTT Trigger: Failed to process message on pipeline(s): %s", processErr.Error())
+		}
+	}()
 }
 
-func (trigger *Trigger) processMessageWithPipeline(logger logger.LoggingClient, message types.MessageEnvelope, pipeline *interfaces.FunctionPipeline) {
-	appContext := appfunction.NewContext(message.CorrelationID, trigger.dic, message.ContentType)
-
-	messageError := trigger.runtime.ProcessMessage(appContext, message, pipeline)
-	if messageError != nil {
-		// ProcessMessage logs the error, so no need to log it here.
-		return
-	}
-
+func (trigger *Trigger) responseHandler(appContext interfaces.AppFunctionContext, pipeline *interfaces.FunctionPipeline) error {
 	if appContext.ResponseData() != nil {
+		lc := trigger.serviceBinding.LoggingClient()
+		config := trigger.serviceBinding.Config()
+
+		publishTopic, err := appContext.ApplyValues(config.Trigger.EdgexMessageBus.PublishHost.PublishTopic)
+
+		if err != nil {
+			lc.Errorf("MessageBus Trigger: Unable to format output topic '%s' for pipeline '%s': %s",
+				config.Trigger.EdgexMessageBus.PublishHost.PublishTopic,
+				pipeline.Id,
+				err.Error())
+			return err
+		}
+
 		var contentType string
 
 		if appContext.ResponseContentType() != "" {
@@ -215,32 +221,23 @@ func (trigger *Trigger) processMessageWithPipeline(logger logger.LoggingClient, 
 			ContentType:   contentType,
 		}
 
-		config := container.ConfigurationFrom(trigger.dic.Get)
-		publishTopic, err := appContext.ApplyValues(config.Trigger.EdgexMessageBus.PublishHost.PublishTopic)
-
-		if err != nil {
-			logger.Errorf("MessageBus Trigger: Unable to format output topic '%s' for pipeline '%s': %s",
-				config.Trigger.EdgexMessageBus.PublishHost.PublishTopic,
-				pipeline.Id,
-				err.Error())
-			return
-		}
-
 		err = trigger.client.Publish(outputEnvelope, publishTopic)
+
 		if err != nil {
-			logger.Errorf("MessageBus trigger: Could not publish to topic '%s' for pipeline '%s': %s",
+			lc.Errorf("MessageBus trigger: Could not publish to topic '%s' for pipeline '%s': %s",
 				publishTopic,
 				pipeline.Id,
 				err.Error())
-			return
+			return err
 		}
 
-		logger.Debugf("MessageBus Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
+		lc.Debugf("MessageBus Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
 			pipeline.Id,
 			publishTopic,
 			len(appContext.ResponseData()))
-		logger.Tracef("MessageBus Trigger published message: %s=%s", common.CorrelationHeader, message.CorrelationID)
+		lc.Tracef("MessageBus Trigger published message: %s=%s", common.CorrelationHeader, appContext.CorrelationID())
 	}
+	return nil
 }
 
 func (_ *Trigger) createMessagingClientConfig(localConfig sdkCommon.MessageBusConfig) types.MessageBusConfig {
@@ -272,7 +269,7 @@ func (trigger *Trigger) setOptionalAuthData(messageBusConfig *types.MessageBusCo
 
 	lc.Infof("Setting options for secure MessageBus with AuthMode='%s' and SecretName='%s", authMode, secretName)
 
-	secretProvider := bootstrapContainer.SecretProviderFrom(trigger.dic.Get)
+	secretProvider := trigger.serviceBinding.SecretProvider()
 	if secretProvider == nil {
 		return errors.New("secret provider is missing. Make sure it is specified to be used in bootstrap.Run()")
 	}

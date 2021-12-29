@@ -59,7 +59,7 @@ func (b *simpleTriggerServiceBinding) Config() *common.ConfigurationStruct {
 	return b.Service.config
 }
 
-// customTriggerBinding wraps the CustomTriggerServiceBinding interface so that we can attach methods
+// triggerMessageProcessor wraps the ServiceBinding interface so that we can attach methods
 type triggerMessageProcessor struct {
 	bnd trigger.ServiceBinding
 }
@@ -91,7 +91,7 @@ func (mp *triggerMessageProcessor) Process(ctx interfaces.AppFunctionContext, en
 func (mp *triggerMessageProcessor) MessageReceived(ctx interfaces.AppFunctionContext, envelope types.MessageEnvelope, responseHandler interfaces.PipelineResponseHandler) error {
 	lc := mp.bnd.LoggingClient()
 
-	lc.Debugf("custom trigger attempting to find pipeline(s) for topic %s", envelope.ReceivedTopic)
+	lc.Debugf("trigger attempting to find pipeline(s) for topic %s", envelope.ReceivedTopic)
 
 	// ensure we have a context established that we can safely cast to *appfunction.Context to pass to runtime
 	if _, ok := ctx.(*appfunction.Context); ctx == nil || !ok {

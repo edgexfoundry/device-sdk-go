@@ -20,16 +20,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-
 	"github.com/eclipse/paho.mqtt.golang"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/messaging"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces"
 )
 
 type MqttFactory struct {
-	appContext     interfaces.AppFunctionContext
+	sp             messaging.SecretDataProvider
 	logger         logger.LoggingClient
 	authMode       string
 	secretPath     string
@@ -37,10 +34,10 @@ type MqttFactory struct {
 	skipCertVerify bool
 }
 
-func NewMqttFactory(appContext interfaces.AppFunctionContext, mode string, path string, skipVerify bool) MqttFactory {
+func NewMqttFactory(sp messaging.SecretDataProvider, log logger.LoggingClient, mode string, path string, skipVerify bool) MqttFactory {
 	return MqttFactory{
-		appContext:     appContext,
-		logger:         appContext.LoggingClient(),
+		sp:             sp,
+		logger:         log,
 		authMode:       mode,
 		secretPath:     path,
 		skipCertVerify: skipVerify,
@@ -56,7 +53,7 @@ func (factory MqttFactory) Create(opts *mqtt.ClientOptions) (mqtt.Client, error)
 	factory.opts = opts
 
 	//get the secrets from the secret provider and populate the struct
-	secretData, err := messaging.GetSecretData(factory.authMode, factory.secretPath, factory.appContext)
+	secretData, err := messaging.GetSecretData(factory.authMode, factory.secretPath, factory.sp)
 	if err != nil {
 		return nil, err
 	}
