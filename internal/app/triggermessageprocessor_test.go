@@ -140,7 +140,8 @@ func Test_triggerMessageProcessor_MessageReceived(t *testing.T) {
 
 			if !tt.nilRh {
 				rh = func(ctx interfaces.AppFunctionContext, pipeline *interfaces.FunctionPipeline) error {
-					assert.Equal(t, tt.args.ctx, ctx)
+					assert.NotEqual(t, tt.args.ctx, ctx)
+					assert.Equal(t, tt.args.ctx.CorrelationID(), ctx.CorrelationID()) //hmm
 					return nil
 				}
 			}
