@@ -29,7 +29,7 @@ func BootstrapHandler(
 	configuration := container.ConfigurationFrom(dic.Get)
 	var runDiscovery bool = true
 
-	if configuration.Device.Discovery.Enabled == false {
+	if !configuration.Device.Discovery.Enabled {
 		lc.Info("AutoDiscovery stopped: disabled by configuration")
 		runDiscovery = false
 	}
@@ -44,8 +44,8 @@ func BootstrapHandler(
 	}
 
 	if runDiscovery {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			defer wg.Done()
 
 			lc.Info(fmt.Sprintf("Starting auto-discovery with duration %v", duration))

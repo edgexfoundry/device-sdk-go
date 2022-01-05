@@ -288,8 +288,8 @@ func doRequest(t *testing.T, method string, api string, handler http.HandlerFunc
 	}
 
 	assert.Equal(t, expectedStatusCode, recorder.Code, "Wrong status code")
-	assert.Equal(t, common.ContentTypeJSON, recorder.HeaderMap.Get(common.ContentType), "Content type not set or not JSON")
-	assert.Equal(t, expectedCorrelationId, recorder.HeaderMap.Get(common.CorrelationHeader), "CorrelationHeader not as expected")
+	assert.Equal(t, common.ContentTypeJSON, recorder.Header().Get(common.ContentType), "Content type not set or not JSON")
+	assert.Equal(t, expectedCorrelationId, recorder.Header().Get(common.CorrelationHeader), "CorrelationHeader not as expected")
 
 	require.NotEmpty(t, recorder.Body.String(), "Response body is empty")
 

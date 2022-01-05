@@ -54,7 +54,7 @@ func UpdateOperatingState(name string, state string, lc logger.LoggingClient, dc
 func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlationID)
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlationID) // nolint: staticcheck
 	req := requests.NewAddEventRequest(*event)
 
 	if configuration.Device.UseMessageBus {
@@ -63,7 +63,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		if err != nil {
 			lc.Error(err.Error())
 		}
-		ctx = context.WithValue(ctx, common.ContentType, encoding)
+		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
 		envelope := types.NewMessageEnvelope(bytes, ctx)
 		publishTopic := fmt.Sprintf("%s/%s/%s/%s", configuration.MessageQueue.PublishTopicPrefix, event.ProfileName, event.DeviceName, event.SourceName)
 		err = mc.Publish(envelope, publishTopic)

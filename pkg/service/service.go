@@ -193,7 +193,7 @@ func (s *DeviceService) selfRegister() errors.EdgeX {
 		AdminState:  models.Unlocked,
 	}
 	*s.deviceService = localDeviceService
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 
 	s.LoggingClient.Debugf("trying to find device service %s", localDeviceService.Name)
 	res, err := s.edgexClients.DeviceServiceClient.DeviceServiceByName(ctx, localDeviceService.Name)

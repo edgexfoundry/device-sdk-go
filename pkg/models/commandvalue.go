@@ -524,7 +524,7 @@ func validate(valueType string, value interface{}) error {
 			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 	case common.ValueTypeObject:
-		_, ok = value.(interface{})
+		_, ok = value.(interface{}) // nolint: gosimple
 	default:
 		return errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

@@ -59,7 +59,10 @@ func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 		return err
 	}
 	// Finished with file. Reset file pointer
-	img.Seek(0, 0)
+	_, err = img.Seek(0, 0)
+	if err != nil {
+		return err
+	}
 	if imageType == "jpeg" {
 		err = jpeg.Encode(buf, imageData, nil)
 		if err != nil {
@@ -158,7 +161,7 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 		} else if reqs[0].DeviceResourceName == "Image" {
 			// Show a binary/image representation of the switch's on/off value
 			buf := new(bytes.Buffer)
-			if s.switchButton == true {
+			if s.switchButton {
 				err = getImageBytes(s.serviceConfig.SimpleCustom.OnImageLocation, buf)
 			} else {
 				err = getImageBytes(s.serviceConfig.SimpleCustom.OffImageLocation, buf)

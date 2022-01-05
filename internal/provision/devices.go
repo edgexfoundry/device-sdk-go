@@ -98,7 +98,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 		return nil
 	}
 	dc := bootstrapContainer.MetadataDeviceClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
 	_, edgexErr := dc.Add(ctx, addDevicesReq)
 	return edgexErr
 }

@@ -22,6 +22,9 @@ func TransformWriteParameter(cv *dsModels.CommandValue, pv models.ResourceProper
 	}
 
 	value, err := commandValueForTransform(cv)
+	if err != nil {
+		return errors.NewCommonEdgeXWrapper(err)
+	}
 	newValue := value
 
 	if pv.Maximum != "" {

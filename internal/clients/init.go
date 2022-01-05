@@ -48,7 +48,7 @@ func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer
 		return false
 	}
 
-	if checkDependencyServices(ctx, startupTimer, dic) == false {
+	if !checkDependencyServices(ctx, startupTimer, dic) {
 		return false
 	}
 	initCoreServiceClients(dic)
@@ -90,7 +90,7 @@ func checkDependencyServices(ctx context.Context, startupTimer startup.Timer, di
 	for i := 0; i < dependencyCount; i++ {
 		go func(wg *sync.WaitGroup, serviceKey string) {
 			defer wg.Done()
-			if checkServiceAvailable(ctx, serviceKey, startupTimer, dic) == false {
+			if !checkServiceAvailable(ctx, serviceKey, startupTimer, dic) {
 				checkingErr = false
 			}
 		}(&waitGroup, dependencyList[i])

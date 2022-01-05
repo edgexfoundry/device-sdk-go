@@ -23,7 +23,7 @@ func ManageHeader(next http.Handler) http.Handler {
 		if hdr == "" {
 			hdr = uuid.New().String()
 		}
-		ctx := context.WithValue(r.Context(), common.CorrelationHeader, hdr)
+		ctx := context.WithValue(r.Context(), common.CorrelationHeader, hdr) // nolint:staticcheck
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})

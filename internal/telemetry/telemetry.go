@@ -46,7 +46,6 @@ type CpuUsage struct {
 	Total uint64 // reported sum total of all usage
 }
 
-var once sync.Once
 var lastSample CpuUsage
 var usageAvg float64
 
