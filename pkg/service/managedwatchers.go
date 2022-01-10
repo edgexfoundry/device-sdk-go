@@ -45,7 +45,7 @@ func (s *DeviceService) AddProvisionWatcher(watcher models.ProvisionWatcher) (st
 
 	s.LoggingClient.Debugf("Adding managed ProvisionWatcher %s", watcher.Name)
 	req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(watcher))
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	res, err := s.edgexClients.ProvisionWatcherClient.Add(ctx, []requests.AddProvisionWatcherRequest{req})
 	if err != nil {
 		s.LoggingClient.Errorf("failed to add ProvisionWatcher to Core Metadata: %v", watcher.Name, err)
@@ -82,7 +82,7 @@ func (s *DeviceService) RemoveProvisionWatcher(name string) error {
 	}
 
 	s.LoggingClient.Debugf("Removing managed ProvisionWatcher: %s", pw.Name)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	_, err := s.edgexClients.ProvisionWatcherClient.DeleteProvisionWatcherByName(ctx, name)
 	if err != nil {
 		s.LoggingClient.Errorf("failed to delete ProvisionWatcher %s in Core Metadata", name)
@@ -105,7 +105,7 @@ func (s *DeviceService) UpdateProvisionWatcher(watcher models.ProvisionWatcher) 
 	s.LoggingClient.Debugf("Updating managed ProvisionWatcher: %s", watcher.Name)
 	req := requests.NewUpdateProvisionWatcherRequest(dtos.FromProvisionWatcherModelToUpdateDTO(watcher))
 	req.ProvisionWatcher.Id = nil
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	_, err := s.edgexClients.ProvisionWatcherClient.Update(ctx, []requests.UpdateProvisionWatcherRequest{req})
 	if err != nil {
 		s.LoggingClient.Errorf("failed to update ProvisionWatcher %s in Core Metadata: %v", watcher.Name, err)

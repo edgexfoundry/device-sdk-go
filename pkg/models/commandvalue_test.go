@@ -36,7 +36,7 @@ func TestNewCommandValueWithOrigin(t *testing.T) {
 
 func Test_validate(t *testing.T) {
 	exceedBinary := make([]byte, MaxBinaryBytes+1)
-	rand.Read(exceedBinary)
+	rand.Read(exceedBinary) // nolint: gosec
 	tests := []struct {
 		name        string
 		valueType   string
@@ -74,7 +74,7 @@ func TestCommandValue_ValueToString(t *testing.T) {
 	boolCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBool, true)
 	require.NoError(t, err)
 	binaryValue := make([]byte, 100)
-	rand.Read(binaryValue)
+	rand.Read(binaryValue) // nolint: gosec
 	binaryCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBinary, binaryValue)
 	require.NoError(t, err)
 	stringArrayValue := []string{"foo", "bar"}

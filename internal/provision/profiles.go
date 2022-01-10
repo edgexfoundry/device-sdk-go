@@ -103,7 +103,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	if len(addProfilesReq) == 0 {
 		return nil
 	}
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	_, edgexErr := dpc.Add(ctx, addProfilesReq)
 	return edgexErr
 }

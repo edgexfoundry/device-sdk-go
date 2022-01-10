@@ -30,7 +30,7 @@ func (s *DeviceService) AddDeviceProfile(profile models.DeviceProfile) (string, 
 
 	s.LoggingClient.Debugf("Adding managed Profile %s", profile.Name)
 	req := requests.NewDeviceProfileRequest(dtos.FromDeviceProfileModelToDTO(profile))
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	res, err := s.edgexClients.DeviceProfileClient.Add(ctx, []requests.DeviceProfileRequest{req})
 	if err != nil {
 		s.LoggingClient.Errorf("failed to add Profile %s to Core Metadata: %v", profile.Name, err)
@@ -72,7 +72,7 @@ func (s *DeviceService) RemoveDeviceProfileByName(name string) error {
 	}
 
 	s.LoggingClient.Debugf("Removing managed Profile %s", profile.Name)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	_, err := s.edgexClients.DeviceProfileClient.DeleteByName(ctx, name)
 	if err != nil {
 		s.LoggingClient.Errorf("failed to delete Profile %s in Core Metadata", name)
@@ -95,7 +95,7 @@ func (s *DeviceService) UpdateDeviceProfile(profile models.DeviceProfile) error 
 
 	s.LoggingClient.Debugf("Updating managed Profile %s", profile.Name)
 	req := requests.NewDeviceProfileRequest(dtos.FromDeviceProfileModelToDTO(profile))
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString())
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	_, err := s.edgexClients.DeviceProfileClient.Update(ctx, []requests.DeviceProfileRequest{req})
 	if err != nil {
 		s.LoggingClient.Errorf("failed to update Profile %s in Core Metadata: %v", profile.Name, err)

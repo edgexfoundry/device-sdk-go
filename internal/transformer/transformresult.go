@@ -45,6 +45,9 @@ func TransformReadResult(cv *sdkModels.CommandValue, pv models.ResourcePropertie
 	}
 
 	value, err := commandValueForTransform(cv)
+	if err != nil {
+		return errors.NewCommonEdgeXWrapper(err)
+	}
 	newValue := value
 
 	if pv.Mask != "" && pv.Mask != defaultMask &&

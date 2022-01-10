@@ -7,7 +7,6 @@
 package autodiscovery
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -32,7 +31,7 @@ func DiscoveryWrapper(discovery models.ProtocolDiscovery, lc logger.LoggingClien
 	locker.busy = true
 	locker.mux.Unlock()
 
-	lc.Debug(fmt.Sprintf("protocol discovery triggered"))
+	lc.Debug("protocol discovery triggered")
 	discovery.Discover()
 
 	// ReleaseLock

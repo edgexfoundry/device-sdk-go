@@ -44,12 +44,12 @@ func TestCompareReadings(t *testing.T) {
 	readingsLengthChanged[2].ValueType = common.ValueTypeBinary
 	readingsLengthChanged[2].ResourceName = "b1"
 	readingsLengthChanged[2].BinaryValue = make([]byte, 1000)
-	rand.Read(readingsLengthChanged[2].BinaryValue)
+	rand.Read(readingsLengthChanged[2].BinaryValue) // nolint: gosec
 
 	readingsBinaryValueChanged := make([]dtos.BaseReading, len(readingsLengthChanged))
 	copy(readingsBinaryValueChanged, readingsLengthChanged)
 	readingsBinaryValueChanged[2].BinaryValue = make([]byte, 1000)
-	rand.Read(readingsBinaryValueChanged[2].BinaryValue)
+	rand.Read(readingsBinaryValueChanged[2].BinaryValue) // nolint: gosec
 
 	readingBinaryValueUnchanged := readingsBinaryValueChanged
 
