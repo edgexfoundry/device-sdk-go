@@ -16,7 +16,7 @@
 #
 
 #build stage
-ARG BASE=golang:1.16-alpine3.14
+ARG BASE=golang:1.17-alpine3.15
 FROM ${BASE} AS builder
 
 ARG ALPINE_PKG_BASE="make git gcc libc-dev libsodium-dev zeromq-dev"
@@ -26,10 +26,10 @@ RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/reposi
 RUN apk add --update --no-cache ${ALPINE_PKG_BASE} ${ALPINE_PKG_EXTRA}
 WORKDIR /app
 
-COPY . .
-
+COPY go.mod vendor* ./
 RUN [ ! -d "vendor" ] && go mod download all || echo "skipping..."
 
+COPY . .
 ARG MAKE="make build"
 RUN $MAKE
 
