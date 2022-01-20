@@ -22,6 +22,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/runtime"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/http/mocks"
 	triggerMocks "github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger/mocks"
 	interfaceMocks "github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/interfaces/mocks"
@@ -102,28 +104,32 @@ func TestTriggerRequestHandler_ProcessError(t *testing.T) {
 	data := []byte("some data")
 	contentType := "arbitrary string"
 	correlationId := uuid.NewString()
-	afc := &interfaceMocks.AppFunctionContext{}
+	errCode := 47
+	afc := appfunction.NewContext("", nil, contentType) // &interfaceMocks.AppFunctionContext{}
+	pipeline := &interfaces.FunctionPipeline{}
 
 	bnd := &triggerMocks.ServiceBinding{}
 	bnd.On("LoggingClient").Return(logger.NewMockClient())
 	bnd.On("BuildContext", mock.AnythingOfType("types.MessageEnvelope")).Return(afc)
-
-	mp := &triggerMocks.MessageProcessor{}
-	mp.On("MessageReceived", afc, mock.AnythingOfType("types.MessageEnvelope"), mock.AnythingOfType("interfaces.PipelineResponseHandler")).Return(func(ctx interfaces.AppFunctionContext, env types.MessageEnvelope, f interfaces.PipelineResponseHandler) error {
+	bnd.On("GetDefaultPipeline").Return(pipeline)
+	bnd.On("ProcessMessage", afc, mock.AnythingOfType("types.MessageEnvelope"), pipeline).Return(func(ctx *appfunction.Context, env types.MessageEnvelope, p *interfaces.FunctionPipeline) *runtime.MessageError {
 		assert.Equal(t, correlationId, env.CorrelationID)
 		assert.Equal(t, afc, ctx)
 		assert.Equal(t, data, env.Payload)
 		assert.Equal(t, contentType, env.ContentType)
-		return fmt.Errorf("error")
+		return &runtime.MessageError{
+			Err:       fmt.Errorf("error"),
+			ErrorCode: errCode,
+		}
 	})
 
 	trigger := Trigger{
 		serviceBinding:   bnd,
-		messageProcessor: mp,
+		messageProcessor: &triggerMocks.MessageProcessor{},
 	}
 
 	writer := &mocks.TriggerResponseWriter{}
-	writer.On("WriteHeader", http.StatusInternalServerError)
+	writer.On("WriteHeader", errCode)
 	writer.On("Write", []byte("error")).Return(0, nil)
 
 	req, err := http.NewRequest("", "", bytes.NewBuffer(data))
@@ -142,14 +148,14 @@ func TestTriggerRequestHandler(t *testing.T) {
 	data := []byte("some data")
 	contentType := "arbitrary string"
 	correlationId := uuid.NewString()
-	afc := &interfaceMocks.AppFunctionContext{}
+	afc := appfunction.NewContext("", nil, contentType) // &interfaceMocks.AppFunctionContext{}
+	pipeline := &interfaces.FunctionPipeline{}
 
 	bnd := &triggerMocks.ServiceBinding{}
 	bnd.On("LoggingClient").Return(logger.NewMockClient())
 	bnd.On("BuildContext", mock.AnythingOfType("types.MessageEnvelope")).Return(afc)
-
-	mp := &triggerMocks.MessageProcessor{}
-	mp.On("MessageReceived", mock.Anything, mock.Anything, mock.Anything).Return(func(ctx interfaces.AppFunctionContext, env types.MessageEnvelope, f interfaces.PipelineResponseHandler) error {
+	bnd.On("GetDefaultPipeline").Return(pipeline)
+	bnd.On("ProcessMessage", afc, mock.AnythingOfType("types.MessageEnvelope"), pipeline).Return(func(ctx *appfunction.Context, env types.MessageEnvelope, p *interfaces.FunctionPipeline) *runtime.MessageError {
 		assert.Equal(t, correlationId, env.CorrelationID)
 		assert.Equal(t, afc, ctx)
 		assert.Equal(t, data, env.Payload)
@@ -159,7 +165,7 @@ func TestTriggerRequestHandler(t *testing.T) {
 
 	trigger := Trigger{
 		serviceBinding:   bnd,
-		messageProcessor: mp,
+		messageProcessor: &triggerMocks.MessageProcessor{},
 	}
 
 	writer := &mocks.TriggerResponseWriter{}

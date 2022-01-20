@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/appfunction"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"io"
@@ -111,13 +112,12 @@ func (trigger *Trigger) requestHandler(writer http.ResponseWriter, r *http.Reque
 
 	appContext := trigger.serviceBinding.BuildContext(envelope)
 
-	// TODO: should only get the default pipeline since topic is empty, can we ensure this and use the passed context directly insatead of cloning, deal with error out here?
-	messageError := trigger.messageProcessor.MessageReceived(appContext, envelope, getResponseHandler(writer, lc))
+	defaultPipeline := trigger.serviceBinding.GetDefaultPipeline()
+	messageError := trigger.serviceBinding.ProcessMessage(appContext.(*appfunction.Context), envelope, defaultPipeline)
 
 	if messageError != nil {
-		// Process logs the error, so no need to log it here.
-		writer.WriteHeader(http.StatusInternalServerError)
-		_, _ = writer.Write([]byte(messageError.Error()))
+		writer.WriteHeader(messageError.ErrorCode)
+		_, _ = writer.Write([]byte(messageError.Err.Error()))
 	}
 }
 

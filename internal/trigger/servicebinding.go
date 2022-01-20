@@ -31,6 +31,8 @@ type ServiceBinding interface {
 	ProcessMessage(appContext *appfunction.Context, envelope types.MessageEnvelope, pipeline *interfaces.FunctionPipeline) *runtime.MessageError
 	// GetMatchingPipelines provides access to the runtime's GetMatchingPipelines function
 	GetMatchingPipelines(incomingTopic string) []*interfaces.FunctionPipeline
+	// GetDefaultPipeline provides access to the runtime's GetDefaultPipeline function
+	GetDefaultPipeline() *interfaces.FunctionPipeline
 	// BuildContext creates a context for a given message envelope
 	BuildContext(env types.MessageEnvelope) interfaces.AppFunctionContext
 	// SecretProvider provides access to this service's secret provider for the trigger

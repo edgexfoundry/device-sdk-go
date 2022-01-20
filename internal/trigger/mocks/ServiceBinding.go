@@ -56,6 +56,22 @@ func (_m *ServiceBinding) Config() *common.ConfigurationStruct {
 	return r0
 }
 
+// GetDefaultPipeline provides a mock function with given fields:
+func (_m *ServiceBinding) GetDefaultPipeline() *interfaces.FunctionPipeline {
+	ret := _m.Called()
+
+	var r0 *interfaces.FunctionPipeline
+	if rf, ok := ret.Get(0).(func() *interfaces.FunctionPipeline); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*interfaces.FunctionPipeline)
+		}
+	}
+
+	return r0
+}
+
 // GetMatchingPipelines provides a mock function with given fields: incomingTopic
 func (_m *ServiceBinding) GetMatchingPipelines(incomingTopic string) []*interfaces.FunctionPipeline {
 	ret := _m.Called(incomingTopic)
