@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/internal/trigger"
 	"net/url"
 	"strings"
@@ -33,7 +32,6 @@ import (
 	"github.com/edgexfoundry/app-functions-sdk-go/v2/pkg/util"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	commonContracts "github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 
@@ -45,12 +43,10 @@ import (
 type Trigger struct {
 	messageProcessor trigger.MessageProcessor
 	serviceBinding   trigger.ServiceBinding
-	lc               logger.LoggingClient
 	mqttClient       pahoMqtt.Client
 	qos              byte
 	retain           bool
 	publishTopic     string
-	config           *common.ConfigurationStruct
 }
 
 func NewTrigger(bnd trigger.ServiceBinding, mp trigger.MessageProcessor) *Trigger {
@@ -65,8 +61,8 @@ func NewTrigger(bnd trigger.ServiceBinding, mp trigger.MessageProcessor) *Trigge
 // Initialize initializes the Trigger for an external MQTT broker
 func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, background <-chan interfaces.BackgroundMessage) (bootstrap.Deferred, error) {
 	// Convenience short cuts
-	lc := trigger.lc
-	config := trigger.config
+	lc := trigger.serviceBinding.LoggingClient()
+	config := trigger.serviceBinding.Config()
 
 	brokerConfig := config.Trigger.ExternalMqtt
 	topics := config.Trigger.ExternalMqtt.SubscribeTopics
@@ -137,8 +133,8 @@ func (trigger *Trigger) Initialize(_ *sync.WaitGroup, _ context.Context, backgro
 
 func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 	// Convenience short cuts
-	lc := trigger.lc
-	config := trigger.config
+	lc := trigger.serviceBinding.LoggingClient()
+	config := trigger.serviceBinding.Config()
 	topics := util.DeleteEmptyAndTrim(strings.FieldsFunc(config.Trigger.ExternalMqtt.SubscribeTopics, util.SplitComma))
 	qos := config.Trigger.ExternalMqtt.QoS
 
@@ -156,7 +152,7 @@ func (trigger *Trigger) onConnectHandler(mqttClient pahoMqtt.Client) {
 
 func (trigger *Trigger) messageHandler(_ pahoMqtt.Client, mqttMessage pahoMqtt.Message) {
 	// Convenience short cuts
-	lc := trigger.lc
+	lc := trigger.serviceBinding.LoggingClient()
 
 	data := mqttMessage.Payload()
 	contentType := commonContracts.ContentTypeJSON
@@ -192,10 +188,12 @@ func (trigger *Trigger) messageHandler(_ pahoMqtt.Client, mqttMessage pahoMqtt.M
 
 func (trigger *Trigger) responseHandler(appContext interfaces.AppFunctionContext, pipeline *interfaces.FunctionPipeline) error {
 	if len(appContext.ResponseData()) > 0 && len(trigger.publishTopic) > 0 {
+		lc := trigger.serviceBinding.LoggingClient()
+
 		formattedTopic, err := appContext.ApplyValues(trigger.publishTopic)
 
 		if err != nil {
-			trigger.lc.Errorf("MQTT trigger: Unable to format topic '%s' for pipeline '%s': %s",
+			lc.Errorf("MQTT trigger: Unable to format topic '%s' for pipeline '%s': %s",
 				trigger.publishTopic,
 				pipeline.Id,
 				err.Error())
@@ -203,17 +201,17 @@ func (trigger *Trigger) responseHandler(appContext interfaces.AppFunctionContext
 		}
 
 		if token := trigger.mqttClient.Publish(formattedTopic, trigger.qos, trigger.retain, appContext.ResponseData()); token.Wait() && token.Error() != nil {
-			trigger.lc.Errorf("MQTT trigger: Could not publish to topic '%s' for pipeline '%s': %s",
+			lc.Errorf("MQTT trigger: Could not publish to topic '%s' for pipeline '%s': %s",
 				formattedTopic,
 				pipeline.Id,
 				token.Error())
 			return token.Error()
 		} else {
-			trigger.lc.Debugf("MQTT Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
+			lc.Debugf("MQTT Trigger: Published response message for pipeline '%s' on topic '%s' with %d bytes",
 				pipeline.Id,
 				formattedTopic,
 				len(appContext.ResponseData()))
-			trigger.lc.Tracef("MQTT Trigger published message: %s=%s", commonContracts.CorrelationHeader, appContext.CorrelationID())
+			lc.Tracef("MQTT Trigger published message: %s=%s", commonContracts.CorrelationHeader, appContext.CorrelationID())
 		}
 	}
 	return nil

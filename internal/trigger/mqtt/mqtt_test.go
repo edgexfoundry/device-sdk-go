@@ -101,6 +101,7 @@ func TestTrigger_responseHandler(t *testing.T) {
 			serviceBinding := &triggerMocks.ServiceBinding{}
 
 			serviceBinding.On("Config").Return(&sdkCommon.ConfigurationStruct{Trigger: sdkCommon.TriggerInfo{EdgexMessageBus: sdkCommon.MessageBusConfig{PublishHost: sdkCommon.PublishHostInfo{PublishTopic: tt.fields.publishTopic}}}})
+			serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
 
 			ctx := &interfaceMocks.AppFunctionContext{}
 			client := &mocks.Client{}
@@ -115,7 +116,6 @@ func TestTrigger_responseHandler(t *testing.T) {
 				qos:            qos,
 				retain:         retain,
 				publishTopic:   tt.fields.publishTopic,
-				lc:             logger.NewMockClient(),
 				mqttClient:     client,
 			}
 			if err := trigger.responseHandler(ctx, tt.args.pipeline); (err != nil) != tt.wantErr {
@@ -153,6 +153,7 @@ func TestTrigger_messageHandler(t *testing.T) {
 
 				return ctx
 			})
+			serviceBinding.On("LoggingClient").Return(logger.NewMockClient())
 
 			messageProcessor := &triggerMocks.MessageProcessor{}
 			messageProcessor.On("MessageReceived", ctx, mock.Anything, mock.Anything).Return(func(inctx interfaces.AppFunctionContext, _ types.MessageEnvelope, _ interfaces.PipelineResponseHandler) error {
@@ -161,7 +162,6 @@ func TestTrigger_messageHandler(t *testing.T) {
 			})
 
 			trigger := &Trigger{
-				lc:               logger.NewMockClient(),
 				serviceBinding:   serviceBinding,
 				messageProcessor: messageProcessor,
 			}
