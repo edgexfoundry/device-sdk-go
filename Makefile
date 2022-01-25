@@ -20,6 +20,8 @@ ARCH=$(shell uname -m)
 
 GO=CGO_ENABLED=1 GO111MODULE=on go
 
+GOTESTFLAGS?=-race
+
 build:
 	make -C ./app-service-template build
 
@@ -34,7 +36,7 @@ test-template:
 	make -C ./app-service-template test
 
 test-sdk:
-	$(GO) test ./... -coverprofile=coverage.out ./...
+	$(GO) test $(GOTESTFLAGS) -coverprofile=coverage.out ./...
 
 vet:
 	$(GO) vet ./...

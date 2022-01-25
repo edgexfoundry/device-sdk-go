@@ -18,6 +18,8 @@
 
 GO=CGO_ENABLED=1 go
 
+GOTESTFLAGS?=-race
+
 # VERSION file is not needed for local development, In the CI/CD pipeline, a temporary VERSION file is written
 # if you need a specific version, just override below
 # TODO: If your service is not being upstreamed to Edgex Foundry, you need to determine the best approach for
@@ -59,7 +61,7 @@ docker:
 # The test-attribution-txt.sh scripts are required for upstreaming to EdgeX Foundry.
 # TODO: Remove bin folder and reference to script below if NOT upstreaming to EdgeX Foundry.
 test:
-	$(GO) test -coverprofile=coverage.out ./...
+	$(GO) test $(GOTESTFLAGS) -coverprofile=coverage.out ./...
 	$(GO) vet ./...
 	gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")
 	[ "`gofmt -l $$(find . -type f -name '*.go'| grep -v "/vendor/")`" = "" ]

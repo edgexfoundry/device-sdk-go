@@ -103,6 +103,7 @@ func (mp *triggerMessageProcessor) MessageReceived(ctx interfaces.AppFunctionCon
 	lc.Debugf("trigger found %d pipeline(s) that match the incoming topic '%s'", len(pipelines), envelope.ReceivedTopic)
 
 	var finalErr error
+	errorCollectionLock := sync.RWMutex{}
 
 	pipelinesWaitGroup := sync.WaitGroup{}
 
@@ -133,7 +134,11 @@ func (mp *triggerMessageProcessor) MessageReceived(ctx interfaces.AppFunctionCon
 				}
 				lc.Debugf("trigger successfully processed message '%s' in pipeline %s", p.Id, envelope.CorrelationID)
 			}
-		}(pipeline, &pipelinesWaitGroup, func(e error) { finalErr = multierror.Append(finalErr, e) })
+		}(pipeline, &pipelinesWaitGroup, func(e error) {
+			errorCollectionLock.Lock()
+			defer errorCollectionLock.Unlock()
+			finalErr = multierror.Append(finalErr, e)
+		})
 	}
 
 	pipelinesWaitGroup.Wait()
