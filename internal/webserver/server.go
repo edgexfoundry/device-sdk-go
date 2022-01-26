@@ -52,12 +52,12 @@ type Version struct {
 }
 
 // NewWebServer returns a new instance of *WebServer
-func NewWebServer(dic *di.Container, router *mux.Router) *WebServer {
+func NewWebServer(dic *di.Container, router *mux.Router, serviceName string) *WebServer {
 	ws := &WebServer{
 		lc:         bootstrapContainer.LoggingClientFrom(dic.Get),
 		config:     container.ConfigurationFrom(dic.Get),
 		router:     router,
-		controller: rest.NewController(router, dic),
+		controller: rest.NewController(router, dic, serviceName),
 	}
 
 	return ws

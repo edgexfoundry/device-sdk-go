@@ -44,36 +44,38 @@ type Controller struct {
 	secretProvider interfaces.SecretProvider
 	lc             logger.LoggingClient
 	config         *sdkCommon.ConfigurationStruct
+	serviceName    string
 }
 
 // NewController creates and initializes an Controller
-func NewController(router *mux.Router, dic *di.Container) *Controller {
+func NewController(router *mux.Router, dic *di.Container, serviceName string) *Controller {
 	return &Controller{
 		router:         router,
 		secretProvider: bootstrapContainer.SecretProviderFrom(dic.Get),
 		lc:             bootstrapContainer.LoggingClientFrom(dic.Get),
 		config:         container.ConfigurationFrom(dic.Get),
+		serviceName:    serviceName,
 	}
 }
 
 // Ping handles the request to /ping endpoint. Is used to test if the service is working
 // It returns a response as specified by the V2 API swagger in openapi/v2
 func (c *Controller) Ping(writer http.ResponseWriter, request *http.Request) {
-	response := commonDtos.NewPingResponse()
+	response := commonDtos.NewPingResponse(c.serviceName)
 	c.sendResponse(writer, request, common.ApiPingRoute, response, http.StatusOK)
 }
 
 // Version handles the request to /version endpoint. Is used to request the service's versions
 // It returns a response as specified by the V2 API swagger in openapi/v2
 func (c *Controller) Version(writer http.ResponseWriter, request *http.Request) {
-	response := commonDtos.NewVersionSdkResponse(internal.ApplicationVersion, internal.SDKVersion)
+	response := commonDtos.NewVersionSdkResponse(internal.ApplicationVersion, internal.SDKVersion, c.serviceName)
 	c.sendResponse(writer, request, common.ApiVersionRoute, response, http.StatusOK)
 }
 
 // Config handles the request to /config endpoint. Is used to request the service's configuration
 // It returns a response as specified by the V2 API swagger in openapi/v2
 func (c *Controller) Config(writer http.ResponseWriter, request *http.Request) {
-	response := commonDtos.NewConfigResponse(*c.config)
+	response := commonDtos.NewConfigResponse(*c.config, c.serviceName)
 	c.sendResponse(writer, request, common.ApiVersionRoute, response, http.StatusOK)
 }
 
@@ -91,7 +93,7 @@ func (c *Controller) Metrics(writer http.ResponseWriter, request *http.Request) 
 		CpuBusyAvg:     uint8(t.CpuBusyAvg),
 	}
 
-	response := commonDtos.NewMetricsResponse(metrics)
+	response := commonDtos.NewMetricsResponse(metrics, c.serviceName)
 	c.sendResponse(writer, request, common.ApiMetricsRoute, response, http.StatusOK)
 }
 

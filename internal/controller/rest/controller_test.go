@@ -57,7 +57,9 @@ func TestMain(m *testing.M) {
 }
 
 func TestPingRequest(t *testing.T) {
-	target := NewController(nil, dic)
+	serviceName := uuid.NewString()
+
+	target := NewController(nil, dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, target.Ping, nil)
 
@@ -68,17 +70,20 @@ func TestPingRequest(t *testing.T) {
 	_, err = time.Parse(time.UnixDate, actual.Timestamp)
 	assert.NoError(t, err)
 
-	require.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
 }
 
 func TestVersionRequest(t *testing.T) {
+	serviceName := uuid.NewString()
+
 	expectedAppVersion := "1.2.5"
 	expectedSdkVersion := "1.3.1"
 
 	internal.ApplicationVersion = expectedAppVersion
 	internal.SDKVersion = expectedSdkVersion
 
-	target := NewController(nil, dic)
+	target := NewController(nil, dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiVersion, target.Version, nil)
 
@@ -89,10 +94,13 @@ func TestVersionRequest(t *testing.T) {
 	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
 	assert.Equal(t, expectedAppVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
 }
 
 func TestMetricsRequest(t *testing.T) {
-	target := NewController(nil, dic)
+	serviceName := uuid.NewString()
+
+	target := NewController(nil, dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiMetricsRoute, target.Metrics, nil)
 
@@ -101,6 +109,8 @@ func TestMetricsRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
+
 	assert.NotZero(t, actual.Metrics.MemAlloc)
 	assert.NotZero(t, actual.Metrics.MemFrees)
 	assert.NotZero(t, actual.Metrics.MemLiveObjects)
@@ -111,6 +121,8 @@ func TestMetricsRequest(t *testing.T) {
 }
 
 func TestConfigRequest(t *testing.T) {
+	serviceName := uuid.NewString()
+
 	expectedConfig := sdkCommon.ConfigurationStruct{
 		Writable: sdkCommon.WritableInfo{
 			LogLevel: "DEBUG",
@@ -128,7 +140,7 @@ func TestConfigRequest(t *testing.T) {
 		},
 	})
 
-	target := NewController(nil, dic)
+	target := NewController(nil, dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
 
@@ -137,6 +149,7 @@ func TestConfigRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, common.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, serviceName, actualResponse.ServiceName)
 
 	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into sdkCommon.ConfigurationStruct
 	configJson, err := json.Marshal(actualResponse.Config)
@@ -163,7 +176,7 @@ func TestAddSecretRequest(t *testing.T) {
 	mockProvider.On("StoreSecrets", "/mqtt", map[string]string{"password": "password", "username": "username"}).Return(nil)
 	mockProvider.On("StoreSecrets", "/no", map[string]string{"password": "password", "username": "username"}).Return(errors.New("Invalid w/o Vault"))
 
-	target := NewController(nil, dic)
+	target := NewController(nil, dic, uuid.NewString())
 	assert.NotNil(t, target)
 
 	validRequest := commonDtos.SecretRequest{

@@ -185,3 +185,6 @@ https://github.com/stretchr/objx/blob/master/LICENSE
 
 github.com/gorilla/websocket (BSD-2) https://github.com/gorilla/websocket
 https://github.com/gorilla/websocket/blob/master/LICENSE
+
+github.com/go-kit/log (MIT) https://github.com/go-kit/log
+https://github.com/go-kit/log/blob/main/LICENSE

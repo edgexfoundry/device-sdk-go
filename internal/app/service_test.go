@@ -77,7 +77,7 @@ func IsInstanceOf(objectPtr, typePtr interface{}) bool {
 func TestAddRoute(t *testing.T) {
 	router := mux.NewRouter()
 
-	ws := webserver.NewWebServer(dic, router)
+	ws := webserver.NewWebServer(dic, router, uuid.NewString())
 
 	sdk := Service{
 		webserver: ws,

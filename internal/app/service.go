@@ -514,7 +514,7 @@ func (svc *Service) Initialize() error {
 	// to wait to be signaled when the configuration has been updated and then process the changes
 	NewConfigUpdateProcessor(svc).WaitForConfigUpdates(configUpdated)
 
-	svc.webserver = webserver.NewWebServer(svc.dic, mux.NewRouter())
+	svc.webserver = webserver.NewWebServer(svc.dic, mux.NewRouter(), svc.serviceKey)
 	svc.webserver.ConfigureStandardRoutes()
 
 	svc.lc.Info("Service started in: " + startupTimer.SinceAsString())

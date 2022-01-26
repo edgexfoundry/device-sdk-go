@@ -17,6 +17,7 @@
 package webserver
 
 import (
+	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -57,7 +58,7 @@ func TestAddRoute(t *testing.T) {
 	routePath := "/testRoute"
 	testHandler := func(_ http.ResponseWriter, _ *http.Request) {}
 
-	webserver := NewWebServer(dic, mux.NewRouter())
+	webserver := NewWebServer(dic, mux.NewRouter(), uuid.NewString())
 	err := webserver.AddRoute(routePath, testHandler)
 	assert.NoError(t, err, "Not expecting an error")
 
@@ -68,7 +69,7 @@ func TestAddRoute(t *testing.T) {
 }
 
 func TestSetupTriggerRoute(t *testing.T) {
-	webserver := NewWebServer(dic, mux.NewRouter())
+	webserver := NewWebServer(dic, mux.NewRouter(), uuid.NewString())
 
 	handlerFunctionNotCalled := true
 	handler := func(w http.ResponseWriter, r *http.Request) {
