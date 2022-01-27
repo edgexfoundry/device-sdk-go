@@ -31,15 +31,17 @@ type RestController struct {
 	router         *mux.Router
 	reservedRoutes map[string]bool
 	dic            *di.Container
+	serviceName    string
 }
 
-func NewRestController(r *mux.Router, dic *di.Container) *RestController {
+func NewRestController(r *mux.Router, dic *di.Container, serviceName string) *RestController {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	return &RestController{
 		lc:             lc,
 		router:         r,
 		reservedRoutes: make(map[string]bool),
 		dic:            dic,
+		serviceName:    serviceName,
 	}
 }
 
