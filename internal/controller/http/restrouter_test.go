@@ -19,6 +19,7 @@ package http
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"net/http"
 	"testing"
 
@@ -56,7 +57,7 @@ func TestAddRoute(t *testing.T) {
 
 	for _, test := range tests {
 		r := mux.NewRouter()
-		controller := NewRestController(r, dic)
+		controller := NewRestController(r, dic, uuid.NewString())
 		controller.InitRestRoutes()
 
 		err := controller.AddRoute(test.Route, func(http.ResponseWriter, *http.Request) {}, http.MethodPost)
@@ -104,7 +105,7 @@ func TestInitRestRoutes(t *testing.T) {
 		},
 	})
 	r := mux.NewRouter()
-	controller := NewRestController(r, dic)
+	controller := NewRestController(r, dic, uuid.NewString())
 	controller.InitRestRoutes()
 
 	err := controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {

@@ -54,7 +54,8 @@ func TestPingRequest(t *testing.T) {
 		},
 	})
 
-	target := NewRestController(mux.NewRouter(), dic)
+	serviceName := uuid.NewString()
+	target := NewRestController(mux.NewRouter(), dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiPingRoute, target.Ping, nil)
 
@@ -65,12 +66,14 @@ func TestPingRequest(t *testing.T) {
 	_, err = time.Parse(time.UnixDate, actual.Timestamp)
 	assert.NoError(t, err)
 
-	require.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
 }
 
 func TestVersionRequest(t *testing.T) {
 	expectedServiceVersion := "1.2.5"
 	expectedSdkVersion := "1.3.1"
+	serviceName := uuid.NewString()
 
 	sdkCommon.ServiceVersion = expectedServiceVersion
 	sdkCommon.SDKVersion = expectedSdkVersion
@@ -81,7 +84,7 @@ func TestVersionRequest(t *testing.T) {
 		},
 	})
 
-	target := NewRestController(mux.NewRouter(), dic)
+	target := NewRestController(mux.NewRouter(), dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiVersion, target.Version, nil)
 
@@ -92,6 +95,7 @@ func TestVersionRequest(t *testing.T) {
 	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
 	assert.Equal(t, expectedServiceVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
 }
 
 func TestMetricsRequest(t *testing.T) {
@@ -101,7 +105,9 @@ func TestMetricsRequest(t *testing.T) {
 		},
 	})
 
-	target := NewRestController(mux.NewRouter(), dic)
+	serviceName := uuid.NewString()
+
+	target := NewRestController(mux.NewRouter(), dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiMetricsRoute, target.Metrics, nil)
 
@@ -110,6 +116,7 @@ func TestMetricsRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
+	assert.Equal(t, serviceName, actual.ServiceName)
 	assert.NotZero(t, actual.Metrics.MemAlloc)
 	assert.NotZero(t, actual.Metrics.MemFrees)
 	assert.NotZero(t, actual.Metrics.MemLiveObjects)
@@ -131,6 +138,8 @@ func TestConfigRequest(t *testing.T) {
 		},
 	}
 
+	serviceName := uuid.NewString()
+
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return logger.NewMockClient()
@@ -140,7 +149,7 @@ func TestConfigRequest(t *testing.T) {
 		},
 	})
 
-	target := NewRestController(mux.NewRouter(), dic)
+	target := NewRestController(mux.NewRouter(), dic, serviceName)
 
 	recorder := doRequest(t, http.MethodGet, common.ApiConfigRoute, target.Config, nil)
 
@@ -149,6 +158,7 @@ func TestConfigRequest(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, common.ApiVersion, actualResponse.ApiVersion)
+	assert.Equal(t, serviceName, actualResponse.ServiceName)
 
 	// actualResponse.Config is an interface{} so need to re-marshal/un-marshal into sdkCommon.ConfigurationStruct
 	configJson, err := json.Marshal(actualResponse.Config)
@@ -182,7 +192,7 @@ func TestSecretRequest(t *testing.T) {
 		},
 	})
 
-	target := NewRestController(mux.NewRouter(), dic)
+	target := NewRestController(mux.NewRouter(), dic, uuid.NewString())
 	assert.NotNil(t, target)
 
 	validRequest := commonDTO.SecretRequest{

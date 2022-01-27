@@ -120,7 +120,7 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.edgexClients.EventClient = bootstrapContainer.DataEventClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
 	s.manager = container.ManagerFrom(dic.Get)
-	s.controller = restController.NewRestController(r, dic)
+	s.controller = restController.NewRestController(r, dic, s.ServiceName)
 }
 
 // Name returns the name of this Device Service

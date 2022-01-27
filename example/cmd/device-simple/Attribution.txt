@@ -51,9 +51,6 @@ https://github.com/edgexfoundry/go-mod-core-contracts/v2/blob/master/LICENSE
 edgexfoundry/go-mod-registry (Apache 2.0) https://github.com/edgexfoundry/go-mod-registry/v2
 https://github.com/edgexfoundry/go-mod-registry/v2/blob/master/LICENSE
 
-go-kit/kit (MIT) https://github.com/go-kit/kit
-https://github.com/go-kit/kit/blob/master/LICENSE
-
 go-logfmt/logfmt (MIT) https://github.com/go-logfmt/logfmt
 https://github.com/go-logfmt/logfmt/blob/master/LICENSE
 
@@ -158,3 +155,6 @@ https://github.com/hashicorp/errwrap/blob/master/LICENSE
 
 hashicorp/go-multierror (Mozilla Public License 2.0) https://github.com/hashicorp/go-multierror
 https://github.com/hashicorp/go-multierror/blob/master/LICENSE
+
+go-kit/log (MIT) https://github.com/go-kit/log
+https://github.com/go-kit/log/blob/main/LICENSE

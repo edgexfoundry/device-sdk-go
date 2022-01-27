@@ -352,6 +352,9 @@ components:
       description: "Provides a response containing the configuration for the targeted service."
       type: object
       properties:
+        serviceName:
+          description: "Outputs the name of the service the response is from"
+          type: string
         config:
           description: "An object containing the service''s configuration. Please refer to Core Data''s configuration documentation for more details at [EdgeX Foundry Documentation](https://docs.edgexfoundry.org)."
           type: object
@@ -361,6 +364,9 @@ components:
       description: "A response from the /metrics endpoint providing memory and cpu utilization stats."
       type: object
       properties:
+        serviceName:
+          description: "Outputs the name of the service the response is from"
+          type: string
         metrics:
           type: object
           properties:
@@ -442,6 +448,9 @@ components:
         timestamp:
           description: "Outputs the current server timestamp in RFC1123 format"
           example: "Mon, 02 Jan 2006 15:04:05 MST"
+          type: string
+        serviceName:
+          description: "Outputs the name of the service the response is from"
           type: string
     DeviceCommand:
       description: "Defines read/write capabilities native to the device"
@@ -687,6 +696,9 @@ components:
           type: string
         sdk_version:
           description: "The version of the SDK with which the service was built."
+          type: string
+        serviceName:
+          description: "Outputs the name of the service the response is from"
           type: string
 
   parameters:
