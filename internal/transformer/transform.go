@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -83,7 +84,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		}
 
 		// assertion
-		dc := bootstrapContainer.MetadataDeviceClientFrom(dic.Get)
+		dc := bootstrapContainer.DeviceClientFrom(dic.Get)
 		err := checkAssertion(cv, dr.Properties.Assertion, device.Name, lc, dc)
 		if err != nil {
 			return nil, errors.NewCommonEdgeXWrapper(err)

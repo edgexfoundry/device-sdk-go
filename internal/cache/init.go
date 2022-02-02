@@ -9,18 +9,19 @@ package cache
 import (
 	"context"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 )
 
 // InitCache Init basic state for cache
 func InitCache(name string, dic *di.Container) errors.EdgeX {
-	dc := bootstrapContainer.MetadataDeviceClientFrom(dic.Get)
-	dpc := bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)
-	pwc := bootstrapContainer.MetadataProvisionWatcherClientFrom(dic.Get)
+	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
+	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
+	pwc := bootstrapContainer.ProvisionWatcherClientFrom(dic.Get)
 
 	// init device cache
 	deviceRes, err := dc.DevicesByServiceName(context.Background(), name, 0, -1)

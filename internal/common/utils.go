@@ -12,14 +12,15 @@ import (
 	"fmt"
 	"time"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
@@ -72,7 +73,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		}
 		lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
 	} else {
-		ec := bootstrapContainer.DataEventClientFrom(dic.Get)
+		ec := bootstrapContainer.EventClientFrom(dic.Get)
 		_, err := ec.Add(ctx, req)
 		if err != nil {
 			lc.Errorf("Failed to push event to Coredata: %s", err)

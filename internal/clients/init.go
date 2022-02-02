@@ -13,14 +13,14 @@ import (
 	"sync"
 	"time"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	v2clients "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -51,7 +51,6 @@ func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer
 	if !checkDependencyServices(ctx, startupTimer, dic) {
 		return false
 	}
-	initCoreServiceClients(dic)
 
 	lc.Info("Service clients initialize successful.")
 	return true
@@ -164,31 +163,4 @@ func checkServiceAvailableViaRegistry(serviceKey string, rc registry.Client, lc 
 	}
 
 	return res
-}
-
-func initCoreServiceClients(dic *di.Container) {
-	configuration := container.ConfigurationFrom(dic.Get)
-	dc := v2clients.NewDeviceClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
-	dsc := v2clients.NewDeviceServiceClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
-	dpc := v2clients.NewDeviceProfileClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
-	pwc := v2clients.NewProvisionWatcherClient(configuration.Clients[common.CoreMetaDataServiceKey].Url())
-	ec := v2clients.NewEventClient(configuration.Clients[common.CoreDataServiceKey].Url())
-
-	dic.Update(di.ServiceConstructorMap{
-		bootstrapContainer.MetadataDeviceClientName: func(get di.Get) interface{} {
-			return dc
-		},
-		bootstrapContainer.MetadataDeviceServiceClientName: func(get di.Get) interface{} {
-			return dsc
-		},
-		bootstrapContainer.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
-			return dpc
-		},
-		bootstrapContainer.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
-			return pwc
-		},
-		bootstrapContainer.DataEventClientName: func(get di.Get) interface{} {
-			return ec
-		},
-	})
 }

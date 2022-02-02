@@ -14,8 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
@@ -23,6 +21,9 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/google/uuid"
 	"github.com/pelletier/go-toml"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -97,7 +98,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	if len(addDevicesReq) == 0 {
 		return nil
 	}
-	dc := bootstrapContainer.MetadataDeviceClientFrom(dic.Get)
+	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
 	_, edgexErr := dc.Add(ctx, addDevicesReq)
 	return edgexErr

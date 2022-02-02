@@ -10,13 +10,14 @@ import (
 	"context"
 	"fmt"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
@@ -255,7 +256,7 @@ func UpdateDeviceService(updateDeviceServiceRequest requests.UpdateDeviceService
 // updateAssociatedProfile updates the profile specified in AddDeviceRequest or UpdateDeviceRequest or AddProvisionWatcherRequest or UpdateProvisionWatcherRequest
 // to stay consistent with core metadata.
 func updateAssociatedProfile(profileName string, dic *di.Container) errors.EdgeX {
-	dpc := bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)
+	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 
 	res, err := dpc.DeviceProfileByName(context.Background(), profileName)
 	if err != nil {
