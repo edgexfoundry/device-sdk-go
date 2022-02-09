@@ -5,7 +5,7 @@ go 1.17
 require (
 	bitbucket.org/bertimus9/systemstat v0.0.0-20180207000608-0eeff89b0690
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.1.0
+	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.0.1-dev.28
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.9
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.8
 	github.com/edgexfoundry/go-mod-registry/v2 v2.1.0
@@ -15,8 +15,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
-
-replace github.com/edgexfoundry/go-mod-bootstrap/v2 => ../MODS/go-mod-bootstrap
 
 require (
 	github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da // indirect
