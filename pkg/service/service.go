@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2022 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -68,6 +68,7 @@ type DeviceService struct {
 	deviceService   *models.DeviceService
 	driver          sdkModels.ProtocolDriver
 	discovery       sdkModels.ProtocolDiscovery
+	validator       sdkModels.DeviceValidator
 	manager         sdkModels.AutoEventManager
 	asyncCh         chan *sdkModels.AsyncValues
 	deviceCh        chan []sdkModels.DiscoveredDevice
@@ -103,6 +104,12 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 		s.discovery = discovery
 	} else {
 		s.discovery = nil
+	}
+
+	if validator, ok := proto.(sdkModels.DeviceValidator); ok {
+		s.validator = validator
+	} else {
+		s.validator = nil
 	}
 
 	s.deviceService = &models.DeviceService{}

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2022 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -56,6 +56,8 @@ func (c *RestController) InitRestRoutes() {
 	c.addReservedRoute(common.ApiSecretRoute, c.Secret).Methods(http.MethodPost)
 	// discovery
 	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery).Methods(http.MethodPost)
+	// validate
+	c.addReservedRoute(common.ApiDeviceValidationRoute, c.ValidateDevice).Methods(http.MethodPost)
 	// device command
 	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.Command).Methods(http.MethodPut, http.MethodGet)
 	// callback

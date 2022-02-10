@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,12 +12,14 @@ package driver
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
@@ -311,4 +313,27 @@ func (s *SimpleDriver) Discover() {
 
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	s.deviceCh <- res
+}
+
+func (s *SimpleDriver) ValidateDevice(device models.Device) error {
+	protocol, ok := device.Protocols["other"]
+	if !ok {
+		return errors.New("missing 'other' protocols")
+	}
+
+	addr, ok := protocol["Address"]
+	if !ok {
+		return errors.New("missing 'Address' information")
+	} else if addr == "" {
+		return errors.New("address must not empty")
+	}
+
+	port, ok := protocol["Port"]
+	if !ok {
+		return errors.New("missing 'Port' information")
+	} else if _, err := strconv.Atoi(port); err != nil {
+		return errors.New("port must be a number")
+	}
+
+	return nil
 }
