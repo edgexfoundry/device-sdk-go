@@ -19,6 +19,19 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	bootstrapTypes "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
@@ -28,20 +41,6 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
-	bootstrapTypes "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 var (
