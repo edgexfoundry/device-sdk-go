@@ -9,6 +9,12 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models/mocks"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces/mocks"
@@ -20,12 +26,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models/mocks"
 )
 
 var testProtocols map[string]models.ProtocolProperties
@@ -156,13 +156,13 @@ func mockDic() *di.Container {
 		container.ProtocolDriverName: func(get di.Get) interface{} {
 			return driverMock
 		},
-		bootstrapContainer.MetadataDeviceClientName: func(get di.Get) interface{} {
+		bootstrapContainer.DeviceClientName: func(get di.Get) interface{} {
 			return dcMock
 		},
-		bootstrapContainer.MetadataDeviceProfileClientName: func(get di.Get) interface{} {
+		bootstrapContainer.DeviceProfileClientName: func(get di.Get) interface{} {
 			return dpcMock
 		},
-		bootstrapContainer.MetadataProvisionWatcherClientName: func(get di.Get) interface{} {
+		bootstrapContainer.ProvisionWatcherClientName: func(get di.Get) interface{} {
 			return pwcMock
 		},
 		container.ConfigurationName: func(get di.Get) interface{} {

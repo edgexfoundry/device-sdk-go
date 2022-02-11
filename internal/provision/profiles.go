@@ -16,13 +16,13 @@ import (
 	"strings"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
@@ -50,7 +50,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	}
 
 	var addProfilesReq []requests.DeviceProfileRequest
-	dpc := bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)
+	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 	lc.Infof("Loading pre-defined profiles from %s", absPath)
 	for _, file := range fileInfo {
 		var profile dtos.DeviceProfile

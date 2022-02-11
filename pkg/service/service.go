@@ -19,6 +19,13 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
@@ -34,13 +41,6 @@ import (
 	"github.com/edgexfoundry/go-mod-registry/v2/registry"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	restController "github.com/edgexfoundry/device-sdk-go/v2/internal/controller/http"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 var (
@@ -113,11 +113,11 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.SecretProvider = bootstrapContainer.SecretProviderFrom(dic.Get)
-	s.edgexClients.DeviceClient = bootstrapContainer.MetadataDeviceClientFrom(dic.Get)
-	s.edgexClients.DeviceServiceClient = bootstrapContainer.MetadataDeviceServiceClientFrom(dic.Get)
-	s.edgexClients.DeviceProfileClient = bootstrapContainer.MetadataDeviceProfileClientFrom(dic.Get)
-	s.edgexClients.ProvisionWatcherClient = bootstrapContainer.MetadataProvisionWatcherClientFrom(dic.Get)
-	s.edgexClients.EventClient = bootstrapContainer.DataEventClientFrom(dic.Get)
+	s.edgexClients.DeviceClient = bootstrapContainer.DeviceClientFrom(dic.Get)
+	s.edgexClients.DeviceServiceClient = bootstrapContainer.DeviceServiceClientFrom(dic.Get)
+	s.edgexClients.DeviceProfileClient = bootstrapContainer.DeviceProfileClientFrom(dic.Get)
+	s.edgexClients.ProvisionWatcherClient = bootstrapContainer.ProvisionWatcherClientFrom(dic.Get)
+	s.edgexClients.EventClient = bootstrapContainer.EventClientFrom(dic.Get)
 	s.config = container.ConfigurationFrom(dic.Get)
 	s.manager = container.ManagerFrom(dic.Get)
 	s.controller = restController.NewRestController(r, dic, s.ServiceName)

@@ -16,18 +16,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
 type CommandProcessor struct {
@@ -85,7 +85,7 @@ func CommandHandler(isRead bool, sendEvent bool, correlationID string, vars map[
 		}
 		config := container.ConfigurationFrom(dic.Get)
 		if config.Device.UpdateLastConnected {
-			go sdkCommon.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), bootstrapContainer.MetadataDeviceClientFrom(dic.Get))
+			go sdkCommon.UpdateLastConnected(device.Name, bootstrapContainer.LoggingClientFrom(dic.Get), bootstrapContainer.DeviceClientFrom(dic.Get))
 		}
 
 		if res != nil && sendEvent {

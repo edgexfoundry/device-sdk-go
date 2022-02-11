@@ -77,6 +77,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			httpServer.BootstrapHandler,
 			messaging.BootstrapHandler,
 			clients.BootstrapHandler,
+			handlers.NewClientsBootstrap().BootstrapHandler,
 			autoevent.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
