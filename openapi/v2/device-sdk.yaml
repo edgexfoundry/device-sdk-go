@@ -520,7 +520,7 @@ components:
         - readWrite
     ProtocolProperties:
       description: "The properties required to address a device via a particular protocol."
-      example: {"Host":"floor4.hq.acme.com","Port":"8080"}
+      example: {"Host":"floor4.hq.acme.com", "Port":"8080"}
       type: object
       additionalProperties:
         type: string
@@ -1254,6 +1254,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /validate/device:
+    post:
+      summary: Run the device-specific validation for a Device's Properties.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewDeviceRequest'
+        required: true
+      responses:
+        '200':
+          description: Validation succeed or validator implicitly not implemented
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+        '400':
+          description: Invalid validation request.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /discovery:
     post:

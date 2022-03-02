@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -25,6 +25,9 @@ var ProtocolDriverName = di.TypeInstanceToName((*sdkModels.ProtocolDriver)(nil))
 // ManagerName contains the name of autoevent manager implementation in the DIC
 var ManagerName = di.TypeInstanceToName((*sdkModels.AutoEventManager)(nil))
 
+// DeviceValidatorName contains the name of device validator implementation in the DIC.
+var DeviceValidatorName = di.TypeInstanceToName((*sdkModels.DeviceValidator)(nil))
+
 // DeviceServiceFrom helper function queries the DIC and returns device service struct.
 func DeviceServiceFrom(get di.Get) *models.DeviceService {
 	return get(DeviceServiceName).(*models.DeviceService)
@@ -33,6 +36,15 @@ func DeviceServiceFrom(get di.Get) *models.DeviceService {
 // ProtocolDiscoveryFrom helper function queries the DIC and returns protocol discovery implementation.
 func ProtocolDiscoveryFrom(get di.Get) sdkModels.ProtocolDiscovery {
 	casted, ok := get(ProtocolDiscoveryName).(sdkModels.ProtocolDiscovery)
+	if ok {
+		return casted
+	}
+	return nil
+}
+
+// DeviceValidatorFrom helper function queries the DIC and returns device validator implementation.
+func DeviceValidatorFrom(get di.Get) sdkModels.DeviceValidator {
+	casted, ok := get(DeviceValidatorName).(sdkModels.DeviceValidator)
 	if ok {
 		return casted
 	}

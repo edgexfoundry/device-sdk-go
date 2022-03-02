@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -58,6 +58,9 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		},
 		container.ProtocolDiscoveryName: func(get di.Get) interface{} {
 			return ds.discovery
+		},
+		container.DeviceValidatorName: func(get di.Get) interface{} {
+			return ds.validator
 		},
 	})
 
