@@ -1269,6 +1269,10 @@ paths:
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '400':
           description: Invalid validation request.
           headers:

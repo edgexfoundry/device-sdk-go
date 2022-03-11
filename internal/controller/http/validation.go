@@ -11,6 +11,7 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 
@@ -19,9 +20,10 @@ import (
 
 func (c *RestController) ValidateDevice(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
+
+	var deviceRequest requests.AddDeviceRequest
 	validator := container.DeviceValidatorFrom(c.dic.Get)
 	if validator != nil {
-		var deviceRequest requests.AddDeviceRequest
 		err := json.NewDecoder(request.Body).Decode(&deviceRequest)
 		if err != nil {
 			edgexErr := errors.NewCommonEdgeX(errors.KindContractInvalid, "json decoding failed", err)
@@ -37,5 +39,6 @@ func (c *RestController) ValidateDevice(writer http.ResponseWriter, request *htt
 		}
 	}
 
-	c.sendResponse(writer, request, common.ApiDeviceValidationRoute, nil, http.StatusOK)
+	res := commonDTO.NewBaseResponse(deviceRequest.RequestId, "", http.StatusOK)
+	c.sendResponse(writer, request, common.ApiDeviceValidationRoute, res, http.StatusOK)
 }
