@@ -79,7 +79,7 @@ func mockDic() *di.Container {
 	profile := responses.DeviceProfileResponse{
 		BaseResponse: dtoCommon.BaseResponse{},
 		Profile: dtos.DeviceProfile{
-			Name: "test-profile",
+			DeviceProfileBasicInfo: dtos.DeviceProfileBasicInfo{Name: "test-profile"},
 			DeviceResources: []dtos.DeviceResource{
 				dtos.DeviceResource{
 					Name: "test-resource",
