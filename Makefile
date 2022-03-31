@@ -16,7 +16,7 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)
 GIT_SHA=$(shell git rev-parse HEAD)
 
 tidy:
-	go mod tidy
+	go mod tidy -compat=1.17
 
 build: $(MICROSERVICES)
 	$(GOCGO) install -tags=safe
