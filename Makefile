@@ -4,13 +4,21 @@ ARCH=$(shell uname -m)
 GO=CGO_ENABLED=0 GO111MODULE=on go
 GOCGO=CGO_ENABLED=1 GO111MODULE=on go
 
+
+# see https://shibumi.dev/posts/hardening-executables
+CGO_CPPFLAGS="-D_FORTIFY_SOURCE=2"
+CGO_CFLAGS="-O2 -pipe -fno-plt"
+CGO_CXXFLAGS="-O2 -pipe -fno-plt"
+CGO_LDFLAGS="-Wl,-O1,–sort-common,–as-needed,-z,relro,-z,now"
+
 MICROSERVICES=example/cmd/device-simple/device-simple
 .PHONY: $(MICROSERVICES)
 
 VERSION=$(shell cat ./VERSION 2>/dev/null || echo 0.0.0)
 DOCKER_TAG=$(VERSION)-dev
 
-GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)"
+GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)" -trimpath -mod=readonly
+CGOFLAGS=-ldflags "-linkmode=external -X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)" -trimpath -mod=readonly -buildmode=pie
 #GOTESTFLAGS?=-race
 
 GIT_SHA=$(shell git rev-parse HEAD)
@@ -22,7 +30,7 @@ build: $(MICROSERVICES)
 	$(GOCGO) install -tags=safe
 
 example/cmd/device-simple/device-simple:
-	$(GOCGO) build $(GOFLAGS) -o $@ ./example/cmd/device-simple
+	$(GOCGO) build $(CGOFLAGS) -o $@ ./example/cmd/device-simple
 
 docker:
 	docker build \
