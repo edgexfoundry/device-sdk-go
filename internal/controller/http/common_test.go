@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -117,13 +118,14 @@ func TestMetricsRequest(t *testing.T) {
 
 	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
 	assert.Equal(t, serviceName, actual.ServiceName)
-	assert.NotZero(t, actual.Metrics.MemAlloc)
-	assert.NotZero(t, actual.Metrics.MemFrees)
-	assert.NotZero(t, actual.Metrics.MemLiveObjects)
-	assert.NotZero(t, actual.Metrics.MemMallocs)
-	assert.NotZero(t, actual.Metrics.MemSys)
-	assert.NotZero(t, actual.Metrics.MemTotalAlloc)
-	assert.NotNil(t, actual.Metrics.CpuBusyAvg)
+	// Since when -race flag is use some values may come back as 0 we need to use the max value to detect change
+	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemAlloc)
+	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemFrees)
+	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemLiveObjects)
+	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemMallocs)
+	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemSys)
+	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemTotalAlloc)
+	assert.NotEqual(t, 0, actual.Metrics.CpuBusyAvg)
 }
 
 func TestConfigRequest(t *testing.T) {
