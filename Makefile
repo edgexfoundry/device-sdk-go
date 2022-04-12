@@ -19,7 +19,7 @@ DOCKER_TAG=$(VERSION)-dev
 
 GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)" -trimpath -mod=readonly
 CGOFLAGS=-ldflags "-linkmode=external -X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)" -trimpath -mod=readonly -buildmode=pie
-#GOTESTFLAGS?=-race
+GOTESTFLAGS?=-race
 
 GIT_SHA=$(shell git rev-parse HEAD)
 
