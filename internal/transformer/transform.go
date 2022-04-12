@@ -109,6 +109,10 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		if err != nil {
 			return nil, errors.NewCommonEdgeXWrapper(err)
 		}
+		// ReadingUnits=true to include units in the reading
+		if config.Writable.Reading.ReadingUnits {
+			reading.Units = dr.Properties.Units
+		}
 		readings = append(readings, reading)
 
 		if cv.Type == common.ValueTypeBinary {

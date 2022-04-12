@@ -17,6 +17,13 @@ type WritableInfo struct {
 	// Level is the logging level of writing log message
 	LogLevel        string
 	InsecureSecrets config.InsecureSecrets
+	Reading         Reading
+}
+
+// Reading is a struct which contains reading configuration settings.
+type Reading struct {
+	// ReadingUnits specifies whether or not to indicate the units of measure for the value in the reading
+	ReadingUnits bool
 }
 
 // DeviceInfo is a struct which contains device specific configuration settings.

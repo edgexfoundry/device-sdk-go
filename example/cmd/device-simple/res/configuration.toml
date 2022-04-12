@@ -8,6 +8,8 @@ LogLevel = "INFO"
       [Writable.InsecureSecrets.DB.Secrets]
       username = ""
       password = ""
+  [Writable.Reading]
+  ReadingUnits = true
 
 [Service]
 HealthCheckInterval = "10s"

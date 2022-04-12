@@ -30,6 +30,7 @@ deviceResources:
     properties:
         valueType: "Int32"
         readWrite: "RW"
+        units: "rpm"
   -
     name: "Yrotation"
     isHidden: true
@@ -37,6 +38,7 @@ deviceResources:
     properties:
         valueType: "Int32"
         readWrite: "RW"
+        "units": "rpm"
   -
     name: "Zrotation"
     isHidden: true
@@ -44,6 +46,7 @@ deviceResources:
     properties:
         valueType: "Int32"
         readWrite: "RW"
+        "units": "rpm"
   -
     name: "StringArray"
     isHidden: false
