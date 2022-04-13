@@ -34,7 +34,8 @@
       "description": "X axis rotation rate",
       "properties": {
         "valueType": "Int32",
-        "readWrite": "RW"
+        "readWrite": "RW",
+        "units": "rpm"
       }
     },
     {
@@ -43,7 +44,8 @@
       "description": "Y axis rotation rate",
       "properties": {
         "valueType": "Int32",
-        "readWrite": "RW"
+        "readWrite": "RW",
+        "units": "rpm"
       }
     },
     {
@@ -52,7 +54,8 @@
       "description": "Z axis rotation rate",
       "properties": {
         "valueType": "Int32",
-        "readWrite": "RW"
+        "readWrite": "RW",
+        "units": "rpm"
       }
     },
     {
