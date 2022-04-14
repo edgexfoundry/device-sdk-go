@@ -14,6 +14,7 @@ import (
 	"net/http"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
@@ -32,6 +33,7 @@ type RestController struct {
 	reservedRoutes map[string]bool
 	dic            *di.Container
 	serviceName    string
+	customConfig   interfaces.UpdatableConfig
 }
 
 func NewRestController(r *mux.Router, dic *di.Container, serviceName string) *RestController {
@@ -43,6 +45,11 @@ func NewRestController(r *mux.Router, dic *di.Container, serviceName string) *Re
 		dic:            dic,
 		serviceName:    serviceName,
 	}
+}
+
+// SetCustomConfigInfo sets the custom configuration, which is used to include the service's custom config in the /config endpoint response.
+func (c *RestController) SetCustomConfigInfo(customConfig interfaces.UpdatableConfig) {
+	c.customConfig = customConfig
 }
 
 func (c *RestController) InitRestRoutes() {

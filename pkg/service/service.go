@@ -171,7 +171,14 @@ func (s *DeviceService) LoadCustomConfig(customConfig UpdatableConfig, sectionNa
 	if s.configProcessor == nil {
 		s.configProcessor = bootstrapConfig.NewProcessorForCustomConfig(s.flags, s.ctx, s.wg, s.dic)
 	}
-	return s.configProcessor.LoadCustomConfigSection(customConfig, sectionName)
+
+	if err := s.configProcessor.LoadCustomConfigSection(customConfig, sectionName); err != nil {
+		return err
+	}
+
+	s.controller.SetCustomConfigInfo(customConfig)
+
+	return nil
 }
 
 // ListenForCustomConfigChanges uses the Config Processor from go-mod-bootstrap to attempt to listen for
