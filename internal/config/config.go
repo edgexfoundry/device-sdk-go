@@ -28,6 +28,8 @@ type ConfigurationStruct struct {
 	SecretStore bootstrapConfig.SecretStoreInfo
 	// MessageQueue contains information for connecting to MessageBus which provides alternative way to publish event
 	MessageQueue bootstrapConfig.MessageBusInfo
+	// MaxEventSize is the maximum event size that can be sent to MessageBus or CoreData
+	MaxEventSize int64
 }
 
 // UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is

@@ -57,12 +57,19 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlationID) // nolint: staticcheck
 	req := requests.NewAddEventRequest(*event)
 
+	bytes, encoding, err := req.Encode()
+	if err != nil {
+		lc.Error(err.Error())
+	}
+
+	// Check event size in kilobytes
+	if configuration.MaxEventSize > 0 && int64(len(bytes)) > configuration.MaxEventSize*1024 {
+		lc.Error(fmt.Sprintf("event size exceed MaxEventSize(%d KB)", configuration.MaxEventSize))
+		return
+	}
+
 	if configuration.Device.UseMessageBus {
 		mc := container.MessagingClientFrom(dic.Get)
-		bytes, encoding, err := req.Encode()
-		if err != nil {
-			lc.Error(err.Error())
-		}
 		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
 		envelope := types.NewMessageEnvelope(bytes, ctx)
 		publishTopic := fmt.Sprintf("%s/%s/%s/%s", configuration.MessageQueue.PublishTopicPrefix, event.ProfileName, event.DeviceName, event.SourceName)
