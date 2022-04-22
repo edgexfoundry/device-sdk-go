@@ -19,7 +19,7 @@ Host = "localhost"
 Port = 59999 # Device serivce are assigned the 599xx range
 ServerBindAddr = ""  # blank value defaults to Service.Host value
 StartupMsg = "device simple started"
-# MaxRequestSize limit the request body size in byte of put command
+# MaxRequestSize limit the request body size in kilobyte of put command
 MaxRequestSize = 0 # value 0 unlimit the request size.
 RequestTimeout = "20s"
   [Service.CORSConfiguration]
@@ -84,6 +84,14 @@ DisableScrubSecretsFile = false
 TokenFile = "/tmp/edgex/secrets/device-simple/secrets-token.json"
   [SecretStore.Authentication]
   AuthType = "X-Vault-Token"
+  [SecretStore.RuntimeTokenProvider]
+  Enabled = false
+  Protocol = "https"
+  Host = "localhost"
+  Port = 59841
+  TrustDomain = "edgexfoundry.org"
+  EndpointSocket = "/tmp/edgex/secrets/spiffe/public/api.sock"
+  RequiredSecrets = "redisdb"
 
 [Device]
   DataTransform = true
