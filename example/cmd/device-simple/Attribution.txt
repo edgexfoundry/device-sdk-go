@@ -179,3 +179,6 @@ https://github.com/protocolbuffers/protobuf-go/blob/master/LICENSE
 
 gopkg.in/square/go-jose.v2 (Apache-2.0) https://github.com/square/go-jose/tree/v2.6.0
 https://github.com/square/go-jose/blob/v2.6.0/LICENSE
+
+github.com/rcrowley/go-metrics (Unspecified) https://github.com/rcrowley/go-metrics
+https://github.com/rcrowley/go-metrics/blob/master/LICENSE

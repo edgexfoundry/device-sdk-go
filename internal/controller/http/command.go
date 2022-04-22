@@ -8,7 +8,6 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -81,10 +80,6 @@ func parseRequestBody(req *http.Request, maxRequestSize int64) (map[string]inter
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		if err.Error() == "http: request body too large" {
-			errMsg := fmt.Sprintf("request size exceed Service.MaxRequestSize(%d)", maxRequestSize)
-			return nil, errors.NewCommonEdgeX(errors.KindLimitExceeded, errMsg, err)
-		}
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
 	}
 
