@@ -5,8 +5,8 @@ go 1.17
 require (
 	bitbucket.org/bertimus9/systemstat v0.5.0
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.2.0-dev.19
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.26
+	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.2.0-dev.20
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.2.0-dev.27
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.2.0-dev.12
 	github.com/edgexfoundry/go-mod-registry/v2 v2.2.0-dev.3
 	github.com/google/uuid v1.3.0
@@ -22,7 +22,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.3.5 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v2 v2.2.0-dev.3 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.6 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v2 v2.2.0-dev.8 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
