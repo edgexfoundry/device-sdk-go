@@ -5,12 +5,35 @@
 
 ### Change Logs for EdgeX Dependencies
 
-- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/v2.0.1/CHANGELOG.md)
-- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
-- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
+- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/v2.1.0/CHANGELOG.md)
+- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/v2.1.0/CHANGELOG.md)
+- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/v2.1.0/CHANGELOG.md)
+- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/v2.1.0/CHANGELOG.md)
+- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/v2.1.0/CHANGELOG.md) (indirect dependency)
+- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/v2.1.0/CHANGELOG.md) (indirect dependency)
+
+## [v2.2.0] Kamakura - 2022-5-11 (Only compatible with the 2.x releases)
+
+### Features ✨
+
+- Add MaxEventSize to limit event size ([#ae5b097](https://github.com/edgexfoundry/device-sdk-go/commits/ae5b097))
+- Implement ReadingUnits configuration for device profile changes ([#daeaa2d](https://github.com/edgexfoundry/device-sdk-go/commits/daeaa2d))
+- Enable security hardening ([#da52579](https://github.com/edgexfoundry/device-sdk-go/commits/da52579))
+- Version bump to roll-in delayed service start feature ([#7a7b6d1](https://github.com/edgexfoundry/device-sdk-go/commits/7a7b6d1))
+- Implement ProtocolProperties validation mechanism ([#07054d1](https://github.com/edgexfoundry/device-sdk-go/commits/07054d1))
+- Location of client service obtained from the registry ([#936332d](https://github.com/edgexfoundry/device-sdk-go/commits/936332d))
+- **webserver:** Include ServiceName in Common Responses ([#402f152](https://github.com/edgexfoundry/device-sdk-go/commits/402f152))
+### Bug Fixes 🐛
+
+- Add missing Configuration interface method GetTelemetryInfo ([#f9d12fc](https://github.com/edgexfoundry/device-sdk-go/commits/f9d12fc))
+- Update TestMetricsRequest to not fail when using -race ([#aa2b65f](https://github.com/edgexfoundry/device-sdk-go/commits/aa2b65f))
+- Update validation API 200 response ([#7c8475a](https://github.com/edgexfoundry/device-sdk-go/commits/7c8475a))
+- **configuration:** add handling for custom config on /config endpoint ([#4aeb844](https://github.com/edgexfoundry/device-sdk-go/commits/4aeb844))
+
+### Code Refactoring ♻
+
+- Use go-mod-bootstrap RequestLimitMiddleware for MaxRequestSize ([#b63934f](https://github.com/edgexfoundry/device-sdk-go/commits/b63934f))
+
 
 ## [v2.1.0] Jakarta - 2021-11-17 (Only compatible with the 2.x releases)
 
