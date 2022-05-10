@@ -9,6 +9,7 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -40,7 +41,12 @@ func BootstrapHandler(
 // The initialization process should be pending until Metadata Service and Core Data Service are both available.
 func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	config := container.ConfigurationFrom(dic.Get)
 
+	// Remove the core-data client when using the MessageBus
+	if config.Device.UseMessageBus {
+		delete(config.Clients, common.CoreDataServiceKey)
+	}
 	err := validateClientConfig(container.ConfigurationFrom(dic.Get))
 	if err != nil {
 		lc.Error(err.Error())
@@ -56,20 +62,13 @@ func InitDependencyClients(ctx context.Context, wg *sync.WaitGroup, startupTimer
 }
 
 func validateClientConfig(configuration *config.ConfigurationStruct) errors.EdgeX {
-	if len(configuration.Clients[common.CoreMetaDataServiceKey].Host) == 0 {
-		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Host setting for Core Metadata client not configured", nil)
-	}
-
-	if configuration.Clients[common.CoreMetaDataServiceKey].Port == 0 {
-		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Port setting for Core Metadata client not configured", nil)
-	}
-
-	if len(configuration.Clients[common.CoreDataServiceKey].Host) == 0 {
-		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Host setting for Core Data client not configured", nil)
-	}
-
-	if configuration.Clients[common.CoreDataServiceKey].Port == 0 {
-		return errors.NewCommonEdgeX(errors.KindContractInvalid, "fatal error; Port setting for Core Data client not configured", nil)
+	for serviceKey, serviceInfo := range configuration.GetBootstrap().Clients {
+		if len(serviceInfo.Host) == 0 {
+			return errors.NewCommonEdgeX(errors.KindContractInvalid, fmt.Sprintf("fatal error; Host setting for %s client not configured", serviceKey), nil)
+		}
+		if serviceInfo.Port == 0 {
+			return errors.NewCommonEdgeX(errors.KindContractInvalid, fmt.Sprintf("fatal error; Port setting for %s client not configured", serviceKey), nil)
+		}
 	}
 
 	// TODO: validate other settings for sanity: maxcmdops, ...
