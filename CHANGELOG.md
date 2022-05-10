@@ -5,33 +5,80 @@
 
 ### Change Logs for EdgeX Dependencies
 
-- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/v2.0.1/CHANGELOG.md)
-- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
-- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
+- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/main/CHANGELOG.md)
+- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/main/CHANGELOG.md)
+- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/main/CHANGELOG.md)
+- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/main/CHANGELOG.md) 
+- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
+- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
+
+## [v2.2.0] Kamakura - 2022-5-11 (Only compatible with the 2.x releases)
+
+### Features ✨
+
+- Add MaxEventSize to limit event size ([#ae5b097](https://github.com/edgexfoundry/device-sdk-go/commits/ae5b097))
+- Implement ReadingUnits configuration for device profile changes ([#daeaa2d](https://github.com/edgexfoundry/device-sdk-go/commits/daeaa2d))
+- Enable security hardening ([#da52579](https://github.com/edgexfoundry/device-sdk-go/commits/da52579))
+- Version bump to roll-in delayed service start feature ([#7a7b6d1](https://github.com/edgexfoundry/device-sdk-go/commits/7a7b6d1))
+- Implement ProtocolProperties validation mechanism ([#07054d1](https://github.com/edgexfoundry/device-sdk-go/commits/07054d1))
+- Location of client service obtained from the registry ([#936332d](https://github.com/edgexfoundry/device-sdk-go/commits/936332d))
+- **webserver:** Include ServiceName in Common Responses ([#402f152](https://github.com/edgexfoundry/device-sdk-go/commits/402f152))
+
+### Bug Fixes 🐛
+- Add missing Configuration interface method GetTelemetryInfo ([#f9d12fc](https://github.com/edgexfoundry/device-sdk-go/commits/f9d12fc))
+- Update TestMetricsRequest to not fail when using -race ([#aa2b65f](https://github.com/edgexfoundry/device-sdk-go/commits/aa2b65f))
+- Update validation API 200 response ([#7c8475a](https://github.com/edgexfoundry/device-sdk-go/commits/7c8475a))
+- **configuration:** add handling for custom config on /config endpoint ([#4aeb844](https://github.com/edgexfoundry/device-sdk-go/commits/4aeb844))
+
+### Code Refactoring ♻
+- Use go-mod-bootstrap RequestLimitMiddleware for MaxRequestSize ([#b63934f](https://github.com/edgexfoundry/device-sdk-go/commits/b63934f))
+
+
+### Documentation 📖
+- Publish swagger to 2.2.0 ([#a109450](https://github.com/edgexfoundry/device-sdk-go/commits/a109450))
+- Correct document links in README ([#588dc1c](https://github.com/edgexfoundry/device-sdk-go/commits/588dc1c))
+
+### Build 👷
+- Update to latest go-mod-messaging w/o ZMQ on windows ([#a222f54](https://github.com/edgexfoundry/device-sdk-go/commits/a222f54))
+    ```
+    BREAKING CHANGE:
+    ZeroMQ no longer supported on native Windows for EdgeX
+    MessageBus
+    ```
+- Updated formatting from gofmt 1.17 ([#3c2e1aa](https://github.com/edgexfoundry/device-sdk-go/commits/3c2e1aa))
+
+### Continuous Integration 🔄
+- Remove -race for unit tests for now to resolve failures in pipeline ([#a3ef393](https://github.com/edgexfoundry/device-sdk-go/commits/a3ef393))
+- Go 1.17 related changes ([#20fc5d6](https://github.com/edgexfoundry/device-sdk-go/commits/20fc5d6))
 
 ## [v2.1.0] Jakarta - 2021-11-17 (Only compatible with the 2.x releases)
 
 ### Features ✨
-
 - Support object value type in Set Command ([#801bc03](https://github.com/edgexfoundry/device-sdk-go/commits/801bc03))
 - Add NewCommandValueWithOrigin function ([#c6c2082](https://github.com/edgexfoundry/device-sdk-go/commits/c6c2082))
 - Support Object value type in Reading ([#1025](https://github.com/edgexfoundry/device-sdk-go/issues/1025)) ([#d245461](https://github.com/edgexfoundry/device-sdk-go/commits/d245461))
 
 ### Bug Fixes 🐛
-
 - Stop AutoEvents if the Device is locked ([#1027](https://github.com/edgexfoundry/device-sdk-go/issues/1027)) ([#c02be29](https://github.com/edgexfoundry/device-sdk-go/commits/c02be29))
 - Fix nil pointer error when executing SET command with empty value ([#0f89794](https://github.com/edgexfoundry/device-sdk-go/commits/0f89794))
 - Fix device yaml  to Json  error ([#cf13810](https://github.com/edgexfoundry/device-sdk-go/commits/cf13810))
 - Update all TOML to use quote and not single-quote ([#9e077e8](https://github.com/edgexfoundry/device-sdk-go/commits/9e077e8))
 
-### Documentation 📖
+### Code Refactoring ♻
+- Change V2 Swagger to be published with 2.0 version ([#9dee295](https://github.com/edgexfoundry/device-sdk-go/commits/9dee295))
 
+### Documentation 📖
+- Update swagger version to 2.1.0 ([#6cc4e69](https://github.com/edgexfoundry/device-sdk-go/commits/6cc4e69))
 - Add apiVersion to request body example ([#1a6f6b9](https://github.com/edgexfoundry/device-sdk-go/commits/1a6f6b9))
 - Remove the description about base64 encoding ([#df04f74](https://github.com/edgexfoundry/device-sdk-go/commits/df04f74))
-- update device-simple README and ProvisionWatcher example ([#76abb45](https://github.com/edgexfoundry/device-sdk-go/commits/76abb45))
+- Update build status badge ([#da9a265](https://github.com/edgexfoundry/device-sdk-go/commits/da9a265))
+- Update device-simple README and provisionwatcher example ([#76abb45](https://github.com/edgexfoundry/device-sdk-go/commits/76abb45))
+
+### Build 👷
+- Update alpine base to 3.14 ([#7fe965a](https://github.com/edgexfoundry/device-sdk-go/commits/7fe965a))
+
+### Continuous Integration 🔄
+- Remove need for CI specific Dockerfile ([#4ea8c13](https://github.com/edgexfoundry/device-sdk-go/commits/4ea8c13))
 
 ## [v2.0.0] Ireland - 2021-06-30  (Not Compatible with 1.x releases)
 
