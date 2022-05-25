@@ -1,5 +1,6 @@
 //
 // Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2022 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -67,10 +68,10 @@ func TestBootstrapHandler(t *testing.T) {
 			UseMessageBus: true,
 		},
 		MessageQueue: bootstrapConfig.MessageBusInfo{
-			Type:               messaging.ZeroMQ, // Use ZMQ so no issue connecting.
-			Protocol:           "http",
-			Host:               "*",
-			Port:               8765,
+			Type:               messaging.Redis,
+			Protocol:           "redis",
+			Host:               "localhost",
+			Port:               6379,
 			PublishTopicPrefix: "edgex/events/#",
 			AuthMode:           bootstrapMessaging.AuthModeUsernamePassword,
 			SecretName:         "redisdb",
@@ -131,6 +132,7 @@ func TestBootstrapHandler(t *testing.T) {
 
 			actual := BootstrapHandler(context.Background(), &sync.WaitGroup{}, startup.NewTimer(1, 1), dic)
 			assert.Equal(t, test.ExpectedResult, actual)
+			assert.Empty(t, test.Config.MessageQueue.Optional)
 			if test.ExpectClient {
 				assert.NotNil(t, container.MessagingClientFrom(dic.Get))
 			} else {
