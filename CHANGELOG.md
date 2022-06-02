@@ -5,13 +5,26 @@
 
 ### Change Logs for EdgeX Dependencies
 
-- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/v2.0.1/CHANGELOG.md)
-- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/v2.0.0/CHANGELOG.md)
-- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
-- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/v2.0.0/CHANGELOG.md) (indirect dependency)
+- [go-mod-bootstrap](https://github.com/edgexfoundry/go-mod-bootstrap/blob/jakarta/CHANGELOG.md)
+- [go-mod-core-contracts](https://github.com/edgexfoundry/go-mod-core-contracts/blob/jakarta/CHANGELOG.md)
+- [go-mod-messaging](https://github.com/edgexfoundry/go-mod-messaging/blob/jakarta/CHANGELOG.md)
+- [go-mod-registry](https://github.com/edgexfoundry/go-mod-registry/blob/jakarta/CHANGELOG.md)
+- [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/jakarta/CHANGELOG.md) (indirect dependency)
+- [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/jakarta/CHANGELOG.md) (indirect dependency)
 
+## [v2.1.1] Jakarta - 2022-06-08 (Only compatible with the 2.x releases)
+
+### Bug Fixes 🐛
+
+- Use deepCopy of messageBusInfo to avoid external adds ([#77f757b](https://github.com/edgexfoundry/device-sdk-go/commits/77f757b))
+
+### Documentation 📖
+
+- Correct document links in README ([#ca4f80d](https://github.com/edgexfoundry/device-sdk-go/commits/ca4f80d))
+
+### Build 👷
+
+- Update go-mod versions for those that changed for the 2.1.1 patch ([#2e45026](https://github.com/edgexfoundry/device-sdk-go/commits/2e45026))
 ## [v2.1.0] Jakarta - 2021-11-17 (Only compatible with the 2.x releases)
 
 ### Features ✨
