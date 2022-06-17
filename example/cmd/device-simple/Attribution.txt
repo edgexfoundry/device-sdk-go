@@ -126,7 +126,7 @@ https://github.com/mattn/go-isatty/blob/master/LICENSE
 golang.org/x/sys (BSD-3) https://github.com/golang/sys
 https://github.com/golang/sys/blob/master/LICENSE
 
-eclipse/paho.mqtt.golang (Eclipse Distribution License) https://github.com/eclipse/paho.mqtt.golang
+eclipse/paho.mqtt.golang (Eclipse Public License 2.0) https://github.com/eclipse/paho.mqtt.golang
 https://github.com/eclipse/paho.mqtt.golang/blob/master/LICENSE
 
 edgexfoundry/go-mod-messaging (Apache 2.0) https://github.com/edgexfoundry/go-mod-messaging/v2
@@ -182,3 +182,6 @@ https://github.com/square/go-jose/blob/v2.6.0/LICENSE
 
 github.com/rcrowley/go-metrics (Unspecified) https://github.com/rcrowley/go-metrics
 https://github.com/rcrowley/go-metrics/blob/master/LICENSE
+
+golang.org/x/sync (Unspecified) https://cs.opensource.google/go/x/sync
+https://cs.opensource.google/go/x/sync/+/master:LICENSE
