@@ -248,6 +248,7 @@ func TestCommandProcessor_WriteDeviceResource(t *testing.T) {
 	readOnlyDeviceResource := NewCommandProcessor(testDevice, "ro-resource", uuid.NewString(), nil, "", dic)
 	noRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), nil, "", dic)
 	invalidRequestBody := NewCommandProcessor(testDevice, "test-resource", uuid.NewString(), map[string]interface{}{"wrong-resource": "wrong-value"}, "", dic)
+	invalidEmpty := NewCommandProcessor(testDevice, "rw-object", uuid.NewString(), map[string]interface{}{"rw-object": ""}, "", dic)
 
 	tests := []struct {
 		name             string
@@ -260,6 +261,7 @@ func TestCommandProcessor_WriteDeviceResource(t *testing.T) {
 		{"invalid - writing read-only DeviceResource", readOnlyDeviceResource, true},
 		{"valid - no set parameter specified but default value exists", noRequestBody, false},
 		{"valid - set parameter doesn't match requested command, using DefaultValue in DeviceResource.Properties", invalidRequestBody, false},
+		{"invalid - writing empty string to non string deviceResource", invalidEmpty, true},
 	}
 
 	for _, tt := range tests {
@@ -285,6 +287,7 @@ func TestCommandProcessor_WriteDeviceCommand(t *testing.T) {
 	outOfRangeResourceOperation := NewCommandProcessor(testDevice, "exceed-command", uuid.NewString(), nil, "", dic)
 	noRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), nil, "", dic)
 	invalidRequestBody := NewCommandProcessor(testDevice, "test-command", uuid.NewString(), map[string]interface{}{"wrong-resource": "wrong-value"}, "", dic)
+	invalidEmpty := NewCommandProcessor(testDevice, "rw-object", uuid.NewString(), map[string]interface{}{"rw-object": ""}, "", dic)
 
 	tests := []struct {
 		name             string
@@ -297,6 +300,7 @@ func TestCommandProcessor_WriteDeviceCommand(t *testing.T) {
 		{"invalid - RO exceed MaxCmdOps count", outOfRangeResourceOperation, true},
 		{"valid - no set parameter specified but default value exist", noRequestBody, false},
 		{"valid - parameter doesn't match requested command, using DefaultValue in DeviceResource.Properties", invalidRequestBody, false},
+		{"invalid - writing empty string to non string deviceResource", invalidEmpty, true},
 	}
 
 	for _, tt := range tests {

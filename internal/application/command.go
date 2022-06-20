@@ -247,7 +247,7 @@ func (c *CommandProcessor) WriteDeviceResource() (e errors.EdgeX) {
 	// create CommandValue
 	cv, e := createCommandValueFromDeviceResource(dr, v)
 	if e != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", e)
+		return errors.NewCommonEdgeX(errors.Kind(e), "failed to create CommandValue", e)
 	}
 
 	// prepare CommandRequest
@@ -343,7 +343,7 @@ func (c *CommandProcessor) WriteDeviceCommand() errors.EdgeX {
 		if err == nil {
 			cvs = append(cvs, cv)
 		} else {
-			return errors.NewCommonEdgeX(errors.KindServerError, "failed to create CommandValue", err)
+			return errors.NewCommonEdgeX(errors.Kind(err), "failed to create CommandValue", err)
 		}
 	}
 
@@ -387,6 +387,10 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, value interf
 	var result *sdkModels.CommandValue
 
 	v := fmt.Sprint(value)
+
+	if dr.Properties.ValueType != common.ValueTypeString && strings.TrimSpace(v) == "" {
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, fmt.Sprintf("empty string is invalid for %v value type", dr.Properties.ValueType), nil)
+	}
 
 	switch dr.Properties.ValueType {
 	case common.ValueTypeString:
