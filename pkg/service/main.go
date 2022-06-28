@@ -79,7 +79,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			messaging.BootstrapHandler,
 			clients.BootstrapHandler,
 			autoevent.BootstrapHandler,
-			prometheus.BootstrapHandler,
+			prometheus.BootstrapHandler, //add by edgego
 			NewBootstrap(router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
 			handlers.NewStartMessage(serviceName, serviceVersion).BootstrapHandler,
