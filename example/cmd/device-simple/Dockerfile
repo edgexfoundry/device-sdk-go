@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=golang:1.17-alpine3.15
+ARG BASE=golang:1.18-alpine3.16
 FROM ${BASE} AS builder
 
 ARG MAKE=make build
@@ -22,9 +22,9 @@ ARG MAKE=make build
 WORKDIR /device-sdk-go
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
-  copyright='Copyright (c) 2020: Intel'
+  copyright='Copyright (c) 2022: Intel'
 
-RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
+RUN sed -e 's/dl-cdn[.]alpinelinux.org/dl-4.alpinelinux.org/g' -i~ /etc/apk/repositories
 
 RUN apk add --update --no-cache make git gcc libc-dev zeromq-dev libsodium-dev
 
@@ -35,11 +35,11 @@ COPY . .
 RUN ${MAKE}
 
 # Next image - Copy built Go binary into new workspace
-FROM alpine:3.14
+FROM alpine:3.16
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
-  copyright='Copyright (c) 2020: Intel'
+  copyright='Copyright (c) 2022: Intel'
 
-RUN sed -e 's/dl-cdn[.]alpinelinux.org/nl.alpinelinux.org/g' -i~ /etc/apk/repositories
+RUN sed -e 's/dl-cdn[.]alpinelinux.org/dl-4.alpinelinux.org/g' -i~ /etc/apk/repositories
 
 RUN apk add --update --no-cache zeromq
 
