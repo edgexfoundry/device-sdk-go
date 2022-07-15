@@ -140,6 +140,16 @@ func (s *DeviceService) Version() string {
 	return sdkCommon.ServiceVersion
 }
 
+// GetSecretProvider returns the SecretProvider
+func (s *DeviceService) GetSecretProvider() interfaces.SecretProvider {
+	return s.SecretProvider
+}
+
+// GetLoggingClient returns the logger.LoggingClient
+func (s *DeviceService) GetLoggingClient() logger.LoggingClient {
+	return s.LoggingClient
+}
+
 // AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *DeviceService) AsyncReadings() bool {
 	return s.config.Device.EnableAsyncReadings
