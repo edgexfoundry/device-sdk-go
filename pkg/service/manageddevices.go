@@ -29,19 +29,6 @@ func (s *DeviceService) AddDevice(device models.Device) (string, error) {
 		return d.Id, errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, Device %s exists", device.Name), nil)
 	}
 
-	_, cacheExist := cache.Profiles().ForName(device.ProfileName)
-	if !cacheExist {
-		res, err := s.edgexClients.DeviceProfileClient.DeviceProfileByName(context.Background(), device.ProfileName)
-		if err != nil {
-			errMsg := fmt.Sprintf("failed to find Profile %s for Device %s", device.ProfileName, device.Name)
-			s.LoggingClient.Error(errMsg)
-			return "", err
-		}
-		err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
-		if err != nil {
-			return "", errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
-		}
-	}
 	device.ServiceName = s.ServiceName
 
 	s.LoggingClient.Debugf("Adding managed Device %s", device.Name)
