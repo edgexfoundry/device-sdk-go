@@ -33,6 +33,12 @@ type DeviceServiceSDK interface {
 	// GetDeviceByName returns the Device by its name if it exists in the cache, or returns an error.
 	GetDeviceByName(name string) (models.Device, error)
 
+	//  DriverConfigs retrieves the driver specific configuration
+	DriverConfigs() map[string]string
+
+	// SetDeviceOpState sets the operating state of device
+	SetDeviceOpState(name string, state models.OperatingState) error
+
 	// RemoveDeviceByName removes the specified Device by name from the cache and ensures that the
 	// instance in Core Metadata is also removed.
 	RemoveDeviceByName(name string) error

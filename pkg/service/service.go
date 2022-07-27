@@ -251,12 +251,29 @@ func (s *DeviceService) selfRegister() errors.EdgeX {
 	return nil
 }
 
+// DriverConfigs retrieves the driver specific configuration
+func (s *DeviceService) DriverConfigs() map[string]string {
+	return s.config.Driver
+}
+
+// SetDeviceOpState sets the operating state of device
+func (s *DeviceService) SetDeviceOpState(name string, state models.OperatingState) error {
+	d, err := s.GetDeviceByName(name)
+	if err != nil {
+		return err
+	}
+
+	d.OperatingState = state
+	return s.UpdateDevice(d)
+}
+
 // RunningService returns the Service instance which is running
 func RunningService() *DeviceService {
 	return ds
 }
 
 // DriverConfigs retrieves the driver specific configuration
+// TODO remove this in EDGEX3.0
 func DriverConfigs() map[string]string {
 	return ds.config.Driver
 }
