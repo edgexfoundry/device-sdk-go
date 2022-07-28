@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -75,10 +75,12 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 
 	device, exist := cache.Devices().ForName(*updateDeviceRequest.Device.Name)
 	if !exist {
-		// scenario that device migrate from another device service to here
+		// scenario that device migrates from another device service to here
 		if ds.Name == *updateDeviceRequest.Device.ServiceName {
 			var newDevice models.Device
 			requests.ReplaceDeviceModelFieldsWithDTO(&newDevice, updateDeviceRequest.Device)
+			newDevice.Name = *updateDeviceRequest.Device.Name
+			newDevice.Id = *updateDeviceRequest.Device.Id
 			req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(newDevice))
 			return AddDevice(req, dic)
 		} else {
