@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2022 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -9,8 +9,6 @@
 package common
 
 const (
-	EnvInstanceName   = "EDGEX_INSTANCE_NAME"
-	ConfigStemDevice  = "edgex/devices/"
 	URLRawQuery       = "urlRawQuery"
 	SDKReservedPrefix = "ds-"
 )

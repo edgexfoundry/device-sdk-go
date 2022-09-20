@@ -9,6 +9,7 @@ package service
 import (
 	"context"
 	"os"
+	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
@@ -16,16 +17,16 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+
+	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/clients"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/messaging"
-
-	"github.com/gorilla/mux"
 )
+
+const EnvInstanceName = "EDGEX_INSTANCE_NAME"
 
 var instanceName string
 
@@ -78,9 +79,8 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		true,
 		[]interfaces.BootstrapHandler{
 			httpServer.BootstrapHandler,
-			messaging.BootstrapHandler,
-			clients.BootstrapHandler,
-			handlers.NewClientsBootstrap().BootstrapHandler,
+			messageBusBootstrapHandler,
+			clientBootstrapHandler,
 			autoevent.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
@@ -90,8 +90,32 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	ds.Stop(false)
 }
 
+func clientBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
+	configuration := container.ConfigurationFrom(dic.Get)
+	if configuration.Device.UseMessageBus {
+		delete(configuration.Clients, common.CoreDataServiceKey)
+	}
+
+	if !handlers.NewClientsBootstrap().BootstrapHandler(ctx, wg, startupTimer, dic) {
+		return false
+	}
+
+	return true
+}
+
+func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
+	configuration := container.ConfigurationFrom(dic.Get)
+	if configuration.Device.UseMessageBus {
+		if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func setServiceName(name string) string {
-	envValue := os.Getenv(common.EnvInstanceName)
+	envValue := os.Getenv(EnvInstanceName)
 	if len(envValue) > 0 {
 		instanceName = envValue
 	}

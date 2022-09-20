@@ -6,8 +6,8 @@
 package common
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"testing"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/interfaces/mocks"
@@ -19,7 +19,9 @@ import (
 	msgMocks "github.com/edgexfoundry/go-mod-messaging/v2/messaging/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
 const (
@@ -94,7 +96,7 @@ func TestSendEvent(t *testing.T) {
 						},
 					}
 				},
-				container.MessagingClientName: func(get di.Get) interface{} {
+				bootstrapContainer.MessagingClientName: func(get di.Get) interface{} {
 					return mcMock
 				},
 				bootstrapContainer.EventClientName: func(get di.Get) interface{} {

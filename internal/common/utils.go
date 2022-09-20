@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -69,7 +69,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	}
 
 	if configuration.Device.UseMessageBus {
-		mc := container.MessagingClientFrom(dic.Get)
+		mc := bootstrapContainer.MessagingClientFrom(dic.Get)
 		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
 		envelope := types.NewMessageEnvelope(bytes, ctx)
 		publishTopic := fmt.Sprintf("%s/%s/%s/%s", configuration.MessageQueue.PublishTopicPrefix, event.ProfileName, event.DeviceName, event.SourceName)
