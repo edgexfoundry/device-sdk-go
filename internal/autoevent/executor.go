@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2021 IOTech Ltd
+// Copyright (C) 2019-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -86,7 +86,7 @@ func readResource(e *Executor, dic *di.Container) (event *dtos.Event, err errors
 	vars[common.Name] = e.deviceName
 	vars[common.Command] = e.sourceName
 
-	res, err := application.CommandHandler(true, false, "", vars, nil, "", dic)
+	res, err := application.GetCommand(context.Background(), e.deviceName, e.sourceName, "", dic)
 	if err != nil {
 		return event, err
 	}
