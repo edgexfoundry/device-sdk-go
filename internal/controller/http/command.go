@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2022 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
@@ -21,83 +22,99 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
-func (c *RestController) Command(writer http.ResponseWriter, request *http.Request) {
-	defer request.Body.Close()
+func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	deviceName := vars[common.Name]
+	commandName := vars[common.Command]
 
-	var requestParamsMap map[string]interface{}
-	var queryParams string
-	var err errors.EdgeX
-	var reserved url.Values
-	vars := mux.Vars(request)
-	correlationID := request.Header.Get(common.CorrelationHeader)
-	if correlationID == "" {
-		correlationID, _ = request.Context().Value(common.CorrelationHeader).(string)
-	}
+	ctx := r.Context()
+	correlationId := utils.FromContext(ctx, common.CorrelationHeader)
 
-	// read request body for SET command
-	if request.Method == http.MethodPut {
-		requestParamsMap, err = parseRequestBody(request, container.ConfigurationFrom(c.dic.Get).Service.MaxRequestSize)
-		if err != nil {
-			c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
-			return
-		}
-	}
 	// parse query parameter
-	queryParams, reserved, err = filterQueryParams(request.URL.RawQuery)
+	queryParams, reserved, err := filterQueryParams(r.URL.RawQuery)
 	if err != nil {
-		c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
+		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 		return
 	}
 
-	var sendEvent bool
+	event, err := application.GetCommand(ctx, deviceName, commandName, queryParams, c.dic)
+	if err != nil {
+		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
+		return
+	}
+
 	// push event to CoreData if specified (default no)
 	if ok, exist := reserved[common.PushEvent]; exist && ok[0] == common.ValueYes {
-		sendEvent = true
-	}
-	isRead := request.Method == http.MethodGet
-	eventDTO, err := application.CommandHandler(isRead, sendEvent, correlationID, vars, requestParamsMap, queryParams, c.dic)
-	if err != nil {
-		c.sendEdgexError(writer, request, err, common.ApiDeviceNameCommandNameRoute)
-		return
+		go sdkCommon.SendEvent(event, correlationId, c.dic)
 	}
 
 	// return event in http response if specified (default yes)
 	if ok, exist := reserved[common.ReturnEvent]; !exist || ok[0] == common.ValueYes {
-		if eventDTO != nil {
-			res := responses.NewEventResponse("", "", http.StatusOK, *eventDTO)
-			c.sendEventResponse(writer, request, res, http.StatusOK)
-		} else {
-			res := commonDTO.NewBaseResponse("", "", http.StatusOK)
-			c.sendResponse(writer, request, common.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
-		}
+		res := responses.NewEventResponse("", "", http.StatusOK, *event)
+		c.sendEventResponse(w, r, res, http.StatusOK)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
-func parseRequestBody(req *http.Request, maxRequestSize int64) (map[string]interface{}, errors.EdgeX) {
+func (c *RestController) SetCommand(w http.ResponseWriter, r *http.Request) {
+	if r.Body != nil {
+		defer func() { _ = r.Body.Close() }()
+	}
+
+	ctx := r.Context()
+	vars := mux.Vars(r)
+	deviceName := vars[common.Name]
+	commandName := vars[common.Command]
+
+	// parse query parameter
+	queryParams, _, err := filterQueryParams(r.URL.RawQuery)
+	if err != nil {
+		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
+		return
+	}
+
+	requestParamsMap, err := parseRequestBody(r)
+	if err != nil {
+		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
+		return
+	}
+
+	err = application.SetCommand(ctx, deviceName, commandName, queryParams, requestParamsMap, c.dic)
+	if err != nil {
+		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
+		return
+	}
+
+	res := commonDTO.NewBaseResponse("", "", http.StatusOK)
+	c.sendResponse(w, r, common.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
+}
+
+func parseRequestBody(req *http.Request) (map[string]interface{}, errors.EdgeX) {
 	defer req.Body.Close()
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read request body", err)
 	}
 
-	var paramMap = make(map[string]interface{})
+	paramMap := make(map[string]interface{})
 	if len(body) == 0 {
 		return paramMap, nil
 	}
 
 	err = json.Unmarshal(body, &paramMap)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to parse SET command parameters", err)
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to parse request body", err)
 	}
 
 	return paramMap, nil
 }
 
-func filterQueryParams(queryParams string) (string, url.Values, errors.EdgeX) {
-	m, err := url.ParseQuery(queryParams)
+func filterQueryParams(rawQuery string) (string, url.Values, errors.EdgeX) {
+	queryParams, err := url.ParseQuery(rawQuery)
 	if err != nil {
 		edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to parse query parameter", err)
 		return "", nil, edgexErr
@@ -105,12 +122,12 @@ func filterQueryParams(queryParams string) (string, url.Values, errors.EdgeX) {
 
 	var reserved = make(url.Values)
 	// Separate parameters with SDK reserved prefix
-	for k := range m {
+	for k := range queryParams {
 		if strings.HasPrefix(k, sdkCommon.SDKReservedPrefix) {
-			reserved.Set(k, m.Get(k))
-			delete(m, k)
+			reserved.Set(k, queryParams.Get(k))
+			delete(queryParams, k)
 		}
 	}
 
-	return m.Encode(), reserved, nil
+	return queryParams.Encode(), reserved, nil
 }
