@@ -6,7 +6,7 @@ require (
 	bitbucket.org/bertimus9/systemstat v0.5.0
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.3.0-dev.16
-	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.3.0-dev.16
+	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.3.0-dev.17
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.3.0-dev.17
 	github.com/edgexfoundry/go-mod-registry/v2 v2.2.0
 	github.com/google/uuid v1.3.0
@@ -30,7 +30,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
-	github.com/go-playground/validator/v10 v10.11.0 // indirect
+	github.com/go-playground/validator/v10 v10.11.1 // indirect
 	github.com/go-redis/redis/v7 v7.3.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
