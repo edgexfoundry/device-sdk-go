@@ -38,6 +38,11 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	requestTopic := messageBusInfo.Topics[CommandRequestTopic]
 	responseTopicPrefix := messageBusInfo.Topics[CommandResponseTopicPrefix]
 
+	if strings.TrimSpace(requestTopic) == "" {
+		lc.Info("skipping subscription to empty command request topic")
+		return nil
+	}
+
 	messages := make(chan types.MessageEnvelope)
 	messageErrors := make(chan error)
 	topics := []types.TopicChannel{
