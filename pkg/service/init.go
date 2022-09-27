@@ -15,7 +15,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller/messaging"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
@@ -79,12 +78,6 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	}
 
 	ds.manager.StartAutoEvents()
-
-	err = messaging.SubscribeCommands(ctx, dic)
-	if err != nil {
-		ds.LoggingClient.Errorf("Failed to subscribe internal command request: %v", err)
-		return false
-	}
 
 	return true
 }
