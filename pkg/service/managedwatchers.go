@@ -28,19 +28,6 @@ func (s *DeviceService) AddProvisionWatcher(watcher models.ProvisionWatcher) (st
 			errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, ProvisionWatcher %s exists", watcher.Name), nil)
 	}
 
-	_, ok := cache.Profiles().ForName(watcher.ProfileName)
-	if !ok {
-		res, err := s.edgexClients.DeviceProfileClient.DeviceProfileByName(context.Background(), watcher.ProfileName)
-		if err != nil {
-			errMsg := fmt.Sprintf("failed to find Profile %s for provision watcher %s", watcher.ProfileName, watcher.Name)
-			s.LoggingClient.Error(errMsg)
-			return "", err
-		}
-		err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
-		if err != nil {
-			return "", errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
-		}
-	}
 	watcher.ServiceName = s.ServiceName
 
 	s.LoggingClient.Debugf("Adding managed ProvisionWatcher %s", watcher.Name)
