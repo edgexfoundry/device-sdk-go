@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
@@ -24,6 +25,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/autoevent"
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/controller/messaging"
 )
 
 const EnvInstanceName = "EDGEX_INSTANCE_NAME"
@@ -107,6 +109,12 @@ func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startup
 	configuration := container.ConfigurationFrom(dic.Get)
 	if configuration.Device.UseMessageBus {
 		if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
+			return false
+		}
+		err := messaging.SubscribeCommands(ctx, dic)
+		if err != nil {
+			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+			lc.Errorf("Failed to subscribe internal command request: %v", err)
 			return false
 		}
 	}
