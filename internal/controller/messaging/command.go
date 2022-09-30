@@ -24,12 +24,9 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
 )
 
-type key string
-
 const (
-	correlationHeaderKey       key = common.CorrelationHeader
-	CommandRequestTopic            = "CommandRequestTopic"
-	CommandResponseTopicPrefix     = "CommandResponseTopicPrefix"
+	CommandRequestTopic        = "CommandRequestTopic"
+	CommandResponseTopicPrefix = "CommandResponseTopicPrefix"
 )
 
 func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
@@ -109,7 +106,8 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 	messageBus := bootstrapContainer.MessagingClientFrom(dic.Get)
 	rawQuery, pushEvent, returnEvent := filterQueryParams(msgEnvelope.QueryParams)
 
-	ctx = context.WithValue(ctx, correlationHeaderKey, msgEnvelope.CorrelationID)
+	// TODO: fix properly in EdgeX 3.0
+	ctx = context.WithValue(ctx, common.CorrelationHeader, msgEnvelope.CorrelationID) // nolint: staticcheck
 	event, edgexErr := application.GetCommand(ctx, deviceName, commandName, rawQuery, dic)
 	if edgexErr != nil {
 		lc.Errorf("Failed to process get device command %s for device %s: %s", commandName, deviceName, edgexErr.Error())
@@ -176,7 +174,8 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		return
 	}
 
-	ctx = context.WithValue(ctx, correlationHeaderKey, msgEnvelope.CorrelationID)
+	// TODO: fix properly in EdgeX 3.0
+	ctx = context.WithValue(ctx, common.CorrelationHeader, msgEnvelope.CorrelationID) // nolint: staticcheck
 	edgexErr := application.SetCommand(ctx, deviceName, commandName, rawQuery, requestPayload, dic)
 	if edgexErr != nil {
 		lc.Errorf("Failed to process set device command %s for device %s: %s", commandName, deviceName, edgexErr.Error())
