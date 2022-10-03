@@ -62,6 +62,7 @@ type DeviceService struct {
 	LoggingClient   logger.LoggingClient
 	RegistryClient  registry.Client
 	SecretProvider  interfaces.SecretProvider
+	MetricsManager  interfaces.MetricsManager
 	edgexClients    clients.EdgeXClients
 	controller      *restController.RestController
 	config          *config.ConfigurationStruct
@@ -120,6 +121,7 @@ func (s *DeviceService) UpdateFromContainer(r *mux.Router, dic *di.Container) {
 	s.LoggingClient = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.RegistryClient = bootstrapContainer.RegistryFrom(dic.Get)
 	s.SecretProvider = bootstrapContainer.SecretProviderFrom(dic.Get)
+	s.MetricsManager = bootstrapContainer.MetricsManagerFrom(dic.Get)
 	s.edgexClients.DeviceClient = bootstrapContainer.DeviceClientFrom(dic.Get)
 	s.edgexClients.DeviceServiceClient = bootstrapContainer.DeviceServiceClientFrom(dic.Get)
 	s.edgexClients.DeviceProfileClient = bootstrapContainer.DeviceProfileClientFrom(dic.Get)
@@ -143,6 +145,12 @@ func (s *DeviceService) Version() string {
 // GetSecretProvider returns the SecretProvider
 func (s *DeviceService) GetSecretProvider() interfaces.SecretProvider {
 	return s.SecretProvider
+}
+
+// GetMetricsManager returns the Metrics Manager used to register counter, gauge, gaugeFloat64 or timer metric types from
+// github.com/rcrowley/go-metrics
+func (s *DeviceService) GetMetricsManager() interfaces.MetricsManager {
+	return s.MetricsManager
 }
 
 // GetLoggingClient returns the logger.LoggingClient

@@ -22,26 +22,30 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	gometrics "github.com/rcrowley/go-metrics"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/example/config"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
 )
 
+const readCommandsExecutedName = "ReadCommandsExecuted"
+
 type SimpleDriver struct {
-	lc            logger.LoggingClient
-	asyncCh       chan<- *sdkModels.AsyncValues
-	deviceCh      chan<- []sdkModels.DiscoveredDevice
-	switchButton  bool
-	xRotation     int32
-	yRotation     int32
-	zRotation     int32
-	counter       interface{}
-	stringArray   []string
-	serviceConfig *config.ServiceConfig
+	lc                   logger.LoggingClient
+	asyncCh              chan<- *sdkModels.AsyncValues
+	deviceCh             chan<- []sdkModels.DiscoveredDevice
+	switchButton         bool
+	xRotation            int32
+	yRotation            int32
+	zRotation            int32
+	counter              interface{}
+	stringArray          []string
+	readCommandsExecuted gometrics.Counter
+	serviceConfig        *config.ServiceConfig
 }
 
 func getImageBytes(imgFile string, buf *bytes.Buffer) error {
@@ -92,7 +96,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 	}
 	s.stringArray = []string{"foo", "bar"}
 
-	ds := service.RunningService()
+	ds := interfaces.Service()
 
 	if err := ds.LoadCustomConfig(s.serviceConfig, "SimpleCustom"); err != nil {
 		return fmt.Errorf("unable to load 'SimpleCustom' custom configuration: %s", err.Error())
@@ -109,6 +113,22 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 		"SimpleCustom/Writable", s.ProcessCustomConfigChanges); err != nil {
 		return fmt.Errorf("unable to listen for changes for 'SimpleCustom.Writable' custom configuration: %s", err.Error())
 	}
+
+	s.readCommandsExecuted = gometrics.NewCounter()
+
+	var err error
+	metricsManger := ds.GetMetricsManager()
+	if metricsManger != nil {
+		err = metricsManger.Register(readCommandsExecutedName, s.readCommandsExecuted, nil)
+	} else {
+		err = errors.New("metrics manager not available")
+	}
+
+	if err != nil {
+		return fmt.Errorf("unable to register metric %s: %s", readCommandsExecutedName, err.Error())
+	}
+
+	s.lc.Infof("Registered %s metric for collection when enabled", readCommandsExecutedName)
 
 	return nil
 }
@@ -195,6 +215,8 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			res[i] = cv
 		}
 	}
+
+	s.readCommandsExecuted.Inc(1)
 
 	return
 }

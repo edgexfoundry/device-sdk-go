@@ -23,11 +23,12 @@ GOTESTFLAGS?=-race
 
 GIT_SHA=$(shell git rev-parse HEAD)
 
-tidy:
-	go mod tidy
 
 build: $(MICROSERVICES)
 	$(GOCGO) install -tags=safe
+
+tidy:
+	go mod tidy
 
 example/cmd/device-simple/device-simple:
 	$(GOCGO) build $(CGOFLAGS) -o $@ ./example/cmd/device-simple
