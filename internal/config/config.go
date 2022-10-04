@@ -98,7 +98,5 @@ func (c *ConfigurationStruct) GetMessageBusInfo() bootstrapConfig.MessageBusInfo
 
 // GetTelemetryInfo returns the service's Telemetry settings.
 func (c *ConfigurationStruct) GetTelemetryInfo() *bootstrapConfig.TelemetryInfo {
-	// TODO: return services actual TelemetryInfo once updated
-	return &bootstrapConfig.TelemetryInfo{}
-	//return &c.Writable.Telemetry
+	return &c.Writable.Telemetry
 }

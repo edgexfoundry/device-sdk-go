@@ -18,6 +18,7 @@ type WritableInfo struct {
 	LogLevel        string
 	InsecureSecrets config.InsecureSecrets
 	Reading         Reading
+	Telemetry       config.TelemetryInfo
 }
 
 // Reading is a struct which contains reading configuration settings.

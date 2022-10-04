@@ -82,6 +82,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		[]interfaces.BootstrapHandler{
 			httpServer.BootstrapHandler,
 			messageBusBootstrapHandler,
+			handlers.NewServiceMetrics(ds.ServiceName).BootstrapHandler, // Must be after Messaging
 			clientBootstrapHandler,
 			autoevent.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,

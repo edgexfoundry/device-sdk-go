@@ -130,6 +130,10 @@ type DeviceServiceSDK interface {
 	// GetSecretProvider returns the interfaces.SecretProvider. The name was chosen to avoid conflicts
 	// with service.DeviceService.SecretProvider struct field.
 	GetSecretProvider() interfaces.SecretProvider
+
+	// GetMetricsManager returns the Metrics Manager used to register counter, gauge, gaugeFloat64 or timer metric types from
+	// github.com/rcrowley/go-metrics
+	GetMetricsManager() interfaces.MetricsManager
 }
 
 // Service returns the device service SDK instance as an interface
