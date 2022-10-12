@@ -74,8 +74,8 @@ PublishTopicPrefix = "edgex/events/device" # /<device-profile-name>/<device-name
   ConnectTimeout = "5" # Seconds
   SkipCertVerify = "false" # Only used if Cert/Key file or Cert/Key PEMblock are specified
   [MessageQueue.Topics]
-  CommandRequestTopic = "edgex/command/request/device-simple/#"   # subscribing for inbound command requests
-  CommandResponseTopicPrefix = "edgex/command/response"   # publishing outbound command responses; <device-service>/<device-name>/<command-name>/<method> will be added to this publish topic prefix
+  CommandRequestTopic = "edgex/device/command/request/device-simple/#"   # subscribing for inbound command requests
+  CommandResponseTopicPrefix = "edgex/device/command/response"   # publishing outbound command responses; <device-service>/<device-name>/<command-name>/<method> will be added to this publish topic prefix
 
 # Example SecretStore configuration.
 # Only used when EDGEX_SECURITY_SECRET_STORE=true
