@@ -15,6 +15,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
@@ -187,7 +188,19 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		return
 	}
 
-	responseEnvelope, err = types.NewMessageEnvelopeForResponse(nil, msgEnvelope.RequestID, msgEnvelope.CorrelationID, common.ContentTypeJSON)
+	response := commonDTO.NewBaseResponse(msgEnvelope.RequestID, "", http.StatusOK)
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		lc.Errorf("Failed to encode set command response payload: %s", err.Error())
+		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
+		err = messageBus.Publish(responseEnvelope, responseTopic)
+		if err != nil {
+			lc.Errorf("Failed to publish command response: %s", err.Error())
+		}
+		return
+	}
+
+	responseEnvelope, err = types.NewMessageEnvelopeForResponse(responseBytes, msgEnvelope.RequestID, msgEnvelope.CorrelationID, common.ContentTypeJSON)
 	if err != nil {
 		lc.Errorf("Failed to create response message envelope: %s", err.Error())
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
