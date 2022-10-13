@@ -119,9 +119,12 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		return
 	}
 
+	var err error
+	var encoding string
+	var eventResponseBytes []byte
 	if returnEvent {
-		eventResponse := responses.NewEventResponse("", "", http.StatusOK, *event)
-		eventResponseBytes, encoding, err := eventResponse.Encode()
+		eventResponse := responses.NewEventResponse(msgEnvelope.RequestID, "", http.StatusOK, *event)
+		eventResponseBytes, encoding, err = eventResponse.Encode()
 		if err != nil {
 			lc.Errorf("Failed to encode event response: %s", err.Error())
 			responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
@@ -131,24 +134,28 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 			}
 			return
 		}
+	} else {
+		eventResponseBytes = nil
+		encoding = common.ContentTypeJSON
+	}
 
-		responseEnvelope, err = types.NewMessageEnvelopeForResponse(eventResponseBytes, msgEnvelope.RequestID, msgEnvelope.CorrelationID, encoding)
-		if err != nil {
-			lc.Errorf("Failed to create response message envelope: %s", err.Error())
-			responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
-			err = messageBus.Publish(responseEnvelope, responseTopic)
-			if err != nil {
-				lc.Errorf("Failed to publish command response: %s", err.Error())
-			}
-			return
-		}
-
+	responseEnvelope, err = types.NewMessageEnvelopeForResponse(eventResponseBytes, msgEnvelope.RequestID, msgEnvelope.CorrelationID, encoding)
+	if err != nil {
+		lc.Errorf("Failed to create response message envelope: %s", err.Error())
+		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
 		err = messageBus.Publish(responseEnvelope, responseTopic)
 		if err != nil {
 			lc.Errorf("Failed to publish command response: %s", err.Error())
-			return
 		}
+		return
 	}
+
+	err = messageBus.Publish(responseEnvelope, responseTopic)
+	if err != nil {
+		lc.Errorf("Failed to publish command response: %s", err.Error())
+		return
+	}
+
 	if pushEvent {
 		go sdkCommon.SendEvent(event, msgEnvelope.CorrelationID, dic)
 	}
