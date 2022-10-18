@@ -104,27 +104,22 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	}
 
 	if sent {
-		handleEventReadingMetrics(event, lc, dic)
+		eventsSent.Inc(1)
+		readingsSent.Inc(int64(len(event.Readings)))
 	}
 }
 
-func handleEventReadingMetrics(event *dtos.Event, lc logger.LoggingClient, dic *di.Container) {
-	// Just need to check one of the metrics
-	if eventsSent == nil {
-		eventsSent = gometrics.NewCounter()
-		readingsSent = gometrics.NewCounter()
+func InitializeSentMetrics(lc logger.LoggingClient, dic *di.Container) {
+	eventsSent = gometrics.NewCounter()
+	readingsSent = gometrics.NewCounter()
 
-		metricsManager := bootstrapContainer.MetricsManagerFrom(dic.Get)
-		if metricsManager != nil {
-			registerMetric(metricsManager, lc, eventsSentName, eventsSent)
-			registerMetric(metricsManager, lc, readingsSentName, readingsSent)
-		} else {
-			lc.Warn("MetricsManager not available to register Event/Reading metrics")
-		}
+	metricsManager := bootstrapContainer.MetricsManagerFrom(dic.Get)
+	if metricsManager != nil {
+		registerMetric(metricsManager, lc, eventsSentName, eventsSent)
+		registerMetric(metricsManager, lc, readingsSentName, readingsSent)
+	} else {
+		lc.Warn("MetricsManager not available to register Event/Reading Sent metrics")
 	}
-
-	eventsSent.Inc(1)
-	readingsSent.Inc(int64(len(event.Readings)))
 }
 
 func registerMetric(metricsManager bootstrapInterfaces.MetricsManager, lc logger.LoggingClient, name string, metric interface{}) {

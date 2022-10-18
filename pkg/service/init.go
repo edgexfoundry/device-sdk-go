@@ -10,6 +10,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
 	"github.com/gorilla/mux"
@@ -78,6 +79,10 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	}
 
 	ds.manager.StartAutoEvents()
+
+	// Very important that this handler is called after the NewServiceMetrics handler so
+	// MetricsManager dependency has been created.
+	common.InitializeSentMetrics(ds.LoggingClient, dic)
 
 	return true
 }

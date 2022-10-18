@@ -108,10 +108,14 @@ func TestSendEvent(t *testing.T) {
 				},
 			})
 
+			InitializeSentMetrics(logger.NewMockClient(), dic)
+
 			SendEvent(tt.event, testUUIDString, dic)
 			if tt.eventTooLarge {
 				ecMock.AssertNumberOfCalls(t, "Add", 0)
 				mcMock.AssertNumberOfCalls(t, "Publish", 0)
+				assert.Equal(t, int64(0), eventsSent.Count())
+				assert.Equal(t, int64(0), readingsSent.Count())
 			} else if tt.useMessageBus {
 				ecMock.AssertNumberOfCalls(t, "Add", 0)
 				mcMock.AssertNumberOfCalls(t, "Publish", 1)
@@ -119,36 +123,25 @@ func TestSendEvent(t *testing.T) {
 				ecMock.AssertNumberOfCalls(t, "Add", 1)
 				mcMock.AssertNumberOfCalls(t, "Publish", 0)
 			}
+
+			if !tt.eventTooLarge {
+				assert.Equal(t, int64(1), eventsSent.Count())
+				assert.Equal(t, int64(1), readingsSent.Count())
+			}
 		})
 	}
 }
 
-func Test_HandleEventReadingMetrics(t *testing.T) {
-	event1Reading := dtos.NewEvent("Test", "Test", "Test")
-	err := event1Reading.AddSimpleReading("Test", common.ValueTypeInt32, int32(123))
-	require.NoError(t, err)
-	event3Readings := dtos.NewEvent("Test", "Test", "Test")
-	err = event3Readings.AddSimpleReading("Test1", common.ValueTypeInt32, int32(123))
-	require.NoError(t, err)
-	err = event3Readings.AddSimpleReading("Test2", common.ValueTypeInt32, int32(123))
-	require.NoError(t, err)
-	err = event3Readings.AddSimpleReading("Test3", common.ValueTypeInt32, int32(123))
-	require.NoError(t, err)
+func TestInitializeSentMetrics(t *testing.T) {
 
 	tests := []struct {
 		Name                    string
-		TimesToCall             int
-		Event                   dtos.Event
 		MetricsManagerAvailable bool
 		RegisterError           bool
-		ExpectedEventCount      int64
-		ExpectedReadingCount    int64
 	}{
-		{"First Pass", 1, event1Reading, true, false, 1, 1},
-		{"3 Passes with 1 reading", 3, event1Reading, true, false, 3, 3},
-		{"3 Passes with 3 readings", 3, event3Readings, true, false, 3, 9},
-		{"No MetricsManager", 1, event1Reading, false, false, 1, 1},
-		{"Error Registering", 1, event1Reading, true, true, 1, 1},
+		{"Happy Path", true, false},
+		{"No MetricsManager", false, false},
+		{"Error Registering", true, true},
 	}
 
 	for _, test := range tests {
@@ -183,11 +176,7 @@ func Test_HandleEventReadingMetrics(t *testing.T) {
 				},
 			})
 
-			n := 0
-			for n < test.TimesToCall {
-				handleEventReadingMetrics(&test.Event, mockLogger, dic)
-				n++
-			}
+			InitializeSentMetrics(mockLogger, dic)
 
 			if test.MetricsManagerAvailable {
 				mockManager.AssertNumberOfCalls(t, "Register", 2)
@@ -207,12 +196,6 @@ func Test_HandleEventReadingMetrics(t *testing.T) {
 				mockLogger.AssertNumberOfCalls(t, "Warn", 1)
 				mockLogger.AssertNumberOfCalls(t, "Debugf", 0)
 			}
-
-			require.NotNil(t, eventsSent)
-			require.NotNil(t, readingsSent)
-
-			assert.Equal(t, test.ExpectedEventCount, eventsSent.Count())
-			assert.Equal(t, test.ExpectedReadingCount, readingsSent.Count())
 		})
 	}
 }
