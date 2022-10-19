@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces"
+	gometrics "github.com/rcrowley/go-metrics"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
@@ -23,6 +25,15 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
 )
+
+const (
+	eventsSentName   = "EventsSent"
+	readingsSentName = "ReadingsSent"
+)
+
+// TODO: Refactor code in 3.0 to encapsulate this in a struct, factory func and
+var eventsSent gometrics.Counter
+var readingsSent gometrics.Counter
 
 func UpdateLastConnected(name string, lc logger.LoggingClient, dc interfaces.DeviceClient) {
 	t := time.Now().UnixNano() / int64(time.Millisecond)
@@ -68,6 +79,8 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		return
 	}
 
+	sent := false
+
 	if configuration.Device.UseMessageBus {
 		mc := bootstrapContainer.MessagingClientFrom(dic.Get)
 		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
@@ -78,6 +91,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 			lc.Errorf("Failed to publish event to MessageBus: %s", err)
 		}
 		lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
+		sent = true
 	} else {
 		ec := bootstrapContainer.EventClientFrom(dic.Get)
 		_, err := ec.Add(ctx, req)
@@ -86,5 +100,33 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		} else {
 			lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) pushed to Coredata", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
 		}
+		sent = true
+	}
+
+	if sent {
+		eventsSent.Inc(1)
+		readingsSent.Inc(int64(len(event.Readings)))
+	}
+}
+
+func InitializeSentMetrics(lc logger.LoggingClient, dic *di.Container) {
+	eventsSent = gometrics.NewCounter()
+	readingsSent = gometrics.NewCounter()
+
+	metricsManager := bootstrapContainer.MetricsManagerFrom(dic.Get)
+	if metricsManager != nil {
+		registerMetric(metricsManager, lc, eventsSentName, eventsSent)
+		registerMetric(metricsManager, lc, readingsSentName, readingsSent)
+	} else {
+		lc.Warn("MetricsManager not available to register Event/Reading Sent metrics")
+	}
+}
+
+func registerMetric(metricsManager bootstrapInterfaces.MetricsManager, lc logger.LoggingClient, name string, metric interface{}) {
+	err := metricsManager.Register(name, metric, nil)
+	if err != nil {
+		lc.Errorf("unable to register %s metric. Metric will not be reported: %v", name, err)
+	} else {
+		lc.Debugf("%s metric has been registered and will be reported (if enabled)", name)
 	}
 }
