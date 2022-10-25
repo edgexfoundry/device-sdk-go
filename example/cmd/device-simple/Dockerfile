@@ -24,8 +24,6 @@ WORKDIR /device-sdk-go
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2022: Intel'
 
-RUN sed -e 's/dl-cdn[.]alpinelinux.org/dl-4.alpinelinux.org/g' -i~ /etc/apk/repositories
-
 RUN apk add --update --no-cache make git gcc libc-dev zeromq-dev libsodium-dev
 
 COPY go.mod vendor* ./
@@ -38,8 +36,6 @@ RUN ${MAKE}
 FROM alpine:3.16
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2022: Intel'
-
-RUN sed -e 's/dl-cdn[.]alpinelinux.org/dl-4.alpinelinux.org/g' -i~ /etc/apk/repositories
 
 RUN apk add --update --no-cache zeromq
 
