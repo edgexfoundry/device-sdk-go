@@ -12,6 +12,37 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+## [v2.3.0] Levski - 2022-11-09 (Only compatible with the 2.x releases)
+
+### Features ✨
+
+- Add metrics for count of Events and Readings sent ([#1239](https://github.com/edgexfoundry/device-sdk-go/issues/1239)) ([#5df0661](https://github.com/edgexfoundry/device-sdk-go/commits/5df0661))
+- Enable service metrics ([#94ac6d2](https://github.com/edgexfoundry/device-sdk-go/commits/94ac6d2))
+- Update device-simple CommandRequestTopic config ([#03803f9](https://github.com/edgexfoundry/device-sdk-go/commits/03803f9))
+- Subscribe command request via internal messaging ([#aed16fd](https://github.com/edgexfoundry/device-sdk-go/commits/aed16fd))
+- Add interface for accessing the Device Service SDK ([#16c2613](https://github.com/edgexfoundry/device-sdk-go/commits/16c2613))
+
+### Bug Fixes 🐛
+
+- Publish envelope with empty payload when ds-returnevent=no ([#6995182](https://github.com/edgexfoundry/device-sdk-go/commits/6995182))
+- Fix empty device name when updating device's serviceName ([#ff1b5b0](https://github.com/edgexfoundry/device-sdk-go/commits/ff1b5b0))
+- Remove redundant logic of caching profile ([#e9867ce](https://github.com/edgexfoundry/device-sdk-go/commits/e9867ce))
+- Put cmd return 400 when updating empty string to NonString type ([#a1088c2](https://github.com/edgexfoundry/device-sdk-go/commits/a1088c2))
+- ProvisionWatcher callbacks return BaseResponse, not 204 No Content. ([#3d985db](https://github.com/edgexfoundry/device-sdk-go/commits/3d985db))
+
+### Code Refactoring ♻
+
+- Use bootstrap handlers in go-mod-bootstrap and refactor device command application layer code ([#1210](https://github.com/edgexfoundry/device-sdk-go/issues/1210)) ([#e5efdee](https://github.com/edgexfoundry/device-sdk-go/commits/e5efdee))
+- Update to use deepCopy of messageBusInfo to avoid external adds ([#adba0c6](https://github.com/edgexfoundry/device-sdk-go/commits/adba0c6))
+
+### Documentation 📖
+
+- Publish swagger to 2.3.0 ([#9d1347e](https://github.com/edgexfoundry/device-sdk-go/commits/9d1347e))
+
+### Build 👷
+
+- Upgrade to Go 1.18 and alpine 3.16 ([#91816c1](https://github.com/edgexfoundry/device-sdk-go/commits/91816c1))
+
 ## [v2.2.0] Kamakura - 2022-5-11 (Only compatible with the 2.x releases)
 
 ### Features ✨
