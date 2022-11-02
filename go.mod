@@ -5,7 +5,7 @@ go 1.18
 require (
 	bitbucket.org/bertimus9/systemstat v0.5.0
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.3.0-dev.28
+	github.com/edgexfoundry/go-mod-bootstrap/v2 v2.3.0-dev.29
 	github.com/edgexfoundry/go-mod-core-contracts/v2 v2.3.0-dev.19
 	github.com/edgexfoundry/go-mod-messaging/v2 v2.3.0-dev.25
 	github.com/edgexfoundry/go-mod-registry/v2 v2.3.0-dev.11
