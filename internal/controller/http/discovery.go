@@ -9,12 +9,12 @@ package http
 import (
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/autodiscovery"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
 func (c *RestController) Discovery(writer http.ResponseWriter, request *http.Request) {

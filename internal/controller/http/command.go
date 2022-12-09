@@ -13,15 +13,15 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http/utils"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/http/utils"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 )
 
 func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {

@@ -9,12 +9,11 @@
 // Service.  The interfaces provide an asbstraction layer for the device
 // or protocol specific logic of a Device Service, and the structs represents request
 // and response data format used by the protocol driver.
-//
 package models
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 )
 
 // ProtocolDriver is a low-level device-specific interface used by

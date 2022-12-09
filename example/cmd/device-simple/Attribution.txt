@@ -45,11 +45,11 @@ https://github.com/cenkalti/backoff/blob/v3/LICENSE
 davecgh/go-spew (ISC) https://github.com/davecgh/go-spew
 https://github.com/davecgh/go-spew/blob/master/LICENSE
 
-edgexfoundry/go-mod-core-contracts (Apache 2.0) https://github.com/edgexfoundry/go-mod-core-contracts/v2
-https://github.com/edgexfoundry/go-mod-core-contracts/v2/blob/master/LICENSE
+edgexfoundry/go-mod-core-contracts (Apache 2.0) https://github.com/edgexfoundry/go-mod-core-contracts/v3
+https://github.com/edgexfoundry/go-mod-core-contracts/v3/blob/master/LICENSE
 
-edgexfoundry/go-mod-registry (Apache 2.0) https://github.com/edgexfoundry/go-mod-registry/v2
-https://github.com/edgexfoundry/go-mod-registry/v2/blob/master/LICENSE
+edgexfoundry/go-mod-registry (Apache 2.0) https://github.com/edgexfoundry/go-mod-registry/v3
+https://github.com/edgexfoundry/go-mod-registry/v3/blob/master/LICENSE
 
 go-logfmt/logfmt (MIT) https://github.com/go-logfmt/logfmt
 https://github.com/go-logfmt/logfmt/blob/master/LICENSE
@@ -78,8 +78,8 @@ https://github.com/kr/logfmt/blob/master/Readme
 hashicorp/consul/api (Mozilla Public License 2.0) https://github.com/hashicorp/consul/api
 https://github.com/hashicorp/consul/blob/master/LICENSE
 
-edgexfoundry/go-mod-bootstrap (Apache 2.0) https://github.com/edgexfoundry/go-mod-bootstrap/v2
-https://github.com/edgexfoundry/go-mod-bootstrap/v2/blob/master/LICENSE
+edgexfoundry/go-mod-bootstrap (Apache 2.0) https://github.com/edgexfoundry/go-mod-bootstrap/v3
+https://github.com/edgexfoundry/go-mod-bootstrap/v3/blob/master/LICENSE
 
 edgexfoundry/go-mod-secrets (Apache 2.0) https://github.com/edgexfoundry/go-mod-secrets/v2
 https://github.com/edgexfoundry/go-mod-secrets/v2/blob/master/LICENSE
@@ -129,7 +129,7 @@ https://github.com/golang/sys/blob/master/LICENSE
 eclipse/paho.mqtt.golang (Eclipse Public License 2.0) https://github.com/eclipse/paho.mqtt.golang
 https://github.com/eclipse/paho.mqtt.golang/blob/master/LICENSE
 
-edgexfoundry/go-mod-messaging (Apache 2.0) https://github.com/edgexfoundry/go-mod-messaging/v2
+edgexfoundry/go-mod-messaging (Apache 2.0) https://github.com/edgexfoundry/go-mod-messaging/v3
 https://github.com/edgexfoundry/go-mod-messaging/blob/master/LICENSE
 
 go-redis/redis (BSD-2) https://github.com/go-redis/redis/v7

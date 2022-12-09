@@ -17,8 +17,8 @@ MICROSERVICES=example/cmd/device-simple/device-simple
 VERSION=$(shell cat ./VERSION 2>/dev/null || echo 0.0.0)
 DOCKER_TAG=$(VERSION)-dev
 
-GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)" -trimpath -mod=readonly
-CGOFLAGS=-ldflags "-linkmode=external -X github.com/edgexfoundry/device-sdk-go/v2.Version=$(VERSION)" -trimpath -mod=readonly -buildmode=pie
+GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v3.Version=$(VERSION)" -trimpath -mod=readonly
+CGOFLAGS=-ldflags "-linkmode=external -X github.com/edgexfoundry/device-sdk-go/v3.Version=$(VERSION)" -trimpath -mod=readonly -buildmode=pie
 GOTESTFLAGS?=-race
 
 GIT_SHA=$(shell git rev-parse HEAD)
