@@ -13,21 +13,21 @@ import (
 	"strings"
 	"testing"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models/mocks"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models/mocks"
 )
 
 var mockDevice = requests.AddDeviceRequest{

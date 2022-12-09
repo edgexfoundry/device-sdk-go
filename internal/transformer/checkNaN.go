@@ -9,10 +9,10 @@ package transformer
 import (
 	"math"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 func isNaN(cv *models.CommandValue) (bool, errors.EdgeX) {

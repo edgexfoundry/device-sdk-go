@@ -28,22 +28,22 @@ import (
 	"testing"
 	"time"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/secret"
-	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v2/config"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/secret"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
 var expectedCorrelationId = uuid.New().String()

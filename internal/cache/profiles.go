@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 )
 
 var (

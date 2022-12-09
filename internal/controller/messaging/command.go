@@ -12,16 +12,16 @@ import (
 	"net/http"
 	"strings"
 
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/responses"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-messaging/v2/pkg/types"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"github.com/edgexfoundry/go-mod-messaging/v3/pkg/types"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
 const (

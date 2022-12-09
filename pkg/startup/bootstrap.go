@@ -10,7 +10,7 @@ package startup
 import (
 	"context"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/service"
 	"github.com/gorilla/mux"
 )
 

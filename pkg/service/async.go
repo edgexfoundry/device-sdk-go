@@ -12,16 +12,16 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/transformer"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/transformer"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 // processAsyncResults processes readings that are pushed from

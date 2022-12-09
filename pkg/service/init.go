@@ -10,14 +10,14 @@ import (
 	"context"
 	"sync"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/common"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/provision"
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/provision"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 // Bootstrap contains references to dependencies required by the BootstrapHandler.

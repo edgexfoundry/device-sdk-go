@@ -7,10 +7,10 @@
 package container
 
 import (
-	"github.com/edgexfoundry/go-mod-bootstrap/v2/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 // DeviceServiceName contains the name of device service struct in the DIC.

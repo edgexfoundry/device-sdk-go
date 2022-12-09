@@ -10,13 +10,13 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/requests"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/internal/application"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
 )
 
 func (c *RestController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {

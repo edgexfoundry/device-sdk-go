@@ -5,7 +5,7 @@
 
 package models
 
-import "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+import "github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
 // DeviceValidator is a low-level device-specific interface implemented
 // by device services that validate device's protocol properties.

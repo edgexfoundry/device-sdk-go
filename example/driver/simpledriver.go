@@ -7,7 +7,6 @@
 
 // This package provides a simple example implementation of
 // ProtocolDriver interface.
-//
 package driver
 
 import (
@@ -22,14 +21,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/example/config"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/example/config"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 const readCommandsExecutedName = "ReadCommandsExecuted"
