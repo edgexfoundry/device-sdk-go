@@ -51,8 +51,8 @@ github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.2 h1:xp5MsP+qf/fuJxy8
 github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.2/go.mod h1:1Vv4uWAo6r7k6jUlqVJW8JOL6YKVBc6sRL8Al3DrMck=
 github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.2 h1:tleTxhbBISfDNn596rU71n+GOy27dMIme+v8Vl0uhpw=
 github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.2/go.mod h1:7RwSq896VqelvSU7zYKs2tpZhgELVFECkiGf6XGLKfQ=
-github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.1 h1:TxRYbF8pWGsHHW8Q1i5uqudCNKsDZG5PR5NYwSRJTSg=
-github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.1/go.mod h1:8weo8jqtlN/lhglBEaFpysftIuFLkCmh6k/dHhPa7IY=
+github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.2 h1:bNXJHfxTo/1SzQbiJQUnySUGVP5i2FNwFsXQ+RzqR8Q=
+github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.2/go.mod h1:G0Vxoc8+JXwUqRH5ggyOZ/f/CIVPTswI5Ld7dI5uhIY=
 github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.3 h1:QgZF9f70Cwpvkjw3tP1aiVGHc+yNFJNzW6hO8pDs3fg=
 github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.3/go.mod h1:2w8v0sv+i21nY+DY6JV4PFxsNTuxpGAjlNFlFMTfZkk=
 github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0-dev.1 h1:dib+mZUuHqwVHt9pKAWC4lh60Fbc+6vKrD919LaknwI=
@@ -228,7 +228,7 @@ github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lN
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/nats-io/jwt/v2 v2.3.0 h1:z2mA1a7tIf5ShggOFlR1oBPgd6hGqcDYsISxZByUzdI=
-github.com/nats-io/nats-server/v2 v2.9.8 h1:jgxZsv+A3Reb3MgwxaINcNq/za8xZInKhDg9Q0cGN1o=
+github.com/nats-io/nats-server/v2 v2.9.9 h1:bmj0RhvHOc8+z5/RuhI38GqPwtkFAHQuU3e99FVA/TI=
 github.com/nats-io/nats.go v1.20.0 h1:T8JJnQfVSdh1CzGiwAOv5hEobYCBho/0EupGznYw0oM=
 github.com/nats-io/nats.go v1.20.0/go.mod h1:tLqubohF7t4z3du1QDPYJIQQyhb4wl6DhjxEajSI7UA=
 github.com/nats-io/nkeys v0.3.0 h1:cgM5tL53EvYRU+2YLXIK0G2mJtK12Ft9oeooSZMA2G8=
