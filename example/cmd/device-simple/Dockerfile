@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020 Intel
+# Copyright (c) 2023 Intel
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ ARG MAKE=make build
 WORKDIR /device-sdk-go
 
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
-  copyright='Copyright (c) 2022: Intel'
+  copyright='Copyright (c) 2023: Intel'
 
-RUN apk add --update --no-cache make git gcc libc-dev zeromq-dev libsodium-dev
+RUN apk add --update --no-cache make git
 
 COPY go.mod vendor* ./
 RUN [ ! -d "vendor" ] && go mod download all || echo "skipping..."
@@ -37,7 +37,7 @@ FROM alpine:3.16
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2022: Intel'
 
-RUN apk add --update --no-cache zeromq
+RUN apk add --update --no-cache
 
 WORKDIR /
 COPY --from=builder /device-sdk-go/example/cmd/device-simple/Attribution.txt /Attribution.txt
