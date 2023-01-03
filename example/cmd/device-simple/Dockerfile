@@ -47,4 +47,4 @@ COPY --from=builder /device-sdk-go/example/cmd/device-simple/res/ /res
 EXPOSE 59999
 
 ENTRYPOINT ["/device-simple"]
-CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry", "--confdir=/res"]
+CMD ["-cp=consul.http://edgex-core-consul:8500", "--registry"]

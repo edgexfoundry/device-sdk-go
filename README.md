@@ -17,14 +17,14 @@ Please see the provided [simple device service](https://github.com/edgexfoundry/
 The following command line options are available
 
 ```text
-  -c=<path>
-  --confdir=<path>
+  -cd=<path>
+  --configDir=<path>
         Specify an alternate configuration directory.
   -p=<profile>
   --profile=<profile>
         Specify a profile other than default.
-  -f=<file>
-  --file=<file>
+  -cf=<file>
+  --configFile=<file>
         Indicates name of the local configuration file.
   -i=<instace>
   --instance=<instance>

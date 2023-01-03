@@ -37,7 +37,7 @@ apps:
     # see https://bugs.launchpad.net/snapd/+bug/1827392 for more details
     environment:
       CONFIG_PRO_ARG: "--cp=consul.http://localhost:8500"
-      CONF_ARG: "--confdir=$SNAP_DATA/config/device-simple/res"
+      CONF_ARG: "--configDir=$SNAP_DATA/config/device-simple/res"
       DEVICE_DEVICESDIR: "$SNAP_DATA/config/device-simple/res/devices"
       DEVICE_PROFILESDIR: "$SNAP_DATA/config/device-simple/res/profiles"
     # The service is a simple service that is directly exec'd and expected to
