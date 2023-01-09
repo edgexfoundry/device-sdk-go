@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 // Copyright (c) 2021 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -44,6 +44,8 @@ type DeviceInfo struct {
 	ProfilesDir string
 	// DevicesDir specifies a directory contains devices files which should be imported on startup.
 	DevicesDir string
+	// ProvisionWatchersDir specifies a directory contains provision watcher files which should be imported on startup.
+	ProvisionWatchersDir string
 	// UpdateLastConnected specifies whether to update device's LastConnected
 	// timestamp in metadata.
 	UpdateLastConnected bool
