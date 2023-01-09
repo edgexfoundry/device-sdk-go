@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2022 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,10 +10,11 @@ import (
 	"context"
 	"sync"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/gorilla/mux"
+
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/provision"
@@ -75,6 +76,12 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	err = provision.LoadDevices(ds.config.Device.DevicesDir, dic)
 	if err != nil {
 		ds.LoggingClient.Errorf("Failed to create the pre-defined devices: %v", err)
+		return false
+	}
+
+	err = provision.LoadProvisionWatchers(ds.config.Device.ProvisionWatchersDir, dic)
+	if err != nil {
+		ds.LoggingClient.Errorf("Failed to create the pre-defined provision watchers: %v", err)
 		return false
 	}
 

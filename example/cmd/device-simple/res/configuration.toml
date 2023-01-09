@@ -118,6 +118,7 @@ TokenFile = "/tmp/edgex/secrets/device-simple/secrets-token.json"
   MaxCmdValueLen = 256
   ProfilesDir = "./res/profiles"
   DevicesDir = "./res/devices"
+  ProvisionWatchersDir = "./res/provisionwatchers"
   UpdateLastConnected = false
   AsyncBufferSize = 1
   EnableAsyncReadings = true
