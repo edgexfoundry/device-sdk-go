@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -18,61 +18,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
 )
-
-func (c *RestController) DeleteDevice(writer http.ResponseWriter, request *http.Request) {
-	vars := mux.Vars(request)
-	name := vars[common.Name]
-
-	err := application.DeleteDevice(name, c.dic)
-	if err == nil {
-		res := commonDTO.NewBaseResponse("", "", http.StatusOK)
-		c.sendResponse(writer, request, common.ApiDeviceCallbackNameRoute, res, http.StatusOK)
-	} else {
-		c.sendEdgexError(writer, request, err, common.ApiDeviceCallbackNameRoute)
-	}
-}
-
-func (c *RestController) AddDevice(writer http.ResponseWriter, request *http.Request) {
-	defer request.Body.Close()
-
-	var addDeviceRequest requests.AddDeviceRequest
-
-	err := json.NewDecoder(request.Body).Decode(&addDeviceRequest)
-	if err != nil {
-		edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to decode JSON", err)
-		c.sendEdgexError(writer, request, edgexErr, common.ApiDeviceCallbackRoute)
-		return
-	}
-
-	edgexErr := application.AddDevice(addDeviceRequest, c.dic)
-	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(addDeviceRequest.RequestId, "", http.StatusOK)
-		c.sendResponse(writer, request, common.ApiDeviceCallbackRoute, res, http.StatusOK)
-	} else {
-		c.sendEdgexError(writer, request, edgexErr, common.ApiDeviceCallbackRoute)
-	}
-}
-
-func (c *RestController) UpdateDevice(writer http.ResponseWriter, request *http.Request) {
-	defer request.Body.Close()
-
-	var updateDeviceRequest requests.UpdateDeviceRequest
-
-	err := json.NewDecoder(request.Body).Decode(&updateDeviceRequest)
-	if err != nil {
-		edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to decode JSON", err)
-		c.sendEdgexError(writer, request, edgexErr, common.ApiDeviceCallbackRoute)
-		return
-	}
-
-	edgexErr := application.UpdateDevice(updateDeviceRequest, c.dic)
-	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(updateDeviceRequest.RequestId, "", http.StatusOK)
-		c.sendResponse(writer, request, common.ApiDeviceCallbackRoute, res, http.StatusOK)
-	} else {
-		c.sendEdgexError(writer, request, edgexErr, common.ApiDeviceCallbackRoute)
-	}
-}
 
 func (c *RestController) UpdateProfile(writer http.ResponseWriter, request *http.Request) {
 	defer request.Body.Close()
