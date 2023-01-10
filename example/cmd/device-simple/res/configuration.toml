@@ -63,14 +63,17 @@ Type = "consul"
   Host = "localhost"
   Port = 59881
 
-[MessageQueue]
+[MessageBus]
 Protocol = "redis"
 Host = "localhost"
 Port = 6379
 Type = "redis"
 AuthMode = "usernamepassword"  # required for redis messagebus (secure or insecure).
 SecretName = "redisdb"
-PublishTopicPrefix = "edgex/events/device" # /<device-profile-name>/<device-name>/<source-name> will be added to this Publish Topic prefix
+  [MessageBus.Topics]
+  PublishTopicPrefix = "edgex/events/device" # /<device-profile-name>/<device-name>/<source-name> will be added to this Publish Topic prefix
+  CommandRequestTopic = "edgex/device/command/request/device-simple/#"   # subscribing for inbound command requests
+  CommandResponseTopicPrefix = "edgex/device/command/response"   # publishing outbound command responses; <device-service>/<device-name>/<command-name>/<method> will be added to this publish topic prefix
   [MessageQueue.Optional]
   # Default MQTT Specific options that need to be here to enable environment variable overrides of them
   # Client Identifiers
@@ -82,9 +85,6 @@ PublishTopicPrefix = "edgex/events/device" # /<device-profile-name>/<device-name
   AutoReconnect = "true"
   ConnectTimeout = "5" # Seconds
   SkipCertVerify = "false" # Only used if Cert/Key file or Cert/Key PEMblock are specified
-  [MessageQueue.Topics]
-  CommandRequestTopic = "edgex/device/command/request/device-simple/#"   # subscribing for inbound command requests
-  CommandResponseTopicPrefix = "edgex/device/command/response"   # publishing outbound command responses; <device-service>/<device-name>/<command-name>/<method> will be added to this publish topic prefix
 
 # Example SecretStore configuration.
 # Only used when EDGEX_SECURITY_SECRET_STORE=true
