@@ -31,7 +31,7 @@ const (
 
 func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageQueue
+	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	requestTopic := messageBusInfo.Topics[CommandRequestTopic]
 	responseTopicPrefix := messageBusInfo.Topics[CommandResponseTopicPrefix]
 

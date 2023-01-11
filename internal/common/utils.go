@@ -14,6 +14,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	gometrics "github.com/rcrowley/go-metrics"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -85,7 +86,8 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		mc := bootstrapContainer.MessagingClientFrom(dic.Get)
 		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
 		envelope := types.NewMessageEnvelope(bytes, ctx)
-		publishTopic := fmt.Sprintf("%s/%s/%s/%s", configuration.MessageQueue.PublishTopicPrefix, event.ProfileName, event.DeviceName, event.SourceName)
+		prefix := configuration.MessageBus.Topics[config.MessageBusPublishTopicPrefix]
+		publishTopic := fmt.Sprintf("%s/%s/%s/%s", prefix, event.ProfileName, event.DeviceName, event.SourceName)
 		err = mc.Publish(envelope, publishTopic)
 		if err != nil {
 			lc.Errorf("Failed to publish event to MessageBus: %s", err)

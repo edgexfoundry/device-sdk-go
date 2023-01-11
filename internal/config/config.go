@@ -26,8 +26,8 @@ type ConfigurationStruct struct {
 	Driver map[string]string
 	// SecretStore contains information for connecting to the secure SecretStore (Vault) to retrieve or store secrets
 	SecretStore bootstrapConfig.SecretStoreInfo
-	// MessageQueue contains information for connecting to MessageBus which provides alternative way to publish event
-	MessageQueue bootstrapConfig.MessageBusInfo
+	// MessageBus contains information for connecting to MessageBus which provides alternative way to publish event
+	MessageBus bootstrapConfig.MessageBusInfo
 	// MaxEventSize is the maximum event size that can be sent to MessageBus or CoreData
 	MaxEventSize int64
 }
@@ -68,11 +68,11 @@ func (c *ConfigurationStruct) UpdateWritableFromRaw(rawWritable interface{}) boo
 // into an bootstrapConfig.BootstrapConfiguration struct contained within ConfigurationStruct).
 func (c *ConfigurationStruct) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
 	return bootstrapConfig.BootstrapConfiguration{
-		Clients:      c.Clients,
-		Service:      c.Service,
-		Registry:     c.Registry,
-		SecretStore:  c.SecretStore,
-		MessageQueue: c.MessageQueue,
+		Clients:     c.Clients,
+		Service:     c.Service,
+		Registry:    c.Registry,
+		SecretStore: c.SecretStore,
+		MessageBus:  c.MessageBus,
 	}
 }
 
@@ -89,11 +89,6 @@ func (c *ConfigurationStruct) GetRegistryInfo() bootstrapConfig.RegistryInfo {
 // GetInsecureSecrets returns the service's InsecureSecrets.
 func (c *ConfigurationStruct) GetInsecureSecrets() bootstrapConfig.InsecureSecrets {
 	return c.Writable.InsecureSecrets
-}
-
-// GetMessageBusInfo returns the MessageBus configuration
-func (c *ConfigurationStruct) GetMessageBusInfo() bootstrapConfig.MessageBusInfo {
-	return c.MessageQueue
 }
 
 // GetTelemetryInfo returns the service's Telemetry settings.
