@@ -305,7 +305,7 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	query := req.URL.Query()
-	query.Add("ds-returnevent", "no")
+	query.Add("ds-returnevent", common.ValueFalse)
 	req.URL.RawQuery = query.Encode()
 	// Act
 	recorder := httptest.NewRecorder()
