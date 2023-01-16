@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2022 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -130,7 +130,7 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 	driver := container.ProtocolDriverFrom(dic.Get)
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
-		errMsg := fmt.Sprintf("error reading DeviceResourece %s for %s", dr.Name, device.Name)
+		errMsg := fmt.Sprintf("error reading DeviceResource %s for %s", dr.Name, device.Name)
 		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
@@ -254,7 +254,7 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 	driver := container.ProtocolDriverFrom(dic.Get)
 	err := driver.HandleWriteCommands(device.Name, device.Protocols, reqs, []*sdkModels.CommandValue{cv})
 	if err != nil {
-		errMsg := fmt.Sprintf("error writing DeviceResourece %s for %s", dr.Name, device.Name)
+		errMsg := fmt.Sprintf("error writing DeviceResource %s for %s", dr.Name, device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
