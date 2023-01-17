@@ -216,11 +216,11 @@ func filterQueryParams(queries map[string]string) (string, bool, bool) {
 	var rawQuery []string
 	pushEvent, returnEvent := false, true
 	for k, v := range queries {
-		if k == common.PushEvent && v == common.ValueYes {
+		if k == common.PushEvent && v == common.ValueTrue {
 			pushEvent = true
 			continue
 		}
-		if k == common.ReturnEvent && v == common.ValueNo {
+		if k == common.ReturnEvent && v == common.ValueFalse {
 			returnEvent = false
 			continue
 		}

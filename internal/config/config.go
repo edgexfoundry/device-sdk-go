@@ -24,8 +24,6 @@ type ConfigurationStruct struct {
 	Device DeviceInfo
 	// Driver is a string map contains customized configuration for the protocol driver implemented based on Device SDK
 	Driver map[string]string
-	// SecretStore contains information for connecting to the secure SecretStore (Vault) to retrieve or store secrets
-	SecretStore bootstrapConfig.SecretStoreInfo
 	// MessageBus contains information for connecting to MessageBus which provides alternative way to publish event
 	MessageBus bootstrapConfig.MessageBusInfo
 	// MaxEventSize is the maximum event size that can be sent to MessageBus or CoreData
@@ -68,11 +66,10 @@ func (c *ConfigurationStruct) UpdateWritableFromRaw(rawWritable interface{}) boo
 // into an bootstrapConfig.BootstrapConfiguration struct contained within ConfigurationStruct).
 func (c *ConfigurationStruct) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
 	return bootstrapConfig.BootstrapConfiguration{
-		Clients:     c.Clients,
-		Service:     c.Service,
-		Registry:    c.Registry,
-		SecretStore: c.SecretStore,
-		MessageBus:  c.MessageBus,
+		Clients:    c.Clients,
+		Service:    c.Service,
+		Registry:   c.Registry,
+		MessageBus: c.MessageBus,
 	}
 }
 

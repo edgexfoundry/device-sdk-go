@@ -46,12 +46,12 @@ func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// push event to CoreData if specified (default no)
-	if ok, exist := reserved[common.PushEvent]; exist && ok[0] == common.ValueYes {
+	if ok, exist := reserved[common.PushEvent]; exist && ok[0] == common.ValueTrue {
 		go sdkCommon.SendEvent(event, correlationId, c.dic)
 	}
 
 	// return event in http response if specified (default yes)
-	if ok, exist := reserved[common.ReturnEvent]; !exist || ok[0] == common.ValueYes {
+	if ok, exist := reserved[common.ReturnEvent]; !exist || ok[0] == common.ValueTrue {
 		res := responses.NewEventResponse("", "", http.StatusOK, *event)
 		c.sendEventResponse(w, r, res, http.StatusOK)
 		return
