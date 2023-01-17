@@ -86,32 +86,6 @@ SecretName = "redisdb"
   ConnectTimeout = "5" # Seconds
   SkipCertVerify = "false" # Only used if Cert/Key file or Cert/Key PEMblock are specified
 
-# Example SecretStore configuration.
-# Only used when EDGEX_SECURITY_SECRET_STORE=true
-# Must also add `ADD_SECRETSTORE_TOKENS: "device-simple"` to vault-worker environment so it generates
-# the token and secret store in vault for "device-simple"
-[SecretStore]
-Type = "vault"
-Host = "localhost"
-Port = 8200
-Path = "device-simple/"
-Protocol = "http"
-RootCaCertPath = ""
-ServerName = ""
-SecretsFile = ""
-DisableScrubSecretsFile = false
-TokenFile = "/tmp/edgex/secrets/device-simple/secrets-token.json"
-  [SecretStore.Authentication]
-  AuthType = "X-Vault-Token"
-  [SecretStore.RuntimeTokenProvider]
-  Enabled = false
-  Protocol = "https"
-  Host = "localhost"
-  Port = 59841
-  TrustDomain = "edgexfoundry.org"
-  EndpointSocket = "/tmp/edgex/secrets/spiffe/public/api.sock"
-  RequiredSecrets = "redisdb"
-
 [Device]
   DataTransform = true
   MaxCmdOps = 128
