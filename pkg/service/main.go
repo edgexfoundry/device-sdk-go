@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2022 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -112,10 +112,18 @@ func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startup
 		if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
 			return false
 		}
+
+		lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+
 		err := messaging.SubscribeCommands(ctx, dic)
 		if err != nil {
-			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 			lc.Errorf("Failed to subscribe internal command request: %v", err)
+			return false
+		}
+
+		err = messaging.DeviceCallback(ctx, dic)
+		if err != nil {
+			lc.Errorf("Failed to subscribe Metadata system event: %v", err)
 			return false
 		}
 	}

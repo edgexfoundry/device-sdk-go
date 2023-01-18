@@ -1,0 +1,3 @@
+API changes from v2
+
+* Remove /callback/device, /callback/device/name/{name} endpoints
