@@ -6,40 +6,57 @@
 package common
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	mocks2 "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	msgMocks "github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
+
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
 const (
-	TestDevice         = "testDevice"
-	TestProfile        = "testProfile"
-	TestDeviceResource = "testResource"
-	TestDeviceCommand  = "testCommand"
-	testUUIDString     = "ca93c8fa-9919-4ec5-85d3-f81b2b6a7bc1"
+	TestDeviceService             = "testDeviceService"
+	TestDeviceWithTags            = "testDeviceWithTags"
+	TestDeviceWithoutTags         = "testDeviceWithoutTags"
+	TestProfile                   = "testProfile"
+	TestDeviceResourceWithTags    = "testResourceWithTags"
+	TestDeviceResourceWithoutTags = "testResourceWithoutTags"
+	TestDeviceCommandWithTags     = "testCommandWithTags"
+	TestDeviceCommandWithoutTags  = "testCommandWithoutTags"
+	TestResourceTagName           = "testResourceTagName"
+	TestResourceTagValue          = "testResourceTagValue"
+	TestCommandTagName            = "testCommandTagName"
+	TestCommandTagValue           = "testCommandTagValue"
+	TestDeviceTagName             = "testDeviceTagName"
+	TestDeviceTagValue            = "testDeviceTagValue"
+	TestDuplicateTagName          = "testDuplicateTagName"
+
+	testUUIDString = "ca93c8fa-9919-4ec5-85d3-f81b2b6a7bc1"
 )
 
 var TestProtocols map[string]dtos.ProtocolProperties
 
 func buildEvent() dtos.Event {
-	event := dtos.NewEvent(TestProfile, TestDevice, TestDeviceCommand)
+	event := dtos.NewEvent(TestProfile, TestDeviceWithTags, TestDeviceCommandWithTags)
 	value := string(make([]byte, 1000))
-	_ = event.AddSimpleReading(TestDeviceResource, common.ValueTypeString, value)
+	_ = event.AddSimpleReading(TestDeviceResourceWithTags, common.ValueTypeString, value)
 	event.Id = testUUIDString
 	event.Readings[0].Id = testUUIDString
 	return event
@@ -50,12 +67,74 @@ func NewMockDIC() *di.Container {
 		Device: config.DeviceInfo{MaxCmdOps: 1},
 	}
 
+	devices := responses.MultiDevicesResponse{
+		Devices: []dtos.Device{
+			{
+				Name:        TestDeviceWithTags,
+				ProfileName: TestProfile,
+				Tags: dtos.Tags{
+					TestDeviceTagName:    TestDeviceTagValue,
+					TestDuplicateTagName: TestDeviceTagValue,
+				},
+			},
+			{
+				Name:        TestDeviceWithoutTags,
+				ProfileName: TestProfile,
+			},
+		},
+	}
+	dcMock := &clientMocks.DeviceClient{}
+	dcMock.On("DevicesByServiceName", context.Background(), TestDeviceService, 0, -1).Return(devices, nil)
+
+	profile := responses.DeviceProfileResponse{
+		Profile: dtos.DeviceProfile{
+			DeviceProfileBasicInfo: dtos.DeviceProfileBasicInfo{Name: TestProfile},
+			DeviceResources: []dtos.DeviceResource{
+				{
+					Name: TestDeviceResourceWithTags,
+					Tags: dtos.Tags{
+						TestResourceTagName: TestResourceTagValue,
+					},
+				},
+				{
+					Name: TestDeviceResourceWithoutTags,
+				},
+			},
+			DeviceCommands: []dtos.DeviceCommand{
+				{
+					Name: TestDeviceCommandWithTags,
+					Tags: dtos.Tags{
+						TestCommandTagName:   TestCommandTagValue,
+						TestDuplicateTagName: TestCommandTagValue,
+					},
+				},
+				{
+					Name: TestDeviceCommandWithoutTags,
+				},
+			},
+		},
+	}
+	dpcMock := &clientMocks.DeviceProfileClient{}
+	dpcMock.On("DeviceProfileByName", context.Background(), TestProfile).Return(profile, nil)
+
+	pwcMock := &clientMocks.ProvisionWatcherClient{}
+	pwcMock.On("ProvisionWatchersByServiceName", context.Background(), TestDeviceService, 0, -1).Return(responses.MultiProvisionWatchersResponse{}, nil)
+
 	return di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return logger.NewMockClient()
 		},
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return configuration
+		},
+		bootstrapContainer.DeviceClientName: func(get di.Get) interface{} {
+			return dcMock
+		},
+		bootstrapContainer.DeviceProfileClientName: func(get di.Get) interface{} {
+			return dpcMock
+		},
+		bootstrapContainer.ProvisionWatcherClientName: func(get di.Get) interface{} {
+			return pwcMock
 		},
 	})
 }
@@ -174,6 +253,87 @@ func TestInitializeSentMetrics(t *testing.T) {
 				mockManager.AssertNumberOfCalls(t, "Register", 0)
 				mockLogger.AssertNumberOfCalls(t, "Warn", 1)
 				mockLogger.AssertNumberOfCalls(t, "Debugf", 0)
+			}
+		})
+	}
+}
+
+func TestAddReadingTags(t *testing.T) {
+	dic := NewMockDIC()
+	edgexErr := cache.InitCache(TestDeviceService, dic)
+	require.NoError(t, edgexErr)
+	readingWithTags, err := dtos.NewSimpleReading(TestProfile, TestDeviceWithTags, TestDeviceResourceWithTags, common.ValueTypeString, "")
+	require.NoError(t, err)
+	readingWithoutTags, err := dtos.NewSimpleReading(TestProfile, TestDeviceWithTags, TestDeviceResourceWithoutTags, common.ValueTypeString, "")
+	require.NoError(t, err)
+	readingResourceNotFound, err := dtos.NewSimpleReading(TestProfile, TestDeviceWithTags, "notFound", common.ValueTypeString, "")
+	require.NoError(t, err)
+
+	tests := []struct {
+		Name         string
+		Reading      dtos.BaseReading
+		ExpectedTags dtos.Tags
+	}{
+		{"Happy Path", readingWithTags, dtos.Tags{TestResourceTagName: TestResourceTagValue}},
+		{"No Tags", readingWithoutTags, nil},
+		{"Resource Not Found", readingResourceNotFound, nil},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			AddReadingTags(&test.Reading)
+			if test.ExpectedTags != nil {
+				require.NotEmpty(t, test.Reading.Tags)
+				assert.Equal(t, test.ExpectedTags, test.Reading.Tags)
+			} else {
+				assert.Empty(t, test.Reading.Tags)
+			}
+		})
+	}
+}
+
+func TestAddEventTags(t *testing.T) {
+	dic := NewMockDIC()
+	edgexErr := cache.InitCache(TestDeviceService, dic)
+	require.NoError(t, edgexErr)
+
+	expectedDeviceTags := dtos.Tags{TestDeviceTagName: TestDeviceTagValue, TestDuplicateTagName: TestDeviceTagValue}
+	expectedCommandTags := dtos.Tags{TestCommandTagName: TestCommandTagValue, TestDuplicateTagName: TestCommandTagValue}
+
+	tests := []struct {
+		Name                    string
+		Event                   dtos.Event
+		ExpectToHaveDeviceTags  bool
+		ExpectToHaveCommandTags bool
+	}{
+		{"Happy Path", dtos.NewEvent(TestProfile, TestDeviceWithTags, TestDeviceCommandWithTags), true, true},
+		{"No Tags", dtos.NewEvent(TestProfile, TestDeviceWithoutTags, TestDeviceCommandWithoutTags), false, false},
+		{"No Device Tags", dtos.NewEvent(TestProfile, TestDeviceWithoutTags, TestDeviceCommandWithTags), false, true},
+		{"No Command Tags", dtos.NewEvent(TestProfile, TestDeviceWithTags, TestDeviceCommandWithoutTags), true, false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			AddEventTags(&test.Event)
+			if test.ExpectToHaveDeviceTags && test.ExpectToHaveCommandTags {
+				expectedCommandTags[TestDuplicateTagName] = TestDeviceTagValue
+			} else {
+				expectedCommandTags[TestDuplicateTagName] = TestCommandTagValue
+			}
+			if !test.ExpectToHaveDeviceTags && !test.ExpectToHaveCommandTags {
+				require.Empty(t, test.Event.Tags)
+			} else {
+				require.NotEmpty(t, test.Event.Tags)
+			}
+			if test.ExpectToHaveDeviceTags {
+				assert.Subset(t, test.Event.Tags, expectedDeviceTags)
+			} else {
+				assert.NotSubset(t, test.Event.Tags, expectedDeviceTags)
+			}
+			if test.ExpectToHaveCommandTags {
+				assert.Subset(t, test.Event.Tags, expectedCommandTags)
+			} else {
+				assert.NotSubset(t, test.Event.Tags, expectedCommandTags)
 			}
 		})
 	}

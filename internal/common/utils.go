@@ -12,13 +12,12 @@ import (
 	"fmt"
 	"time"
 
-	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-	gometrics "github.com/rcrowley/go-metrics"
-
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -26,6 +25,8 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-messaging/v3/pkg/types"
+
+	gometrics "github.com/rcrowley/go-metrics"
 )
 
 const (
@@ -120,5 +121,35 @@ func registerMetric(metricsManager bootstrapInterfaces.MetricsManager, lc logger
 		lc.Errorf("unable to register %s metric. Metric will not be reported: %v", name, err)
 	} else {
 		lc.Debugf("%s metric has been registered and will be reported (if enabled)", name)
+	}
+}
+
+func AddEventTags(event *dtos.Event) {
+	if event.Tags == nil {
+		event.Tags = make(map[string]interface{})
+	}
+	cmd, cmdExist := cache.Profiles().DeviceCommand(event.ProfileName, event.SourceName)
+	if cmdExist && len(cmd.Tags) > 0 {
+		for k, v := range cmd.Tags {
+			event.Tags[k] = v
+		}
+	}
+	device, deviceExist := cache.Devices().ForName(event.DeviceName)
+	if deviceExist && len(device.Tags) > 0 {
+		for k, v := range device.Tags {
+			event.Tags[k] = v
+		}
+	}
+}
+
+func AddReadingTags(reading *dtos.BaseReading) {
+	dr, drExist := cache.Profiles().DeviceResource(reading.ProfileName, reading.ResourceName)
+	if drExist && len(dr.Tags) > 0 {
+		if reading.Tags == nil {
+			reading.Tags = make(map[string]interface{})
+		}
+		for k, v := range dr.Tags {
+			reading.Tags[k] = v
+		}
 	}
 }
