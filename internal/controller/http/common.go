@@ -20,7 +20,6 @@ import (
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/telemetry"
 )
 
 // Ping handles the request to /ping endpoint. Is used to test if the service is working
@@ -59,24 +58,6 @@ func (c *RestController) Config(writer http.ResponseWriter, request *http.Reques
 
 	response := commonDTO.NewConfigResponse(fullConfig, c.serviceName)
 	c.sendResponse(writer, request, common.ApiVersionRoute, response, http.StatusOK)
-}
-
-// Metrics handles the request to the /metrics endpoint, memory and cpu utilization stats
-// It returns a response as specified by the V2 API swagger in openapi/common
-func (c *RestController) Metrics(writer http.ResponseWriter, request *http.Request) {
-	telem := telemetry.NewSystemUsage()
-	metrics := commonDTO.Metrics{
-		MemAlloc:       telem.Memory.Alloc,
-		MemFrees:       telem.Memory.Frees,
-		MemLiveObjects: telem.Memory.LiveObjects,
-		MemMallocs:     telem.Memory.Mallocs,
-		MemSys:         telem.Memory.Sys,
-		MemTotalAlloc:  telem.Memory.TotalAlloc,
-		CpuBusyAvg:     uint8(telem.CpuBusyAvg),
-	}
-
-	response := commonDTO.NewMetricsResponse(metrics, c.serviceName)
-	c.sendResponse(writer, request, common.ApiMetricsRoute, response, http.StatusOK)
 }
 
 // Secret handles the request to add Device Service exclusive secret to the Secret Store

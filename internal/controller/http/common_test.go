@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -97,35 +96,6 @@ func TestVersionRequest(t *testing.T) {
 	assert.Equal(t, expectedServiceVersion, actual.Version)
 	assert.Equal(t, expectedSdkVersion, actual.SdkVersion)
 	assert.Equal(t, serviceName, actual.ServiceName)
-}
-
-func TestMetricsRequest(t *testing.T) {
-	dic := di.NewContainer(di.ServiceConstructorMap{
-		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return logger.NewMockClient()
-		},
-	})
-
-	serviceName := uuid.NewString()
-
-	target := NewRestController(mux.NewRouter(), dic, serviceName)
-
-	recorder := doRequest(t, http.MethodGet, common.ApiMetricsRoute, target.Metrics, nil)
-
-	actual := commonDTO.MetricsResponse{}
-	err := json.Unmarshal(recorder.Body.Bytes(), &actual)
-	require.NoError(t, err)
-
-	assert.Equal(t, common.ApiVersion, actual.ApiVersion)
-	assert.Equal(t, serviceName, actual.ServiceName)
-	// Since when -race flag is use some values may come back as 0 we need to use the max value to detect change
-	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemAlloc)
-	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemFrees)
-	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemLiveObjects)
-	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemMallocs)
-	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemSys)
-	assert.NotEqual(t, uint64(math.MaxUint64), actual.Metrics.MemTotalAlloc)
-	assert.NotEqual(t, 0, actual.Metrics.CpuBusyAvg)
 }
 
 func TestConfigRequest(t *testing.T) {
