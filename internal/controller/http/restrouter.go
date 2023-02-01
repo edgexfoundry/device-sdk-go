@@ -57,7 +57,6 @@ func (c *RestController) InitRestRoutes() {
 	c.addReservedRoute(common.ApiPingRoute, c.Ping).Methods(http.MethodGet)
 	c.addReservedRoute(common.ApiVersionRoute, c.Version).Methods(http.MethodGet)
 	c.addReservedRoute(common.ApiConfigRoute, c.Config).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiMetricsRoute, c.Metrics).Methods(http.MethodGet)
 	// secret
 	c.addReservedRoute(common.ApiSecretRoute, c.Secret).Methods(http.MethodPost)
 	// discovery
