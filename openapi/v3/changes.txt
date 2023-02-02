@@ -1,3 +1,4 @@
 API changes from v2
 
 * Remove /callback/device, /callback/device/name/{name} endpoints
+* Change /device/name/{name}/{command} ds-pushevent and ds-returnevent parameter values to true/false
