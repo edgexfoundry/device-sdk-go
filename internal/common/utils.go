@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2022 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,10 +12,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	gometrics "github.com/rcrowley/go-metrics"
+
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
@@ -76,34 +77,23 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 
 	// Check event size in kilobytes
 	if configuration.MaxEventSize > 0 && int64(len(bytes)) > configuration.MaxEventSize*1024 {
-		lc.Error(fmt.Sprintf("event size exceed MaxEventSize(%d KB)", configuration.MaxEventSize))
+		lc.Errorf("event size exceed MaxEventSize(%d KB)", configuration.MaxEventSize)
 		return
 	}
 
 	sent := false
-
-	if configuration.Device.UseMessageBus {
-		mc := bootstrapContainer.MessagingClientFrom(dic.Get)
-		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
-		envelope := types.NewMessageEnvelope(bytes, ctx)
-		prefix := configuration.MessageBus.Topics[config.MessageBusPublishTopicPrefix]
-		publishTopic := fmt.Sprintf("%s/%s/%s/%s", prefix, event.ProfileName, event.DeviceName, event.SourceName)
-		err = mc.Publish(envelope, publishTopic)
-		if err != nil {
-			lc.Errorf("Failed to publish event to MessageBus: %s", err)
-		}
-		lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
-		sent = true
-	} else {
-		ec := bootstrapContainer.EventClientFrom(dic.Get)
-		_, err := ec.Add(ctx, req)
-		if err != nil {
-			lc.Errorf("Failed to push event to Coredata: %s", err)
-		} else {
-			lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) pushed to Coredata", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
-		}
-		sent = true
+	mc := bootstrapContainer.MessagingClientFrom(dic.Get)
+	ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
+	envelope := types.NewMessageEnvelope(bytes, ctx)
+	prefix := configuration.MessageBus.Topics[config.MessageBusPublishTopicPrefix]
+	publishTopic := fmt.Sprintf("%s/%s/%s/%s", prefix, event.ProfileName, event.DeviceName, event.SourceName)
+	err = mc.Publish(envelope, publishTopic)
+	if err != nil {
+		lc.Errorf("Failed to publish event to MessageBus: %s", err)
+		return
 	}
+	lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
+	sent = true
 
 	if sent {
 		eventsSent.Inc(1)

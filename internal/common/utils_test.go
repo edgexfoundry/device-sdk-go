@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022 IOTech Ltd
+// Copyright (C) 2022-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,12 +12,10 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	mocks2 "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
-	dtoCommon "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	msgMocks "github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
 	"github.com/stretchr/testify/assert"
@@ -63,7 +61,6 @@ func NewMockDIC() *di.Container {
 }
 
 func TestSendEvent(t *testing.T) {
-
 	event := buildEvent()
 	req := requests.NewAddEventRequest(event)
 	bytes, _, err := req.Encode()
@@ -74,20 +71,16 @@ func TestSendEvent(t *testing.T) {
 		name          string
 		event         *dtos.Event
 		maxEventSize  int64
-		useMessageBus bool
 		eventTooLarge bool
 	}{
-		{"Valid, unlimited max event size", &event, 0, false, false},
-		{"Valid, publish to message bus", &event, int64(eventSize + 1), true, false},
-		{"Valid, push to core data ", &event, int64(eventSize + 1), false, false},
-		{"Invalid, over max event size", &event, int64(eventSize - 1), false, true},
+		{"Valid, unlimited max event size", &event, 0, false},
+		{"Valid, publish to message bus", &event, int64(eventSize + 1), false},
+		{"Invalid, over max event size", &event, int64(eventSize - 1), true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dic := NewMockDIC()
-			ecMock := &clientMocks.EventClient{}
-			ecMock.On("Add", mock.Anything, mock.Anything).Return(dtoCommon.BaseWithIdResponse{}, nil)
 			mcMock := &msgMocks.MessageClient{}
 			mcMock.On("Publish", mock.Anything, mock.Anything).Return(nil)
 
@@ -95,16 +88,10 @@ func TestSendEvent(t *testing.T) {
 				container.ConfigurationName: func(get di.Get) interface{} {
 					return &config.ConfigurationStruct{
 						MaxEventSize: tt.maxEventSize,
-						Device: config.DeviceInfo{
-							UseMessageBus: tt.useMessageBus,
-						},
 					}
 				},
 				bootstrapContainer.MessagingClientName: func(get di.Get) interface{} {
 					return mcMock
-				},
-				bootstrapContainer.EventClientName: func(get di.Get) interface{} {
-					return ecMock
 				},
 			})
 
@@ -112,19 +99,11 @@ func TestSendEvent(t *testing.T) {
 
 			SendEvent(tt.event, testUUIDString, dic)
 			if tt.eventTooLarge {
-				ecMock.AssertNumberOfCalls(t, "Add", 0)
 				mcMock.AssertNumberOfCalls(t, "Publish", 0)
 				assert.Equal(t, int64(0), eventsSent.Count())
 				assert.Equal(t, int64(0), readingsSent.Count())
-			} else if tt.useMessageBus {
-				ecMock.AssertNumberOfCalls(t, "Add", 0)
-				mcMock.AssertNumberOfCalls(t, "Publish", 1)
 			} else {
-				ecMock.AssertNumberOfCalls(t, "Add", 1)
-				mcMock.AssertNumberOfCalls(t, "Publish", 0)
-			}
-
-			if !tt.eventTooLarge {
+				mcMock.AssertNumberOfCalls(t, "Publish", 1)
 				assert.Equal(t, int64(1), eventsSent.Count())
 				assert.Equal(t, int64(1), readingsSent.Count())
 			}

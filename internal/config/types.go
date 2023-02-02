@@ -57,8 +57,6 @@ type DeviceInfo struct {
 	EnableAsyncReadings bool
 	// Labels are properties applied to the device service to help with searching
 	Labels []string
-	// UseMessageBus indicates whether or not the Event are published directly to the MessageBus
-	UseMessageBus bool
 }
 
 // DiscoveryInfo is a struct which contains configuration of device auto discovery.
