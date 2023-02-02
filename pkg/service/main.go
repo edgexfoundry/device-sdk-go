@@ -83,7 +83,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 			httpServer.BootstrapHandler,
 			messageBusBootstrapHandler,
 			handlers.NewServiceMetrics(ds.ServiceName).BootstrapHandler, // Must be after Messaging
-			clientBootstrapHandler,
+			handlers.NewClientsBootstrap().BootstrapHandler,
 			autoevent.BootstrapHandler,
 			NewBootstrap(router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
@@ -93,39 +93,22 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 	ds.Stop(false)
 }
 
-func clientBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
-	configuration := container.ConfigurationFrom(dic.Get)
-	if configuration.Device.UseMessageBus {
-		delete(configuration.Clients, common.CoreDataServiceKey)
-	}
-
-	if !handlers.NewClientsBootstrap().BootstrapHandler(ctx, wg, startupTimer, dic) {
+func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
+	if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
 		return false
 	}
 
-	return true
-}
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	err := messaging.SubscribeCommands(ctx, dic)
+	if err != nil {
+		lc.Errorf("Failed to subscribe internal command request: %v", err)
+		return false
+	}
 
-func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
-	configuration := container.ConfigurationFrom(dic.Get)
-	if configuration.Device.UseMessageBus {
-		if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
-			return false
-		}
-
-		lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-
-		err := messaging.SubscribeCommands(ctx, dic)
-		if err != nil {
-			lc.Errorf("Failed to subscribe internal command request: %v", err)
-			return false
-		}
-
-		err = messaging.DeviceCallback(ctx, dic)
-		if err != nil {
-			lc.Errorf("Failed to subscribe Metadata system event: %v", err)
-			return false
-		}
+	err = messaging.DeviceCallback(ctx, dic)
+	if err != nil {
+		lc.Errorf("Failed to subscribe Metadata system event: %v", err)
+		return false
 	}
 
 	return true
