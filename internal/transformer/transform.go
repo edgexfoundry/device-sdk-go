@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2021 IOTech Ltd
+// Copyright (C) 2021-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 
@@ -113,6 +114,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		if config.Writable.Reading.ReadingUnits {
 			reading.Units = dr.Properties.Units
 		}
+		sdkCommon.AddReadingTags(&reading)
 		readings = append(readings, reading)
 
 		if cv.Type == common.ValueTypeBinary {
@@ -131,6 +133,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		eventDTO.Readings = readings
 		eventDTO.Origin = origin
 		eventDTO.Tags = tags
+		sdkCommon.AddEventTags(&eventDTO)
 
 		return &eventDTO, nil
 	} else {
