@@ -24,16 +24,11 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
-const (
-	CommandRequestTopic        = "CommandRequestTopic"
-	CommandResponseTopicPrefix = "CommandResponseTopicPrefix"
-)
-
 func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
-	requestTopic := messageBusInfo.Topics[CommandRequestTopic]
-	responseTopicPrefix := messageBusInfo.Topics[CommandResponseTopicPrefix]
+	requestTopic := messageBusInfo.Topics[common.DeviceCommandRequestTopicKey]
+	responseTopicPrefix := messageBusInfo.Topics[common.ResponseTopicPrefixKey]
 
 	if strings.TrimSpace(requestTopic) == "" {
 		lc.Info("skipping subscription to empty command request topic")
@@ -79,7 +74,7 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 				deviceName := topicLevels[length-3]
 				commandName := topicLevels[length-2]
 				method := topicLevels[length-1]
-				responseTopic := strings.Join([]string{responseTopicPrefix, serviceName, deviceName, commandName, method}, "/")
+				responseTopic := strings.Join([]string{responseTopicPrefix, serviceName, msgEnvelope.RequestID}, "/")
 
 				switch strings.ToUpper(method) {
 				case "GET":
@@ -114,7 +109,7 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, edgexErr.Error())
 		err := messageBus.Publish(responseEnvelope, responseTopic)
 		if err != nil {
-			lc.Errorf("Failed to publish command response: %s", err.Error())
+			lc.Errorf("Failed to publish command error response: %s", err.Error())
 		}
 		return
 	}
@@ -130,7 +125,7 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 			responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
 			err = messageBus.Publish(responseEnvelope, responseTopic)
 			if err != nil {
-				lc.Errorf("Failed to publish command response: %s", err.Error())
+				lc.Errorf("Failed to publish command error response: %s", err.Error())
 			}
 			return
 		}
@@ -145,7 +140,7 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
 		err = messageBus.Publish(responseEnvelope, responseTopic)
 		if err != nil {
-			lc.Errorf("Failed to publish command response: %s", err.Error())
+			lc.Errorf("Failed to publish command error response: %s", err.Error())
 		}
 		return
 	}
