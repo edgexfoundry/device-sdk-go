@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.11
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.17
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.9
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.7
 	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.3
