@@ -8,6 +8,7 @@ package messaging
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
@@ -21,18 +22,18 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
-const SystemEventTopic = "SystemEventTopic"
+const MetadataSystemEventTopic = "MetadataSystemEventTopic"
 
-func DeviceCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
+func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
-	systemEventTopic := messageBusInfo.Topics[SystemEventTopic]
+	metadataSystemEventTopic := messageBusInfo.Topics[MetadataSystemEventTopic]
 
 	messages := make(chan types.MessageEnvelope)
 	messageErrors := make(chan error)
 	topics := []types.TopicChannel{
 		{
-			Topic:    systemEventTopic,
+			Topic:    metadataSystemEventTopic,
 			Messages: messages,
 		},
 	}
@@ -47,12 +48,12 @@ func DeviceCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
 		for {
 			select {
 			case <-ctx.Done():
-				lc.Infof("Exiting waiting for MessageBus '%s' topic messages", systemEventTopic)
+				lc.Infof("Exiting waiting for MessageBus '%s' topic messages", metadataSystemEventTopic)
 				return
 			case err = <-messageErrors:
 				lc.Error(err.Error())
 			case msgEnvelope := <-messages:
-				lc.Debugf("System event received on message queue. Topic: %s, Correlation-id: %s ", systemEventTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("System event received on message queue. Topic: %s, Correlation-id: %s ", metadataSystemEventTopic, msgEnvelope.CorrelationID)
 
 				var systemEvent dtos.SystemEvent
 				err := json.Unmarshal(msgEnvelope.Payload, &systemEvent)
@@ -67,42 +68,67 @@ func DeviceCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
 					continue
 				}
 
-				if systemEvent.Type != common.DeviceSystemEventType {
-					lc.Errorf("unknown system event type %s", systemEvent.Type)
-					continue
-				}
-
-				var device dtos.Device
-				err = systemEvent.DecodeDetails(&device)
-				if err != nil {
-					lc.Errorf("failed to decode system event details: %s", err.Error())
-					continue
-				}
-
-				switch systemEvent.Action {
-				case common.DeviceSystemEventActionAdd:
-					err = application.AddDevice(requests.NewAddDeviceRequest(device), dic)
+				switch systemEvent.Type {
+				case common.DeviceSystemEventType:
+					err = deviceSystemEventAction(systemEvent, dic)
 					if err != nil {
 						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
 					}
-				case common.DeviceSystemEventActionUpdate:
-					deviceModel := dtos.ToDeviceModel(device)
-					updateDeviceDTO := dtos.FromDeviceModelToUpdateDTO(deviceModel)
-					err = application.UpdateDevice(requests.NewUpdateDeviceRequest(updateDeviceDTO), dic)
-					if err != nil {
-						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
-					}
-				case common.DeviceSystemEventActionDelete:
-					err = application.DeleteDevice(device.Name, dic)
+				case common.DeviceProfileSystemEventType:
+					err = deviceProfileSystemEventAction(systemEvent, dic)
 					if err != nil {
 						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
 					}
 				default:
-					lc.Errorf("unknown device system event action %s", systemEvent.Action)
+					lc.Errorf("unknown system event type %s", systemEvent.Type)
+					continue
 				}
 			}
 		}
 	}()
 
 	return nil
+}
+
+func deviceSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Container) error {
+	var device dtos.Device
+	err := systemEvent.DecodeDetails(&device)
+	if err != nil {
+		return fmt.Errorf("failed to decode %s system event details: %s", systemEvent.Type, err.Error())
+	}
+
+	switch systemEvent.Action {
+	case common.SystemEventActionAdd:
+		err = application.AddDevice(requests.NewAddDeviceRequest(device), dic)
+	case common.SystemEventActionUpdate:
+		deviceModel := dtos.ToDeviceModel(device)
+		updateDeviceDTO := dtos.FromDeviceModelToUpdateDTO(deviceModel)
+		err = application.UpdateDevice(requests.NewUpdateDeviceRequest(updateDeviceDTO), dic)
+	case common.SystemEventActionDelete:
+		err = application.DeleteDevice(device.Name, dic)
+	default:
+		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)
+	}
+
+	return err
+}
+
+func deviceProfileSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Container) error {
+	var deviceProfile dtos.DeviceProfile
+	err := systemEvent.DecodeDetails(&deviceProfile)
+	if err != nil {
+		return fmt.Errorf("failed to decode %s system event details: %s", systemEvent.Type, err.Error())
+	}
+
+	switch systemEvent.Action {
+	case common.SystemEventActionUpdate:
+		err = application.UpdateProfile(requests.NewDeviceProfileRequest(deviceProfile), dic)
+	// there is no action needed for Device Profile Add and Delete in Device Service
+	case common.SystemEventActionAdd, common.SystemEventActionDelete:
+		break
+	default:
+		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)
+	}
+
+	return err
 }

@@ -27,16 +27,6 @@ components:
       required:
         - sourceName
         - frequency
-    NewBaseReading:
-      description: "A base reading type containing common properties from which more specific reading types inherit. This definition should not be implemented but is used elsewhere to indicate support for a mixed list of simple/binary readings in a single event."
-      type: object
-      properties:
-        device:
-          description: "The name of the device from which the reading originated"
-          type: string
-        origin:
-          description: "A Unix timestamp indicating when the reading was originated at the source device (can support nanoseconds)"
-          type: integer
     BaseRequest:
       description: "Defines basic properties which all use-case specific request DTO instances should support."
       type: object
@@ -50,19 +40,6 @@ components:
           description: "A version number shows the API version in DTOs."
           type: string
           example: "v2"
-    NewBinaryReading:
-      description: "An event reading for a binary data type"
-      allOf:
-        - $ref: '#/components/schemas/NewBaseReading'
-        - type: object
-          properties:
-            binaryValue:
-              description: "The value of the reading will be found in this property as a byte array"
-              type: string
-              format: binary
-            mediaType:
-              description: "E.g. MIME Type, indicates what the content type of the binaryValue property is."
-              type: string
     BaseResponse:
       description: "Defines basic properties which all use-case specific response DTO instances should support"
       type: object
@@ -145,45 +122,6 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/ProtocolProperties'
-    DeviceProfile:
-      description: "A profile defining a class of device to be onboarded, including its capabilities and data format."
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: ID uniquely identifies the device profile, a UUID for example
-        name:
-          type: string
-          description: Non-database identifier (must be unique)
-        description:
-          type: string
-          description: Description.
-        created:
-          type: integer
-          description: Created is a timestamp indicating when the entity was created.
-        modified:
-          type: integer
-          description: Modified is a timestamp indicating when the entity was last modified.
-        manufacturer:
-          type: string
-          description: Manufacturer of the device
-        model:
-          type: string
-          description: Model of the device
-        labels:
-          type: array
-          description: Labels used to search for groups of profiles
-          items:
-            type: string
-        deviceResources:
-          type: array
-          items:
-            $ref: '#/components/schemas/DeviceResource'
-        deviceCommands:
-          type: array
-          items:
-            $ref: '#/components/schemas/DeviceCommand'
     UpdateDeviceService:
       description: "A DeviceService is responsible for proxying connectivity between a set of devices and the EdgeX Foundry core services."
       type: object
@@ -207,28 +145,6 @@ components:
           type: string
           enum: [LOCKED, UNLOCKED]
           description: Device Service Admin State
-    DeviceResource:
-      description: "DeviceResource represents a value on a device that can be read or written."
-      type: object
-      properties:
-        description:
-          type: string
-        name:
-          type: string
-        isHidden:
-          type: boolean
-          description: "Indicate the visibility of the DeviceResource via a CoreCommand."
-        tag:
-          type: string
-        properties:
-          $ref: '#/components/schemas/ResourceProperties'
-        attributes:
-          type: object
-          description: Each Device Service should define required and optional keys
-          additionalProperties:
-            type: string
-      required:
-        - name
     BaseReading:
       description: "A base reading type containing common properties from which more specific reading types inherit. This definition should not be implemented but is used elsewhere to indicate support for a mixed list of simple/binary readings in a single event."
       type: object
@@ -317,7 +233,9 @@ components:
           description: "One or more readings captured at the time of the event"
           type: array
           items:
-            $ref: '#/components/schemas/SimpleReading'
+            oneOf:
+              - $ref: '#/components/schemas/SimpleReading'
+              - $ref: '#/components/schemas/BinaryReading'
         tags:
           description: "List of zero or more Tags attached to the Event which give more context to the Event"
           title: tags
@@ -368,16 +286,6 @@ components:
           $ref: '#/components/schemas/Device'
       required:
         - device
-    NewProfileRequest:
-      allOf:
-        - $ref: '#/components/schemas/BaseRequest'
-      description: "Notification that a new device profile has been created."
-      type: object
-      properties:
-        profile:
-          $ref: '#/components/schemas/DeviceProfile'
-      required:
-        - profile
     NewProvisionWatcherRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
@@ -388,24 +296,6 @@ components:
           $ref: '#/components/schemas/ProvisionWatcher'
       required:
         - provisionWatcher
-    NewEventResponse:
-      description: "A discrete event containing one or more readings"
-      properties:
-        apiVersion:
-          description: "A version number shows the API version in DTOs."
-          type: string
-          example: "v2"
-        device:
-          description: "The name of the device from which the event originated"
-          type: string
-        origin:
-          description: "A Unix timestamp indicating when the event was originated at the source device (can support nanoseconds)"
-          type: integer
-        readings:
-          description: "One or more readings captured at the time of the event"
-          type: array
-          items:
-            $ref: '#/components/schemas/NewBaseReading'
     PingResponse:
       description: "A response from the /ping endpoint indicating that the service is functioning."
       allOf:
@@ -419,72 +309,6 @@ components:
         serviceName:
           description: "Outputs the name of the service the response is from"
           type: string
-    DeviceCommand:
-      description: "Defines read/write capabilities native to the device"
-      type: object
-      properties:
-        name:
-          type: string
-        isHidden:
-          type: boolean
-          description: "Indicate the visibility of the DeviceCommand via a CoreCommand."
-        readWrite:
-          type: string
-          description: "Read/Write Permissions set for this DeviceCommand. The value can be R, W, or RW. R enables GET command, and W enables SET command in the Core Command Service."
-        resourceOperations:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceOperation'
-      required:
-        - name
-        - readWrite
-        - resourceOperations
-    ResourceProperties:
-      description: "Defines constraints with regard to the range of acceptable values assigned to an event reading and defined as a property within a device profile."
-      type: object
-      properties:
-        valueType:
-          type: string
-          description: "ValueDescriptor Type of property after transformations. Optional: uint8, uint16, uint32, uint64, int8, int16, int32, int64, float32, float64, bool, string, binary, uint8array, uint16array, uint32array, uint64array, int8array, int16array, int32array, int64array, float32array, float64array, boolarray."
-        readWrite:
-          type: string
-          description: "Read/Write Permissions set for this ResourceProperties. The value can be R, W, or RW. R enables GET command, and W enables SET command in the Core Command Service."
-        units:
-          type: string
-          description: A string which describes the measurement units associated with a property value  Examples include "deg/s", "degreesFarenheit", "G", or "% Relative Humidity"
-        minimum:
-          type: string
-          description: Minimum value that can be get/set from this property
-        maximum:
-          type: string
-          description: Maximum value that can be get/set from this property
-        defaultValue:
-          type: string
-          description: Default value set to this property if no argument is passed. If present, should be compatible with the Type field
-        mask:
-          type: string
-          description: Mask to be applied prior to get/set of property. Only valid where Type is one of the integer types.
-        shift:
-          type: string
-          description: Shift to be applied after masking, prior to get/set of property. Only valid where Type is one of the integer types
-        scale:
-          type: string
-          description: Multiplicative factor to be applied after shifting, prior to get/set of property. Only valid where Type is one of the integer or float types
-        offset:
-          type: string
-          description: Additive factor to be applied after multiplying, prior to get/set of property. Only valid where Type is one of the integer or float types
-        base:
-          type: string
-          description: 'Base for property to be applied to, leave 0 for no power operation (i.e. base ^ property: 2 ^ 10). Only valid where Type is one of the integer or float types.'
-        assertion:
-          type: string
-          description: Required value of the property, set for checking error state.  Failing an assertion condition will mark the device with an error state
-        mediaType:
-          type: string
-          description: A string value used to indicate the type of binary data if Type=binary
-      required:
-        - valueType
-        - readWrite
     ProtocolProperties:
       description: "The properties required to address a device via a particular protocol."
       example: {"Host":"floor4.hq.acme.com", "Port":"8080"}
@@ -540,38 +364,6 @@ components:
           description: "Autoevents that allow device service to automatically start generating data from new devices"
           items:
             $ref: '#/components/schemas/AutoEvent'
-    ResourceOperation:
-      description: "Defines an operation of which a device is capable."
-      type: object
-      properties:
-        deviceResource:
-          type: string
-          description: The replacement of Object field. Must name a DeviceResource in this profile
-        defaultValue:
-          type: string
-          description: If present, should be compatible with the Type field of the named DeviceResource
-        mappings:
-          type: object
-          description: Only valid where the Type of the named DeviceResource is String
-          additionalProperties:
-            type: string
-      required:
-        - deviceResource
-    NewSimpleReading:
-      description: "An event reading for a simple data type"
-      allOf:
-        - $ref: '#/components/schemas/NewBaseReading'
-        - type: object
-          properties:
-            floatEncoding:
-              description: "Indicates how a float value is encoded, if the value property contains a float."
-              type: string
-            valueType:
-              description: "Indicates the datatype of the value property"
-              type: string
-            value:
-              description: "A string representation of the reading's value"
-              type: string
     SecretRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
@@ -612,26 +404,6 @@ components:
       title: Setting
       type: object
       example: {"AHU-TargetTemperature": "28.5", "AHU-TargetBand": "4.0"}
-    UpdateDeviceRequest:
-      allOf:
-        - $ref: '#/components/schemas/BaseRequest'
-      description: "Notification that an existing device associated with this device service has been updated."
-      type: object
-      properties:
-        device:
-          $ref: '#/components/schemas/Device'
-      required:
-        - device
-    UpdateProfileRequest:
-      allOf:
-        - $ref: '#/components/schemas/BaseRequest'
-      description: "Notification that an existing device profile has been updated."
-      type: object
-      properties:
-        profile:
-          $ref: '#/components/schemas/DeviceProfile'
-      required:
-        - profile
     UpdateProvisionWatcherRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
@@ -690,55 +462,6 @@ components:
 
 
 paths:
-  /callback/profile:
-    parameters:
-      - $ref: '#/components/parameters/correlatedRequestHeader'
-    put:
-      description: "This call is used by core-metadata to inform the device service that a Device Profile has been updated"
-      responses:
-        '200':
-          description: "Callback successful"
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '400':
-          description: Invalid callback request.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: The device profile doesn't exist.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateProfileRequest'
-        required: true
-
   /callback/watcher:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'

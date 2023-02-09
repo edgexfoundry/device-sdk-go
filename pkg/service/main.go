@@ -105,7 +105,7 @@ func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startup
 		return false
 	}
 
-	err = messaging.DeviceCallback(ctx, dic)
+	err = messaging.MetadataSystemEventCallback(ctx, dic)
 	if err != nil {
 		lc.Errorf("Failed to subscribe Metadata system event: %v", err)
 		return false
