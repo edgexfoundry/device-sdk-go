@@ -15,7 +15,6 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
@@ -172,7 +171,8 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	return nil
 }
 
-func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcherRequest, lc logger.LoggingClient, dic *di.Container) errors.EdgeX {
+func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcherRequest, dic *di.Container) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	provisionWatcher := dtos.ToProvisionWatcherModel(addProvisionWatcherRequest.ProvisionWatcher)
 
 	edgexErr := updateAssociatedProfile(provisionWatcher.ProfileName, dic)
@@ -200,14 +200,14 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 			var newProvisionWatcher models.ProvisionWatcher
 			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
 			req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher))
-			return AddProvisionWatcher(req, lc, dic)
+			return AddProvisionWatcher(req, dic)
 		} else {
 			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)
 			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 		}
 	}
 	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
-		return DeleteProvisionWatcher(*updateProvisionWatcherRequest.ProvisionWatcher.Name, lc)
+		return DeleteProvisionWatcher(*updateProvisionWatcherRequest.ProvisionWatcher.Name, dic)
 	}
 
 	requests.ReplaceProvisionWatcherModelFieldsWithDTO(&provisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
@@ -226,7 +226,8 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 	return nil
 }
 
-func DeleteProvisionWatcher(name string, lc logger.LoggingClient) errors.EdgeX {
+func DeleteProvisionWatcher(name string, dic *di.Container) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	err := cache.ProvisionWatchers().RemoveByName(name)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to remove provision watcher %s", name)
