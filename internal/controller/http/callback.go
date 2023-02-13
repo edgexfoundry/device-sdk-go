@@ -19,28 +19,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
 )
 
-func (c *RestController) UpdateProfile(writer http.ResponseWriter, request *http.Request) {
-	defer request.Body.Close()
-
-	var edgexErr errors.EdgeX
-	var profileRequest requests.DeviceProfileRequest
-
-	err := json.NewDecoder(request.Body).Decode(&profileRequest)
-	if err != nil {
-		edgexErr = errors.NewCommonEdgeX(errors.KindServerError, "failed to decode JSON", err)
-		c.sendEdgexError(writer, request, edgexErr, common.ApiProfileCallbackRoute)
-		return
-	}
-
-	edgexErr = application.UpdateProfile(profileRequest, c.lc)
-	if edgexErr == nil {
-		res := commonDTO.NewBaseResponse(profileRequest.RequestId, "", http.StatusOK)
-		c.sendResponse(writer, request, common.ApiProfileCallbackRoute, res, http.StatusOK)
-	} else {
-		c.sendEdgexError(writer, request, edgexErr, common.ApiProfileCallbackRoute)
-	}
-}
-
 func (c *RestController) DeleteProvisionWatcher(writer http.ResponseWriter, request *http.Request) {
 	vars := mux.Vars(request)
 	name := vars[common.Name]
