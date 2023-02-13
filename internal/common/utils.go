@@ -87,7 +87,8 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
 	envelope := types.NewMessageEnvelope(bytes, ctx)
 	prefix := configuration.MessageBus.Topics[config.MessageBusPublishTopicPrefix]
-	publishTopic := fmt.Sprintf("%s/%s/%s/%s", prefix, event.ProfileName, event.DeviceName, event.SourceName)
+	serviceName := container.DeviceServiceFrom(dic.Get).Name
+	publishTopic := fmt.Sprintf("%s/%s/%s/%s/%s", prefix, serviceName, event.ProfileName, event.DeviceName, event.SourceName)
 	err = mc.Publish(envelope, publishTopic)
 	if err != nil {
 		lc.Errorf("Failed to publish event to MessageBus: %s", err)
