@@ -79,6 +79,11 @@ func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.
 					if err != nil {
 						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
 					}
+				case common.ProvisionWatcherSystemEventType:
+					err = provisionWatcherSystemEventAction(systemEvent, dic)
+					if err != nil {
+						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
+					}
 				default:
 					lc.Errorf("unknown system event type %s", systemEvent.Type)
 					continue
@@ -126,6 +131,29 @@ func deviceProfileSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Contai
 	// there is no action needed for Device Profile Add and Delete in Device Service
 	case common.SystemEventActionAdd, common.SystemEventActionDelete:
 		break
+	default:
+		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)
+	}
+
+	return err
+}
+
+func provisionWatcherSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Container) error {
+	var pw dtos.ProvisionWatcher
+	err := systemEvent.DecodeDetails(&pw)
+	if err != nil {
+		return fmt.Errorf("failed to decode %s system event details: %s", systemEvent.Type, err.Error())
+	}
+
+	switch systemEvent.Action {
+	case common.SystemEventActionAdd:
+		err = application.AddProvisionWatcher(requests.NewAddProvisionWatcherRequest(pw), dic)
+	case common.SystemEventActionUpdate:
+		pwModel := dtos.ToProvisionWatcherModel(pw)
+		pwDTO := dtos.FromProvisionWatcherModelToUpdateDTO(pwModel)
+		err = application.UpdateProvisionWatcher(requests.NewUpdateProvisionWatcherRequest(pwDTO), dic)
+	case common.SystemEventActionDelete:
+		err = application.DeleteProvisionWatcher(pw.Name, dic)
 	default:
 		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)
 	}

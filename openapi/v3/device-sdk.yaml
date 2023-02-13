@@ -286,16 +286,6 @@ components:
           $ref: '#/components/schemas/Device'
       required:
         - device
-    NewProvisionWatcherRequest:
-      allOf:
-        - $ref: '#/components/schemas/BaseRequest'
-      description: "Notification that a new provision watcher associated with this device service has been created."
-      type: object
-      properties:
-        provisionWatcher:
-          $ref: '#/components/schemas/ProvisionWatcher'
-      required:
-        - provisionWatcher
     PingResponse:
       description: "A response from the /ping endpoint indicating that the service is functioning."
       allOf:
@@ -315,55 +305,6 @@ components:
       type: object
       additionalProperties:
         type: string
-    ProvisionWatcher:
-      description: "A Provision Watcher assigns a subset of discoverable devices to a specified device service, and specifies the device profile which should be used with them, and their initial adminState. The subset is defined by the Identifiers and BlockingIdentifiers, which are matched against a discovered device's protocol properties - the subset contains only devices which match all of the Identifiers and none of the BlockingIdentifiers."
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: "The unique identifier for the provision watcher"
-        name:
-          type: string
-          description: "The name of the provision watcher"
-        created:
-          type: integer
-          description: "A Unix timestamp indicating when the object was initially persisted to a database"
-        modified:
-          type: integer
-          description: "A Unix timestamp indicating when the object was last modified"
-        labels:
-          type: array
-          description: "Labels applied to the provision watcher to help with searching"
-          items:
-            type: string
-        identifiers:
-          type: object
-          additionalProperties:
-            type: string
-          description: "Properties of a new device which must match in order for this provision watcher to match the new device"
-        blockingIdentifiers:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              type: string
-          description: "Properties of a new device which must not match in order for this provision watcher to match the new device"
-        serviceName:
-          type: string
-          description: "The device service to which to associate devices which match this watcher"
-        profileName:
-          type: string
-          description: "The device profile to which to associate devices which match this watcher"
-        adminState:
-          type: string
-          enum: [LOCKED, UNLOCKED]
-          description: "The initial administrative state to apply to devices which match this watcher"
-        autoEvents:
-          type: array
-          description: "Autoevents that allow device service to automatically start generating data from new devices"
-          items:
-            $ref: '#/components/schemas/AutoEvent'
     SecretRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
@@ -404,16 +345,6 @@ components:
       title: Setting
       type: object
       example: {"AHU-TargetTemperature": "28.5", "AHU-TargetBand": "4.0"}
-    UpdateProvisionWatcherRequest:
-      allOf:
-        - $ref: '#/components/schemas/BaseRequest'
-      description: "Notification that an existing provision watcher associated with this device service has been updated."
-      type: object
-      properties:
-        provisionWatcher:
-          $ref: '#/components/schemas/ProvisionWatcher'
-      required:
-        - provisionWatcher
     UpdateDeviceServiceRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
@@ -462,91 +393,6 @@ components:
 
 
 paths:
-  /callback/watcher:
-    parameters:
-      - $ref: '#/components/parameters/correlatedRequestHeader'
-    post:
-      description: "This call is used by core-metadata to inform the device service of the creation of a new Provision Watcher"
-      responses:
-        '200':
-          description: "Callback successful"
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '400':
-          description: Invalid callback request.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewProvisionWatcherRequest'
-        required: true
-    put:
-      description: "This call is used by core-metadata to inform the device service that a Provision Watcher's characteristics have been updated"
-      responses:
-        '200':
-          description: "Callback successful"
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '400':
-          description: Invalid callback request.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: The provision watcher doesn't exist.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateProvisionWatcherRequest'
-        required: true
-
   /callback/service:
     parameters:
       - $ref: '#/components/parameters/correlatedRequestHeader'
@@ -579,46 +425,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: The device doesn't exist.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Internal server error.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /callback/watcher/name/{name}:
-    parameters:
-      - $ref: '#/components/parameters/correlatedRequestHeader'
-      - name: name
-        in: path
-        required: true
-        schema:
-          type: string
-        description: "The unique name of a provision watcher"
-    delete:
-      description: "This call is used by core-metadata to inform the device service that a Provision Watcher has been deleted"
-      responses:
-        '200':
-          description: "Callback successful"
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '404':
-          description: No provision watcher exists for the ID provided.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
