@@ -9,7 +9,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
@@ -17,7 +16,6 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -86,15 +84,15 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	mc := bootstrapContainer.MessagingClientFrom(dic.Get)
 	ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
 	envelope := types.NewMessageEnvelope(bytes, ctx)
-	prefix := configuration.MessageBus.Topics[config.MessageBusPublishTopicPrefix]
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
-	publishTopic := fmt.Sprintf("%s/%s/%s/%s/%s", prefix, serviceName, event.ProfileName, event.DeviceName, event.SourceName)
+	publishTopic := common.BuildTopic(configuration.MessageBus.GetBaseTopicPrefix(), common.EventsPublishTopic, serviceName, event.ProfileName, event.DeviceName, event.SourceName)
 	err = mc.Publish(envelope, publishTopic)
 	if err != nil {
 		lc.Errorf("Failed to publish event to MessageBus: %s", err)
 		return
 	}
-	lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus", event.ProfileName, event.DeviceName, event.SourceName, event.Id)
+	lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus on topic: %s",
+		event.ProfileName, event.DeviceName, event.SourceName, event.Id, publishTopic)
 	sent = true
 
 	if sent {

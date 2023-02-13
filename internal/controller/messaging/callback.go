@@ -27,7 +27,11 @@ const MetadataSystemEventTopic = "MetadataSystemEventTopic"
 func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
-	metadataSystemEventTopic := messageBusInfo.Topics[MetadataSystemEventTopic]
+	deviceService := container.DeviceServiceFrom(dic.Get)
+	metadataSystemEventTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(),
+		common.MetadataSystemEventSubscribeTopic, deviceService.Name, "#")
+
+	lc.Infof("Subscribing to System Events on topic: %s", metadataSystemEventTopic)
 
 	messages := make(chan types.MessageEnvelope)
 	messageErrors := make(chan error)
