@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	msgMocks "github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
@@ -66,6 +67,7 @@ func NewMockDIC() *di.Container {
 	configuration := &config.ConfigurationStruct{
 		Device: config.DeviceInfo{MaxCmdOps: 1},
 	}
+	deviceService := &models.DeviceService{Name: TestDeviceService}
 
 	devices := responses.MultiDevicesResponse{
 		Devices: []dtos.Device{
@@ -121,11 +123,14 @@ func NewMockDIC() *di.Container {
 	pwcMock.On("ProvisionWatchersByServiceName", context.Background(), TestDeviceService, 0, -1).Return(responses.MultiProvisionWatchersResponse{}, nil)
 
 	return di.NewContainer(di.ServiceConstructorMap{
-		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
-			return logger.NewMockClient()
-		},
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return configuration
+		},
+		container.DeviceServiceName: func(get di.Get) any {
+			return deviceService
+		},
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
 		},
 		bootstrapContainer.DeviceClientName: func(get di.Get) interface{} {
 			return dcMock
