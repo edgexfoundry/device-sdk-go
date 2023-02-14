@@ -66,8 +66,6 @@ func (c *RestController) InitRestRoutes() {
 	// device command
 	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.GetCommand).Methods(http.MethodGet)
 	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.SetCommand).Methods(http.MethodPut)
-	// callback
-	c.addReservedRoute(common.ApiServiceCallbackRoute, c.UpdateDeviceService).Methods(http.MethodPut)
 
 	c.router.Use(correlation.ManageHeader)
 	c.router.Use(correlation.LoggingMiddleware(c.lc))

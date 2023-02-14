@@ -84,6 +84,11 @@ func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.
 					if err != nil {
 						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
 					}
+				case common.DeviceServiceSystemEventType:
+					err = deviceServiceSystemEventAction(systemEvent, dic)
+					if err != nil {
+						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
+					}
 				default:
 					lc.Errorf("unknown system event type %s", systemEvent.Type)
 					continue
@@ -154,6 +159,28 @@ func provisionWatcherSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Con
 		err = application.UpdateProvisionWatcher(requests.NewUpdateProvisionWatcherRequest(pwDTO), dic)
 	case common.SystemEventActionDelete:
 		err = application.DeleteProvisionWatcher(pw.Name, dic)
+	default:
+		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)
+	}
+
+	return err
+}
+
+func deviceServiceSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Container) error {
+	var deviceService dtos.DeviceService
+	err := systemEvent.DecodeDetails(&deviceService)
+	if err != nil {
+		return fmt.Errorf("failed to decode %s system event details: %s", systemEvent.Type, err.Error())
+	}
+
+	switch systemEvent.Action {
+	case common.SystemEventActionUpdate:
+		deviceServiceModel := dtos.ToDeviceServiceModel(deviceService)
+		updateDeviceServiceDTO := dtos.FromDeviceServiceModelToUpdateDTO(deviceServiceModel)
+		err = application.UpdateDeviceService(requests.NewUpdateDeviceServiceRequest(updateDeviceServiceDTO), dic)
+	// there is no action needed for Device Service Add and Delete in Device Service
+	case common.SystemEventActionAdd, common.SystemEventActionDelete:
+		break
 	default:
 		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)
 	}
