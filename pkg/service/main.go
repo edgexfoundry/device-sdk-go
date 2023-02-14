@@ -8,6 +8,7 @@ package service
 
 import (
 	"context"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"os"
 	"sync"
 
@@ -79,6 +80,7 @@ func Main(serviceName string, serviceVersion string, proto interface{}, ctx cont
 		startupTimer,
 		ds.dic,
 		true,
+		config.ServiceTypeDevice,
 		[]interfaces.BootstrapHandler{
 			httpServer.BootstrapHandler,
 			messageBusBootstrapHandler,
