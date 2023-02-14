@@ -1,5 +1,3 @@
-MaxEventSize = 0 # value 0 unlimit the maximum event size that can be sent to message bus or core-data.
-
 [Writable]
 LogLevel = "INFO"
   # Example InsecureSecrets configuration that simulates SecretStore for when EDGEX_SECURITY_SECRET_STORE=false
@@ -40,6 +38,7 @@ RequestTimeout = "20s"
 
 [Device]
   AsyncBufferSize = 1
+  ProvisionWatchersDir = "./res/provisionwatchers"
 
 # Example structured custom configuration
 [SimpleCustom]
