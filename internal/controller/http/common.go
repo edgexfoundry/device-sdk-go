@@ -94,7 +94,7 @@ func (c *RestController) prepareSecret(request commonDTO.SecretRequest) (string,
 		secretKVs[secret.Key] = secret.Value
 	}
 
-	path := strings.TrimSpace(request.Path)
+	path := strings.TrimSpace(request.SecretName)
 
 	return path, secretKVs
 }
