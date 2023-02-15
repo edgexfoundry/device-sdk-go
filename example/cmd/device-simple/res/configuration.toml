@@ -1,41 +1,23 @@
 [Writable]
 LogLevel = "INFO"
-  # Example InsecureSecrets configuration that simulates SecretStore for when EDGEX_SECURITY_SECRET_STORE=false
-  # InsecureSecrets are required for when Redis is used for message bus
   [Writable.Reading]
   ReadingUnits = true
   [Writable.Telemetry]
-    [Writable.Telemetry.Metrics] # All service's metric names must be present in this list.
-    # Custom Device Service Metrics
+    [Writable.Telemetry.Metrics]
+    # All service's custom metric names must be present in this list. All common metric names are in the Common Config
     ReadCommandsExecuted = true
-    # Device SDK provided Metrics
-    EventsSent = true
-    ReadingsSent = true
-    [Writable.Telemetry.Tags] # Contains the service level tags to be attached to all the service's metrics
-#    Gateway="my-iot-gateway" # Tag must be added here or via Consul Env Override can only chnage existing value, not added new ones.
 
 [Service]
 Port = 59999 # Device service are assigned the 599xx range
 StartupMsg = "device simple started"
-RequestTimeout = "20s"
-
-[Clients]
-  [Clients.core-metadata]
-  Protocol = "http"
-  Host = "localhost"
-  Port = 59881
 
 [MessageBus]
-  [MessageBus.Topics]
-  PublishTopicPrefix = "edgex/events/device" # /<device-service-name>/<device-profile-name>/<device-name>/<source-name> will be added to this Publish Topic prefix
-  DeviceCommandRequestTopic = "edgex/device/command/request/device-simple/#"   # subscribing for inbound command requests
-  ResponseTopicPrefix = "edgex/response" # /<service-name>/<request-id> will be added to this prefix topic
-  MetadataSystemEventTopic = "edgex/system-events/core-metadata/+/+/device-simple/#"
   [MessageBus.Optional]
   # Default MQTT Specific options that need to be here to enable environment variable overrides of them
   # Client Identifiers
   ClientId = "device-simple"
 
+# Exmaple overriding of Common Config settings
 [Device]
   AsyncBufferSize = 1
   ProvisionWatchersDir = "./res/provisionwatchers"

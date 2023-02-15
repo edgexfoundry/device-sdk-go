@@ -113,7 +113,10 @@ func (s *DeviceService) Initialize(serviceName, serviceVersion string, proto int
 		s.validator = nil
 	}
 
-	s.deviceService = &models.DeviceService{}
+	s.deviceService = &models.DeviceService{
+		Name: serviceName,
+	}
+
 	s.config = &config.ConfigurationStruct{}
 }
 

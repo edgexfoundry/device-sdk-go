@@ -8,9 +8,10 @@ package service
 
 import (
 	"context"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"os"
 	"sync"
+
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"

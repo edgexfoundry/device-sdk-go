@@ -27,19 +27,19 @@ import (
 func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
-	requestTopic := messageBusInfo.Topics[common.DeviceCommandRequestTopicKey]
-	responseTopicPrefix := messageBusInfo.Topics[common.ResponseTopicPrefixKey]
+	deviceService := container.DeviceServiceFrom(dic.Get)
 
-	if strings.TrimSpace(requestTopic) == "" {
-		lc.Info("skipping subscription to empty command request topic")
-		return nil
-	}
+	requestSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.CommandRequestSubscribeTopic, deviceService.Name, "#")
+	lc.Infof("Subscribing to command requests on topic: %s", requestSubscribeTopic)
+
+	responsePublishTopicPrefix := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.ResponseTopic, deviceService.Name)
+	lc.Infof("Responses to command requests will be published on topic: %s/<requestId>", responsePublishTopicPrefix)
 
 	messages := make(chan types.MessageEnvelope)
 	messageErrors := make(chan error)
 	topics := []types.TopicChannel{
 		{
-			Topic:    requestTopic,
+			Topic:    requestSubscribeTopic,
 			Messages: messages,
 		},
 	}
@@ -54,12 +54,12 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 		for {
 			select {
 			case <-ctx.Done():
-				lc.Infof("Exiting waiting for MessageBus '%s' topic messages", requestTopic)
+				lc.Infof("Exiting waiting for MessageBus '%s' topic messages", requestSubscribeTopic)
 				return
 			case err = <-messageErrors:
 				lc.Error(err.Error())
 			case msgEnvelope := <-messages:
-				lc.Debugf("Command request received on message queue. Topic: %s, Correlation-id: %s ", requestTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("Command request received on message queue. Topic: %s, Correlation-id: %s ", requestSubscribeTopic, msgEnvelope.CorrelationID)
 
 				// expected command request topic scheme: #/<service-name>/<device-name>/<command-name>/<method>
 				topicLevels := strings.Split(msgEnvelope.ReceivedTopic, "/")
@@ -70,23 +70,23 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 				}
 
 				// expected command response topic scheme: #/<service-name>/<device-name>/<command-name>/<method>
-				serviceName := topicLevels[length-4]
 				deviceName := topicLevels[length-3]
 				commandName := topicLevels[length-2]
 				method := topicLevels[length-1]
-				responseTopic := strings.Join([]string{responseTopicPrefix, serviceName, msgEnvelope.RequestID}, "/")
+
+				responsePublishTopic := common.BuildTopic(responsePublishTopicPrefix, msgEnvelope.RequestID)
 
 				switch strings.ToUpper(method) {
 				case "GET":
-					getCommand(ctx, msgEnvelope, responseTopic, deviceName, commandName, dic)
+					getCommand(ctx, msgEnvelope, responsePublishTopic, deviceName, commandName, dic)
 				case "SET":
-					setCommand(ctx, msgEnvelope, responseTopic, deviceName, commandName, dic)
+					setCommand(ctx, msgEnvelope, responsePublishTopic, deviceName, commandName, dic)
 				default:
 					lc.Errorf("unknown command method '%s', only 'get' or 'set' is allowed", method)
 					continue
 				}
 
-				lc.Debugf("Command response published on message queue. Topic: %s, Correlation-id: %s ", responseTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("Command response published on message queue. Topic: %s, Correlation-id: %s ", responsePublishTopic, msgEnvelope.CorrelationID)
 			}
 		}
 	}()
