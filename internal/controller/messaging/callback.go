@@ -22,8 +22,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
-const MetadataSystemEventTopic = "MetadataSystemEventTopic"
-
 func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
@@ -57,7 +55,7 @@ func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.
 			case err = <-messageErrors:
 				lc.Error(err.Error())
 			case msgEnvelope := <-messages:
-				lc.Debugf("System event received on message queue. Topic: %s, Correlation-id: %s ", metadataSystemEventTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("System event received on message queue. Topic: %s, Correlation-id: %s", msgEnvelope.ReceivedTopic, msgEnvelope.CorrelationID)
 
 				var systemEvent dtos.SystemEvent
 				err := json.Unmarshal(msgEnvelope.Payload, &systemEvent)

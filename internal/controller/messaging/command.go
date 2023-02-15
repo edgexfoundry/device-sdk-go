@@ -59,7 +59,7 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 			case err = <-messageErrors:
 				lc.Error(err.Error())
 			case msgEnvelope := <-messages:
-				lc.Debugf("Command request received on message queue. Topic: %s, Correlation-id: %s ", requestSubscribeTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("Command request received on message queue. Topic: %s, Correlation-id: %s", msgEnvelope.ReceivedTopic, msgEnvelope.CorrelationID)
 
 				// expected command request topic scheme: #/<service-name>/<device-name>/<command-name>/<method>
 				topicLevels := strings.Split(msgEnvelope.ReceivedTopic, "/")
@@ -86,7 +86,7 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 					continue
 				}
 
-				lc.Debugf("Command response published on message queue. Topic: %s, Correlation-id: %s ", responsePublishTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("Command response published on message queue. Topic: %s, Correlation-id: %s", responsePublishTopic, msgEnvelope.CorrelationID)
 			}
 		}
 	}()

@@ -11,17 +11,15 @@ import (
 	"os"
 	"sync"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/flags"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-
 	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
@@ -111,6 +109,12 @@ func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startup
 	err = messaging.MetadataSystemEventCallback(ctx, dic)
 	if err != nil {
 		lc.Errorf("Failed to subscribe Metadata system event: %v", err)
+		return false
+	}
+
+	err = messaging.SubscribeDeviceValidation(ctx, dic)
+	if err != nil {
+		lc.Errorf("Failed to subscribe device validation request: %v", err)
 		return false
 	}
 
