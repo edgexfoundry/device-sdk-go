@@ -39,7 +39,7 @@ components:
         apiVersion:
           description: "A version number shows the API version in DTOs."
           type: string
-          example: "v2"
+          example: "v3"
     BaseResponse:
       description: "Defines basic properties which all use-case specific response DTO instances should support"
       type: object
@@ -47,7 +47,7 @@ components:
         apiVersion:
           description: "A version number shows the API version in DTOs."
           type: string
-          example: "v2"
+          example: "v3"
         requestId:
           description: "Uniquely identifies the request that resulted in this response."
           type: string
@@ -87,12 +87,6 @@ components:
           type: string
           enum: [UP, DOWN, UNKNOWN]
           description: "Operating state of the device, indicating whether it is currently responsive"
-        lastConnected:
-          type: integer
-          description: "Time (milliseconds) that the device last provided any feedback or responded to any request"
-        lastReported:
-          type: integer
-          description: "Time (milliseconds) that the device reported data to the core microservice"
         labels:
           type: array
           items:

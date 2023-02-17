@@ -46,11 +46,7 @@ type DeviceInfo struct {
 	DevicesDir string
 	// ProvisionWatchersDir specifies a directory contains provision watcher files which should be imported on startup.
 	ProvisionWatchersDir string
-	// UpdateLastConnected specifies whether to update device's LastConnected
-	// timestamp in metadata.
-	UpdateLastConnected bool
-
-	Discovery DiscoveryInfo
+	Discovery            DiscoveryInfo
 	// AsyncBufferSize defines the size of asynchronous channel
 	AsyncBufferSize int
 	// EnableAsyncReadings to determine whether the Device Service would deal with the asynchronous readings
