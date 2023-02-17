@@ -6,7 +6,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.24
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.18
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.9
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.10
 	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.3
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
@@ -51,7 +51,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/nats-io/nats.go v1.20.0 // indirect
+	github.com/nats-io/nats.go v1.23.0 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
