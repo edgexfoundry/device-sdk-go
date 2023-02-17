@@ -238,7 +238,7 @@ func TestSecretRequest(t *testing.T) {
 
 	validRequest := commonDTO.SecretRequest{
 		BaseRequest: commonDTO.NewBaseRequest(),
-		Path:        "mqtt",
+		SecretName:  "mqtt",
 		SecretData: []commonDTO.SecretDataKeyValue{
 			{Key: "username", Value: "username"},
 			{Key: "password", Value: "password"},
@@ -247,9 +247,9 @@ func TestSecretRequest(t *testing.T) {
 	validRequest.RequestId = expectedRequestId
 
 	NoPath := validRequest
-	NoPath.Path = ""
+	NoPath.SecretName = ""
 	validPathWithSlash := validRequest
-	validPathWithSlash.Path = "mqtt"
+	validPathWithSlash.SecretName = "mqtt"
 	validNoRequestId := validRequest
 	validNoRequestId.RequestId = ""
 	badRequestId := validRequest
@@ -265,7 +265,7 @@ func TestSecretRequest(t *testing.T) {
 		{Key: "username", Value: ""},
 	}
 	noSecretStore := validRequest
-	noSecretStore.Path = "no"
+	noSecretStore.SecretName = "no"
 
 	tests := []struct {
 		Name               string
