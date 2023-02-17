@@ -9,8 +9,6 @@ package common
 
 import (
 	"context"
-	"time"
-
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 
@@ -36,20 +34,6 @@ const (
 // TODO: Refactor code in 3.0 to encapsulate this in a struct, factory func and
 var eventsSent gometrics.Counter
 var readingsSent gometrics.Counter
-
-func UpdateLastConnected(name string, lc logger.LoggingClient, dc interfaces.DeviceClient) {
-	t := time.Now().UnixNano() / int64(time.Millisecond)
-	device := dtos.UpdateDevice{
-		Name:          &name,
-		LastConnected: &t,
-	}
-
-	req := requests.NewUpdateDeviceRequest(device)
-	_, err := dc.Update(context.Background(), []requests.UpdateDeviceRequest{req})
-	if err != nil {
-		lc.Errorf("failed to update LastConnected for Device %s in Core Metadata: %v", name, err)
-	}
-}
 
 func UpdateOperatingState(name string, state string, lc logger.LoggingClient, dc interfaces.DeviceClient) {
 	device := dtos.UpdateDevice{
