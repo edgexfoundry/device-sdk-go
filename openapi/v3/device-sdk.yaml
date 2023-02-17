@@ -288,8 +288,8 @@ components:
       description: Defines the secret data to be stored
       type: object
       properties:
-        path:
-          description: Specifies the location within the secret to store
+        secretName:
+          description: Specifies the name of the secret
           type: string
           example: "credentials"
         secretData:
@@ -298,7 +298,7 @@ components:
           items:
             $ref: '#/components/schemas/SecretDataKeyValue'
       required:
-        - path
+        - secretName
         - secretData
     SecretDataKeyValue:
       description: Defines a key/value pair of the secret data

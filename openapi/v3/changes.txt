@@ -5,3 +5,4 @@ API changes from v2
 * Remove /callback/profile endpoints
 * Remove /callback/watcher endpoints
 * Remove /callback/service endpoints
+* Rename path on SecretRequest to secretName
