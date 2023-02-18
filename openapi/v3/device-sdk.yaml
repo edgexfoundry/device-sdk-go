@@ -67,12 +67,6 @@ components:
           type: string
           format: uuid
           description: "The unique identifier of the device"
-        created:
-          type: integer
-          description: "A Unix timestamp indicating when the object was initially persisted to a database"
-        modified:
-          type: integer
-          description: "A Unix timestamp indicating when the object was last modified"
         name:
           type: string
           description: "The name of the device"
@@ -95,15 +89,9 @@ components:
         location:
           type: object
           description: "Device service specific location information"
-        serviceId:
-          type: string
-          description: "Associated device service referenced by id"
         serviceName:
           type: string
           description: "Associated device service referenced by name"
-        profileId:
-          type: string
-          description: "Associated device profile referenced by id"
         profileName:
           type: string
           description: "Associated device profile referenced by name"
@@ -116,6 +104,12 @@ components:
           type: object
           additionalProperties:
             $ref: '#/components/schemas/ProtocolProperties'
+        tags:
+          type: object
+          description: "A map of tags used to tag the given device."
+        properties:
+          type: object
+          description: "A map of properties required to address the given device."
     BaseReading:
       description: "A base reading type containing common properties from which more specific reading types inherit. This definition should not be implemented but is used elsewhere to indicate support for a mixed list of simple/binary readings in a single event."
       type: object
@@ -247,7 +241,7 @@ components:
         config:
           description: "An object containing the service''s configuration. Please refer to Core Data''s configuration documentation for more details at [EdgeX Foundry Documentation](https://docs.edgexfoundry.org)."
           type: object
-    NewDeviceRequest:
+    DeviceValidationRequest:
       allOf:
         - $ref: '#/components/schemas/BaseRequest'
       description: "Notification that a new device associated with this device service has been created."
@@ -556,7 +550,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewDeviceRequest'
+              $ref: '#/components/schemas/DeviceValidationRequest'
         required: true
       responses:
         '200':
