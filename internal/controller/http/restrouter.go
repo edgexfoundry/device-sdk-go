@@ -53,6 +53,8 @@ func (c *RestController) SetCustomConfigInfo(customConfig interfaces.UpdatableCo
 
 func (c *RestController) InitRestRoutes() {
 	c.lc.Info("Registering v2 routes...")
+	// router.UseEncodedPath() tells the router to match the encoded original path to the routes
+	c.router.UseEncodedPath()
 	// common
 	c.addReservedRoute(common.ApiPingRoute, c.Ping).Methods(http.MethodGet)
 	c.addReservedRoute(common.ApiVersionRoute, c.Version).Methods(http.MethodGet)
@@ -69,6 +71,7 @@ func (c *RestController) InitRestRoutes() {
 
 	c.router.Use(correlation.ManageHeader)
 	c.router.Use(correlation.LoggingMiddleware(c.lc))
+	c.router.Use(correlation.UrlDecodeMiddleware(c.lc))
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {

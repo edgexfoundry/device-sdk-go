@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -71,7 +72,11 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 
 				// expected command response topic scheme: #/<service-name>/<device-name>/<command-name>/<method>
 				deviceName := topicLevels[length-3]
-				commandName := topicLevels[length-2]
+				commandName, err := url.QueryUnescape(topicLevels[length-2])
+				if err != nil {
+					lc.Errorf("Failed to unescape command name '%s'", commandName)
+					continue
+				}
 				method := topicLevels[length-1]
 
 				responsePublishTopic := common.BuildTopic(responsePublishTopicPrefix, msgEnvelope.RequestID)
