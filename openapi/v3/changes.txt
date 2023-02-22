@@ -5,5 +5,6 @@ API changes from v2
 * Remove /callback/profile endpoints
 * Remove /callback/watcher endpoints
 * Remove /callback/service endpoints
+* Remove /validate/device endpoints
 * Rename path on SecretRequest to secretName
 * Rename the NewDeviceRequest to DeviceValidationRequest, and add "tags" and "properties" fields into the schema of DeviceValidationRequest

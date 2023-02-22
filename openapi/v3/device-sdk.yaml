@@ -543,41 +543,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /validate/device:
-    post:
-      summary: Run the device-specific validation for a Device's Properties.
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DeviceValidationRequest'
-        required: true
-      responses:
-        '200':
-          description: Validation succeed or validator implicitly not implemented
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BaseResponse'
-        '400':
-          description: Invalid validation request.
-          headers:
-            X-Correlation-ID:
-              $ref: '#/components/headers/correlatedResponseHeader'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Validation failed.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /discovery:
     post:
       description: Run the discovery request for a Device Service. No request body is required.
