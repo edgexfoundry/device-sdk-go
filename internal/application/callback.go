@@ -36,7 +36,20 @@ func UpdateProfile(profileRequest requests.DeviceProfileRequest, dic *di.Contain
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	lc.Debug(fmt.Sprintf("profile %s updated", profileRequest.Profile.Name))
+	lc.Debugf("profile %s updated", profileRequest.Profile.Name)
+
+	driver := container.ProtocolDriverFrom(dic.Get)
+	devices := cache.Devices().All()
+	for _, d := range devices {
+		if d.ProfileName == profileRequest.Profile.Name {
+			if err := driver.UpdateDevice(d.Name, d.Protocols, d.AdminState); err != nil {
+				errMsg := fmt.Sprintf("driver.UpdateDevice callback failed for %s", d.Name)
+				return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+			}
+			lc.Debugf("Invoked driver.UpdateDevice callback for %s", d.Name)
+		}
+	}
+
 	return nil
 }
 
