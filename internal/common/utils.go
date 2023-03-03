@@ -9,9 +9,10 @@ package common
 
 import (
 	"context"
+	"net/url"
+
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-	"net/url"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
