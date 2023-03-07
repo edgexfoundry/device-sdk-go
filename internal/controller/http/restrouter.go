@@ -13,7 +13,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -55,17 +57,22 @@ func (c *RestController) InitRestRoutes() {
 	c.lc.Info("Registering v2 routes...")
 	// router.UseEncodedPath() tells the router to match the encoded original path to the routes
 	c.router.UseEncodedPath()
+
+	lc := container.LoggingClientFrom(c.dic.Get)
+	secretProvider := container.SecretProviderFrom(c.dic.Get)
+	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
+
 	// common
 	c.addReservedRoute(common.ApiPingRoute, c.Ping).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiVersionRoute, c.Version).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiConfigRoute, c.Config).Methods(http.MethodGet)
+	c.addReservedRoute(common.ApiVersionRoute, authenticationHook(c.Version)).Methods(http.MethodGet)
+	c.addReservedRoute(common.ApiConfigRoute, authenticationHook(c.Config)).Methods(http.MethodGet)
 	// secret
-	c.addReservedRoute(common.ApiSecretRoute, c.Secret).Methods(http.MethodPost)
+	c.addReservedRoute(common.ApiSecretRoute, authenticationHook(c.Secret)).Methods(http.MethodPost)
 	// discovery
-	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery).Methods(http.MethodPost)
+	c.addReservedRoute(common.ApiDiscoveryRoute, authenticationHook(c.Discovery)).Methods(http.MethodPost)
 	// device command
-	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.GetCommand).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.SetCommand).Methods(http.MethodPut)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, authenticationHook(c.GetCommand)).Methods(http.MethodGet)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, authenticationHook(c.SetCommand)).Methods(http.MethodPut)
 
 	c.router.Use(correlation.ManageHeader)
 	c.router.Use(correlation.LoggingMiddleware(c.lc))
