@@ -216,18 +216,23 @@ func (s *DeviceService) ListenForCustomConfigChanges(
 	return nil
 }
 
-// selfRegister register device service itself onto metadata.
-func (s *DeviceService) selfRegister() errors.EdgeX {
-	localDeviceService := models.DeviceService{
+// selfAssign creates and assigns the deviceService model, so that it can later be accessed via the dic.
+func (s *DeviceService) selfAssign() {
+	*s.deviceService = models.DeviceService{
 		Name:        s.ServiceName,
 		Labels:      s.config.Device.Labels,
 		BaseAddress: bootstrapTypes.DefaultHttpProtocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
 		AdminState:  models.Unlocked,
 	}
-	*s.deviceService = localDeviceService
+}
+
+// selfRegister register device service itself onto metadata.
+func (s *DeviceService) selfRegister() errors.EdgeX {
+	localDeviceService := *s.deviceService
+	s.LoggingClient.Debugf("trying to find device service %s", localDeviceService.Name)
+
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 
-	s.LoggingClient.Debugf("trying to find device service %s", localDeviceService.Name)
 	res, err := s.edgexClients.DeviceServiceClient.DeviceServiceByName(ctx, localDeviceService.Name)
 	if err != nil {
 		if errors.Kind(err) == errors.KindEntityDoesNotExist {
