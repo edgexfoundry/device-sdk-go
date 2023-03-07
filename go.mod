@@ -6,7 +6,7 @@ require (
 	github.com/OneOfOne/xxhash v1.2.8
 	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.39
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.24
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.14
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.16
 	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.5
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
@@ -59,7 +59,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/errs v1.3.0 // indirect
-	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
