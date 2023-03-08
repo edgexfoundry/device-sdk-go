@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,6 +9,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"sync"
 
@@ -135,9 +136,14 @@ func checkAllowList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc
 		matchedCount := 0
 		for name, regex := range pw.Identifiers {
 			if value, ok := protocol[name]; ok {
-				matched, err := regexp.MatchString(regex, value)
+				valueString := fmt.Sprintf("%v", value)
+				if valueString == "" {
+					lc.Debugf("Skipping identifier %s, cannot transform %s value '%v' to string type for discovered device %s", name, name, value, d.Name)
+					continue
+				}
+				matched, err := regexp.MatchString(regex, valueString)
 				if !matched || err != nil {
-					lc.Debugf("Device %s's %s value %s did not match PW identifier: %s", d.Name, name, value, regex)
+					lc.Debugf("Discovered Device %s %s value '%v' did not match PW identifier: %s", d.Name, name, value, regex)
 					break
 				}
 				matchedCount += 1
@@ -157,9 +163,14 @@ func checkBlockList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc
 		// ignore the device protocol properties name
 		for _, protocol := range d.Protocols {
 			if value, ok := protocol[name]; ok {
+				valueString := fmt.Sprintf("%v", value)
+				if valueString == "" {
+					lc.Debugf("Skipping identifier %s, cannot transform %s value '%v' to string type for discovered device %s", name, name, value, d.Name)
+					continue
+				}
 				for _, v := range blacklist {
-					if value == v {
-						lc.Debugf("Discovered Device %s's %s should not be %s", d.Name, name, value)
+					if valueString == v {
+						lc.Debugf("Discovered Device %s %s value cannot be %v", d.Name, name, value)
 						return false
 					}
 				}

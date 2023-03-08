@@ -6,7 +6,7 @@
   [DeviceList.Protocols]
   [DeviceList.Protocols.other]
     Address = "simple01"
-    Port = "300"
+    Port = 300
   [[DeviceList.AutoEvents]]
     Interval = "10s"
     OnChange = false

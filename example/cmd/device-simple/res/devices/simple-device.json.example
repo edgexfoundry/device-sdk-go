@@ -7,7 +7,7 @@
     "protocols": {
       "other": {
         "address": "simple01",
-        "port": "300"
+        "port": 300
       }
     },
     "autoEvents": [

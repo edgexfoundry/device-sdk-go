@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2022 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -21,13 +21,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	gometrics "github.com/rcrowley/go-metrics"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/example/config"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
@@ -311,7 +311,7 @@ func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]mode
 // Devices found as part of this discovery operation are written to the channel devices.
 func (s *SimpleDriver) Discover() {
 	proto := make(map[string]models.ProtocolProperties)
-	proto["other"] = map[string]string{"Address": "simple02", "Port": "301"}
+	proto["other"] = map[string]any{"Address": "simple02", "Port": 301}
 
 	device2 := sdkModels.DiscoveredDevice{
 		Name:        "Simple-Device02",
@@ -321,7 +321,7 @@ func (s *SimpleDriver) Discover() {
 	}
 
 	proto = make(map[string]models.ProtocolProperties)
-	proto["other"] = map[string]string{"Address": "simple03", "Port": "399"}
+	proto["other"] = map[string]any{"Address": "simple03", "Port": 399}
 
 	device3 := sdkModels.DiscoveredDevice{
 		Name:        "Simple-Device03",
@@ -352,8 +352,12 @@ func (s *SimpleDriver) ValidateDevice(device models.Device) error {
 	port, ok := protocol["Port"]
 	if !ok {
 		return errors.New("missing 'Port' information")
-	} else if _, err := strconv.Atoi(port); err != nil {
-		return errors.New("port must be a number")
+	} else {
+		portString := fmt.Sprintf("%v", port)
+		_, err := strconv.ParseUint(portString, 10, 64)
+		if err != nil {
+			return errors.New("port must be a number")
+		}
 	}
 
 	return nil
