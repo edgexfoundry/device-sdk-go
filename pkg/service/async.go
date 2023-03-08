@@ -11,10 +11,9 @@ import (
 	"context"
 	"fmt"
 	"regexp"
-	"sync"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
@@ -34,12 +33,7 @@ import (
 // is greater than or equal to two. Alternatively, we can process
 // AsyncValues one by one in the same order by changing the AsyncBufferSize
 // value to one.
-func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGroup, dic *di.Container) {
-	wg.Add(1)
-	defer func() {
-		wg.Done()
-	}()
-
+func (s *deviceService) processAsyncResults(ctx context.Context, dic *di.Container) {
 	working := make(chan bool, s.config.Device.AsyncBufferSize)
 	for {
 		select {
@@ -52,18 +46,18 @@ func (s *DeviceService) processAsyncResults(ctx context.Context, wg *sync.WaitGr
 }
 
 // sendAsyncValues convert AsyncValues to event and send the event to CoreData
-func (s *DeviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan bool, dic *di.Container) {
+func (s *deviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan bool, dic *di.Container) {
 	working <- true
 	defer func() {
 		<-working
 	}()
 
 	if len(acv.CommandValues) == 0 {
-		s.LoggingClient.Error("Skip sending AsyncValues because the CommandValues is empty.")
+		s.lc.Error("Skip sending AsyncValues because the CommandValues is empty.")
 		return
 	}
 	if len(acv.CommandValues) > 1 && acv.SourceName == "" {
-		s.LoggingClient.Error("Skip sending AsyncValues because the SourceName is empty.")
+		s.lc.Error("Skip sending AsyncValues because the SourceName is empty.")
 		return
 	}
 	// We can use the first reading's DeviceResourceName as the SourceName
@@ -73,7 +67,7 @@ func (s *DeviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan
 	}
 	event, err := transformer.CommandValuesToEventDTO(acv.CommandValues, acv.DeviceName, acv.SourceName, dic)
 	if err != nil {
-		s.LoggingClient.Errorf("failed to transform CommandValues to Event: %v", err)
+		s.lc.Errorf("failed to transform CommandValues to Event: %v", err)
 		return
 	}
 
@@ -82,11 +76,7 @@ func (s *DeviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan
 
 // processAsyncFilterAndAdd filter and add devices discovered by
 // device service protocol discovery.
-func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
-	defer func() {
-		wg.Done()
-	}()
+func (s *deviceService) processAsyncFilterAndAdd(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -96,13 +86,13 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 			pws := cache.ProvisionWatchers().All()
 			for _, d := range devices {
 				for _, pw := range pws {
-					if checkAllowList(d, pw, s.LoggingClient) && checkBlockList(d, pw, s.LoggingClient) {
+					if s.checkAllowList(d, pw) && s.checkBlockList(d, pw) {
 						if _, ok := cache.Devices().ForName(d.Name); ok {
-							s.LoggingClient.Debugf("Candidate discovered device %s already existed", d.Name)
+							s.lc.Debugf("Candidate discovered device %s already existed", d.Name)
 							break
 						}
 
-						s.LoggingClient.Infof("Adding discovered device %s to Metadata", d.Name)
+						s.lc.Infof("Adding discovered device %s to Metadata", d.Name)
 						device := models.Device{
 							Name:           d.Name,
 							Description:    d.Description,
@@ -116,21 +106,21 @@ func (s *DeviceService) processAsyncFilterAndAdd(ctx context.Context, wg *sync.W
 						}
 
 						req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))
-						_, err := s.edgexClients.DeviceClient.Add(ctx, []requests.AddDeviceRequest{req})
+						_, err := container.DeviceClientFrom(s.dic.Get).Add(ctx, []requests.AddDeviceRequest{req})
 						if err != nil {
-							s.LoggingClient.Errorf("failed to create discovered device %s: %v", device.Name, err)
+							s.lc.Errorf("failed to create discovered device %s: %v", device.Name, err)
 						} else {
 							break
 						}
 					}
 				}
 			}
-			s.LoggingClient.Debug("Filtered device addition finished")
+			s.lc.Debug("Filtered device addition finished")
 		}
 	}
 }
 
-func checkAllowList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc logger.LoggingClient) bool {
+func (s *deviceService) checkAllowList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher) bool {
 	// ignore the device protocol properties name
 	for _, protocol := range d.Protocols {
 		matchedCount := 0
@@ -138,12 +128,12 @@ func checkAllowList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc
 			if value, ok := protocol[name]; ok {
 				valueString := fmt.Sprintf("%v", value)
 				if valueString == "" {
-					lc.Debugf("Skipping identifier %s, cannot transform %s value '%v' to string type for discovered device %s", name, name, value, d.Name)
+					s.lc.Debugf("Skipping identifier %s, cannot transform %s value '%v' to string type for discovered device %s", name, name, value, d.Name)
 					continue
 				}
 				matched, err := regexp.MatchString(regex, valueString)
 				if !matched || err != nil {
-					lc.Debugf("Discovered Device %s %s value '%v' did not match PW identifier: %s", d.Name, name, value, regex)
+					s.lc.Debugf("Discovered Device %s %s value '%v' did not match PW identifier: %s", d.Name, name, value, regex)
 					break
 				}
 				matchedCount += 1
@@ -157,7 +147,7 @@ func checkAllowList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc
 	return false
 }
 
-func checkBlockList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc logger.LoggingClient) bool {
+func (s *deviceService) checkBlockList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher) bool {
 	// a candidate should match none of the blocking identifiers
 	for name, blacklist := range pw.BlockingIdentifiers {
 		// ignore the device protocol properties name
@@ -165,12 +155,12 @@ func checkBlockList(d sdkModels.DiscoveredDevice, pw models.ProvisionWatcher, lc
 			if value, ok := protocol[name]; ok {
 				valueString := fmt.Sprintf("%v", value)
 				if valueString == "" {
-					lc.Debugf("Skipping identifier %s, cannot transform %s value '%v' to string type for discovered device %s", name, name, value, d.Name)
+					s.lc.Debugf("Skipping identifier %s, cannot transform %s value '%v' to string type for discovered device %s", name, name, value, d.Name)
 					continue
 				}
 				for _, v := range blacklist {
 					if valueString == v {
-						lc.Debugf("Discovered Device %s %s value cannot be %v", d.Name, name, value)
+						s.lc.Debugf("Discovered Device %s %s value cannot be %v", d.Name, name, value)
 						return false
 					}
 				}

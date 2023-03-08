@@ -10,86 +10,129 @@ import (
 	"context"
 	"sync"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
-
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/messaging"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 // Bootstrap contains references to dependencies required by the BootstrapHandler.
 type Bootstrap struct {
-	router *mux.Router
+	deviceService *deviceService
+	router        *mux.Router
 }
 
 // NewBootstrap is a factory method that returns an initialized Bootstrap receiver struct.
-func NewBootstrap(router *mux.Router) *Bootstrap {
+func NewBootstrap(ds *deviceService, router *mux.Router) *Bootstrap {
 	return &Bootstrap{
-		router: router,
+		deviceService: ds,
+		router:        router,
 	}
 }
 
-func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
-	ds.UpdateFromContainer(b.router, dic)
-	ds.ctx = ctx
-	ds.wg = wg
-	ds.controller.InitRestRoutes()
+func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) (success bool) {
+	s := b.deviceService
+	s.wg = wg
+	s.ctx = ctx
+	s.lc = bootstrapContainer.LoggingClientFrom(dic.Get)
+	s.autoEventManager = container.AutoEventManagerFrom(dic.Get)
+	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
+	s.controller.InitRestRoutes()
 
-	err := cache.InitCache(ds.ServiceName, dic)
+	edgexErr := cache.InitCache(s.serviceKey, dic)
+	if edgexErr != nil {
+		s.lc.Errorf("Failed to init cache: %s", edgexErr.Error())
+		return false
+	}
+
+	if s.AsyncReadingsEnabled() {
+		s.asyncCh = make(chan *models.AsyncValues, s.config.Device.AsyncBufferSize)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.processAsyncResults(ctx, dic)
+		}()
+	}
+
+	if s.DeviceDiscoveryEnabled() {
+		s.deviceCh = make(chan []models.DiscoveredDevice, 1)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.processAsyncFilterAndAdd(ctx)
+		}()
+	}
+
+	err := s.driver.Initialize(s)
 	if err != nil {
-		ds.LoggingClient.Errorf("Failed to init cache: %v", err)
+		s.lc.Errorf("ProtocolDriver init failed: %s", err.Error())
 		return false
 	}
 
-	if ds.AsyncReadings() {
-		ds.asyncCh = make(chan *models.AsyncValues, ds.config.Device.AsyncBufferSize)
-		go ds.processAsyncResults(ctx, wg, dic)
-	}
-	if ds.DeviceDiscovery() {
-		ds.deviceCh = make(chan []models.DiscoveredDevice, 1)
-		go ds.processAsyncFilterAndAdd(ctx, wg)
-	}
-
-	e := ds.driver.Initialize(ds.LoggingClient, ds.asyncCh, ds.deviceCh)
-	if e != nil {
-		ds.LoggingClient.Errorf("Failed to init ProtocolDriver: %v", e)
-		return false
-	}
-	ds.initialized = true
-
-	err = ds.selfRegister()
-	if err != nil {
-		ds.LoggingClient.Errorf("Failed to register service on Metadata: %v", err)
+	edgexErr = s.selfRegister()
+	if edgexErr != nil {
+		s.lc.Errorf("Failed to register %s on Metadata: %s", s.serviceKey, edgexErr.Error())
 		return false
 	}
 
-	err = provision.LoadProfiles(ds.config.Device.ProfilesDir, dic)
-	if err != nil {
-		ds.LoggingClient.Errorf("Failed to create the pre-defined device profiles: %v", err)
+	edgexErr = provision.LoadProfiles(s.config.Device.ProfilesDir, dic)
+	if edgexErr != nil {
+		s.lc.Errorf("Failed to load device profiles: %s", edgexErr.Error())
 		return false
 	}
 
-	err = provision.LoadDevices(ds.config.Device.DevicesDir, dic)
-	if err != nil {
-		ds.LoggingClient.Errorf("Failed to create the pre-defined devices: %v", err)
+	edgexErr = provision.LoadDevices(s.config.Device.DevicesDir, dic)
+	if edgexErr != nil {
+		s.lc.Errorf("Failed to load devices: %s", edgexErr.Error())
 		return false
 	}
 
-	err = provision.LoadProvisionWatchers(ds.config.Device.ProvisionWatchersDir, dic)
-	if err != nil {
-		ds.LoggingClient.Errorf("Failed to create the pre-defined provision watchers: %v", err)
+	edgexErr = provision.LoadProvisionWatchers(s.config.Device.ProvisionWatchersDir, dic)
+	if edgexErr != nil {
+		s.lc.Errorf("Failed to load provision watchers: %s", edgexErr.Error())
 		return false
 	}
 
-	ds.manager.StartAutoEvents()
+	s.autoEventManager.StartAutoEvents()
 
-	// Very important that this handler is called after the NewServiceMetrics handler so
+	// Very important that this bootstrap handler is called after the NewServiceMetrics handler so
 	// MetricsManager dependency has been created.
-	common.InitializeSentMetrics(ds.LoggingClient, dic)
+	common.InitializeSentMetrics(s.lc, dic)
+	return true
+}
+
+func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
+	if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
+		return false
+	}
+
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	err := messaging.SubscribeCommands(ctx, dic)
+	if err != nil {
+		lc.Errorf("Failed to subscribe internal command request: %v", err)
+		return false
+	}
+
+	err = messaging.MetadataSystemEventsCallback(ctx, dic)
+	if err != nil {
+		lc.Errorf("Failed to subscribe Metadata system events: %v", err)
+		return false
+	}
+
+	err = messaging.SubscribeDeviceValidation(ctx, dic)
+	if err != nil {
+		lc.Errorf("Failed to subscribe device validation request: %v", err)
+		return false
+	}
 
 	return true
 }

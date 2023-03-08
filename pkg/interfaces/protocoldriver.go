@@ -1,40 +1,41 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// This package defines interfaces and structs used to build an EdgeX Foundry Device
-// Service.  The interfaces provide an asbstraction layer for the device
+// Package interfaces defines interfaces and structs used to build an EdgeX Foundry Device
+// Service.  The interfaces provide an abstraction layer for the device
 // or protocol specific logic of a Device Service, and the structs represents request
 // and response data format used by the protocol driver.
-package models
+package interfaces
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 // ProtocolDriver is a low-level device-specific interface used by
-// by other components of an EdgeX Device Service to interact with
+// other components of an EdgeX Device Service to interact with
 // a specific class of devices.
 type ProtocolDriver interface {
 	// Initialize performs protocol-specific initialization for the device service.
 	// The given *AsyncValues channel can be used to push asynchronous events and
 	// readings to Core Data. The given []DiscoveredDevice channel is used to send
 	// discovered devices that will be filtered and added to Core Metadata asynchronously.
-	Initialize(lc logger.LoggingClient, asyncCh chan<- *AsyncValues, deviceCh chan<- []DiscoveredDevice) error
+	Initialize(sdk DeviceServiceSDK) error
 
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource.
-	HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []CommandRequest) ([]*CommandValue, error)
+	HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkModels.CommandRequest) ([]*sdkModels.CommandValue, error)
 
 	// HandleWriteCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource.
 	// Since the commands are actuation commands, params provide parameters for the individual
 	// command.
-	HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []CommandRequest, params []*CommandValue) error
+	HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkModels.CommandRequest, params []*sdkModels.CommandValue) error
 
 	// Stop instructs the protocol-specific DS code to shutdown gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible

@@ -29,12 +29,12 @@ import (
 )
 
 type RestController struct {
-	lc             logger.LoggingClient
+	serviceName    string
 	router         *mux.Router
 	reservedRoutes map[string]bool
-	dic            *di.Container
-	serviceName    string
 	customConfig   interfaces.UpdatableConfig
+	lc             logger.LoggingClient
+	dic            *di.Container
 }
 
 func NewRestController(r *mux.Router, dic *di.Container, serviceName string) *RestController {

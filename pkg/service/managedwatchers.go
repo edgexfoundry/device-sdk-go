@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
@@ -22,20 +23,20 @@ import (
 
 // AddProvisionWatcher adds a new Watcher to the cache and Core Metadata
 // Returns new Watcher id or non-nil error.
-func (s *DeviceService) AddProvisionWatcher(watcher models.ProvisionWatcher) (string, error) {
+func (s *deviceService) AddProvisionWatcher(watcher models.ProvisionWatcher) (string, error) {
 	if pw, ok := cache.ProvisionWatchers().ForName(watcher.Name); ok {
 		return pw.Id,
 			errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, ProvisionWatcher %s exists", watcher.Name), nil)
 	}
 
-	watcher.ServiceName = s.ServiceName
+	watcher.ServiceName = s.serviceKey
 
-	s.LoggingClient.Debugf("Adding managed ProvisionWatcher %s", watcher.Name)
+	s.lc.Debugf("Adding managed ProvisionWatcher %s", watcher.Name)
 	req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(watcher))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	res, err := s.edgexClients.ProvisionWatcherClient.Add(ctx, []requests.AddProvisionWatcherRequest{req})
+	res, err := container.ProvisionWatcherClientFrom(s.dic.Get).Add(ctx, []requests.AddProvisionWatcherRequest{req})
 	if err != nil {
-		s.LoggingClient.Errorf("failed to add ProvisionWatcher to Core Metadata: %v", watcher.Name, err)
+		s.lc.Errorf("failed to add ProvisionWatcher to Core Metadata: %v", watcher.Name, err)
 		return "", err
 	}
 
@@ -43,16 +44,16 @@ func (s *DeviceService) AddProvisionWatcher(watcher models.ProvisionWatcher) (st
 }
 
 // ProvisionWatchers return all managed Watchers from cache
-func (s *DeviceService) ProvisionWatchers() []models.ProvisionWatcher {
+func (s *deviceService) ProvisionWatchers() []models.ProvisionWatcher {
 	return cache.ProvisionWatchers().All()
 }
 
 // GetProvisionWatcherByName returns the Watcher by its name if it exists in the cache, or returns an error.
-func (s *DeviceService) GetProvisionWatcherByName(name string) (models.ProvisionWatcher, error) {
+func (s *deviceService) GetProvisionWatcherByName(name string) (models.ProvisionWatcher, error) {
 	pw, ok := cache.ProvisionWatchers().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find ProvisionWatcher %s in cache", name)
-		s.LoggingClient.Error(msg)
+		s.lc.Error(msg)
 		return models.ProvisionWatcher{}, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 	return pw, nil
@@ -60,19 +61,19 @@ func (s *DeviceService) GetProvisionWatcherByName(name string) (models.Provision
 
 // RemoveProvisionWatcher removes the specified Watcher by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
-func (s *DeviceService) RemoveProvisionWatcher(name string) error {
+func (s *deviceService) RemoveProvisionWatcher(name string) error {
 	pw, ok := cache.ProvisionWatchers().ForName(name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find ProvisionWatcher %s in cache", name)
-		s.LoggingClient.Error(msg)
+		s.lc.Error(msg)
 		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 
-	s.LoggingClient.Debugf("Removing managed ProvisionWatcher: %s", pw.Name)
+	s.lc.Debugf("Removing managed ProvisionWatcher: %s", pw.Name)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	_, err := s.edgexClients.ProvisionWatcherClient.DeleteProvisionWatcherByName(ctx, name)
+	_, err := container.ProvisionWatcherClientFrom(s.dic.Get).DeleteProvisionWatcherByName(ctx, name)
 	if err != nil {
-		s.LoggingClient.Errorf("failed to delete ProvisionWatcher %s in Core Metadata", name)
+		s.lc.Errorf("failed to delete ProvisionWatcher %s in Core Metadata", name)
 		return err
 	}
 
@@ -81,21 +82,21 @@ func (s *DeviceService) RemoveProvisionWatcher(name string) error {
 
 // UpdateProvisionWatcher updates the Watcher in the cache and ensures that the
 // copy in Core Metadata is also updated.
-func (s *DeviceService) UpdateProvisionWatcher(watcher models.ProvisionWatcher) error {
+func (s *deviceService) UpdateProvisionWatcher(watcher models.ProvisionWatcher) error {
 	_, ok := cache.ProvisionWatchers().ForName(watcher.Name)
 	if !ok {
 		msg := fmt.Sprintf("failed to find ProvisionWatcher %s in cache", watcher.Name)
-		s.LoggingClient.Error(msg)
+		s.lc.Error(msg)
 		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
 	}
 
-	s.LoggingClient.Debugf("Updating managed ProvisionWatcher: %s", watcher.Name)
+	s.lc.Debugf("Updating managed ProvisionWatcher: %s", watcher.Name)
 	req := requests.NewUpdateProvisionWatcherRequest(dtos.FromProvisionWatcherModelToUpdateDTO(watcher))
 	req.ProvisionWatcher.Id = nil
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	_, err := s.edgexClients.ProvisionWatcherClient.Update(ctx, []requests.UpdateProvisionWatcherRequest{req})
+	_, err := container.ProvisionWatcherClientFrom(s.dic.Get).Update(ctx, []requests.UpdateProvisionWatcherRequest{req})
 	if err != nil {
-		s.LoggingClient.Errorf("failed to update ProvisionWatcher %s in Core Metadata: %v", watcher.Name, err)
+		s.lc.Errorf("failed to update ProvisionWatcher %s in Core Metadata: %v", watcher.Name, err)
 		return err
 	}
 

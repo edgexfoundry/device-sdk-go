@@ -11,23 +11,23 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
-	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models/mocks"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	dtoCommon "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
-
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces/mocks"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
 
 const (

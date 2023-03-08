@@ -79,7 +79,7 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 	}
 
 	lc.Debugf("starting AutoEvents for device %s", device.Name)
-	container.ManagerFrom(dic.Get).RestartForDevice(device.Name)
+	container.AutoEventManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
 }
 
@@ -129,7 +129,7 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	autoEventManager := container.ManagerFrom(dic.Get)
+	autoEventManager := container.AutoEventManagerFrom(dic.Get)
 	if device.AdminState == models.Locked {
 		lc.Debugf("stopping AutoEvents for the locked device %s", device.Name)
 		autoEventManager.StopForDevice(device.Name)
@@ -146,7 +146,7 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	device, ok := cache.Devices().ForName(name)
 	if ok {
 		lc.Debugf("stopping AutoEvents for device %s", device.Name)
-		container.ManagerFrom(dic.Get).StopForDevice(device.Name)
+		container.AutoEventManagerFrom(dic.Get).StopForDevice(device.Name)
 	} else {
 		errMsg := fmt.Sprintf("failed to find device %s", name)
 		return errors.NewCommonEdgeX(errors.KindInvalidId, errMsg, nil)
