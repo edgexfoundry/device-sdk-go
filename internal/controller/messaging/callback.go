@@ -22,7 +22,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
-func MetadataSystemEventCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
+func MetadataSystemEventsCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	deviceService := container.DeviceServiceFrom(dic.Get)

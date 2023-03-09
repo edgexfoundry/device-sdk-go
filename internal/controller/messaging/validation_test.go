@@ -29,7 +29,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models/mocks"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces/mocks"
 )
 
 const (

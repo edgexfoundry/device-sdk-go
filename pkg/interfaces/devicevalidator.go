@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package models
+package interfaces
 
 import "github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 

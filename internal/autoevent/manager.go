@@ -43,7 +43,7 @@ func BootstrapHandler(
 	}
 
 	dic.Update(di.ServiceConstructorMap{
-		container.ManagerName: func(get di.Get) interface{} {
+		container.AutoEventManagerName: func(get di.Get) interface{} {
 			return m
 		},
 	})

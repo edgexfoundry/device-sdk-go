@@ -10,23 +10,23 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 )
 
 // DeviceServiceName contains the name of device service struct in the DIC.
 var DeviceServiceName = di.TypeInstanceToName(models.DeviceService{})
 
 // ProtocolDiscoveryName contains the name of protocol discovery implementation in the DIC.
-var ProtocolDiscoveryName = di.TypeInstanceToName((*sdkModels.ProtocolDiscovery)(nil))
+var ProtocolDiscoveryName = di.TypeInstanceToName((*interfaces.ProtocolDiscovery)(nil))
 
 // ProtocolDriverName contains the name of protocol driver implementation in the DIC.
-var ProtocolDriverName = di.TypeInstanceToName((*sdkModels.ProtocolDriver)(nil))
+var ProtocolDriverName = di.TypeInstanceToName((*interfaces.ProtocolDriver)(nil))
 
-// ManagerName contains the name of autoevent manager implementation in the DIC
-var ManagerName = di.TypeInstanceToName((*sdkModels.AutoEventManager)(nil))
+// AutoEventManagerName contains the name of autoevent manager implementation in the DIC
+var AutoEventManagerName = di.TypeInstanceToName((*interfaces.AutoEventManager)(nil))
 
 // DeviceValidatorName contains the name of device validator implementation in the DIC.
-var DeviceValidatorName = di.TypeInstanceToName((*sdkModels.DeviceValidator)(nil))
+var DeviceValidatorName = di.TypeInstanceToName((*interfaces.DeviceValidator)(nil))
 
 // DeviceServiceFrom helper function queries the DIC and returns device service struct.
 func DeviceServiceFrom(get di.Get) *models.DeviceService {
@@ -34,8 +34,8 @@ func DeviceServiceFrom(get di.Get) *models.DeviceService {
 }
 
 // ProtocolDiscoveryFrom helper function queries the DIC and returns protocol discovery implementation.
-func ProtocolDiscoveryFrom(get di.Get) sdkModels.ProtocolDiscovery {
-	casted, ok := get(ProtocolDiscoveryName).(sdkModels.ProtocolDiscovery)
+func ProtocolDiscoveryFrom(get di.Get) interfaces.ProtocolDiscovery {
+	casted, ok := get(ProtocolDiscoveryName).(interfaces.ProtocolDiscovery)
 	if ok {
 		return casted
 	}
@@ -43,8 +43,8 @@ func ProtocolDiscoveryFrom(get di.Get) sdkModels.ProtocolDiscovery {
 }
 
 // DeviceValidatorFrom helper function queries the DIC and returns device validator implementation.
-func DeviceValidatorFrom(get di.Get) sdkModels.DeviceValidator {
-	casted, ok := get(DeviceValidatorName).(sdkModels.DeviceValidator)
+func DeviceValidatorFrom(get di.Get) interfaces.DeviceValidator {
+	casted, ok := get(DeviceValidatorName).(interfaces.DeviceValidator)
 	if ok {
 		return casted
 	}
@@ -52,11 +52,11 @@ func DeviceValidatorFrom(get di.Get) sdkModels.DeviceValidator {
 }
 
 // ProtocolDriverFrom helper function queries the DIC and returns protocol driver implementation.
-func ProtocolDriverFrom(get di.Get) sdkModels.ProtocolDriver {
-	return get(ProtocolDriverName).(sdkModels.ProtocolDriver)
+func ProtocolDriverFrom(get di.Get) interfaces.ProtocolDriver {
+	return get(ProtocolDriverName).(interfaces.ProtocolDriver)
 }
 
-// ManagerFrom helper function queries the DIC and returns autoevent manager implementation
-func ManagerFrom(get di.Get) sdkModels.AutoEventManager {
-	return get(ManagerName).(sdkModels.AutoEventManager)
+// AutoEventManagerFrom helper function queries the DIC and returns autoevent manager implementation
+func AutoEventManagerFrom(get di.Get) interfaces.AutoEventManager {
+	return get(AutoEventManagerName).(interfaces.AutoEventManager)
 }

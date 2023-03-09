@@ -5,7 +5,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// This package provides a simple example implementation of
+// Package driver provides a simple example implementation of
 // ProtocolDriver interface.
 package driver
 
@@ -34,6 +34,7 @@ import (
 const readCommandsExecutedName = "ReadCommandsExecuted"
 
 type SimpleDriver struct {
+	sdk                  interfaces.DeviceServiceSDK
 	lc                   logger.LoggingClient
 	asyncCh              chan<- *sdkModels.AsyncValues
 	deviceCh             chan<- []sdkModels.DiscoveredDevice
@@ -84,10 +85,11 @@ func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 
 // Initialize performs protocol-specific initialization for the device
 // service.
-func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkModels.AsyncValues, deviceCh chan<- []sdkModels.DiscoveredDevice) error {
-	s.lc = lc
-	s.asyncCh = asyncCh
-	s.deviceCh = deviceCh
+func (s *SimpleDriver) Initialize(sdk interfaces.DeviceServiceSDK) error {
+	s.sdk = sdk
+	s.lc = sdk.LoggingClient()
+	s.asyncCh = sdk.AsyncValuesChannel()
+	s.deviceCh = sdk.DiscoveredDeviceChannel()
 	s.serviceConfig = &config.ServiceConfig{}
 	s.counter = map[string]interface{}{
 		"f1": "ABC",
@@ -95,19 +97,17 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 	}
 	s.stringArray = []string{"foo", "bar"}
 
-	ds := interfaces.Service()
-
-	if err := ds.LoadCustomConfig(s.serviceConfig, "SimpleCustom"); err != nil {
+	if err := sdk.LoadCustomConfig(s.serviceConfig, "SimpleCustom"); err != nil {
 		return fmt.Errorf("unable to load 'SimpleCustom' custom configuration: %s", err.Error())
 	}
 
-	lc.Infof("Custom config is: %v", s.serviceConfig.SimpleCustom)
+	s.lc.Infof("Custom config is: %v", s.serviceConfig.SimpleCustom)
 
 	if err := s.serviceConfig.SimpleCustom.Validate(); err != nil {
 		return fmt.Errorf("'SimpleCustom' custom configuration validation failed: %s", err.Error())
 	}
 
-	if err := ds.ListenForCustomConfigChanges(
+	if err := sdk.ListenForCustomConfigChanges(
 		&s.serviceConfig.SimpleCustom.Writable,
 		"SimpleCustom/Writable", s.ProcessCustomConfigChanges); err != nil {
 		return fmt.Errorf("unable to listen for changes for 'SimpleCustom.Writable' custom configuration: %s", err.Error())
@@ -116,7 +116,7 @@ func (s *SimpleDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkMo
 	s.readCommandsExecuted = gometrics.NewCounter()
 
 	var err error
-	metricsManger := ds.GetMetricsManager()
+	metricsManger := sdk.MetricsManager()
 	if metricsManger != nil {
 		err = metricsManger.Register(readCommandsExecutedName, s.readCommandsExecuted, nil)
 	} else {

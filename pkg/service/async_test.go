@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -19,8 +19,15 @@ var d = sdkModels.DiscoveredDevice{
 	Name: "device-sdk-test",
 }
 
+func newDeviceService() *deviceService {
+	return &deviceService{
+		serviceKey: "test-service",
+		lc:         logger.NewMockClient(),
+	}
+}
+
 func Test_checkAllowList(t *testing.T) {
-	lc := logger.NewMockClient()
+	ds := newDeviceService()
 	pw := models.ProvisionWatcher{
 		Name: "test-watcher",
 		Identifiers: map[string]string{
@@ -85,14 +92,14 @@ func Test_checkAllowList(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			d.Protocols = testCase.protocols
-			result := checkAllowList(d, pw, lc)
+			result := ds.checkAllowList(d, pw)
 			assert.Equal(t, testCase.expected, result)
 		})
 	}
 }
 
 func Test_checkBlockList(t *testing.T) {
-	lc := logger.NewMockClient()
+	ds := newDeviceService()
 	pw := models.ProvisionWatcher{
 		Name: "test-watcher",
 		BlockingIdentifiers: map[string][]string{
@@ -141,7 +148,7 @@ func Test_checkBlockList(t *testing.T) {
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			d.Protocols = testCase.protocols
-			result := checkBlockList(d, pw, lc)
+			result := ds.checkBlockList(d, pw)
 			assert.Equal(t, testCase.expected, result)
 		})
 	}

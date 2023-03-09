@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package models
+package interfaces
 
 type AutoEventManager interface {
 	// StartAutoEvents starts all the AutoEvents of the device service
