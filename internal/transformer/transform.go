@@ -27,7 +27,7 @@ var (
 	originMutex    sync.Mutex
 )
 
-func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sourceName string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
+func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sourceName string, dataTransform bool, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	// in some case device service driver implementation would generate no readings
 	// in this case no event would be created. Based on the implementation there would be 2 scenarios:
 	// 1. uninitialized *CommandValue slices, i.e. nil
@@ -46,13 +46,12 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 	origin := getUniqueOrigin()
 	tags := make(map[string]interface{})
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	config := container.ConfigurationFrom(dic.Get)
-	readings := make([]dtos.BaseReading, 0, config.Device.MaxCmdOps)
+	readings := make([]dtos.BaseReading, 0, len(cvs))
 	for _, cv := range cvs {
 		if cv == nil {
 			continue
 		}
-		// double check the CommandValue return from ProtocolDriver match device command
+		// double-check the CommandValue return from ProtocolDriver match device command
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, cv.DeviceResourceName)
 		if !ok {
 			msg := fmt.Sprintf("failed to find DeviceResource %s in Device %s for CommandValue (%s)", cv.DeviceResourceName, deviceName, cv.String())
@@ -61,7 +60,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		}
 
 		// perform data transformation
-		if config.Device.DataTransform {
+		if dataTransform {
 			edgexErr := TransformReadResult(cv, dr.Properties)
 			if edgexErr != nil {
 				lc.Errorf("failed to transform CommandValue (%s): %v", cv.String(), edgexErr)
@@ -111,6 +110,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			return nil, errors.NewCommonEdgeXWrapper(err)
 		}
 		// ReadingUnits=true to include units in the reading
+		config := container.ConfigurationFrom(dic.Get)
 		if config.Writable.Reading.ReadingUnits {
 			reading.Units = dr.Properties.Units
 		}

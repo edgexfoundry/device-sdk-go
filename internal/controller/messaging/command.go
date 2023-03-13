@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022 IOTech Ltd
+// Copyright (C) 2022-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -183,7 +183,7 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 
 	// TODO: fix properly in EdgeX 3.0
 	ctx = context.WithValue(ctx, common.CorrelationHeader, msgEnvelope.CorrelationID) // nolint: staticcheck
-	edgexErr := application.SetCommand(ctx, deviceName, commandName, rawQuery, requestPayload, dic)
+	event, edgexErr := application.SetCommand(ctx, deviceName, commandName, rawQuery, requestPayload, dic)
 	if edgexErr != nil {
 		lc.Errorf("Failed to process set device command %s for device %s: %s", commandName, deviceName, edgexErr.Error())
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, edgexErr.Error())
@@ -209,6 +209,10 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 	if err != nil {
 		lc.Errorf("Failed to publish command response: %s", err.Error())
 		return
+	}
+
+	if event != nil {
+		go sdkCommon.SendEvent(event, msgEnvelope.CorrelationID, dic)
 	}
 }
 

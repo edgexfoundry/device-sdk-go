@@ -63,33 +63,34 @@ func GetCommand(ctx context.Context, deviceName string, commandName string, quer
 	return res, nil
 }
 
-func SetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, requests map[string]any, dic *di.Container) errors.EdgeX {
+func SetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	if deviceName == "" {
-		return errors.NewCommonEdgeX(errors.KindContractInvalid, "device name is empty", nil)
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "device name is empty", nil)
 	}
 	if commandName == "" {
-		return errors.NewCommonEdgeX(errors.KindContractInvalid, "command is empty", nil)
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "command is empty", nil)
 	}
 
 	device, err := validateServiceAndDeviceState(deviceName, dic)
 	if err != nil {
-		return errors.NewCommonEdgeXWrapper(err)
+		return nil, errors.NewCommonEdgeXWrapper(err)
 	}
 
+	var event *dtos.Event
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if cmdExist {
-		err = writeDeviceCommand(device, commandName, queryParams, requests, dic)
+		event, err = writeDeviceCommand(device, commandName, queryParams, requests, dic)
 	} else {
-		err = writeDeviceResource(device, commandName, queryParams, requests, dic)
+		event, err = writeDeviceResource(device, commandName, queryParams, requests, dic)
 	}
 
 	if err != nil {
-		return errors.NewCommonEdgeXWrapper(err)
+		return nil, errors.NewCommonEdgeXWrapper(err)
 	}
 
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	lc.Debugf("SET Device Command successfully. Device: %s, Source: %s, %s: %s", deviceName, commandName, common.CorrelationHeader, utils.FromContext(ctx, common.CorrelationHeader))
-	return nil
+	return event, nil
 }
 
 func readDeviceResource(device models.Device, resourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
@@ -128,7 +129,8 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 	}
 
 	// convert CommandValue to Event
-	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dr.Name, dic)
+	configuration := container.ConfigurationFrom(dic.Get)
+	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dr.Name, configuration.Device.DataTransform, dic)
 	if edgexErr != nil {
 		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
 	}
@@ -185,7 +187,7 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 	}
 
 	// convert CommandValue to Event
-	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dc.Name, dic)
+	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dc.Name, configuration.Device.DataTransform, dic)
 	if edgexErr != nil {
 		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to transform CommandValue to Event", edgexErr)
 	}
@@ -193,16 +195,16 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 	return res, nil
 }
 
-func writeDeviceResource(device models.Device, resourceName string, attributes string, requests map[string]any, dic *di.Container) errors.EdgeX {
+func writeDeviceResource(device models.Device, resourceName string, attributes string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(device.ProfileName, resourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceResource %s not found", resourceName)
-		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not read-only
 	if dr.Properties.ReadWrite == common.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", dr.Name)
-		return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
 	// check set parameters contains provided deviceResource
@@ -212,14 +214,14 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 			v = dr.Properties.DefaultValue
 		} else {
 			errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
-			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+			return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 	}
 
 	// create CommandValue
 	cv, edgexErr := createCommandValueFromDeviceResource(dr, v)
 	if edgexErr != nil {
-		return errors.NewCommonEdgeX(errors.Kind(edgexErr), "failed to create CommandValue", edgexErr)
+		return nil, errors.NewCommonEdgeX(errors.Kind(edgexErr), "failed to create CommandValue", edgexErr)
 	}
 
 	// prepare CommandRequest
@@ -239,7 +241,7 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 	if configuration.Device.DataTransform {
 		edgexErr = transformer.TransformWriteParameter(cv, dr.Properties)
 		if edgexErr != nil {
-			return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", edgexErr)
+			return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", edgexErr)
 		}
 	}
 
@@ -248,28 +250,33 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 	err := driver.HandleWriteCommands(device.Name, device.Protocols, reqs, []*sdkModels.CommandValue{cv})
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceResource %s for %s", dr.Name, device.Name)
-		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	return nil
+	// Updated resource value will be published to MessageBus as long as it's not write-only
+	if dr.Properties.ReadWrite != common.ReadWrite_W {
+		return transformer.CommandValuesToEventDTO([]*sdkModels.CommandValue{cv}, device.Name, resourceName, false, dic)
+	}
+
+	return nil, nil
 }
 
-func writeDeviceCommand(device models.Device, commandName string, attributes string, requests map[string]any, dic *di.Container) errors.EdgeX {
+func writeDeviceCommand(device models.Device, commandName string, attributes string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	dc, ok := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if !ok {
 		errMsg := fmt.Sprintf("deviceCommand %s not found", commandName)
-		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not read-only
 	if dc.ReadWrite == common.ReadWrite_R {
 		errMsg := fmt.Sprintf("deviceCommand %s is marked as read-only", dc.Name)
-		return errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
 	configuration := container.ConfigurationFrom(dic.Get)
 	if len(dc.ResourceOperations) > configuration.Device.MaxCmdOps {
 		errMsg := fmt.Sprintf("SET command %s exceed device %s MaxCmdOps (%d)", dc.Name, device.Name, configuration.Device.MaxCmdOps)
-		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 
 	// create CommandValues
@@ -280,7 +287,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, drName)
 		if !ok {
 			errMsg := fmt.Sprintf("deviceResource %s in SET commnd %s for %s not defined", drName, dc.Name, device.Name)
-			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+			return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
 		// check request body contains the deviceResource
@@ -292,7 +299,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 				value = dr.Properties.DefaultValue
 			} else {
 				errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
-				return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+				return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 			}
 		}
 
@@ -312,7 +319,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 		if err == nil {
 			cvs = append(cvs, cv)
 		} else {
-			return errors.NewCommonEdgeX(errors.Kind(err), "failed to create CommandValue", err)
+			return nil, errors.NewCommonEdgeX(errors.Kind(err), "failed to create CommandValue", err)
 		}
 	}
 
@@ -335,7 +342,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 		if configuration.Device.DataTransform {
 			err := transformer.TransformWriteParameter(cv, dr.Properties)
 			if err != nil {
-				return errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", err)
+				return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to transform set parameter", err)
 			}
 		}
 	}
@@ -345,10 +352,15 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 	err := driver.HandleWriteCommands(device.Name, device.Protocols, reqs, cvs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error writing DeviceCommand %s for %s", dc.Name, device.Name)
-		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
-	return nil
+	// Updated resource(s) value will be published to MessageBus as long as they're not write-only
+	if dc.ReadWrite != common.ReadWrite_W {
+		return transformer.CommandValuesToEventDTO(cvs, device.Name, commandName, false, dic)
+	}
+
+	return nil, nil
 }
 
 func validateServiceAndDeviceState(deviceName string, dic *di.Container) (models.Device, errors.EdgeX) {

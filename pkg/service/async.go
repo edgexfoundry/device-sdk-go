@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
@@ -20,6 +20,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/transformer"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 )
@@ -65,7 +66,9 @@ func (s *deviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan
 	if len(acv.CommandValues) == 1 && acv.SourceName == "" {
 		acv.SourceName = acv.CommandValues[0].DeviceResourceName
 	}
-	event, err := transformer.CommandValuesToEventDTO(acv.CommandValues, acv.DeviceName, acv.SourceName, dic)
+
+	configuration := container.ConfigurationFrom(dic.Get)
+	event, err := transformer.CommandValuesToEventDTO(acv.CommandValues, acv.DeviceName, acv.SourceName, configuration.Device.DataTransform, dic)
 	if err != nil {
 		s.lc.Errorf("failed to transform CommandValues to Event: %v", err)
 		return
@@ -106,7 +109,7 @@ func (s *deviceService) processAsyncFilterAndAdd(ctx context.Context) {
 						}
 
 						req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))
-						_, err := container.DeviceClientFrom(s.dic.Get).Add(ctx, []requests.AddDeviceRequest{req})
+						_, err := bootstrapContainer.DeviceClientFrom(s.dic.Get).Add(ctx, []requests.AddDeviceRequest{req})
 						if err != nil {
 							s.lc.Errorf("failed to create discovered device %s: %v", device.Name, err)
 						} else {

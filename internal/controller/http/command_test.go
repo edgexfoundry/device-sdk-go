@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022 IOTech Ltd
+// Copyright (C) 2022-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -23,12 +24,14 @@ import (
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	messagingMocks "github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces/mocks"
@@ -318,12 +321,13 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 }
 
 func TestRestController_SetCommand(t *testing.T) {
-	validRequest := map[string]any{testResource: "value"}
+	validRequest := map[string]any{testResource: "value", writeOnlyResource: "value"}
 	invalidRequest := map[string]any{"invalid": "test"}
 	emptyValueRequest := map[string]any{objectResource: ""}
 
 	dic := mockDic()
 
+	sdkCommon.InitializeSentMetrics(logger.NewMockClient(), dic)
 	err := cache.InitCache(testService, dic)
 	require.NoError(t, err)
 
@@ -338,8 +342,10 @@ func TestRestController_SetCommand(t *testing.T) {
 		expectedStatusCode int
 	}{
 		{"valid - device resource", testDevice, testResource, validRequest, http.StatusOK},
+		{"valid - write-only device resource", testDevice, writeOnlyResource, validRequest, http.StatusOK},
 		{"valid - device resource not specified in request body but default value provided", testDevice, testResource, invalidRequest, http.StatusOK},
 		{"valid - device command", testDevice, testCommand, validRequest, http.StatusOK},
+		{"valid - write-only device command", testDevice, writeOnlyCommand, validRequest, http.StatusOK},
 		{"valid - device command not specified in request body but default value provided", testDevice, testCommand, invalidRequest, http.StatusOK},
 		{"invalid - device name parameter is empty", "", testResource, validRequest, http.StatusBadRequest},
 		{"invalid - command is empty", testDevice, "", validRequest, http.StatusBadRequest},
@@ -363,6 +369,22 @@ func TestRestController_SetCommand(t *testing.T) {
 			req = mux.SetURLVars(req, map[string]string{common.Name: testCase.deviceName, common.Command: testCase.commandName})
 			require.NoError(t, err)
 
+			var wg sync.WaitGroup
+			if testCase.commandName != writeOnlyCommand && testCase.commandName != writeOnlyResource {
+				wg.Add(1)
+			}
+			messagingClientMock := &messagingMocks.MessageClient{}
+			messagingClientMock.On("Publish", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+				go func() {
+					defer wg.Done()
+				}()
+			}).Return(nil)
+			dic.Update(di.ServiceConstructorMap{
+				bootstrapContainer.MessagingClientName: func(get di.Get) any {
+					return messagingClientMock
+				},
+			})
+
 			// Act
 			recorder := httptest.NewRecorder()
 			handler := http.HandlerFunc(controller.SetCommand)
@@ -378,6 +400,11 @@ func TestRestController_SetCommand(t *testing.T) {
 			assert.Equal(t, testCase.expectedStatusCode, res.StatusCode, "Response status code not as expected")
 			if testCase.expectedStatusCode == http.StatusOK {
 				assert.Empty(t, res.Message, "Message should be empty when it is successful")
+
+				wg.Wait()
+				if testCase.commandName != writeOnlyCommand && testCase.commandName != writeOnlyResource {
+					messagingClientMock.AssertNumberOfCalls(t, "Publish", 1)
+				}
 			} else {
 				assert.NotEmpty(t, res.Message, "Response message doesn't contain the error message")
 			}

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2021 IOTech Ltd
+// Copyright (C) 2021-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -168,7 +168,7 @@ func TestCommandValuesToEventDTO_ReadingUnits(t *testing.T) {
 					return configuration
 				},
 			})
-			event, err := CommandValuesToEventDTO(testCase.CommandValues, TestDevice, TestDeviceCommand, dic)
+			event, err := CommandValuesToEventDTO(testCase.CommandValues, TestDevice, TestDeviceCommand, configuration.Device.DataTransform, dic)
 			require.NoError(t, err)
 
 			assert.Equal(t, TestDevice, event.DeviceName)

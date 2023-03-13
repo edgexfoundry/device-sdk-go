@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2022 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -83,10 +83,15 @@ func (c *RestController) SetCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = application.SetCommand(ctx, deviceName, commandName, queryParams, requestParamsMap, c.dic)
+	event, err := application.SetCommand(ctx, deviceName, commandName, queryParams, requestParamsMap, c.dic)
 	if err != nil {
 		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 		return
+	}
+
+	if event != nil {
+		correlationId := utils.FromContext(ctx, common.CorrelationHeader)
+		go sdkCommon.SendEvent(event, correlationId, c.dic)
 	}
 
 	res := commonDTO.NewBaseResponse("", "", http.StatusOK)
