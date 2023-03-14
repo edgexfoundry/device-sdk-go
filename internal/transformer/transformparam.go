@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -39,19 +39,19 @@ func TransformWriteParameter(cv *dsModels.CommandValue, pv models.ResourceProper
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Offset != "" && pv.Offset != defaultOffset {
+	if pv.Offset != 0 && pv.Offset != defaultOffset {
 		newValue, err = transformOffset(newValue, pv.Offset, false)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Scale != "" && pv.Scale != defaultScale {
+	if pv.Scale != 0 && pv.Scale != defaultScale {
 		newValue, err = transformScale(newValue, pv.Scale, false)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Base != "" && pv.Base != defaultBase {
+	if pv.Base != 0 && pv.Base != defaultBase {
 		newValue, err = transformBase(newValue, pv.Base, false)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
