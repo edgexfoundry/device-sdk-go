@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2021 IOTech Ltd
+// Copyright (C) 2019-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,7 +9,6 @@ package transformer
 import (
 	"fmt"
 	"math"
-	"strconv"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -22,11 +21,11 @@ import (
 )
 
 const (
-	defaultBase   string = "0"
-	defaultScale  string = "1.0"
-	defaultOffset string = "0.0"
-	defaultMask   string = "0"
-	defaultShift  string = "0"
+	defaultBase   float64 = 0.0
+	defaultScale  float64 = 1.0
+	defaultOffset float64 = 0.0
+	defaultMask   uint64  = 0
+	defaultShift  int64   = 0
 
 	Overflow = "overflow"
 	NaN      = "NaN"
@@ -50,33 +49,33 @@ func TransformReadResult(cv *sdkModels.CommandValue, pv models.ResourcePropertie
 	}
 	newValue := value
 
-	if pv.Mask != "" && pv.Mask != defaultMask &&
+	if pv.Mask != 0 && pv.Mask != defaultMask &&
 		(cv.Type == common.ValueTypeUint8 || cv.Type == common.ValueTypeUint16 || cv.Type == common.ValueTypeUint32 || cv.Type == common.ValueTypeUint64) {
 		newValue, err = transformReadMask(newValue, pv.Mask)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Shift != "" && pv.Shift != defaultShift &&
+	if pv.Shift != 0 && pv.Shift != defaultShift &&
 		(cv.Type == common.ValueTypeUint8 || cv.Type == common.ValueTypeUint16 || cv.Type == common.ValueTypeUint32 || cv.Type == common.ValueTypeUint64) {
 		newValue, err = transformReadShift(newValue, pv.Shift)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Base != "" && pv.Base != defaultBase {
+	if pv.Base != 0 && pv.Base != defaultBase {
 		newValue, err = transformBase(newValue, pv.Base, true)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Scale != "" && pv.Scale != defaultScale {
+	if pv.Scale != 0 && pv.Scale != defaultScale {
 		newValue, err = transformScale(newValue, pv.Scale, true)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Offset != "" && pv.Offset != defaultOffset {
+	if pv.Offset != 0 && pv.Offset != defaultOffset {
 		newValue, err = transformOffset(newValue, pv.Offset, true)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
@@ -89,13 +88,7 @@ func TransformReadResult(cv *sdkModels.CommandValue, pv models.ResourcePropertie
 	return nil
 }
 
-func transformBase(value interface{}, base string, read bool) (interface{}, errors.EdgeX) {
-	b, err := strconv.ParseFloat(base, 64)
-	if err != nil {
-		errMsg := fmt.Sprintf("the base value %s of PropertyValue cannot be parsed to float64", base)
-		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-	}
-
+func transformBase(value any, base float64, read bool) (any, errors.EdgeX) {
 	var valueFloat64 float64
 	switch v := value.(type) {
 	case uint8:
@@ -121,9 +114,9 @@ func transformBase(value interface{}, base string, read bool) (interface{}, erro
 	}
 
 	if read {
-		valueFloat64 = math.Pow(b, valueFloat64)
+		valueFloat64 = math.Pow(base, valueFloat64)
 	} else {
-		valueFloat64 = math.Log(valueFloat64) / math.Log(b)
+		valueFloat64 = math.Log(valueFloat64) / math.Log(base)
 	}
 	inRange := checkTransformedValueInRange(value, valueFloat64)
 	if !inRange {
@@ -156,13 +149,7 @@ func transformBase(value interface{}, base string, read bool) (interface{}, erro
 	return value, nil
 }
 
-func transformScale(value interface{}, scale string, read bool) (interface{}, errors.EdgeX) {
-	s, err := strconv.ParseFloat(scale, 64)
-	if err != nil {
-		errMsg := fmt.Sprintf("the scale value %s of PropertyValue cannot be parsed to float64", scale)
-		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-	}
-
+func transformScale(value any, scale float64, read bool) (any, errors.EdgeX) {
 	var valueFloat64 float64
 	switch v := value.(type) {
 	case uint8:
@@ -188,9 +175,9 @@ func transformScale(value interface{}, scale string, read bool) (interface{}, er
 	}
 
 	if read {
-		valueFloat64 = valueFloat64 * s
+		valueFloat64 = valueFloat64 * scale
 	} else {
-		valueFloat64 = valueFloat64 / s
+		valueFloat64 = valueFloat64 / scale
 	}
 	inRange := checkTransformedValueInRange(value, valueFloat64)
 	if !inRange {
@@ -201,75 +188,69 @@ func transformScale(value interface{}, scale string, read bool) (interface{}, er
 	switch v := value.(type) {
 	case uint8:
 		if read {
-			value = v * uint8(s)
+			value = v * uint8(scale)
 		} else {
-			value = v / uint8(s)
+			value = v / uint8(scale)
 		}
 	case uint16:
 		if read {
-			value = v * uint16(s)
+			value = v * uint16(scale)
 		} else {
-			value = v / uint16(s)
+			value = v / uint16(scale)
 		}
 	case uint32:
 		if read {
-			value = v * uint32(s)
+			value = v * uint32(scale)
 		} else {
-			value = v / uint32(s)
+			value = v / uint32(scale)
 		}
 	case uint64:
 		if read {
-			value = v * uint64(s)
+			value = v * uint64(scale)
 		} else {
-			value = v / uint64(s)
+			value = v / uint64(scale)
 		}
 	case int8:
 		if read {
-			value = v * int8(s)
+			value = v * int8(scale)
 		} else {
-			value = v / int8(s)
+			value = v / int8(scale)
 		}
 	case int16:
 		if read {
-			value = v * int16(s)
+			value = v * int16(scale)
 		} else {
-			value = v / int16(s)
+			value = v / int16(scale)
 		}
 	case int32:
 		if read {
-			value = v * int32(s)
+			value = v * int32(scale)
 		} else {
-			value = v / int32(s)
+			value = v / int32(scale)
 		}
 	case int64:
 		if read {
-			value = v * int64(s)
+			value = v * int64(scale)
 		} else {
-			value = v / int64(s)
+			value = v / int64(scale)
 		}
 	case float32:
 		if read {
-			value = v * float32(s)
+			value = v * float32(scale)
 		} else {
-			value = v / float32(s)
+			value = v / float32(scale)
 		}
 	case float64:
 		if read {
-			value = v * s
+			value = v * scale
 		} else {
-			value = v / s
+			value = v / scale
 		}
 	}
 	return value, nil
 }
 
-func transformOffset(value interface{}, offset string, read bool) (interface{}, errors.EdgeX) {
-	o, err := strconv.ParseFloat(offset, 64)
-	if err != nil {
-		errMsg := fmt.Sprintf("the offset value %s of PropertyValue cannot be parsed to float64", offset)
-		return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-	}
-
+func transformOffset(value any, offset float64, read bool) (any, errors.EdgeX) {
 	var valueFloat64 float64
 	switch v := value.(type) {
 	case uint8:
@@ -295,9 +276,9 @@ func transformOffset(value interface{}, offset string, read bool) (interface{}, 
 	}
 
 	if read {
-		valueFloat64 = valueFloat64 + o
+		valueFloat64 = valueFloat64 + offset
 	} else {
-		valueFloat64 = valueFloat64 - 0
+		valueFloat64 = valueFloat64 - offset
 	}
 	inRange := checkTransformedValueInRange(value, valueFloat64)
 	if !inRange {
@@ -308,148 +289,108 @@ func transformOffset(value interface{}, offset string, read bool) (interface{}, 
 	switch v := value.(type) {
 	case uint8:
 		if read {
-			value = v + uint8(o)
+			value = v + uint8(offset)
 		} else {
-			value = v - uint8(o)
+			value = v - uint8(offset)
 		}
 	case uint16:
 		if read {
-			value = v + uint16(o)
+			value = v + uint16(offset)
 		} else {
-			value = v - uint16(o)
+			value = v - uint16(offset)
 		}
 	case uint32:
 		if read {
-			value = v + uint32(o)
+			value = v + uint32(offset)
 		} else {
-			value = v - uint32(o)
+			value = v - uint32(offset)
 		}
 	case uint64:
 		if read {
-			value = v + uint64(o)
+			value = v + uint64(offset)
 		} else {
-			value = v - uint64(o)
+			value = v - uint64(offset)
 		}
 	case int8:
 		if read {
-			value = v + int8(o)
+			value = v + int8(offset)
 		} else {
-			value = v - int8(o)
+			value = v - int8(offset)
 		}
 	case int16:
 		if read {
-			value = v + int16(o)
+			value = v + int16(offset)
 		} else {
-			value = v - int16(o)
+			value = v - int16(offset)
 		}
 	case int32:
 		if read {
-			value = v + int32(o)
+			value = v + int32(offset)
 		} else {
-			value = v - int32(o)
+			value = v - int32(offset)
 		}
 	case int64:
 		if read {
-			value = v + int64(o)
+			value = v + int64(offset)
 		} else {
-			value = v - int64(o)
+			value = v - int64(offset)
 		}
 	case float32:
 		if read {
-			value = v + float32(o)
+			value = v + float32(offset)
 		} else {
-			value = v - float32(o)
+			value = v - float32(offset)
 		}
 	case float64:
 		if read {
-			value = v + o
+			value = v + offset
 		} else {
-			value = v - o
+			value = v - offset
 		}
 	}
 	return value, nil
 }
 
-func transformReadMask(value interface{}, mask string) (interface{}, errors.EdgeX) {
+func transformReadMask(value any, mask uint64) (any, errors.EdgeX) {
 	switch v := value.(type) {
 	case uint8:
-		m, err := strconv.ParseUint(mask, 10, 8)
-		if err != nil {
-			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		value = v & uint8(m)
+		value = v & uint8(mask)
 	case uint16:
-		m, err := strconv.ParseUint(mask, 10, 16)
-		if err != nil {
-			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		value = v & uint16(m)
+		value = v & uint16(mask)
 	case uint32:
-		m, err := strconv.ParseUint(mask, 10, 32)
-		if err != nil {
-			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		value = v & uint32(m)
+		value = v & uint32(mask)
 	case uint64:
-		m, err := strconv.ParseUint(mask, 10, 64)
-		if err != nil {
-			errMsg := fmt.Sprintf("the mask value %s of PropertyValue cannot be parsed to %T", mask, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		value = v & m
+		value = v & mask
 	}
 
 	return value, nil
 }
 
-func transformReadShift(value interface{}, shift string) (interface{}, errors.EdgeX) {
+func transformReadShift(value any, shift int64) (any, errors.EdgeX) {
 	switch v := value.(type) {
 	case uint8:
-		s, err := strconv.ParseInt(shift, 10, 8)
-		if err != nil {
-			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		if s > 0 {
-			value = v << s
+		if shift > 0 {
+			value = v << int8(shift)
 		} else {
-			value = v >> (-s)
+			value = v >> int8(-shift)
 		}
 	case uint16:
-		s, err := strconv.ParseInt(shift, 10, 16)
-		if err != nil {
-			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		if s > 0 {
-			value = v << s
+		if shift > 0 {
+			value = v << int16(shift)
 		} else {
-			value = v >> (-s)
+			value = v >> int16(-shift)
 		}
 	case uint32:
-		s, err := strconv.ParseInt(shift, 10, 32)
-		if err != nil {
-			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		if s > 0 {
-			value = v << s
+		if shift > 0 {
+			value = v << int32(shift)
 		} else {
-			value = v >> (-s)
+			value = v >> int32(-shift)
 		}
 	case uint64:
-		s, err := strconv.ParseInt(shift, 10, 64)
-		if err != nil {
-			errMsg := fmt.Sprintf("the shift value %s of PropertyValue cannot be parsed to %T", shift, v)
-			return value, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-		}
-		if s > 0 {
-			value = v << s
+		if shift > 0 {
+			value = v << shift
 		} else {
-			value = v >> (-s)
+			value = v >> (-shift)
 		}
 	}
 
