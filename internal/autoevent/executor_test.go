@@ -7,7 +7,7 @@
 package autoevent
 
 import (
-	"math/rand"
+	"crypto/rand"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
@@ -44,13 +44,14 @@ func TestCompareReadings(t *testing.T) {
 	readingsLengthChanged[2].ValueType = common.ValueTypeBinary
 	readingsLengthChanged[2].ResourceName = "b1"
 	readingsLengthChanged[2].BinaryValue = make([]byte, 1000)
-	rand.Read(readingsLengthChanged[2].BinaryValue) // nolint: gosec
+	_, randErr := rand.Read(readingsLengthChanged[2].BinaryValue) // nolint: gosec
+	require.NoError(t, randErr)
 
 	readingsBinaryValueChanged := make([]dtos.BaseReading, len(readingsLengthChanged))
 	copy(readingsBinaryValueChanged, readingsLengthChanged)
 	readingsBinaryValueChanged[2].BinaryValue = make([]byte, 1000)
-	rand.Read(readingsBinaryValueChanged[2].BinaryValue) // nolint: gosec
-
+	_, randErr = rand.Read(readingsBinaryValueChanged[2].BinaryValue)
+	require.NoError(t, randErr)
 	readingBinaryValueUnchanged := readingsBinaryValueChanged
 
 	tests := []struct {
