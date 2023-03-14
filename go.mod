@@ -1,6 +1,6 @@
 module github.com/edgexfoundry/device-sdk-go/v3
 
-go 1.18
+go 1.20
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8

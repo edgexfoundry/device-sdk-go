@@ -8,8 +8,8 @@
 package models
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"testing"
 	"time"
 
@@ -36,7 +36,8 @@ func TestNewCommandValueWithOrigin(t *testing.T) {
 
 func Test_validate(t *testing.T) {
 	exceedBinary := make([]byte, MaxBinaryBytes+1)
-	rand.Read(exceedBinary) // nolint: gosec
+	_, err := rand.Read(exceedBinary)
+	require.NoError(t, err)
 	tests := []struct {
 		name        string
 		valueType   string
@@ -74,7 +75,8 @@ func TestCommandValue_ValueToString(t *testing.T) {
 	boolCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBool, true)
 	require.NoError(t, err)
 	binaryValue := make([]byte, 100)
-	rand.Read(binaryValue) // nolint: gosec
+	_, err = rand.Read(binaryValue)
+	require.NoError(t, err)
 	binaryCommandValue, err := NewCommandValue("test-resource", common.ValueTypeBinary, binaryValue)
 	require.NoError(t, err)
 	stringArrayValue := []string{"foo", "bar"}
