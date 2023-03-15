@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -14,9 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
@@ -25,43 +22,51 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
-	"github.com/pelletier/go-toml"
+	"gopkg.in/yaml.v3"
+
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
 func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	if path == "" {
 		return nil
 	}
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
 	}
 
-	fileInfo, err := os.ReadDir(absPath)
+	files, err := os.ReadDir(absPath)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
 	}
 
+	if len(files) == 0 {
+		return nil
+	}
+
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	lc.Infof("Loading pre-defined devices from %s(%d files found)", absPath, len(files))
+
 	var addDevicesReq []requests.AddDeviceRequest
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
-	lc.Infof("Loading pre-defined devices from %s", absPath)
-	for _, file := range fileInfo {
+	for _, file := range files {
 		var devices []dtos.Device
 		fullPath := filepath.Join(absPath, file.Name())
-		if strings.HasSuffix(fullPath, ".toml") {
+		if strings.HasSuffix(fullPath, yamlExt) || strings.HasSuffix(fullPath, ymlExt) {
 			content, err := os.ReadFile(fullPath)
 			if err != nil {
 				lc.Errorf("Failed to read %s: %v", fullPath, err)
 				continue
 			}
 			d := struct {
-				DeviceList []dtos.Device
+				DeviceList []dtos.Device `yaml:"deviceList"`
 			}{}
-			err = toml.Unmarshal(content, &d)
+			err = yaml.Unmarshal(content, &d)
 			if err != nil {
-				lc.Errorf("Failed to decode %s: %v", fullPath, err)
+				lc.Errorf("Failed to YAML decode %s: %v", fullPath, err)
 				continue
 			}
 			devices = d.DeviceList
@@ -73,7 +78,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 			}
 			err = json.Unmarshal(content, &devices)
 			if err != nil {
-				lc.Errorf("Failed to decode %s: %v", fullPath, err)
+				lc.Errorf("Failed to JSON decode %s: %v", fullPath, err)
 				continue
 			}
 		} else {
