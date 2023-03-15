@@ -28,7 +28,8 @@
 - Fix empty device name when updating device's serviceName ([#ff1b5b0](https://github.com/edgexfoundry/device-sdk-go/commits/ff1b5b0))
 - Remove redundant logic of caching profile ([#e9867ce](https://github.com/edgexfoundry/device-sdk-go/commits/e9867ce))
 - Put cmd return 400 when updating empty string to NonString type ([#a1088c2](https://github.com/edgexfoundry/device-sdk-go/commits/a1088c2))
-- ProvisionWatcher callbacks return BaseResponse, not 204 No Content. ([#3d985db](https://github.com/edgexfoundry/device-sdk-go/commits/3d985db))
+- ProvisionWatcher callbacks return BaseResponse, not 204 No Content ([#3d985db](https://github.com/edgexfoundry/device-sdk-go/commits/3d985db))
+- Fix device sdk cache inconsistency by registering device service prior to driver initialization ([#4d4ffc7](https://github.com/edgexfoundry/device-sdk-go/commits/4d4ffc7))
 
 ### Code Refactoring ♻
 
