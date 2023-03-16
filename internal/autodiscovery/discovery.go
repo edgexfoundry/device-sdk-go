@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -21,7 +21,7 @@ type discoveryLocker struct {
 
 var locker discoveryLocker
 
-func DiscoveryWrapper(discovery interfaces.ProtocolDiscovery, lc logger.LoggingClient) {
+func DiscoveryWrapper(driver interfaces.ProtocolDriver, lc logger.LoggingClient) {
 	locker.mux.Lock()
 	if locker.busy {
 		lc.Info("another device discovery process is currently running")
@@ -32,7 +32,10 @@ func DiscoveryWrapper(discovery interfaces.ProtocolDiscovery, lc logger.LoggingC
 	locker.mux.Unlock()
 
 	lc.Debug("protocol discovery triggered")
-	discovery.Discover()
+	err := driver.Discover()
+	if err != nil {
+		lc.Warn("failed to trigger protocol discovery", err.Error())
+	}
 
 	// ReleaseLock
 	locker.mux.Lock()

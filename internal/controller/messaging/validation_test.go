@@ -67,16 +67,16 @@ func TestDeviceValidation(t *testing.T) {
 	mockLogger.On("Debugf", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockLogger.On("Errorf", mock.Anything, mock.Anything).Return(nil)
 
-	mockValidator := &mocks.DeviceValidator{}
-	mockValidator.On("ValidateDevice", dtos.ToDeviceModel(expectedDevice)).Return(nil)
-	mockValidator.On("ValidateDevice", dtos.ToDeviceModel(validationFailedDevice)).Return(errors.New("validation failed"))
+	mockDriver := &mocks.ProtocolDriver{}
+	mockDriver.On("ValidateDevice", dtos.ToDeviceModel(expectedDevice)).Return(nil)
+	mockDriver.On("ValidateDevice", dtos.ToDeviceModel(validationFailedDevice)).Return(errors.New("validation failed"))
 
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) any {
 			return &config.ConfigurationStruct{}
 		},
-		container.DeviceValidatorName: func(get di.Get) any {
-			return mockValidator
+		container.ProtocolDriverName: func(get di.Get) any {
+			return mockDriver
 		},
 		container.DeviceServiceName: func(get di.Get) any {
 			return &models.DeviceService{Name: testServiceName}

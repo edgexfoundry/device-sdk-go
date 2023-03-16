@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,7 +8,6 @@ package autodiscovery
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -24,7 +23,7 @@ func BootstrapHandler(
 	wg *sync.WaitGroup,
 	_ startup.Timer,
 	dic *di.Container) bool {
-	discovery := container.ProtocolDiscoveryFrom(dic.Get)
+	driver := container.ProtocolDriverFrom(dic.Get)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
 	var runDiscovery bool = true
@@ -38,24 +37,20 @@ func BootstrapHandler(
 		lc.Info("AutoDiscovery stopped: interval error in configuration")
 		runDiscovery = false
 	}
-	if discovery == nil {
-		lc.Info("AutoDiscovery stopped: ProtocolDiscovery not implemented")
-		runDiscovery = false
-	}
 
 	if runDiscovery {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			lc.Info(fmt.Sprintf("Starting auto-discovery with duration %v", duration))
-			DiscoveryWrapper(discovery, lc)
+			lc.Infof("Starting auto-discovery with duration %v", duration)
+			DiscoveryWrapper(driver, lc)
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				case <-time.After(duration):
-					DiscoveryWrapper(discovery, lc)
+					DiscoveryWrapper(driver, lc)
 				}
 			}
 		}()

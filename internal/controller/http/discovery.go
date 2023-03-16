@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -32,13 +32,8 @@ func (c *RestController) Discovery(writer http.ResponseWriter, request *http.Req
 		return
 	}
 
-	discovery := container.ProtocolDiscoveryFrom(c.dic.Get)
-	if discovery == nil {
-		err := errors.NewCommonEdgeX(errors.KindNotImplemented, "protocolDiscovery not implemented", nil)
-		c.sendEdgexError(writer, request, err, common.ApiDiscoveryRoute)
-		return
-	}
+	driver := container.ProtocolDriverFrom(c.dic.Get)
 
-	go autodiscovery.DiscoveryWrapper(discovery, c.lc)
+	go autodiscovery.DiscoveryWrapper(driver, c.lc)
 	c.sendResponse(writer, request, common.ApiDiscoveryRoute, nil, http.StatusAccepted)
 }
