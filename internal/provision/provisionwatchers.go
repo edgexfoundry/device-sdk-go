@@ -19,6 +19,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v3"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 )
@@ -49,18 +50,25 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	for _, file := range files {
 		var watcher dtos.ProvisionWatcher
 		filename := filepath.Join(absPath, file.Name())
-		if !strings.HasSuffix(filename, jsonExt) {
-			continue
-		}
-
 		data, err := os.ReadFile(filename)
 		if err != nil {
-			lc.Errorf("failed to read %s: %v", filename, err)
+			lc.Errorf("Failed to read %s: %v", filename, err)
 			continue
 		}
 
-		if err := json.Unmarshal(data, &watcher); err != nil {
-			lc.Errorf("failed to JSON decode %s: %v", filename, err)
+		if strings.HasSuffix(filename, yamlExt) || strings.HasSuffix(filename, ymlExt) {
+			err = yaml.Unmarshal(data, &watcher)
+			if err != nil {
+				lc.Errorf("Failed to YAML decode %s: %v", filename, err)
+				continue
+			}
+		} else if strings.HasSuffix(filename, jsonExt) {
+			err := json.Unmarshal(data, &watcher)
+			if err != nil {
+				lc.Errorf("Failed to JSON decode %s: %v", filename, err)
+				continue
+			}
+		} else {
 			continue
 		}
 
