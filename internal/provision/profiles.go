@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -15,8 +15,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
-
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
@@ -25,6 +23,8 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
+
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 )
 
 const (
@@ -37,22 +37,27 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	if path == "" {
 		return nil
 	}
-	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
 	}
 
-	fileInfo, err := os.ReadDir(absPath)
+	files, err := os.ReadDir(absPath)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
 	}
 
+	if len(files) == 0 {
+		return nil
+	}
+
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	lc.Infof("Loading pre-defined profiles from %s(%d files found)", absPath, len(files))
+
 	var addProfilesReq []requests.DeviceProfileRequest
 	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
-	lc.Infof("Loading pre-defined profiles from %s", absPath)
-	for _, file := range fileInfo {
+	for _, file := range files {
 		var profile dtos.DeviceProfile
 		fullPath := filepath.Join(absPath, file.Name())
 		if strings.HasSuffix(fullPath, yamlExt) || strings.HasSuffix(fullPath, ymlExt) {
@@ -64,7 +69,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 
 			err = yaml.Unmarshal(content, &profile)
 			if err != nil {
-				lc.Errorf("Failed to decode profile %s: %v", file.Name(), err)
+				lc.Errorf("Failed to YAML decode profile %s: %v", file.Name(), err)
 				continue
 			}
 		} else if strings.HasSuffix(fullPath, jsonExt) {
@@ -76,7 +81,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 
 			err = json.Unmarshal(content, &profile)
 			if err != nil {
-				lc.Errorf("Failed to decode profile %s: %v", file.Name(), err)
+				lc.Errorf("Failed to JSON decode profile %s: %v", file.Name(), err)
 				continue
 			}
 		} else {
