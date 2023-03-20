@@ -79,8 +79,8 @@ parts:
       # Change "ProfilesDir" to be under $SNAP_DATA which is writable and 
       # where the install hook copies the config files and device profiles to
       # when the snap is first installed
-      install -DT "./example/cmd/device-simple/res/configuration.toml" \
-        "$SNAPCRAFT_PART_INSTALL/config/device-simple/res/configuration.toml"
+      install -DT "./example/cmd/device-simple/res/configuration.yaml" \
+        "$SNAPCRAFT_PART_INSTALL/config/device-simple/res/configuration.yaml"
 
       # Install the example device and device profile
       install -DT "./example/cmd/device-simple/res/devices/simple-device.toml" \

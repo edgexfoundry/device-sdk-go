@@ -32,9 +32,9 @@ A candidate new device passes a ProvisionWatcher if all the Identifiers match, a
 For devices with multiple `Device.Protocol`, each `Device.Protocol` is considered separately. A match on any of the protocols results in the device being added.
 
 Finally, A boolean configuration value `Device/Discovery/Enabled` defaults to false. If it is set true, and the DS implementation supports discovery, discovery is enabled.
-Dynamic Device Discovery is triggered either by internal timer(see `Device/Discovery/Interval` in [configuration.toml](cmd/device-simple/res/configuration.toml)) or by a call to the device service's `/discovery` REST endpoint.
+Dynamic Device Discovery is triggered either by internal timer(see `Device/Discovery/Interval` in [configuration.yaml](cmd/device-simple/res/configuration.yaml)) or by a call to the device service's `/discovery` REST endpoint.
 
 The following steps show how to trigger discovery on device-simple:
-1. Set `Device/Discovery/Enabled` to true in [configuration file](cmd/device-simple/res/configuration.toml)
+1. Set `Device/Discovery/Enabled` to true in [configuration file](cmd/device-simple/res/configuration.yaml)
 2. Trigger discovery by sending POST request to DS endpoint: http://edgex-device-simple:59999/api/v2/discovery
 3. `Simple-Device02` will be discovered and added to EdgeX.
