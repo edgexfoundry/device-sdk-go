@@ -1,0 +1,32 @@
+Writable:
+  LogLevel: INFO
+  Reading:
+    ReadingUnits: true
+  Telemetry:
+    Metrics: 
+      # All service's custom metric names must be present in this list. All common metric names are in the Common Config
+      ReadCommandsExecuted: true
+Service:
+  Port: 59999 # Device service are assigned the 599xx range
+  StartupMsg: device simple started
+
+# uncomment when running from command-line in hybrid mode with -cp -o flags
+#Registry:
+#  Host: "localhost"
+
+MessageBus:
+#  Host: localhost # uncomment when running from command-line in hybrid mode
+  Optional:
+    # Default MQTT Specific options that need to be here to enable environment variable overrides of them
+    # Client Identifiers
+    ClientId: device-simple
+# Exmaple overriding of Common Config settings
+Device:
+  AsyncBufferSize: 1
+  ProvisionWatchersDir: ./res/provisionwatchers
+# Example structured custom configuration
+SimpleCustom:
+  OnImageLocation: ./res/on.png
+  OffImageLocation: ./res/off.jpg
+  Writable:
+    DiscoverSleepDurationSecs: 10

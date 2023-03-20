@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2021 Intel Corporation
+// Copyright (c) 2023 Intel Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,19 +20,19 @@ import (
 	"errors"
 )
 
-// This file contains example of custom configuration that can be loaded from the service's configuration.toml
+// This file contains example of custom configuration that can be loaded from the service's configuration.yaml
 // and/or the Configuration Provider, aka Consul (if enabled).
 // For more details see https://docs.edgexfoundry.org/2.0/microservices/device/Ch-DeviceServices/#custom-configuration
 
 // Example structured custom configuration types. Must be wrapped with an outer struct with
-// single element that matches the top level custom configuration element in your configuration.toml file,
+// single element that matches the top level custom configuration element in your configuration.yaml file,
 // 'SimpleCustom' in this example.
 type ServiceConfig struct {
 	SimpleCustom SimpleCustomConfig
 }
 
 // SimpleCustomConfig is example of service's custom structured configuration that is specified in the service's
-// configuration.toml file and Configuration Provider (aka Consul), if enabled.
+// configuration.yaml file and Configuration Provider (aka Consul), if enabled.
 type SimpleCustomConfig struct {
 	OffImageLocation string
 	OnImageLocation  string
