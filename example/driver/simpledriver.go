@@ -48,9 +48,6 @@ type SimpleDriver struct {
 	serviceConfig        *config.ServiceConfig
 }
 
-// Do a runtime-check to determine that driver implements ProtocolDriver,
-var _ interfaces.ProtocolDriver = (*SimpleDriver)(nil)
-
 func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 	// Read existing image from file
 	img, err := os.Open(imgFile)

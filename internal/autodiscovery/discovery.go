@@ -34,7 +34,7 @@ func DiscoveryWrapper(driver interfaces.ProtocolDriver, lc logger.LoggingClient)
 	lc.Debug("protocol discovery triggered")
 	err := driver.Discover()
 	if err != nil {
-		lc.Warn("failed to trigger protocol discovery", err.Error())
+		lc.Error("failed to trigger protocol discovery", err.Error())
 	}
 
 	// ReleaseLock

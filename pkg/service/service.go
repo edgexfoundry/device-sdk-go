@@ -68,7 +68,7 @@ type deviceService struct {
 	dic                *di.Container
 }
 
-func NewDeviceService(serviceKey string, serviceVersion string, driver any) (*deviceService, error) {
+func NewDeviceService(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) (*deviceService, error) {
 	var service deviceService
 	if serviceKey == "" {
 		return nil, errors.New("please specify device service name")
@@ -80,11 +80,7 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver any) (*de
 	}
 	sdkCommon.ServiceVersion = serviceVersion
 
-	protocolDriver, ok := driver.(interfaces.ProtocolDriver)
-	if !ok {
-		return nil, errors.New("please implement and specify the ProtocolDriver")
-	}
-	service.driver = protocolDriver
+	service.driver = driver
 
 	service.config = &config.ConfigurationStruct{}
 	return &service, nil
