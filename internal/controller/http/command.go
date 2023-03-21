@@ -39,7 +39,12 @@ func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := application.GetCommand(ctx, deviceName, commandName, queryParams, c.dic)
+	regexCmd := true
+	if useRegex, ok := reserved[common.RegexCommand]; ok && useRegex[0] == common.ValueFalse {
+		regexCmd = false
+	}
+
+	event, err := application.GetCommand(ctx, deviceName, commandName, queryParams, regexCmd, c.dic)
 	if err != nil {
 		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 		return

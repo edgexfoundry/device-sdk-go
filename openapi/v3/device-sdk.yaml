@@ -387,6 +387,16 @@ paths:
             default: true
           example: false
           description: "If set to false, there will be no Event returned in the http response"
+        - in: query
+          name: ds-regexcmd
+          schema:
+            type: string
+            enum:
+              - true
+              - false
+            default: true
+          example: false
+          description: "If set to false, the command name will be treated as normal string instead of regex syntax"
       responses:
         '200':
           description: String as returned by the device/sensor through the device service.

@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,6 +8,7 @@ package cache
 
 import (
 	"fmt"
+	"regexp"
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
@@ -25,6 +26,7 @@ type ProfileCache interface {
 	Update(profile models.DeviceProfile) errors.EdgeX
 	RemoveByName(name string) errors.EdgeX
 	DeviceResource(profileName string, resourceName string) (models.DeviceResource, bool)
+	DeviceResourcesByRegex(profileName string, regex string) ([]models.DeviceResource, bool)
 	DeviceCommand(profileName string, commandName string) (models.DeviceCommand, bool)
 	ResourceOperation(profileName string, deviceResource string) (models.ResourceOperation, errors.EdgeX)
 }
@@ -165,6 +167,27 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 
 	dr, ok := drs[resourceName]
 	return dr, ok
+}
+
+// DeviceResourcesByRegex returns matched DeviceResource list with given profileName and regex pattern
+func (p *profileCache) DeviceResourcesByRegex(profileName string, regex string) ([]models.DeviceResource, bool) {
+	p.mutex.RLock()
+	defer p.mutex.RUnlock()
+
+	drs, ok := p.deviceResourceMap[profileName]
+	if !ok {
+		return nil, false
+	}
+
+	var res []models.DeviceResource
+	for _, dr := range drs {
+		match, _ := regexp.MatchString(regex, dr.Name)
+		if match {
+			res = append(res, dr)
+		}
+	}
+
+	return res, true
 }
 
 // DeviceCommand returns the DeviceCommand with given profileName and commandName

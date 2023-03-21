@@ -33,7 +33,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 )
 
-func GetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
+func GetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, regexCmd bool, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	if deviceName == "" {
 		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "device name is empty", nil)
 	}
@@ -50,6 +50,8 @@ func GetCommand(ctx context.Context, deviceName string, commandName string, quer
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if cmdExist {
 		res, err = readDeviceCommand(device, commandName, queryParams, dic)
+	} else if regexCmd {
+		res, err = readDeviceResources(device, commandName, queryParams, dic)
 	} else {
 		res, err = readDeviceResource(device, commandName, queryParams, dic)
 	}
@@ -131,6 +133,51 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 	// convert CommandValue to Event
 	configuration := container.ConfigurationFrom(dic.Get)
 	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dr.Name, configuration.Device.DataTransform, dic)
+	if edgexErr != nil {
+		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
+	}
+
+	return res, nil
+}
+
+func readDeviceResources(device models.Device, regexResourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
+	deviceResources, ok := cache.Profiles().DeviceResourcesByRegex(device.ProfileName, regexResourceName)
+	if !ok || len(deviceResources) == 0 {
+		errMsg := fmt.Sprintf("Regex deviceResource %s not found", regexResourceName)
+		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+	}
+
+	reqs := make([]sdkModels.CommandRequest, len(deviceResources))
+	for i, dr := range deviceResources {
+		// check deviceResource is not write-only
+		if dr.Properties.ReadWrite == common.ReadWrite_W {
+			errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", dr.Name)
+			return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+		}
+
+		// prepare CommandRequest
+		reqs[i].DeviceResourceName = dr.Name
+		reqs[i].Attributes = dr.Attributes
+		if attributes != "" {
+			if len(reqs[i].Attributes) <= 0 {
+				reqs[i].Attributes = make(map[string]interface{})
+			}
+			reqs[i].Attributes[sdkCommon.URLRawQuery] = attributes
+		}
+		reqs[i].Type = dr.Properties.ValueType
+	}
+
+	// execute protocol-specific read operation
+	driver := container.ProtocolDriverFrom(dic.Get)
+	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
+	if err != nil {
+		errMsg := fmt.Sprintf("error reading Regex DeviceResource(s) %s for %s", regexResourceName, device.Name)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+	}
+
+	// convert CommandValue to Event
+	configuration := container.ConfigurationFrom(dic.Get)
+	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, regexResourceName, configuration.Device.DataTransform, dic)
 	if edgexErr != nil {
 		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
 	}
