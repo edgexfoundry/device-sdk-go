@@ -49,34 +49,34 @@ func TransformReadResult(cv *sdkModels.CommandValue, pv models.ResourcePropertie
 	}
 	newValue := value
 
-	if pv.Mask != 0 && pv.Mask != defaultMask &&
+	if pv.Mask != nil && *pv.Mask != defaultMask &&
 		(cv.Type == common.ValueTypeUint8 || cv.Type == common.ValueTypeUint16 || cv.Type == common.ValueTypeUint32 || cv.Type == common.ValueTypeUint64) {
-		newValue, err = transformReadMask(newValue, pv.Mask)
+		newValue, err = transformReadMask(newValue, *pv.Mask)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Shift != 0 && pv.Shift != defaultShift &&
+	if pv.Shift != nil && *pv.Shift != defaultShift &&
 		(cv.Type == common.ValueTypeUint8 || cv.Type == common.ValueTypeUint16 || cv.Type == common.ValueTypeUint32 || cv.Type == common.ValueTypeUint64) {
-		newValue, err = transformReadShift(newValue, pv.Shift)
+		newValue, err = transformReadShift(newValue, *pv.Shift)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Base != 0 && pv.Base != defaultBase {
-		newValue, err = transformBase(newValue, pv.Base, true)
+	if pv.Base != nil && *pv.Base != defaultBase {
+		newValue, err = transformBase(newValue, *pv.Base, true)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Scale != 0 && pv.Scale != defaultScale {
-		newValue, err = transformScale(newValue, pv.Scale, true)
+	if pv.Scale != nil && *pv.Scale != defaultScale {
+		newValue, err = transformScale(newValue, *pv.Scale, true)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
 	}
-	if pv.Offset != 0 && pv.Offset != defaultOffset {
-		newValue, err = transformOffset(newValue, pv.Offset, true)
+	if pv.Offset != nil && *pv.Offset != defaultOffset {
+		newValue, err = transformOffset(newValue, *pv.Offset, true)
 		if err != nil {
 			return errors.NewCommonEdgeXWrapper(err)
 		}
