@@ -89,6 +89,10 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			return nil, errors.NewCommonEdgeXWrapper(err)
 		}
 
+		for key, value := range cv.Tags {
+			tags[key] = value
+		}
+
 		// ResourceOperation mapping
 		ro, err := cache.Profiles().ResourceOperation(device.ProfileName, cv.DeviceResourceName)
 		if err != nil {
@@ -99,10 +103,6 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 			if ok {
 				cv = newCV
 			}
-		}
-
-		for key, value := range cv.Tags {
-			tags[key] = value
 		}
 
 		reading, err := commandValueToReading(cv, device.Name, device.ProfileName, dr.Properties.MediaType, origin)
