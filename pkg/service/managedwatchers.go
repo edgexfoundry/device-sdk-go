@@ -29,7 +29,7 @@ func (s *deviceService) AddProvisionWatcher(watcher models.ProvisionWatcher) (st
 			errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, ProvisionWatcher %s exists", watcher.Name), nil)
 	}
 
-	watcher.ServiceName = s.serviceKey
+	watcher.DiscoveredDevice.ServiceName = s.serviceKey
 
 	s.lc.Debugf("Adding managed ProvisionWatcher %s", watcher.Name)
 	req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(watcher))
