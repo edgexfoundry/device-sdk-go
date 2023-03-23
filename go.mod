@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.54
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.56
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.32
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.18
 	github.com/google/uuid v1.3.0
@@ -20,7 +20,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.4.2 // indirect
-	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.9 // indirect
+	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.10 // indirect
 	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.7 // indirect
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0-dev.10 // indirect
 	github.com/fatih/color v1.9.0 // indirect
@@ -53,7 +53,6 @@ require (
 	github.com/nats-io/nats.go v1.24.0 // indirect
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.1.2 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
