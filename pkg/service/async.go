@@ -89,6 +89,10 @@ func (s *deviceService) processAsyncFilterAndAdd(ctx context.Context) {
 			pws := cache.ProvisionWatchers().All()
 			for _, d := range devices {
 				for _, pw := range pws {
+					if pw.AdminState == models.Locked {
+						s.lc.Debugf("Skip th locked provision watcher %v", pw.Name)
+						continue
+					}
 					if s.checkAllowList(d, pw) && s.checkBlockList(d, pw) {
 						if _, ok := cache.Devices().ForName(d.Name); ok {
 							s.lc.Debugf("Candidate discovered device %s already existed", d.Name)
@@ -99,13 +103,14 @@ func (s *deviceService) processAsyncFilterAndAdd(ctx context.Context) {
 						device := models.Device{
 							Name:           d.Name,
 							Description:    d.Description,
-							ProfileName:    pw.ProfileName,
+							ProfileName:    pw.DiscoveredDevice.ProfileName,
 							Protocols:      d.Protocols,
 							Labels:         d.Labels,
-							ServiceName:    pw.ServiceName,
-							AdminState:     pw.AdminState,
+							ServiceName:    pw.DiscoveredDevice.ServiceName,
+							AdminState:     pw.DiscoveredDevice.AdminState,
 							OperatingState: models.Up,
-							AutoEvents:     pw.AutoEvents,
+							AutoEvents:     pw.DiscoveredDevice.AutoEvents,
+							Properties:     pw.DiscoveredDevice.Properties,
 						}
 
 						req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))

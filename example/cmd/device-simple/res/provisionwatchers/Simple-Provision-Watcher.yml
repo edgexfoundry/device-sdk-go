@@ -9,9 +9,14 @@ blockingIdentifiers:
     - 397
     - 398
     - 399
-profileName: Simple-Device
-serviceName: device-simple
 adminState: UNLOCKED
-autoEvents:
-  - interval: 15s
-    sourceName: SwitchButton
+discoveredDevice:
+  profileName: Simple-Device
+  serviceName: device-simple
+  adminState: UNLOCKED
+  autoEvents:
+    - interval: 15s
+      sourceName: SwitchButton
+  properties:
+    testPropertyA: weather
+    testPropertyB: meter

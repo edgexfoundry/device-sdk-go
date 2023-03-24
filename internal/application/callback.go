@@ -188,7 +188,7 @@ func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcher
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	provisionWatcher := dtos.ToProvisionWatcherModel(addProvisionWatcherRequest.ProvisionWatcher)
 
-	edgexErr := updateAssociatedProfile(provisionWatcher.ProfileName, dic)
+	edgexErr := updateAssociatedProfile(provisionWatcher.DiscoveredDevice.ProfileName, dic)
 	if edgexErr != nil {
 		return errors.NewCommonEdgeXWrapper(edgexErr)
 	}
@@ -209,22 +209,22 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 
 	provisionWatcher, exist := cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
 	if !exist {
-		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
+		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.DiscoveredDevice.ServiceName {
 			var newProvisionWatcher models.ProvisionWatcher
 			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
 			req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher))
 			return AddProvisionWatcher(req, dic)
 		} else {
-			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)
+			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.DiscoveredDevice.ServiceName)
 			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 		}
 	}
-	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
+	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.DiscoveredDevice.ServiceName {
 		return DeleteProvisionWatcher(*updateProvisionWatcherRequest.ProvisionWatcher.Name, dic)
 	}
 
 	requests.ReplaceProvisionWatcherModelFieldsWithDTO(&provisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
-	edgexErr := updateAssociatedProfile(provisionWatcher.ProfileName, dic)
+	edgexErr := updateAssociatedProfile(provisionWatcher.DiscoveredDevice.ProfileName, dic)
 	if edgexErr != nil {
 		return errors.NewCommonEdgeXWrapper(edgexErr)
 	}

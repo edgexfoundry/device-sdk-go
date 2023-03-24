@@ -1,26 +1,33 @@
 {
-  "name": "Simple-Provision-Watcher",
-  "labels": [
-    "simple"
-  ],
-  "identifiers": {
-    "Address":"simple[0-9]+",
-    "Port":"3[0-9]{2}"
-  },
-  "blockingIdentifiers": {
-    "Port": [
-      "397",
-      "398",
-      "399"
-    ]
-  },
-  "profileName": "Simple-Device",
-  "serviceName": "device-simple",
-  "adminState": "UNLOCKED",
-  "autoEvents": [
-    {
-      "interval": "15s",
-      "sourceName": "SwitchButton"
-    }
-  ]
+   "name":"Simple-Provision-Watcher",
+   "labels":[
+      "simple"
+   ],
+   "identifiers":{
+      "Address":"simple[0-9]+",
+      "Port":"3[0-9]{2}"
+   },
+   "blockingIdentifiers":{
+      "Port":[
+         "397",
+         "398",
+         "399"
+      ]
+   },
+   "adminState": "UNLOCKED",
+   "discoveredDevice":{
+      "profileName":"Simple-Device",
+      "serviceName":"device-simple",
+      "adminState":"UNLOCKED",
+      "autoEvents":[
+         {
+            "interval":"15s",
+            "sourceName":"SwitchButton"
+         }
+      ],
+      "Properties":{
+         "testPropertyA":"weather",
+         "testPropertyB":"meter"
+      }
+   }
 }
