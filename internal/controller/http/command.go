@@ -40,7 +40,7 @@ func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	regexCmd := true
-	if useRegex, ok := reserved[common.RegexCommand]; ok && useRegex[0] == common.ValueFalse {
+	if useRegex := reserved.Get(common.RegexCommand); useRegex == common.ValueFalse {
 		regexCmd = false
 	}
 
@@ -50,13 +50,13 @@ func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// push event to CoreData if specified (default no)
-	if ok, exist := reserved[common.PushEvent]; exist && ok[0] == common.ValueTrue {
+	// push event to CoreData if specified (default false)
+	if pushEvent := reserved.Get(common.PushEvent); pushEvent == common.ValueTrue {
 		go sdkCommon.SendEvent(event, correlationId, c.dic)
 	}
 
-	// return event in http response if specified (default yes)
-	if ok, exist := reserved[common.ReturnEvent]; !exist || ok[0] == common.ValueTrue {
+	// return event in http response if specified (default true)
+	if returnEvent := reserved.Get(common.ReturnEvent); returnEvent == "" || returnEvent == common.ValueTrue {
 		res := responses.NewEventResponse("", "", http.StatusOK, *event)
 		c.sendEventResponse(w, r, res, http.StatusOK)
 		return

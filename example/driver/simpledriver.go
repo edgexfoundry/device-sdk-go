@@ -165,21 +165,19 @@ func (s *SimpleDriver) ProcessCustomConfigChanges(rawWritableConfig interface{})
 func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkModels.CommandRequest) (res []*sdkModels.CommandValue, err error) {
 	s.lc.Debugf("SimpleDriver.HandleReadCommands: protocols: %v resource: %v attributes: %v", protocols, reqs[0].DeviceResourceName, reqs[0].Attributes)
 
-	if len(reqs) == 1 {
-		res = make([]*sdkModels.CommandValue, 1)
-		if reqs[0].DeviceResourceName == "SwitchButton" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeBool, s.switchButton)
-			res[0] = cv
-		} else if reqs[0].DeviceResourceName == "Xrotation" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeInt32, s.xRotation)
-			res[0] = cv
-		} else if reqs[0].DeviceResourceName == "Yrotation" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeInt32, s.yRotation)
-			res[0] = cv
-		} else if reqs[0].DeviceResourceName == "Zrotation" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeInt32, s.zRotation)
-			res[0] = cv
-		} else if reqs[0].DeviceResourceName == "Image" {
+	res = make([]*sdkModels.CommandValue, 0)
+	for _, req := range reqs {
+		var cv *sdkModels.CommandValue
+		switch req.DeviceResourceName {
+		case "SwitchButton":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeBool, s.switchButton)
+		case "Xrotation":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeInt32, s.xRotation)
+		case "Yrotation":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeInt32, s.yRotation)
+		case "Zrotation":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeInt32, s.zRotation)
+		case "Image":
 			// Show a binary/image representation of the switch's on/off value
 			buf := new(bytes.Buffer)
 			if s.switchButton {
@@ -187,32 +185,16 @@ func (s *SimpleDriver) HandleReadCommands(deviceName string, protocols map[strin
 			} else {
 				err = getImageBytes(s.serviceConfig.SimpleCustom.OffImageLocation, buf)
 			}
-			cvb, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeBinary, buf.Bytes())
-			res[0] = cvb
-		} else if reqs[0].DeviceResourceName == "StringArray" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeStringArray, s.stringArray)
-			res[0] = cv
-		} else if reqs[0].DeviceResourceName == "Uint8Array" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeUint8Array, []uint8{0, 1, 2})
-			res[0] = cv
-		} else if reqs[0].DeviceResourceName == "Counter" {
-			cv, _ := sdkModels.NewCommandValue(reqs[0].DeviceResourceName, common.ValueTypeObject, s.counter)
-			res[0] = cv
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeBinary, buf.Bytes())
+		case "StringArray":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeStringArray, s.stringArray)
+		case "Uint8Array":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeUint8Array, []uint8{0, 1, 2})
+		case "Counter":
+			cv, _ = sdkModels.NewCommandValue(req.DeviceResourceName, common.ValueTypeObject, s.counter)
 		}
-	} else if len(reqs) == 3 {
-		res = make([]*sdkModels.CommandValue, 3)
-		for i, r := range reqs {
-			var cv *sdkModels.CommandValue
-			switch r.DeviceResourceName {
-			case "Xrotation":
-				cv, _ = sdkModels.NewCommandValue(r.DeviceResourceName, common.ValueTypeInt32, s.xRotation)
-			case "Yrotation":
-				cv, _ = sdkModels.NewCommandValue(r.DeviceResourceName, common.ValueTypeInt32, s.yRotation)
-			case "Zrotation":
-				cv, _ = sdkModels.NewCommandValue(r.DeviceResourceName, common.ValueTypeInt32, s.zRotation)
-			}
-			res[i] = cv
-		}
+
+		res = append(res, cv)
 	}
 
 	s.readCommandsExecuted.Inc(1)
