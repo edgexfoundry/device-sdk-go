@@ -56,6 +56,8 @@ const (
 	readOnlyResource  = "ro-resource"
 	writeOnlyResource = "wo-resource"
 	objectResource    = "object-resource"
+
+	testRegexResource = "^t.+-resource"
 )
 
 func mockDic() *di.Container {
@@ -218,6 +220,7 @@ func TestRestController_GetCommand(t *testing.T) {
 	}{
 		{"valid - read device resource", testDevice, testResource, http.StatusOK},
 		{"valid - read device command", testDevice, testCommand, http.StatusOK},
+		{"valid - read regex device resource", testDevice, testRegexResource, http.StatusOK},
 		{"invalid - device name parameter is empty", "", testResource, http.StatusBadRequest},
 		{"invalid - command is empty", testDevice, "", http.StatusBadRequest},
 		{"invalid - device name not found", "notFound", testCommand, http.StatusNotFound},

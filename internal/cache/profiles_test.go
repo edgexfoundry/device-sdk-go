@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2021 IOTech Ltd
+// Copyright (C) 2021-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -188,6 +188,29 @@ func Test_profileCache_ResourceOperation(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, ro, tt.res)
 			}
+		})
+	}
+}
+
+func Test_profileCache_DeviceResourcesByRegex(t *testing.T) {
+	newProfileCache([]models.DeviceProfile{testProfile})
+
+	tests := []struct {
+		name              string
+		profileName       string
+		regexResourceName string
+		deviceResources   []models.DeviceResource
+		expected          bool
+	}{
+		{"valid - resources found by regex pattern", TestProfile, ".+Resource", testProfile.DeviceResources, true},
+		{"Valid -  resources not found by regex pattern", TestProfile, "nil", nil, true},
+		{"invalid - profile not found", "nil", "%2E%2B-resource", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, ok := pc.DeviceResourcesByRegex(tt.profileName, tt.regexResourceName)
+			assert.Equal(t, res, tt.deviceResources, "DeviceResource returns wrong deviceResource")
+			assert.Equal(t, ok, tt.expected, "DeviceResource returns opposite result")
 		})
 	}
 }

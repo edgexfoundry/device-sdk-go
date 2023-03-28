@@ -104,11 +104,11 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBus := bootstrapContainer.MessagingClientFrom(dic.Get)
-	rawQuery, pushEvent, returnEvent := filterQueryParams(msgEnvelope.QueryParams)
+	rawQuery, reserved := filterQueryParams(msgEnvelope.QueryParams)
 
 	// TODO: fix properly in EdgeX 3.0
 	ctx = context.WithValue(ctx, common.CorrelationHeader, msgEnvelope.CorrelationID) // nolint: staticcheck
-	event, edgexErr := application.GetCommand(ctx, deviceName, commandName, rawQuery, dic)
+	event, edgexErr := application.GetCommand(ctx, deviceName, commandName, rawQuery, reserved[common.RegexCommand], dic)
 	if edgexErr != nil {
 		lc.Errorf("Failed to process get device command %s for device %s: %s", commandName, deviceName, edgexErr.Error())
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, edgexErr.Error())
@@ -122,7 +122,7 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 	var err error
 	var encoding string
 	var eventResponseBytes []byte
-	if returnEvent {
+	if reserved[common.ReturnEvent] {
 		eventResponse := responses.NewEventResponse(msgEnvelope.RequestID, "", http.StatusOK, *event)
 		eventResponseBytes, encoding, err = eventResponse.Encode()
 		if err != nil {
@@ -156,7 +156,7 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		return
 	}
 
-	if pushEvent {
+	if reserved[common.PushEvent] {
 		go sdkCommon.SendEvent(event, msgEnvelope.CorrelationID, dic)
 	}
 
@@ -167,7 +167,7 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBus := bootstrapContainer.MessagingClientFrom(dic.Get)
-	rawQuery, _, _ := filterQueryParams(msgEnvelope.QueryParams)
+	rawQuery, _ := filterQueryParams(msgEnvelope.QueryParams)
 
 	requestPayload := make(map[string]any)
 	err := json.Unmarshal(msgEnvelope.Payload, &requestPayload)
@@ -216,17 +216,24 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 	}
 }
 
-func filterQueryParams(queries map[string]string) (string, bool, bool) {
+func filterQueryParams(queries map[string]string) (string, map[string]bool) {
 	var rawQuery []string
-	pushEvent, returnEvent := false, true
+	reserved := make(map[string]bool)
+	reserved[common.PushEvent] = false
+	reserved[common.ReturnEvent] = true
+	reserved[common.RegexCommand] = true
+
 	for k, v := range queries {
 		if k == common.PushEvent && v == common.ValueTrue {
-			pushEvent = true
+			reserved[common.PushEvent] = true
 			continue
 		}
 		if k == common.ReturnEvent && v == common.ValueFalse {
-			returnEvent = false
+			reserved[common.ReturnEvent] = false
 			continue
+		}
+		if k == common.RegexCommand && v == common.ValueFalse {
+			reserved[common.RegexCommand] = false
 		}
 		if strings.HasPrefix(k, sdkCommon.SDKReservedPrefix) {
 			continue
@@ -234,5 +241,5 @@ func filterQueryParams(queries map[string]string) (string, bool, bool) {
 		rawQuery = append(rawQuery, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	return strings.Join(rawQuery, "&"), pushEvent, returnEvent
+	return strings.Join(rawQuery, "&"), reserved
 }

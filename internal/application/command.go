@@ -33,7 +33,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 )
 
-func GetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
+func GetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, regexCmd bool, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	if deviceName == "" {
 		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "device name is empty", nil)
 	}
@@ -50,6 +50,8 @@ func GetCommand(ctx context.Context, deviceName string, commandName string, quer
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if cmdExist {
 		res, err = readDeviceCommand(device, commandName, queryParams, dic)
+	} else if regexCmd {
+		res, err = readDeviceResourcesRegex(device, commandName, queryParams, dic)
 	} else {
 		res, err = readDeviceResource(device, commandName, queryParams, dic)
 	}
@@ -96,12 +98,12 @@ func SetCommand(ctx context.Context, deviceName string, commandName string, quer
 func readDeviceResource(device models.Device, resourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(device.ProfileName, resourceName)
 	if !ok {
-		errMsg := fmt.Sprintf("deviceResource %s not found", resourceName)
+		errMsg := fmt.Sprintf("DeviceResource %s not found", resourceName)
 		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not write-only
 	if dr.Properties.ReadWrite == common.ReadWrite_W {
-		errMsg := fmt.Sprintf("deviceResource %s is marked as write-only", dr.Name)
+		errMsg := fmt.Sprintf("DeviceResource %s is marked as write-only", dr.Name)
 		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
@@ -138,15 +140,69 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 	return res, nil
 }
 
+func readDeviceResourcesRegex(device models.Device, regexResourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
+	deviceResources, ok := cache.Profiles().DeviceResourcesByRegex(device.ProfileName, regexResourceName)
+	if !ok || len(deviceResources) == 0 {
+		errMsg := fmt.Sprintf("Regex DeviceResource %s not found", regexResourceName)
+		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+	}
+
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	reqs := make([]sdkModels.CommandRequest, 0)
+	for _, dr := range deviceResources {
+		// check deviceResource is not write-only
+		if dr.Properties.ReadWrite == common.ReadWrite_W {
+			lc.Debugf("DeviceResource %s is marked as write-only, skipping adding to RegEx Read list", dr.Name)
+			continue
+		}
+
+		// prepare CommandRequest
+		var req sdkModels.CommandRequest
+		req.DeviceResourceName = dr.Name
+		req.Attributes = dr.Attributes
+		if attributes != "" {
+			if len(req.Attributes) <= 0 {
+				req.Attributes = make(map[string]any)
+			}
+			req.Attributes[sdkCommon.URLRawQuery] = attributes
+		}
+		req.Type = dr.Properties.ValueType
+
+		reqs = append(reqs, req)
+	}
+
+	if len(reqs) == 0 {
+		errMsg := fmt.Sprintf("no readable resources matched with %s", regexResourceName)
+		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+	}
+
+	// execute protocol-specific read operation
+	driver := container.ProtocolDriverFrom(dic.Get)
+	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
+	if err != nil {
+		errMsg := fmt.Sprintf("error reading Regex DeviceResource(s) %s for %s", regexResourceName, device.Name)
+		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+	}
+
+	// convert CommandValue to Event
+	configuration := container.ConfigurationFrom(dic.Get)
+	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, regexResourceName, configuration.Device.DataTransform, dic)
+	if edgexErr != nil {
+		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
+	}
+
+	return res, nil
+}
+
 func readDeviceCommand(device models.Device, commandName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
 	dc, ok := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if !ok {
-		errMsg := fmt.Sprintf("deviceCommand %s not found", commandName)
+		errMsg := fmt.Sprintf("DeviceCommand %s not found", commandName)
 		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not write-only
 	if dc.ReadWrite == common.ReadWrite_W {
-		errMsg := fmt.Sprintf("deviceCommand %s is marked as write-only", dc.Name)
+		errMsg := fmt.Sprintf("DeviceCommand %s is marked as write-only", dc.Name)
 		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
@@ -163,7 +219,7 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 		// check the deviceResource in ResourceOperation actually exist
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, drName)
 		if !ok {
-			errMsg := fmt.Sprintf("deviceResource %s in GET commnd %s for %s not defined", drName, dc.Name, device.Name)
+			errMsg := fmt.Sprintf("DeviceResource %s in GET commnd %s for %s not defined", drName, dc.Name, device.Name)
 			return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
@@ -198,12 +254,12 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 func writeDeviceResource(device models.Device, resourceName string, attributes string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(device.ProfileName, resourceName)
 	if !ok {
-		errMsg := fmt.Sprintf("deviceResource %s not found", resourceName)
+		errMsg := fmt.Sprintf("DeviceResource %s not found", resourceName)
 		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not read-only
 	if dr.Properties.ReadWrite == common.ReadWrite_R {
-		errMsg := fmt.Sprintf("deviceResource %s is marked as read-only", dr.Name)
+		errMsg := fmt.Sprintf("DeviceResource %s is marked as read-only", dr.Name)
 		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
@@ -213,7 +269,7 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 		if dr.Properties.DefaultValue != "" {
 			v = dr.Properties.DefaultValue
 		} else {
-			errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
+			errMsg := fmt.Sprintf("DeviceResource %s not found in request body and no default value defined", dr.Name)
 			return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 	}
@@ -264,12 +320,12 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 func writeDeviceCommand(device models.Device, commandName string, attributes string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	dc, ok := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if !ok {
-		errMsg := fmt.Sprintf("deviceCommand %s not found", commandName)
+		errMsg := fmt.Sprintf("DeviceCommand %s not found", commandName)
 		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not read-only
 	if dc.ReadWrite == common.ReadWrite_R {
-		errMsg := fmt.Sprintf("deviceCommand %s is marked as read-only", dc.Name)
+		errMsg := fmt.Sprintf("DeviceCommand %s is marked as read-only", dc.Name)
 		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
@@ -286,7 +342,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 		// check the deviceResource in ResourceOperation actually exist
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, drName)
 		if !ok {
-			errMsg := fmt.Sprintf("deviceResource %s in SET commnd %s for %s not defined", drName, dc.Name, device.Name)
+			errMsg := fmt.Sprintf("DeviceResource %s in SET commnd %s for %s not defined", drName, dc.Name, device.Name)
 			return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
@@ -298,7 +354,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 			} else if dr.Properties.DefaultValue != "" {
 				value = dr.Properties.DefaultValue
 			} else {
-				errMsg := fmt.Sprintf("deviceResource %s not found in request body and no default value defined", dr.Name)
+				errMsg := fmt.Sprintf("DeviceResource %s not found in request body and no default value defined", dr.Name)
 				return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 			}
 		}
