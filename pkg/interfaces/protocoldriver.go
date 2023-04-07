@@ -54,4 +54,14 @@ type ProtocolDriver interface {
 	// RemoveDevice is a callback function that is invoked
 	// when a Device associated with this Device Service is removed
 	RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error
+
+	// Discover triggers protocol specific device discovery, asynchronously
+	// writes the results to the channel which is passed to the implementation
+	// via ProtocolDriver.Initialize(). The results may be added to the device service
+	// based on a set of acceptance criteria (i.e. Provision Watchers).
+	Discover() error
+
+	// ValidateDevice triggers device's protocol properties validation, returns error
+	// if validation failed and the incoming device will not be added into EdgeX.
+	ValidateDevice(device models.Device) error
 }

@@ -11,10 +11,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/service"
 )
 
-func Bootstrap(serviceKey string, serviceVersion string, driver any) {
+func Bootstrap(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) {
 	service, err := service.NewDeviceService(serviceKey, serviceVersion, driver)
 	if err != nil {
 		_, _ = fmt.Fprint(os.Stderr, err.Error())

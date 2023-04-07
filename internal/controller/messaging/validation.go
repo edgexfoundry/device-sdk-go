@@ -59,30 +59,29 @@ func SubscribeDeviceValidation(ctx context.Context, dic *di.Container) errors.Ed
 
 				responseTopic := common.BuildTopic(responseTopicPrefix, msgEnvelope.RequestID)
 
-				validator := container.DeviceValidatorFrom(dic.Get)
-				if validator != nil {
-					var deviceRequest requests.AddDeviceRequest
-					err = json.Unmarshal(msgEnvelope.Payload, &deviceRequest)
-					if err != nil {
-						lc.Errorf("Failed to JSON decoding AddDeviceRequest: %s", err.Error())
-						res := types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
-						err = messageBus.Publish(res, responseTopic)
-						if err != nil {
-							lc.Errorf("Failed to publish device validation error response: %s", err.Error())
-						}
-						continue
-					}
+				driver := container.ProtocolDriverFrom(dic.Get)
 
-					err = validator.ValidateDevice(dtos.ToDeviceModel(deviceRequest.Device))
+				var deviceRequest requests.AddDeviceRequest
+				err = json.Unmarshal(msgEnvelope.Payload, &deviceRequest)
+				if err != nil {
+					lc.Errorf("Failed to JSON decoding AddDeviceRequest: %s", err.Error())
+					res := types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
+					err = messageBus.Publish(res, responseTopic)
 					if err != nil {
-						lc.Errorf("Device validation failed: %s", err.Error())
-						res := types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
-						err = messageBus.Publish(res, responseTopic)
-						if err != nil {
-							lc.Errorf("Failed to publish device validation error response: %s", err.Error())
-						}
-						continue
+						lc.Errorf("Failed to publish device validation error response: %s", err.Error())
 					}
+					continue
+				}
+
+				err = driver.ValidateDevice(dtos.ToDeviceModel(deviceRequest.Device))
+				if err != nil {
+					lc.Errorf("Device validation failed: %s", err.Error())
+					res := types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
+					err = messageBus.Publish(res, responseTopic)
+					if err != nil {
+						lc.Errorf("Failed to publish device validation error response: %s", err.Error())
+					}
+					continue
 				}
 
 				res, err := types.NewMessageEnvelopeForResponse(nil, msgEnvelope.RequestID, msgEnvelope.CorrelationID, common.ContentTypeJSON)

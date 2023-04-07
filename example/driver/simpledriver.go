@@ -291,7 +291,7 @@ func (s *SimpleDriver) RemoveDevice(deviceName string, protocols map[string]mode
 
 // Discover triggers protocol specific device discovery, which is an asynchronous operation.
 // Devices found as part of this discovery operation are written to the channel devices.
-func (s *SimpleDriver) Discover() {
+func (s *SimpleDriver) Discover() error {
 	proto := make(map[string]models.ProtocolProperties)
 	proto["other"] = map[string]any{"Address": "simple02", "Port": 301}
 
@@ -316,6 +316,7 @@ func (s *SimpleDriver) Discover() {
 
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	s.deviceCh <- res
+	return nil
 }
 
 func (s *SimpleDriver) ValidateDevice(device models.Device) error {

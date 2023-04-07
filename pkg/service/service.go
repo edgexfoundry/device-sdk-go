@@ -55,8 +55,6 @@ type deviceService struct {
 	serviceKey         string
 	lc                 logger.LoggingClient
 	driver             interfaces.ProtocolDriver
-	discovery          interfaces.ProtocolDiscovery
-	validator          interfaces.DeviceValidator
 	autoEventManager   interfaces.AutoEventManager
 	controller         *restController.RestController
 	asyncCh            chan *sdkModels.AsyncValues
@@ -70,7 +68,7 @@ type deviceService struct {
 	dic                *di.Container
 }
 
-func NewDeviceService(serviceKey string, serviceVersion string, driver any) (*deviceService, error) {
+func NewDeviceService(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) (*deviceService, error) {
 	var service deviceService
 	if serviceKey == "" {
 		return nil, errors.New("please specify device service name")
@@ -82,19 +80,7 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver any) (*de
 	}
 	sdkCommon.ServiceVersion = serviceVersion
 
-	protocolDriver, ok := driver.(interfaces.ProtocolDriver)
-	if !ok {
-		return nil, errors.New("please implement and specify the ProtocolDriver")
-	}
-	service.driver = protocolDriver
-
-	if discovery, ok := driver.(interfaces.ProtocolDiscovery); ok {
-		service.discovery = discovery
-	}
-
-	if validator, ok := driver.(interfaces.DeviceValidator); ok {
-		service.validator = validator
-	}
+	service.driver = driver
 
 	service.config = &config.ConfigurationStruct{}
 	return &service, nil
@@ -125,12 +111,6 @@ func (s *deviceService) Run() error {
 		},
 		container.ProtocolDriverName: func(get di.Get) interface{} {
 			return s.driver
-		},
-		container.ProtocolDiscoveryName: func(get di.Get) interface{} {
-			return s.discovery
-		},
-		container.DeviceValidatorName: func(get di.Get) interface{} {
-			return s.validator
 		},
 	})
 
