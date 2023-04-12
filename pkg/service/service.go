@@ -151,7 +151,11 @@ func (s *deviceService) Run() error {
 		return errors.New("bootstrapping failed")
 	}
 
-	// TODO: call ProtocolDriver.Start() proposed in issue#1339
+	err := s.driver.Start()
+	if err != nil {
+		cancel()
+		return fmt.Errorf("failed to Start ProtocolDriver: %v", err)
+	}
 
 	wg.Wait()
 	return nil
