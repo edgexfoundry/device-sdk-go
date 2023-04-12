@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -141,7 +142,12 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 }
 
 func readDeviceResourcesRegex(device models.Device, regexResourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
-	deviceResources, ok := cache.Profiles().DeviceResourcesByRegex(device.ProfileName, regexResourceName)
+	regex, err := regexp.CompilePOSIX(regexResourceName)
+	if err != nil {
+		return res, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to CompilePOSIX resource name", err)
+	}
+
+	deviceResources, ok := cache.Profiles().DeviceResourcesByRegex(device.ProfileName, regex)
 	if !ok || len(deviceResources) == 0 {
 		errMsg := fmt.Sprintf("Regex DeviceResource %s not found", regexResourceName)
 		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
