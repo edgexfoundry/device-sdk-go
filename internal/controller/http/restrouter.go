@@ -59,7 +59,7 @@ func (c *RestController) InitRestRoutes() {
 	c.router.UseEncodedPath()
 
 	lc := container.LoggingClientFrom(c.dic.Get)
-	secretProvider := container.SecretProviderFrom(c.dic.Get)
+	secretProvider := container.SecretProviderExtFrom(c.dic.Get)
 	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
 
 	// common
