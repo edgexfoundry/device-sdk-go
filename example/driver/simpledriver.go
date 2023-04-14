@@ -268,6 +268,10 @@ func (s *SimpleDriver) Stop(force bool) error {
 	return nil
 }
 
+func (s *SimpleDriver) Start() error {
+	return nil
+}
+
 // AddDevice is a callback function that is invoked
 // when a new Device associated with this Device Service is added
 func (s *SimpleDriver) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {

@@ -43,6 +43,10 @@ type ProtocolDriver interface {
 	// readings (if supported).
 	Stop(force bool) error
 
+	// Start runs Device Service startup tasks after the SDK has been completely initialized.
+	// This allows Device Service to safely use DeviceServiceSDK interface features in this function call.
+	Start() error
+
 	// AddDevice is a callback function that is invoked
 	// when a new Device associated with this Device Service is added
 	AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error
