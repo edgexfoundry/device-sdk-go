@@ -6,17 +6,20 @@
 package cache
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var testProfile = models.DeviceProfile{
 	Name: TestProfile,
 	DeviceResources: []models.DeviceResource{
 		models.DeviceResource{Name: TestDeviceResource},
+		models.DeviceResource{Name: TestDeviceResource + "suffix"},
 	},
 	DeviceCommands: []models.DeviceCommand{
 		models.DeviceCommand{
@@ -199,18 +202,22 @@ func Test_profileCache_DeviceResourcesByRegex(t *testing.T) {
 		name              string
 		profileName       string
 		regexResourceName string
-		deviceResources   []models.DeviceResource
+		matchedResources  int
 		expected          bool
 	}{
-		{"valid - resources found by regex pattern", TestProfile, ".+Resource", testProfile.DeviceResources, true},
-		{"Valid -  resources not found by regex pattern", TestProfile, "nil", nil, true},
-		{"invalid - profile not found", "nil", "%2E%2B-resource", nil, false},
+		{"valid - resources found by resource name", TestProfile, TestDeviceResource, 1, true},
+		{"valid - resources found by regex pattern", TestProfile, "testResource.*", 2, true},
+		{"Valid -  resources not found by regex pattern", TestProfile, "^resource.*", 0, true},
+		{"invalid - profile not found", "nil", "%2E%2B-resource", 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, ok := pc.DeviceResourcesByRegex(tt.profileName, tt.regexResourceName)
-			assert.Equal(t, res, tt.deviceResources, "DeviceResource returns wrong deviceResource")
-			assert.Equal(t, ok, tt.expected, "DeviceResource returns opposite result")
+			regex, err := regexp.CompilePOSIX(tt.regexResourceName)
+			require.NoError(t, err)
+
+			res, ok := pc.DeviceResourcesByRegex(tt.profileName, regex)
+			assert.Equal(t, len(res), tt.matchedResources, "DeviceResourcesByRegex returns wrong deviceResource")
+			assert.Equal(t, ok, tt.expected, "DeviceResourcesByRegex returns opposite result")
 		})
 	}
 }

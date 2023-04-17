@@ -26,7 +26,7 @@ type ProfileCache interface {
 	Update(profile models.DeviceProfile) errors.EdgeX
 	RemoveByName(name string) errors.EdgeX
 	DeviceResource(profileName string, resourceName string) (models.DeviceResource, bool)
-	DeviceResourcesByRegex(profileName string, regex string) ([]models.DeviceResource, bool)
+	DeviceResourcesByRegex(profileName string, regex *regexp.Regexp) ([]models.DeviceResource, bool)
 	DeviceCommand(profileName string, commandName string) (models.DeviceCommand, bool)
 	ResourceOperation(profileName string, deviceResource string) (models.ResourceOperation, errors.EdgeX)
 }
@@ -170,7 +170,7 @@ func (p *profileCache) DeviceResource(profileName string, resourceName string) (
 }
 
 // DeviceResourcesByRegex returns matched DeviceResource list with given profileName and regex pattern
-func (p *profileCache) DeviceResourcesByRegex(profileName string, regex string) ([]models.DeviceResource, bool) {
+func (p *profileCache) DeviceResourcesByRegex(profileName string, regex *regexp.Regexp) ([]models.DeviceResource, bool) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
@@ -181,8 +181,13 @@ func (p *profileCache) DeviceResourcesByRegex(profileName string, regex string) 
 
 	var res []models.DeviceResource
 	for _, dr := range drs {
-		match, _ := regexp.MatchString(regex, dr.Name)
-		if match {
+		if dr.Name == regex.String() {
+			res = append(res, dr)
+			continue
+		}
+
+		matchString := regex.FindString(dr.Name)
+		if matchString == dr.Name {
 			res = append(res, dr)
 		}
 	}

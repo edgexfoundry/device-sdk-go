@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -95,16 +96,16 @@ func SetCommand(ctx context.Context, deviceName string, commandName string, quer
 	return event, nil
 }
 
-func readDeviceResource(device models.Device, resourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
+func readDeviceResource(device models.Device, resourceName string, attributes string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	dr, ok := cache.Profiles().DeviceResource(device.ProfileName, resourceName)
 	if !ok {
 		errMsg := fmt.Sprintf("DeviceResource %s not found", resourceName)
-		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceResource is not write-only
 	if dr.Properties.ReadWrite == common.ReadWrite_W {
 		errMsg := fmt.Sprintf("DeviceResource %s is marked as write-only", dr.Name)
-		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
 	var req sdkModels.CommandRequest
@@ -127,24 +128,29 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error reading DeviceResource %s for %s", dr.Name, device.Name)
-		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
 	configuration := container.ConfigurationFrom(dic.Get)
-	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dr.Name, configuration.Device.DataTransform, dic)
-	if edgexErr != nil {
-		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
+	event, err := transformer.CommandValuesToEventDTO(results, device.Name, dr.Name, configuration.Device.DataTransform, dic)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
 	}
 
-	return res, nil
+	return event, nil
 }
 
-func readDeviceResourcesRegex(device models.Device, regexResourceName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
-	deviceResources, ok := cache.Profiles().DeviceResourcesByRegex(device.ProfileName, regexResourceName)
+func readDeviceResourcesRegex(device models.Device, regexResourceName string, attributes string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
+	regex, err := regexp.CompilePOSIX(regexResourceName)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to CompilePOSIX resource name", err)
+	}
+
+	deviceResources, ok := cache.Profiles().DeviceResourcesByRegex(device.ProfileName, regex)
 	if !ok || len(deviceResources) == 0 {
 		errMsg := fmt.Sprintf("Regex DeviceResource %s not found", regexResourceName)
-		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
@@ -173,7 +179,7 @@ func readDeviceResourcesRegex(device models.Device, regexResourceName string, at
 
 	if len(reqs) == 0 {
 		errMsg := fmt.Sprintf("no readable resources matched with %s", regexResourceName)
-		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 
 	// execute protocol-specific read operation
@@ -181,35 +187,35 @@ func readDeviceResourcesRegex(device models.Device, regexResourceName string, at
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error reading Regex DeviceResource(s) %s for %s", regexResourceName, device.Name)
-		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
 	configuration := container.ConfigurationFrom(dic.Get)
-	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, regexResourceName, configuration.Device.DataTransform, dic)
-	if edgexErr != nil {
-		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
+	event, err := transformer.CommandValuesToEventDTO(results, device.Name, regexResourceName, configuration.Device.DataTransform, dic)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to convert CommandValue to Event", err)
 	}
 
-	return res, nil
+	return event, nil
 }
 
-func readDeviceCommand(device models.Device, commandName string, attributes string, dic *di.Container) (res *dtos.Event, edgexErr errors.EdgeX) {
+func readDeviceCommand(device models.Device, commandName string, attributes string, dic *di.Container) (*dtos.Event, errors.EdgeX) {
 	dc, ok := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if !ok {
 		errMsg := fmt.Sprintf("DeviceCommand %s not found", commandName)
-		return res, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 	}
 	// check deviceCommand is not write-only
 	if dc.ReadWrite == common.ReadWrite_W {
 		errMsg := fmt.Sprintf("DeviceCommand %s is marked as write-only", dc.Name)
-		return res, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindNotAllowed, errMsg, nil)
 	}
 	// check ResourceOperation count does not exceed MaxCmdOps defined in configuration
 	configuration := container.ConfigurationFrom(dic.Get)
 	if len(dc.ResourceOperations) > configuration.Device.MaxCmdOps {
 		errMsg := fmt.Sprintf("GET command %s exceed device %s MaxCmdOps (%d)", dc.Name, device.Name, configuration.Device.MaxCmdOps)
-		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 	}
 
 	// prepare CommandRequests
@@ -220,7 +226,7 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 		dr, ok := cache.Profiles().DeviceResource(device.ProfileName, drName)
 		if !ok {
 			errMsg := fmt.Sprintf("DeviceResource %s in GET commnd %s for %s not defined", drName, dc.Name, device.Name)
-			return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+			return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 
 		reqs[i].DeviceResourceName = dr.Name
@@ -239,16 +245,16 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 	results, err := driver.HandleReadCommands(device.Name, device.Protocols, reqs)
 	if err != nil {
 		errMsg := fmt.Sprintf("error reading DeviceCommand %s for %s", dc.Name, device.Name)
-		return res, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
 	// convert CommandValue to Event
-	res, edgexErr = transformer.CommandValuesToEventDTO(results, device.Name, dc.Name, configuration.Device.DataTransform, dic)
-	if edgexErr != nil {
-		return res, errors.NewCommonEdgeX(errors.KindServerError, "failed to transform CommandValue to Event", edgexErr)
+	event, err := transformer.CommandValuesToEventDTO(results, device.Name, dc.Name, configuration.Device.DataTransform, dic)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to transform CommandValue to Event", err)
 	}
 
-	return res, nil
+	return event, nil
 }
 
 func writeDeviceResource(device models.Device, resourceName string, attributes string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
