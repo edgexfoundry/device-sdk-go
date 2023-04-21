@@ -120,12 +120,12 @@ func TestDeviceValidation(t *testing.T) {
 				if tt.expectedError {
 					assert.Equal(t, response.ErrorCode, 1)
 					assert.NotEmpty(t, response.Payload)
-					assert.Equal(t, response.ContentType, types.ContentTypeText)
+					assert.Equal(t, response.ContentType, common.ContentTypeText)
 				} else {
 					assert.Equal(t, expectedCorrelationId, response.CorrelationID)
 					assert.Equal(t, response.ErrorCode, 0)
 					assert.Empty(t, response.Payload)
-					assert.Equal(t, response.ContentType, types.ContentTypeJSON)
+					assert.Equal(t, response.ContentType, common.ContentTypeJSON)
 				}
 			}).Return(nil)
 
