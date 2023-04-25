@@ -72,7 +72,7 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 
 				// expected command response topic scheme: #/<service-name>/<device-name>/<command-name>/<method>
 				deviceName := topicLevels[length-3]
-				commandName, err := url.QueryUnescape(topicLevels[length-2])
+				commandName, err := url.PathUnescape(topicLevels[length-2])
 				if err != nil {
 					lc.Errorf("Failed to unescape command name '%s'", commandName)
 					continue
