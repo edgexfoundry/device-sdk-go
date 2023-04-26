@@ -15,8 +15,8 @@ import (
 type ConfigurationStruct struct {
 	// WritableInfo contains configuration settings that can be changed in the Registry .
 	Writable WritableInfo
-	// Clients is a map of services used by a DS.
-	Clients map[string]bootstrapConfig.ClientInfo
+	// Clients is a collection of services used by a DS.
+	Clients bootstrapConfig.ClientsCollection
 	// Registry contains registry-specific settings.
 	Registry bootstrapConfig.RegistryInfo
 	// Service contains DeviceService-specific settings.
@@ -68,10 +68,10 @@ func (c *ConfigurationStruct) UpdateWritableFromRaw(rawWritable interface{}) boo
 // into an bootstrapConfig.BootstrapConfiguration struct contained within ConfigurationStruct).
 func (c *ConfigurationStruct) GetBootstrap() bootstrapConfig.BootstrapConfiguration {
 	return bootstrapConfig.BootstrapConfiguration{
-		Clients:    c.Clients,
-		Service:    c.Service,
-		Registry:   c.Registry,
-		MessageBus: c.MessageBus,
+		Clients:    &c.Clients,
+		Service:    &c.Service,
+		Registry:   &c.Registry,
+		MessageBus: &c.MessageBus,
 	}
 }
 
