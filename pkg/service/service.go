@@ -134,7 +134,7 @@ func (s *deviceService) Run() error {
 			httpServer.BootstrapHandler,
 			messageBusBootstrapHandler,
 			handlers.NewServiceMetrics(s.serviceKey).BootstrapHandler, // Must be after Messaging
-			handlers.NewClientsBootstrap().BootstrapHandler,
+			handlers.NewClientsBootstrap(s.flags.InDevMode()).BootstrapHandler,
 			autoevent.BootstrapHandler,
 			NewBootstrap(s, router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
