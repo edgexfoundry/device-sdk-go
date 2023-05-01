@@ -36,8 +36,8 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	responsePublishTopicPrefix := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.ResponseTopic, deviceService.Name)
 	lc.Infof("Responses to command requests will be published on topic: %s/<requestId>", responsePublishTopicPrefix)
 
-	messages := make(chan types.MessageEnvelope)
-	messageErrors := make(chan error)
+	messages := make(chan types.MessageEnvelope, 1)
+	messageErrors := make(chan error, 1)
 	topics := []types.TopicChannel{
 		{
 			Topic:    requestSubscribeTopic,
