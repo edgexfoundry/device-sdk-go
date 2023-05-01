@@ -31,8 +31,8 @@ func MetadataSystemEventsCallback(ctx context.Context, dic *di.Container) errors
 
 	lc.Infof("Subscribing to System Events on topic: %s", metadataSystemEventTopic)
 
-	messages := make(chan types.MessageEnvelope)
-	messageErrors := make(chan error)
+	messages := make(chan types.MessageEnvelope, 1)
+	messageErrors := make(chan error, 1)
 	topics := []types.TopicChannel{
 		{
 			Topic:    metadataSystemEventTopic,
