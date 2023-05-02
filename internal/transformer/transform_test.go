@@ -144,7 +144,7 @@ func Test_getUniqueOrigin(t *testing.T) {
 
 func TestCommandValuesToEventDTO_ReadingUnits(t *testing.T) {
 	dic := NewMockDIC()
-	err := cache.InitCache(TestDeviceService, dic)
+	err := cache.InitCache(TestDeviceService, TestDeviceService, dic)
 	require.NoError(t, err)
 
 	stringCommandValue, e := sdkModels.NewCommandValue(TestDeviceResource, common.ValueTypeString, TestValue)

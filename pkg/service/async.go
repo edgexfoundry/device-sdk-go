@@ -106,7 +106,7 @@ func (s *deviceService) processAsyncFilterAndAdd(ctx context.Context) {
 							ProfileName:    pw.DiscoveredDevice.ProfileName,
 							Protocols:      d.Protocols,
 							Labels:         d.Labels,
-							ServiceName:    pw.DiscoveredDevice.ServiceName,
+							ServiceName:    s.serviceKey,
 							AdminState:     pw.DiscoveredDevice.AdminState,
 							OperatingState: models.Up,
 							AutoEvents:     pw.DiscoveredDevice.AutoEvents,

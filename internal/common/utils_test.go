@@ -265,7 +265,7 @@ func TestInitializeSentMetrics(t *testing.T) {
 
 func TestAddReadingTags(t *testing.T) {
 	dic := NewMockDIC()
-	edgexErr := cache.InitCache(TestDeviceService, dic)
+	edgexErr := cache.InitCache(TestDeviceService, TestDeviceService, dic)
 	require.NoError(t, edgexErr)
 	readingWithTags, err := dtos.NewSimpleReading(TestProfile, TestDeviceWithTags, TestDeviceResourceWithTags, common.ValueTypeString, "")
 	require.NoError(t, err)
@@ -299,7 +299,7 @@ func TestAddReadingTags(t *testing.T) {
 
 func TestAddEventTags(t *testing.T) {
 	dic := NewMockDIC()
-	edgexErr := cache.InitCache(TestDeviceService, dic)
+	edgexErr := cache.InitCache(TestDeviceService, TestDeviceService, dic)
 	require.NoError(t, edgexErr)
 
 	expectedDeviceTags := dtos.Tags{TestDeviceTagName: TestDeviceTagValue, TestDuplicateTagName: TestDeviceTagValue}

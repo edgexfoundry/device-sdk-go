@@ -53,6 +53,7 @@ const EnvInstanceName = "EDGEX_INSTANCE_NAME"
 
 type deviceService struct {
 	serviceKey         string
+	baseServiceName    string
 	lc                 logger.LoggingClient
 	driver             interfaces.ProtocolDriver
 	autoEventManager   interfaces.AutoEventManager
@@ -306,6 +307,9 @@ func (s *deviceService) setServiceName(instanceName string) {
 	if len(envValue) > 0 {
 		instanceName = envValue
 	}
+
+	// Need to capture the base service name to use when loading Provision Watchers so that all instances find the defined provision watchers.
+	s.baseServiceName = s.serviceKey
 
 	if len(instanceName) > 0 {
 		s.serviceKey = s.serviceKey + "_" + instanceName

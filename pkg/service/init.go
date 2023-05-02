@@ -48,7 +48,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
 	s.controller.InitRestRoutes()
 
-	edgexErr := cache.InitCache(s.serviceKey, dic)
+	edgexErr := cache.InitCache(s.serviceKey, s.baseServiceName, dic)
 	if edgexErr != nil {
 		s.lc.Errorf("Failed to init cache: %s", edgexErr.Error())
 		return false

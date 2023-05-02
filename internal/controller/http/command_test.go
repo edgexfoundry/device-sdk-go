@@ -206,7 +206,7 @@ func mockDic() *di.Container {
 func TestRestController_GetCommand(t *testing.T) {
 	dic := mockDic()
 
-	err := cache.InitCache(testService, dic)
+	err := cache.InitCache(testService, testService, dic)
 	require.NoError(t, err)
 
 	controller := NewRestController(mux.NewRouter(), dic, testService)
@@ -271,7 +271,7 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 		},
 	})
 
-	edgexErr := cache.InitCache(testService, dic)
+	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
 	controller := NewRestController(mux.NewRouter(), dic, testService)
@@ -300,7 +300,7 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 	dic := mockDic()
 
-	edgexErr := cache.InitCache(testService, dic)
+	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
 	controller := NewRestController(mux.NewRouter(), dic, testService)
@@ -331,7 +331,7 @@ func TestRestController_SetCommand(t *testing.T) {
 	dic := mockDic()
 
 	sdkCommon.InitializeSentMetrics(logger.NewMockClient(), dic)
-	err := cache.InitCache(testService, dic)
+	err := cache.InitCache(testService, testService, dic)
 	require.NoError(t, err)
 
 	controller := NewRestController(mux.NewRouter(), dic, testService)
@@ -427,7 +427,7 @@ func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
 	})
 	validRequest := map[string]any{testResource: "value"}
 
-	edgexErr := cache.InitCache(testService, dic)
+	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
 	controller := NewRestController(mux.NewRouter(), dic, testService)
