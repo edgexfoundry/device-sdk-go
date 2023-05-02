@@ -33,8 +33,8 @@ github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.10 h1:iDuAO3vpBQnlQuF
 github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.10/go.mod h1:8RlYm5CPzZgUsfXDWVP1TIeUMhsDNIdRdj1HXdomtOI=
 github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.38 h1:FSu4b6DqviexPsS/ECBR9YgkVB76VSgyMCMDUvyGgNM=
 github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.38/go.mod h1:1YS2J5NfPCd7TYBk0alu+RR5EBzBb+bnG0KF1qNRQYY=
-github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.26 h1:PbWRMnOxZusSGj/ZFkrgbEwG+TgVNrQed36pr96ytxM=
-github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.26/go.mod h1:04phI5qPCFC2bfG1xZ5h6aiGH8Zp8gKDEljHjo/B+Fs=
+github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.27 h1:3TTRswso1ZpNNCpLOFfB0Hofvt6Sv7fg/OjivC2EOSc=
+github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.27/go.mod h1:lN17UpccjzsZ62vf4dTzhqvuka9z6gMpY63+k/b8myI=
 github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.7 h1:sje0agoLi8ayEFxGO3xtN7P/IXwjZUUxpC8G2fCTu44=
 github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.7/go.mod h1:SGyo4fAHzOhDAd2Usa9RaBT/sOzkbceIqLrDG0+iYy8=
 github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0-dev.14 h1:2jG1CBKBXPQdkM8AN1PweaTIaCgudZ6tua/BBBHgq+A=
@@ -175,8 +175,8 @@ github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3Rllmb
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/nats-io/jwt/v2 v2.4.1 h1:Y35W1dgbbz2SQUYDPCaclXcuqleVmpbRa7646Jf2EX4=
 github.com/nats-io/nats-server/v2 v2.9.16 h1:SuNe6AyCcVy0g5326wtyU8TdqYmcPqzTjhkHojAjprc=
-github.com/nats-io/nats.go v1.24.0 h1:CRiD8L5GOQu/DcfkmgBcTTIQORMwizF+rPk6T0RaHVQ=
-github.com/nats-io/nats.go v1.24.0/go.mod h1:dVQF+BK3SzUZpwyzHedXsvH3EO38aVKuOPkkHlv5hXA=
+github.com/nats-io/nats.go v1.25.0 h1:t5/wCPGciR7X3Mu8QOi4jiJaXaWM8qtkLu4lzGZvYHE=
+github.com/nats-io/nats.go v1.25.0/go.mod h1:D2WALIhz7V8M0pH8Scx8JZXlg6Oqz5VG+nQkK8nJdvg=
 github.com/nats-io/nkeys v0.4.4 h1:xvBJ8d69TznjcQl9t6//Q5xXuVhyYiSos6RPtvQNTwA=
 github.com/nats-io/nkeys v0.4.4/go.mod h1:XUkxdLPTufzlihbamfzQ7mw/VGx6ObUs+0bN5sNvt64=
 github.com/nats-io/nuid v1.0.1 h1:5iA8DT8V7q8WK2EScv2padNa/rTESc1KdnPw4TC2paw=
