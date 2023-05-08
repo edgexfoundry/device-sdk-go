@@ -2,6 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2023 Intel
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,7 +11,6 @@ package service
 import (
 	"context"
 	"fmt"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
@@ -60,17 +60,20 @@ func (s *deviceService) GetDeviceByName(name string) (models.Device, error) {
 	return device, nil
 }
 
+// DeviceExistsForName returns true if a device exists in cache with the specified name, otherwise it returns false.
+func (s *deviceService) DeviceExistsForName(name string) bool {
+	_, ok := cache.Devices().ForName(name)
+	return ok
+}
+
 // RemoveDeviceByName removes the specified Device by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *deviceService) RemoveDeviceByName(name string) error {
-	device, ok := cache.Devices().ForName(name)
-	if !ok {
-		msg := fmt.Sprintf("failed to find device %s in cache", name)
-		s.lc.Error(msg)
-		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
+	if _, err := s.GetDeviceByName(s.Name()); err != nil {
+		return err
 	}
 
-	s.lc.Debugf("Removing managed Device %s", device.Name)
+	s.lc.Debugf("Removing managed Device %s", name)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
 	_, err := container.DeviceClientFrom(s.dic.Get).DeleteDeviceByName(ctx, name)
 	if err != nil {
@@ -80,62 +83,46 @@ func (s *deviceService) RemoveDeviceByName(name string) error {
 	return err
 }
 
-// UpdateDevice updates the Device in the cache and ensures that the
-// copy in Core Metadata is also updated.
+// UpdateDevice updates the Device in Core Metadata
 func (s *deviceService) UpdateDevice(device models.Device) error {
-	_, ok := cache.Devices().ForName(device.Name)
-	if !ok {
-		msg := fmt.Sprintf("failed to find Device %s in cache", device.Name)
-		s.lc.Error(msg)
-		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
-	}
-
-	s.lc.Debugf("Updating managed Device %s", device.Name)
-	req := requests.NewUpdateDeviceRequest(dtos.FromDeviceModelToUpdateDTO(device))
-	req.Device.Id = nil
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	_, err := container.DeviceClientFrom(s.dic.Get).Update(ctx, []requests.UpdateDeviceRequest{req})
-	if err != nil {
-		s.lc.Errorf("failed to update Device %s in Core Metadata: %v", device.Name, err)
-	}
-
-	return err
+	return s.PatchDevice(dtos.FromDeviceModelToUpdateDTO(device))
 }
 
-// UpdateDeviceOperatingState updates the Device's OperatingState with given name
-// in Core Metadata and device service cache.
-func (s *deviceService) UpdateDeviceOperatingState(deviceName string, state string) error {
-	d, ok := cache.Devices().ForName(deviceName)
-	if !ok {
-		msg := fmt.Sprintf("failed to find Device %s in cache", deviceName)
-		s.lc.Error(msg)
-		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, msg, nil)
-	}
-
-	s.lc.Debugf("Updating managed Device OperatingState %s", d.Name)
-	req := requests.UpdateDeviceRequest{
-		BaseRequest: commonDTO.NewBaseRequest(),
-		Device: dtos.UpdateDevice{
-			Name:           &deviceName,
-			OperatingState: &state,
-		},
-	}
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	_, err := container.DeviceClientFrom(s.dic.Get).Update(ctx, []requests.UpdateDeviceRequest{req})
-	if err != nil {
-		s.lc.Errorf("failed to update Device %s OperatingState in Core Metadata: %v", d.Name, err)
-	}
-
-	return err
+// UpdateDeviceOperatingState updates the OperatingState for the Device with given name
+// in Core Metadata
+func (s *deviceService) UpdateDeviceOperatingState(name string, state models.OperatingState) error {
+	stateString := string(state)
+	return s.PatchDevice(dtos.UpdateDevice{
+		Name:           &name,
+		OperatingState: &stateString,
+	})
 }
 
-// SetDeviceOpState sets the operating state of device
-func (s *deviceService) SetDeviceOpState(name string, state models.OperatingState) error {
-	d, err := s.GetDeviceByName(name)
-	if err != nil {
+// PatchDevice patches the specified device properties in Core Metadata. Device name is required
+// to be provided in the UpdateDevice. Note that all properties of UpdateDevice are pointers
+// and anything that is nil will not modify the device. In the case of Arrays and Maps, the whole new value
+// must be sent, as it is applied as an overwrite operation.
+func (s *deviceService) PatchDevice(updateDevice dtos.UpdateDevice) error {
+	if updateDevice.Name == nil {
+		msg := "missing device name for patch device call"
+		s.lc.Error(msg)
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, msg, nil)
+	}
+
+	if _, err := s.GetDeviceByName(s.Name()); err != nil {
 		return err
 	}
 
-	d.OperatingState = state
-	return s.UpdateDevice(d)
+	s.lc.Debugf("Patching managed Device %s", *updateDevice.Name)
+	req := requests.UpdateDeviceRequest{
+		BaseRequest: commonDTO.NewBaseRequest(),
+		Device:      updateDevice,
+	}
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
+	_, err := container.DeviceClientFrom(s.dic.Get).Update(ctx, []requests.UpdateDeviceRequest{req})
+	if err != nil {
+		s.lc.Errorf("failed to update Device %s in Core Metadata: %v", *updateDevice.Name, err)
+	}
+
+	return err
 }

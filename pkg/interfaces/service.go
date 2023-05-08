@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022 Intel Corporation
+// Copyright (C) 2022-2023 Intel Corporation
 // Copyright (C) 2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -7,6 +7,7 @@
 package interfaces
 
 import (
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"net/http"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
@@ -77,11 +78,16 @@ type DeviceServiceSDK interface {
 	AddDeviceAutoEvent(deviceName string, event models.AutoEvent) error
 	// RemoveDeviceAutoEvent removes an AutoEvent from the Device with given name
 	RemoveDeviceAutoEvent(deviceName string, event models.AutoEvent) error
-	// SetDeviceOpState sets the operating state of device
-	SetDeviceOpState(name string, state models.OperatingState) error
-	// UpdateDeviceOperatingState updates the Device's OperatingState with given name
-	// in Core Metadata and device service cache.
-	UpdateDeviceOperatingState(deviceName string, state string) error
+	// UpdateDeviceOperatingState updates the OperatingState for the Device with given name
+	// in Core Metadata
+	UpdateDeviceOperatingState(name string, state models.OperatingState) error
+	// DeviceExistsForName returns true if a device exists in cache with the specified name, otherwise it returns false.
+	DeviceExistsForName(name string) bool
+	// PatchDevice patches the specified device properties in Core Metadata. Device name is required
+	// to be provided in the UpdateDevice. Note that all properties of UpdateDevice are pointers
+	// and anything that is nil will not modify the device. In the case of Arrays and Maps, the whole new value
+	// must be sent, as it is applied as an overwrite operation.
+	PatchDevice(updateDevice dtos.UpdateDevice) error
 
 	// Name returns the name of this Device Service
 	Name() string
@@ -126,4 +132,11 @@ type DeviceServiceSDK interface {
 	// MetricsManager returns the Metrics Manager used to register counter, gauge, gaugeFloat64 or timer metric types from
 	// github.com/rcrowley/go-metrics
 	MetricsManager() interfaces.MetricsManager
+}
+
+// DeviceServiceSDKExt defines the extended contract for device sdk implementations that
+// provide additional APIs needed only from the sdk code.
+type DeviceServiceSDKExt interface {
+	DeviceServiceSDK
+	Run() error
 }

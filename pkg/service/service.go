@@ -2,7 +2,7 @@
 //
 // Copyright (C) 2017-2018 Canonical Ltd
 // Copyright (C) 2018-2023 IOTech Ltd
-// Copyright (c) 2019 Intel Corporation
+// Copyright (C) 2019,2023 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -68,7 +68,8 @@ type deviceService struct {
 	dic                *di.Container
 }
 
-func NewDeviceService(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) (*deviceService, error) {
+// NewDeviceService returns an implementation of interfaces.DeviceServiceSDKExt for the specified key, version, and driver.
+func NewDeviceService(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) (interfaces.DeviceServiceSDKExt, error) {
 	var service deviceService
 	if serviceKey == "" {
 		return nil, errors.New("please specify device service name")
@@ -83,7 +84,7 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver interface
 	service.driver = driver
 
 	service.config = &config.ConfigurationStruct{}
-	return &service, nil
+	return interfaces.DeviceServiceSDKExt(&service), nil
 }
 
 func (s *deviceService) Run() error {
@@ -187,7 +188,7 @@ func (s *deviceService) LoggingClient() logger.LoggingClient {
 	return s.lc
 }
 
-// AsyncReadings returns a bool value to indicate whether the asynchronous reading is enabled.
+// AsyncReadingsEnabled returns a bool value to indicate whether the asynchronous reading is enabled.
 func (s *deviceService) AsyncReadingsEnabled() bool {
 	return s.config.Device.EnableAsyncReadings
 }
@@ -196,7 +197,7 @@ func (s *deviceService) AsyncValuesChannel() chan *sdkModels.AsyncValues {
 	return s.asyncCh
 }
 
-// DeviceDiscovery returns a bool value to indicate whether the device discovery is enabled.
+// DeviceDiscoveryEnabled returns a bool value to indicate whether the device discovery is enabled.
 func (s *deviceService) DeviceDiscoveryEnabled() bool {
 	return s.config.Device.Discovery.Enabled
 }
