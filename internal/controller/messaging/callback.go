@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
@@ -22,7 +23,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 )
 
-func MetadataSystemEventsCallback(ctx context.Context, dic *di.Container) errors.EdgeX {
+func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	deviceService := container.DeviceServiceFrom(dic.Get)
@@ -38,6 +39,24 @@ func MetadataSystemEventsCallback(ctx context.Context, dic *di.Container) errors
 			Topic:    metadataSystemEventTopic,
 			Messages: messages,
 		},
+	}
+
+	// Must subscribe to provision watcher System Events separately when the service has an instance name. i.e. -i flag was used.
+	// This is because Provision Watchers apply to all instances of the device service, i.e. the service base name (without the instance portion).
+	// The above subscribe topic is for the specific instance name which is appropriate for Devices, Profiles and Devices service System Events
+	// and when the -i flag is not used.
+	if serviceBaseName != deviceService.Name {
+		// Must replace the first wildcard with the type for Provision Watchers
+		baseSubscribeTopic := strings.Replace(common.MetadataSystemEventSubscribeTopic, "+", common.ProvisionWatcherSystemEventType, 1)
+		provisionWatcherSystemEventSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(),
+			baseSubscribeTopic, serviceBaseName, "#")
+
+		topics = append(topics, types.TopicChannel{
+			Topic:    provisionWatcherSystemEventSubscribeTopic,
+			Messages: messages,
+		})
+
+		lc.Infof("Subscribing additionally to Provision Watcher System Events on topic: %s", provisionWatcherSystemEventSubscribeTopic)
 	}
 
 	messageBus := bootstrapContainer.MessagingClientFrom(dic.Get)
@@ -65,7 +84,7 @@ func MetadataSystemEventsCallback(ctx context.Context, dic *di.Container) errors
 				}
 
 				serviceName := container.DeviceServiceFrom(dic.Get).Name
-				if systemEvent.Owner != serviceName {
+				if systemEvent.Owner != serviceName && systemEvent.Owner != serviceBaseName {
 					lc.Errorf("unmatched system event owner %s with service name %s", systemEvent.Owner, serviceName)
 					continue
 				}
