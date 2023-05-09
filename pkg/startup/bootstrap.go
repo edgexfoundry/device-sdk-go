@@ -16,15 +16,15 @@ import (
 )
 
 func Bootstrap(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) {
-	service, err := service.NewDeviceService(serviceKey, serviceVersion, driver)
+	deviceService, err := service.NewDeviceService(serviceKey, serviceVersion, driver)
 	if err != nil {
 		_, _ = fmt.Fprint(os.Stderr, err.Error())
 		os.Exit(-1)
 	}
 
-	err = service.Run()
+	err = deviceService.Run()
 	if err != nil {
-		service.LoggingClient().Errorf("Device Service %s", err.Error())
+		deviceService.LoggingClient().Errorf("Device Service %s", err.Error())
 		os.Exit(-1)
 	}
 

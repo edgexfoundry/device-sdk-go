@@ -4,6 +4,7 @@ example/cmd/device-simple/device-simple
 glide.lock
 vendor
 .idea
+*.iml
 .vscode
 coverage.out
 *.snap
