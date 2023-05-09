@@ -209,17 +209,17 @@ func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisi
 
 	provisionWatcher, exist := cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
 	if !exist {
-		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.DiscoveredDevice.ServiceName {
+		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
 			var newProvisionWatcher models.ProvisionWatcher
 			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
 			req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher))
 			return AddProvisionWatcher(req, dic)
 		} else {
-			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.DiscoveredDevice.ServiceName)
+			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)
 			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 		}
 	}
-	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.DiscoveredDevice.ServiceName {
+	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
 		return DeleteProvisionWatcher(*updateProvisionWatcherRequest.ProvisionWatcher.Name, dic)
 	}
 

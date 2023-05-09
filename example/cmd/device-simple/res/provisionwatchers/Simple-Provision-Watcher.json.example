@@ -1,5 +1,6 @@
 {
    "name":"Simple-Provision-Watcher",
+   "serviceName":"device-simple",
    "labels":[
       "simple"
    ],
@@ -17,7 +18,6 @@
    "adminState": "UNLOCKED",
    "discoveredDevice":{
       "profileName":"Simple-Device",
-      "serviceName":"device-simple",
       "adminState":"UNLOCKED",
       "autoEvents":[
          {
