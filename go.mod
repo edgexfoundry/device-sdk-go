@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.81
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.83
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.40
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.28
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.29
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
