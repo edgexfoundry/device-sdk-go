@@ -10,6 +10,8 @@ package provision
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,6 +24,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v3"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
@@ -104,6 +107,26 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	}
 	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
-	_, edgexErr := dc.Add(ctx, addDevicesReq)
-	return edgexErr
+	responses, edgexErr := dc.Add(ctx, addDevicesReq)
+	if edgexErr != nil {
+		return edgexErr
+	}
+
+	err = nil
+	for _, response := range responses {
+		if response.StatusCode != http.StatusCreated {
+			if response.StatusCode == http.StatusConflict {
+				lc.Warnf("%s. Device may be owned by other device service instance.", response.Message)
+				continue
+			}
+
+			err = multierror.Append(err, fmt.Errorf("add device failed: %s", response.Message))
+		}
+	}
+
+	if err != nil {
+		return errors.NewCommonEdgeXWrapper(err)
+	}
+
+	return nil
 }

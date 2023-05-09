@@ -18,13 +18,13 @@ import (
 )
 
 // InitCache Init basic state for cache
-func InitCache(name string, dic *di.Container) errors.EdgeX {
+func InitCache(instanceName string, baseName string, dic *di.Container) errors.EdgeX {
 	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
 	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 	pwc := bootstrapContainer.ProvisionWatcherClientFrom(dic.Get)
 
 	// init device cache
-	deviceRes, err := dc.DevicesByServiceName(context.Background(), name, 0, -1)
+	deviceRes, err := dc.DevicesByServiceName(context.Background(), instanceName, 0, -1)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func InitCache(name string, dic *di.Container) errors.EdgeX {
 	newProfileCache(profiles)
 
 	// init provision watcher cache
-	pwRes, err := pwc.ProvisionWatchersByServiceName(context.Background(), name, 0, -1)
+	pwRes, err := pwc.ProvisionWatchersByServiceName(context.Background(), baseName, 0, -1)
 	if err != nil {
 		return err
 	}

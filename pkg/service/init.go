@@ -48,7 +48,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
 	s.controller.InitRestRoutes()
 
-	edgexErr := cache.InitCache(s.serviceKey, dic)
+	edgexErr := cache.InitCache(s.serviceKey, s.baseServiceName, dic)
 	if edgexErr != nil {
 		s.lc.Errorf("Failed to init cache: %s", edgexErr.Error())
 		return false
@@ -110,7 +110,17 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	return true
 }
 
-func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
+func newMessageBusBootstrap(baseServiceName string) *messageBusBootstrap {
+	return &messageBusBootstrap{
+		baseServiceName: baseServiceName,
+	}
+}
+
+type messageBusBootstrap struct {
+	baseServiceName string
+}
+
+func (h *messageBusBootstrap) messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) bool {
 	if !handlers.MessagingBootstrapHandler(ctx, wg, startupTimer, dic) {
 		return false
 	}
@@ -122,7 +132,7 @@ func messageBusBootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startup
 		return false
 	}
 
-	err = messaging.MetadataSystemEventsCallback(ctx, dic)
+	err = messaging.MetadataSystemEventsCallback(ctx, h.baseServiceName, dic)
 	if err != nil {
 		lc.Errorf("Failed to subscribe Metadata system events: %v", err)
 		return false
