@@ -1,4 +1,5 @@
 name: Simple-Provision-Watcher
+serviceName: device-simple
 labels:
   - simple
 identifiers:
@@ -12,7 +13,6 @@ blockingIdentifiers:
 adminState: UNLOCKED
 discoveredDevice:
   profileName: Simple-Device
-  serviceName: device-simple
   adminState: UNLOCKED
   autoEvents:
     - interval: 15s

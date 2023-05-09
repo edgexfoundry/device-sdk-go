@@ -18,7 +18,7 @@ import (
 )
 
 // InitCache Init basic state for cache
-func InitCache(instanceName string, baseName string, dic *di.Container) errors.EdgeX {
+func InitCache(instanceName string, baseServiceName string, dic *di.Container) errors.EdgeX {
 	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
 	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 	pwc := bootstrapContainer.ProvisionWatcherClientFrom(dic.Get)
@@ -46,7 +46,9 @@ func InitCache(instanceName string, baseName string, dic *di.Container) errors.E
 	newProfileCache(profiles)
 
 	// init provision watcher cache
-	pwRes, err := pwc.ProvisionWatchersByServiceName(context.Background(), baseName, 0, -1)
+	// baseServiceName is the service name w/o the instance portion added when -i/--instance flag is used.
+	// Using baseServiceName here since ProvisionWatchers are used by all instances of the device service and thus have the ServiceName set to the baseServiceName.
+	pwRes, err := pwc.ProvisionWatchersByServiceName(context.Background(), baseServiceName, 0, -1)
 	if err != nil {
 		return err
 	}
