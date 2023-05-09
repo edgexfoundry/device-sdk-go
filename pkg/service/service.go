@@ -69,7 +69,7 @@ type deviceService struct {
 }
 
 // NewDeviceService returns an implementation of interfaces.DeviceServiceSDKExt for the specified key, version, and driver.
-func NewDeviceService(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) (interfaces.DeviceServiceSDKExt, error) {
+func NewDeviceService(serviceKey string, serviceVersion string, driver interfaces.ProtocolDriver) (interfaces.DeviceServiceSDK, error) {
 	var service deviceService
 	if serviceKey == "" {
 		return nil, errors.New("please specify device service name")
@@ -84,7 +84,7 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver interface
 	service.driver = driver
 
 	service.config = &config.ConfigurationStruct{}
-	return interfaces.DeviceServiceSDKExt(&service), nil
+	return interfaces.DeviceServiceSDK(&service), nil
 }
 
 func (s *deviceService) Run() error {

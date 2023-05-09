@@ -89,6 +89,10 @@ type DeviceServiceSDK interface {
 	// must be sent, as it is applied as an overwrite operation.
 	PatchDevice(updateDevice dtos.UpdateDevice) error
 
+	// Run starts this Device Service. This should not be called directly by a device service. Instead,
+	// call startup.Bootstrap(...)
+	Run() error
+
 	// Name returns the name of this Device Service
 	Name() string
 
@@ -132,11 +136,4 @@ type DeviceServiceSDK interface {
 	// MetricsManager returns the Metrics Manager used to register counter, gauge, gaugeFloat64 or timer metric types from
 	// github.com/rcrowley/go-metrics
 	MetricsManager() interfaces.MetricsManager
-}
-
-// DeviceServiceSDKExt defines the extended contract for device sdk implementations that
-// provide additional APIs needed only from the sdk code.
-type DeviceServiceSDKExt interface {
-	DeviceServiceSDK
-	Run() error
 }
