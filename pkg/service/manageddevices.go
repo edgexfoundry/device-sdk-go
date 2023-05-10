@@ -69,7 +69,7 @@ func (s *deviceService) DeviceExistsForName(name string) bool {
 // RemoveDeviceByName removes the specified Device by name from the cache and ensures that the
 // instance in Core Metadata is also removed.
 func (s *deviceService) RemoveDeviceByName(name string) error {
-	if _, err := s.GetDeviceByName(s.Name()); err != nil {
+	if _, err := s.GetDeviceByName(name); err != nil {
 		return err
 	}
 
@@ -109,7 +109,7 @@ func (s *deviceService) PatchDevice(updateDevice dtos.UpdateDevice) error {
 		return errors.NewCommonEdgeX(errors.KindContractInvalid, msg, nil)
 	}
 
-	if _, err := s.GetDeviceByName(s.Name()); err != nil {
+	if _, err := s.GetDeviceByName(*updateDevice.Name); err != nil {
 		return err
 	}
 
