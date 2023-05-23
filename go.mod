@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0-dev.92
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0-dev.42
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0-dev.32
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.0.0
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.0.0
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.0.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -21,9 +21,9 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.4.2 // indirect
-	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0-dev.10 // indirect
-	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0-dev.7 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0-dev.18 // indirect
+	github.com/edgexfoundry/go-mod-configuration/v3 v3.0.0 // indirect
+	github.com/edgexfoundry/go-mod-registry/v3 v3.0.0 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.0.0 // indirect
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.4.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
