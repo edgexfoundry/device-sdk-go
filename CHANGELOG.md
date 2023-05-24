@@ -118,7 +118,7 @@
 ### Bug Fixes 🐛
 
 - Add UpdateDevice callback for device profile update ([#d4adbed](https://github.com/edgexfoundry/device-sdk-go/commits/d4adbed))
-- typo "DeviceResourece" -> "DeviceResource" in error log message ([#278dac4](https://github.com/edgexfoundry/device-sdk-go/commits/278dac4))
+- Fix typo "DeviceResourece" -> "DeviceResource" in error log message ([#278dac4](https://github.com/edgexfoundry/device-sdk-go/commits/278dac4))
 
 ### Code Refactoring ♻
 
