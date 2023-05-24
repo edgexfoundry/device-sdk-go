@@ -12,6 +12,195 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+## [v3.0.0] Minnesota - 2023-05-31 (Only compatible with the 3.x releases)
+
+### Features ✨
+- Add Start method to the ProtocolDriver interface ([#453fffe](https://github.com/edgexfoundry/device-sdk-go/commit/453fffe39844267b7c3d359e90be35c08d562c07))
+  ```text
+  BREAKING CHANGE: Added required `Start` method to the ProtocolDriver interface. 
+                   This method is called after the sdk has been completely initialized.
+                   This is where device service should implement post initialization code. 
+  ```
+- Add PatchDevice and DeviceExistsForName and refactor UpdateDeviceOperatingState([#]())
+  ```text
+  BREAKING CHANGE: SetDeviceOperatingState has been removed, and UpdateDeviceOperatingState has been modified to accept a models.OperatingState value.
+  ```
+- Using url.PathUnescape for decoding API path ([#cdd8b0f](https://github.com/edgexfoundry/device-sdk-go/commit/cdd8b0f4c44e4c2644a3f6043fa9547e0633c97a))
+  ```text
+  BREAKING CHANGE: Use PathUnescape for decoding API path to consist with the change from MQTT topic, the MQTT topic path will encode with url.PathEscape.
+  ```
+-  All ProtocolDriver interface API implementations required ([#d73da92](https://github.com/edgexfoundry/device-sdk-go/commit/d73da920b9fd3a52132699998633ff8aee3aa256))
+  ```text
+  BREAKING CHANGE: Move Discover(), ValidateDevice() to the ProtocolDriver interface to that they are required like the existing interfaces. 
+                   This forces at a minimum an empty implementation which gives exposure to the developer that they exist.
+                   Use interfaces.ProtocolDriver instead of any as parameter
+  ```
+- Apply provision watcher model changes ([#24d4a99](https://github.com/edgexfoundry/device-sdk-go/commit/24d4a999756b81a71ac18f620daf3eea158c1b50))
+  ```text
+  BREAKING CHANGE: Apply provision watcher model changes and skip the locked provision watcher.
+  ```
+- Change configuration file format to YAML ([#c61610b](https://github.com/edgexfoundry/device-sdk-go/commit/c61610bbbff1187c8ac68f5c7e0a10add7b75ddb))
+  ```text
+  BREAKING CHANGE: Configuration files are now in YAML format, Default file name is now configuration.yaml
+  ```
+- Change device definition file to YAML format ([#9bade9f](https://github.com/edgexfoundry/device-sdk-go/commit/9bade9fb8ad7b1ba90f4944641889e9ddeadd73b))
+  ```text
+  BREAKING CHANGE: Stop supporting TOML format and support YAML format for Device definition files
+  ```
+- Apply JWT authentication to incoming calls ([#774c203](https://github.com/edgexfoundry/device-sdk-go/commit/774c2037947f109106e5ac1f44e7b15f17fcf2b1))
+  ```text
+  BREAKING CHANGE: In secure mode, incoming REST API calls must have a JWT authentication token, with the exception of /api/v2/ping.
+  ```
+- Remove LastConnected, LastReported and UpdateLastConnected configs ([#7414f7f](https://github.com/edgexfoundry/device-sdk-go/commit/7414f7f856fa0ae762c124471c520e272c125f0c))
+  ```text
+  BREAKING CHANGE: Remove LastConnected, LastReported and UpdateLastConnected configs
+  ```
+- Consume contracts mod to update /secret DTO ([#76cf874](https://github.com/edgexfoundry/device-sdk-go/commit/76cf874e5a4c502767114360369306a3defd879c))
+  ```text
+  BREAKING CHANGE: secret DTO object in core contracts uses SecretName instead of Path
+  ```
+- Updates for common config ([#9f4fc55](https://github.com/edgexfoundry/device-sdk-go/commit/9f4fc55359c9cb479e87cde204f04957ffcda185))
+  ```text
+  BREAKING CHANGE: Common config settings removed from configuration file 
+  ```
+- Add additional service-name level in event publish topic ([#15fb7a8](https://github.com/edgexfoundry/device-sdk-go/commit/15fb7a88bc0851fefb7130faf6710b4e2cf95cf9))
+  ```text
+  BREAKING CHANGE: event publish topic now <prefix>/<service-name>/<profile-name>/<device-name>/<source-name>
+  ```
+- Replace REST device validation callback with MessageBus ([#b7afc2a](https://github.com/edgexfoundry/device-sdk-go/commit/b7afc2aba7a1c5861c6c21c42b42dc1283ea5949))
+  ```text
+  BREAKING CHANGE: /validate/device REST endpoint removed
+  ```
+- Replace REST device service callback with System Event ([#e412a44](https://github.com/edgexfoundry/device-sdk-go/commit/e412a44eb13141e6797f53827a761c4e91ea34f8))
+  ```text
+  BREAKING CHANGE: /callback/service REST endpoint removed
+  ```
+- Replace REST provision watcher callbacks with System Events([#8ea8883](https://github.com/edgexfoundry/device-sdk-go/commit/8ea8883b1ccaac0e7f122d2d9e12f4a2ee2a0f8d))
+  ```text
+  BREAKING CHANGE: /callback/watcher and /callback/watcher/name/{name} REST endpoints have been removed
+  ```
+- Replace REST device profile callback with System Events ([#09198ff](https://github.com/edgexfoundry/device-sdk-go/commit/09198ff90566170cbb480bcb988d97281c5ebb32))
+  ```text
+  BREAKING CHANGE: PUT /callback/profile REST endpoint has been removed
+  ```
+- Remove UseMessageBus config ([#482e5b9](https://github.com/edgexfoundry/device-sdk-go/commit/482e5b9a17b7b3fb4ec31d9b3676b675d900f01c))
+  ```text
+  BREAKING CHANGE: Removed the 'Device.UseMessageBus' config, the code for sending event via core-data REST client and the 'Clients.core-data' dependency
+  ```
+- Remove old metrics collection and REST/metrics endpoint ([#89d807d](https://github.com/edgexfoundry/device-sdk-go/commit/89d807d8113b45d5cd8e97f478743d732b99a48e))
+  ```text
+  BREAKING CHANGE: /metrics endpoint no longer available for any service
+  ```
+- Replace REST device callbacks with System Events ([#3f884e](https://github.com/edgexfoundry/device-sdk-go/commit/3f884ed804720b30a96228d314a94b40ef1079e0))
+  ```text
+  BREAKING CHANGE: The following device callback REST endpoints are removed:
+                     - POST /callback/device
+                     - PUT /callback/device
+                     - DELETE /callback/device/name/{name}
+  ```
+- Remove ZeroMQ MessageBus capability ([#f8460cf](https://github.com/edgexfoundry/device-sdk-go/commit/f8460cf112e20e4666e24beb849e99a270391ebb))
+  ```text
+  BREAKING CHANGE: ZeroMQ MessageBus capability no longer available
+  ```
+- Device ProtocolProperties have typed values ([#1365](https://github.com/edgexfoundry/device-sdk-go/issues/1365)) ([#a6f9b45](https://github.com/edgexfoundry/device-sdk-go/commits/a6f9b45))
+- Enhance autodiscovery to better support  multiple instances of same device service ([#1444](https://github.com/edgexfoundry/device-sdk-go/issues/1444)) ([#d75af8d](https://github.com/edgexfoundry/device-sdk-go/commits/d75af8d))
+- Consume new -d/--dev Dev Mode command-line flag ([#d0b4661](https://github.com/edgexfoundry/device-sdk-go/commits/d0b4661))
+- Consume SecretProvider breaking changes ([#656a0e7](https://github.com/edgexfoundry/device-sdk-go/commits/656a0e7))
+- Allow regex GET command returns partial result ([#6d81477](https://github.com/edgexfoundry/device-sdk-go/commits/6d81477))
+- Enable regex for executing GET command ([#efda1a8](https://github.com/edgexfoundry/device-sdk-go/commits/efda1a8))
+- Support YAML format for ProvisionWatcher definition file ([#a4f7691](https://github.com/edgexfoundry/device-sdk-go/commits/a4f7691))
+- Publish event with updated value for PUT command ([#420f04f](https://github.com/edgexfoundry/device-sdk-go/commits/420f04f))
+- Consume watch for common Writable config changes ([#1372](https://github.com/edgexfoundry/device-sdk-go/issues/1372)) ([#84b3eaa](https://github.com/edgexfoundry/device-sdk-go/commits/84b3eaa))
+- Accept URL escape for device command name and resource name ([#7be4a1d](https://github.com/edgexfoundry/device-sdk-go/commits/7be4a1d))
+- Add resource, command, and device tags to reading/event ([#1297](https://github.com/edgexfoundry/device-sdk-go/issues/1297)) ([#93a0268](https://github.com/edgexfoundry/device-sdk-go/commits/93a0268))
+- Implement support for ProvisionWatchersDir ([#1f95b19](https://github.com/edgexfoundry/device-sdk-go/commits/1f95b19))
+
+### Bug Fixes 🐛
+
+- Add UpdateDevice callback for device profile update ([#d4adbed](https://github.com/edgexfoundry/device-sdk-go/commits/d4adbed))
+- Fix typo "DeviceResourece" -> "DeviceResource" in error log message ([#278dac4](https://github.com/edgexfoundry/device-sdk-go/commits/278dac4))
+
+### Code Refactoring ♻
+
+- Modify the numeric data type in Value Properties to pointer ([#d2a234e](https://github.com/edgexfoundry/device-sdk-go/commit/d2a234e83cee793ad02e4d30354cfd596d07cbbd))
+  ```text
+  BREAKING CHANGE:
+     - update mask,shift,base,scale,offset to pointer
+     - update maximum and minimum data type from string to float64 pointer
+  ```
+- Update data types in ResourceProperties ([#c3c5272](https://github.com/edgexfoundry/device-sdk-go/commit/c3c527261f00c12e33369f990b1b875843bff393))
+  ```text
+  BREAKING CHANGE: support mask,shift,base,scale,offset in numeric data type
+  ```
+- Remove global variable 'ds' in service package ([#e5f9ace](https://github.com/edgexfoundry/device-sdk-go/commit/e5f9ace8858ef16ed7fd9fdcaf664427cc73e288))
+  ```text
+  BREAKING CHANGE:
+     - update ProtocolDriver Initialize method signature to pass
+       DeviceServiceSDK interface as parameter
+     - update DeviceServiceSDK interface:
+       - update Getter method name to be more idiomatic
+       - remove Stop() method as it should only be called by SDK
+       - add AsyncValuesChannel and DiscoveredDeviceChannel getter method
+       - rename AsyncReadings to AsyncReadingsEnabled
+       - rename DeviceDiscovery to DeviceDiscoveryEnabled
+
+     The DeviceServiceSDK interface is passed to ProtocolDriver as the
+     only parameter in Initialize method so that developer can still access,
+     mock and test with it.
+  ```
+- Replace internal topics from config with new constants ([#cf150bd](https://github.com/edgexfoundry/device-sdk-go/commit/cf150bd1006c505b2559d8970edbe52dd5fe7567))
+  ```text
+  BREAKING CHANGE: Internal topics no longer configurable, except the base topic.
+  ```
+- Rework Command via MessageBus for new Request API response topic ([#d7de237c](https://github.com/edgexfoundry/device-sdk-go/commit/d7de237c874a90e81091b377f7571cc3981ed0ab))
+  ```text
+  BREAKING CHANGE: Command via MessageBus Topic configurations have changed (Note: later commit removes topic configuration)
+  ```
+- Update config for message bus topic wild cards ([#73fb48f](https://github.com/edgexfoundry/device-sdk-go/commit/73fb48faf2bae20740fd473665d27f5e6eced9ca))
+  ```text
+  BREAKING CHANGE: use MQTT wild cards + for single level and # for multiple levels
+  ```
+- Use bool types for command parameters to be more consistent ([#89b19b1](https://github.com/edgexfoundry/device-sdk-go/commit/89b19b1cde0f51320ac6cf9edfa39ed75314b82b))
+  ```text
+  BREAKING CHANGE: ds-pushevent and ds-returnevent to use bool true/false instead of yes/no
+  ```
+- Update config for removal of SecretStore from services' configuration file ([#11af1f](https://github.com/edgexfoundry/device-sdk-go/commit/11af1f65973d64e418efe9ae1e7fed57ad58627f))
+  ```text
+  BREAKING CHANGE: SecretStore config no longer in service configuration file. 
+                   Changes must be done via use of environment variable overrides of default values.
+  ```
+- Rework code for refactored MessageBus Configuration ([#ebb4d57](https://github.com/edgexfoundry/device-sdk-go/commit/ebb4d574cedcd34a1a0a0bbc9318b53a84a6b8a6))
+  ```text
+  BREAKING CHANGE: MessageQueue renamed to MessageBus and fields changed. See v3 Migration guide.
+  ```
+- Rename command line flags for the sake of consistency ([#4aa2fa](https://github.com/edgexfoundry/device-sdk-go/commit/4aa2fae2e06829cc5012bd5c306ed57b362ce7ee))
+  ```text
+  BREAKING CHANGE: renamed -c/--confdir to -cd/--configDirand -f/--file to -cf/--configFile
+  ```
+- Update module to v3 ([#97d52b](https://github.com/edgexfoundry/device-sdk-go/commit/97d52b643112c5c00428daae5a03f6563bf38928))
+  ```text
+  BREAKING CHANGE: Import paths will need to change to v3
+  ```
+- Consume ProvisionWatcher DTO change for ServiceName ([#1453](https://github.com/edgexfoundry/device-sdk-go/issues/1453)) ([#3563ea3](https://github.com/edgexfoundry/device-sdk-go/commits/3563ea3))
+- Tweaks to private config in Device Simple ([#4b8be51](https://github.com/edgexfoundry/device-sdk-go/commits/4b8be51))
+
+### Documentation 📖
+
+- Update swagger to match latest changes in go-mod-core-contracts Device dto ([#05593f9](https://github.com/edgexfoundry/device-sdk-go/commits/05593f9))
+- Update swagger to match latest changes in go-mod-contracts dtos common SecretRequest ([#53645a9](https://github.com/edgexfoundry/device-sdk-go/commits/53645a9))
+- Replace V2 swagger file to V3 for 3.0.0 ([#05376da](https://github.com/edgexfoundry/device-sdk-go/commits/05376da))
+
+### Build 👷
+
+- Update to Go 1.20, Alpine 3.17 and linter v1.51.2 ([#1383](https://github.com/edgexfoundry/device-sdk-go/issues/1383)) ([#a467ed6](https://github.com/edgexfoundry/device-sdk-go/commits/a467ed6))
+- Update to latest module w/o TOML package ([#bf4714d](https://github.com/edgexfoundry/device-sdk-go/commits/bf4714d))
+
+## [v2.3.1] Levski - 2023-03-17 (Only compatible with the 2.x releases)
+
+### Bug Fixes 🐛
+
+- Fix device sdk cache inconsistency by registering device service prior to driver initialization ([#4d4ffc7](https://github.com/edgexfoundry/device-sdk-go/commits/4d4ffc7))
+
 ## [v2.3.0] Levski - 2022-11-09 (Only compatible with the 2.x releases)
 
 ### Features ✨
