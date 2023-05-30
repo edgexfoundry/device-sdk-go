@@ -50,7 +50,7 @@ After v2, EdgeX only uses [scientific notation (`eNotation`)](#scientific-notati
 
 ## Community
 
-- Chat: [https://edgexfoundry.slack.com](https://edgexfoundry.slack.com)
+- Discussion: [https://github.com/orgs/edgexfoundry/discussions](https://github.com/orgs/edgexfoundry/discussions)
 - Mailing lists: [https://lists.edgexfoundry.org/mailman/listinfo](https://lists.edgexfoundry.org/mailman/listinfo)
 
 ## License
