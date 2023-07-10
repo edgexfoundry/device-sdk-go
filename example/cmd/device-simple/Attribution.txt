@@ -213,5 +213,15 @@ https://github.com/golang/mod/blob/master/LICENSE
 golang.org/x/tools (BSD-3) https://github.com/golang/tools
 https://github.com/golang/tools/blob/master/LICENSE
 
+golang.org/x/exp (BSD-3) https://github.com/golang/tools
+https://github.com/golang/tools/blob/master/LICENSE
+
 github.com/go-jose/go-jose/v3 (Apache-2.0) https://github.com/go-jose/go-jose
 https://github.com/go-jose/go-jose/blob/v3/LICENSE
+
+github.com/klauspost/compress (Apache-2.0) https://github.com/klauspost/compress
+https://github.com/klauspost/compress/blob/master/LICENSE
+
+github.com/gabriel-vasile/mimetype (MIT) https://github.com/gabriel-vasile/mimetype
+https://github.com/gabriel-vasile/mimetype/blob/master/LICENSE
+
