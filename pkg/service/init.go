@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/controller"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
@@ -45,6 +46,8 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	s.ctx = ctx
 	s.lc = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.autoEventManager = container.AutoEventManagerFrom(dic.Get)
+	s.commonController = controller.NewCommonController(dic, b.router, s.serviceKey, common.ServiceVersion)
+	s.commonController.SetSDKVersion(common.SDKVersion)
 	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
 	s.controller.InitRestRoutes()
 

@@ -58,16 +58,9 @@ func (c *RestController) InitRestRoutes() {
 	// router.UseEncodedPath() tells the router to match the encoded original path to the routes
 	c.router.UseEncodedPath()
 
-	lc := container.LoggingClientFrom(c.dic.Get)
 	secretProvider := container.SecretProviderExtFrom(c.dic.Get)
-	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
+	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, c.lc)
 
-	// common
-	c.addReservedRoute(common.ApiPingRoute, c.Ping).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiVersionRoute, authenticationHook(c.Version)).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiConfigRoute, authenticationHook(c.Config)).Methods(http.MethodGet)
-	// secret
-	c.addReservedRoute(common.ApiSecretRoute, authenticationHook(c.Secret)).Methods(http.MethodPost)
 	// discovery
 	c.addReservedRoute(common.ApiDiscoveryRoute, authenticationHook(c.Discovery)).Methods(http.MethodPost)
 	// device command

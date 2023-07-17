@@ -42,7 +42,7 @@ func TestAddRoute(t *testing.T) {
 		ErrorExpected bool
 	}{
 		{"Success", "/api/v2/test", false},
-		{"Reserved Route", common.ApiVersionRoute, true},
+		{"Reserved Route", common.ApiDiscoveryRoute, true},
 	}
 
 	lc := logger.NewMockClient()
