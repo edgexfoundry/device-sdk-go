@@ -12,18 +12,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"net/http"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
@@ -32,6 +25,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-multierror"
 	"gopkg.in/yaml.v3"
+	"net/http"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
@@ -39,7 +37,7 @@ import (
 
 func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	var addDevicesReq []requests.AddDeviceRequest
-
+	var edgexErr errors.EdgeX
 	if path == "" {
 		return nil
 	}
@@ -48,16 +46,16 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse url", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse devices path as a url", err)
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
-		edgexErr := loadDevicesFromUri(path, serviceName, secretProvider, lc, addDevicesReq)
+		addDevicesReq, edgexErr = loadDevicesFromUri(path, serviceName, secretProvider, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
 	} else {
-		edgexErr := loadDevicesFromFile(path, serviceName, lc, addDevicesReq)
+		addDevicesReq, edgexErr = loadDevicesFromFile(path, serviceName, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -92,95 +90,115 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	return nil
 }
 
-func loadDevicesFromFile(path string, serviceName string, lc logger.LoggingClient, addDevicesReq []requests.AddDeviceRequest) errors.EdgeX {
+func loadDevicesFromFile(path string, serviceName string, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
+		return []requests.AddDeviceRequest{}, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for devices", err)
 	}
 
 	files, err := os.ReadDir(absPath)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
+		return []requests.AddDeviceRequest{}, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for devices", err)
 	}
 
 	if len(files) == 0 {
-		return nil
+		return []requests.AddDeviceRequest{}, nil
 	}
 
 	lc.Infof("Loading pre-defined devices from %s(%d files found)", absPath, len(files))
-
+	var addDevicesReq, processedDevicesReq []requests.AddDeviceRequest
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
-		addDevicesReq = processDevices(fullPath, serviceName, nil, lc, addDevicesReq)
+		processedDevicesReq = processDevices(fullPath, fullPath, serviceName, nil, lc)
+		if len(processedDevicesReq) > 0 {
+			addDevicesReq = append(addDevicesReq, processedDevicesReq...)
+		}
 	}
-	return nil
+	return addDevicesReq, nil
 }
 
-func loadDevicesFromUri(inputUri string, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addDevicesReq []requests.AddDeviceRequest) errors.EdgeX {
+func loadDevicesFromUri(inputUri string, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
 	parsedUrl, err := url.Parse(inputUri)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Device", err)
+		return []requests.AddDeviceRequest{}, errors.NewCommonEdgeX(errors.KindServerError, "could not parse URI for Devices", err)
 	}
 
 	bytes, err := file.Load(inputUri, secretProvider, lc)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to read uri %s", parsedUrl.Redacted()), err)
+		return []requests.AddDeviceRequest{}, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to read devices list from URI %s", parsedUrl.Redacted()), err)
 	}
 
 	if len(bytes) == 0 {
-		return nil
+		return []requests.AddDeviceRequest{}, nil
 	}
 
 	var files []string
 
 	err = json.Unmarshal(bytes, &files)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Device contents", err)
+		return []requests.AddDeviceRequest{}, errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Devices list contents", err)
 	}
 
 	if len(files) == 0 {
-		return nil
+		return []requests.AddDeviceRequest{}, nil
 	}
 
 	baseUrl, _ := path.Split(inputUri)
 	lc.Infof("Loading pre-defined devices from %s(%d files found)", parsedUrl.Redacted(), len(files))
-
+	var addDevicesReq, processedDevicesReq []requests.AddDeviceRequest
 	for _, file := range files {
 		fullPath, err := url.JoinPath(baseUrl, file)
 		if err != nil {
 			lc.Error("could not join uri path for device %s: %v", file, err)
 			continue
 		}
-		addDevicesReq = processDevices(fullPath, serviceName, secretProvider, lc, addDevicesReq)
+		parsedFullPath, err := url.Parse(fullPath)
+		if err != nil {
+			lc.Error("could not join uri path for device %s: %v", file, err)
+			continue
+		}
+		processedDevicesReq = processDevices(fullPath, parsedFullPath.Redacted(), serviceName, secretProvider, lc)
+		if len(processedDevicesReq) > 0 {
+			addDevicesReq = append(addDevicesReq, processedDevicesReq...)
+		}
 	}
-	return nil
+	return addDevicesReq, nil
 }
 
-func processDevices(fullPath string, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addDevicesReq []requests.AddDeviceRequest) []requests.AddDeviceRequest {
+func processDevices(fullPath string, displayPath string, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) []requests.AddDeviceRequest {
 	var devices []dtos.Device
+	var addDevicesReq []requests.AddDeviceRequest
+
+	fileType := GetFileType(fullPath)
+
+	// if the file type is not yaml or json, it cannot be parsed - just return to not break the loop for other devices
+	if fileType == OTHER {
+		return []requests.AddDeviceRequest{}
+	}
+
 	content, err := file.Load(fullPath, secretProvider, lc)
 	if err != nil {
-		lc.Errorf("Failed to read %s: %v", fullPath, err)
-		return addDevicesReq
+		lc.Errorf("Failed to read Devices from %s: %v", displayPath, err)
+		return []requests.AddDeviceRequest{}
 	}
-	if strings.HasSuffix(fullPath, yamlExt) || strings.HasSuffix(fullPath, ymlExt) {
+
+	switch fileType {
+	case YAML:
 		d := struct {
 			DeviceList []dtos.Device `yaml:"deviceList"`
 		}{}
 		err = yaml.Unmarshal(content, &d)
 		if err != nil {
-			lc.Errorf("Failed to YAML decode %s: %v", fullPath, err)
-			return addDevicesReq
+			lc.Errorf("Failed to YAML decode Devices from %s: %v", displayPath, err)
+			return []requests.AddDeviceRequest{}
 		}
 		devices = d.DeviceList
-	} else if strings.HasSuffix(fullPath, ".json") {
+	case JSON:
 		err = json.Unmarshal(content, &devices)
 		if err != nil {
-			lc.Errorf("Failed to JSON decode %s: %v", fullPath, err)
-			return addDevicesReq
+			lc.Errorf("Failed to JSON decode Devices from %s: %v", displayPath, err)
+			return []requests.AddDeviceRequest{}
 		}
-	} else {
-		return addDevicesReq
 	}
 
 	for _, device := range devices {
