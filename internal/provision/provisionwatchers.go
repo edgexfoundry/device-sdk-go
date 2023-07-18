@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
@@ -25,13 +26,11 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
-
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 )
 
 func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	var addProvisionWatchersReq []requests.AddProvisionWatcherRequest
+	var edgexErr errors.EdgeX
 	if path == "" {
 		return nil
 	}
@@ -40,16 +39,16 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse url", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse provision watcher path as a URI", err)
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := container.SecretProviderFrom(dic.Get)
-		edgexErr := loadProvisionWatchersFromUri(path, secretProvider, lc, addProvisionWatchersReq)
+		addProvisionWatchersReq, edgexErr = loadProvisionWatchersFromURI(path, parsedUrl.Redacted(), secretProvider, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
 	} else {
-		edgexErr := loadProvisionWatchersFromFile(path, lc, addProvisionWatchersReq)
+		addProvisionWatchersReq, edgexErr = loadProvisionWatchersFromFile(path, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -60,101 +59,109 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 
 	pwc := container.ProvisionWatcherClientFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
-	_, edgexErr := pwc.Add(ctx, addProvisionWatchersReq)
+	_, edgexErr = pwc.Add(ctx, addProvisionWatchersReq)
 	return edgexErr
 }
 
-func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) errors.EdgeX {
+func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for provision watchers", err)
 	}
 	files, err := os.ReadDir(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for provision watchers", err)
 	}
 
 	if len(files) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", absPath, len(files))
-
+	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
 	for _, file := range files {
-		filename := filepath.Join(absPath, file.Name())
-		addProvisionWatchersReq = processProvisonWatcherFile(filename, nil, lc, addProvisionWatchersReq)
+		fullPath := filepath.Join(absPath, file.Name())
+		processedProvisionWatchersReq = processProvisonWatcherFile(fullPath, fullPath, nil, lc)
+		if len(processedProvisionWatchersReq) > 0 {
+			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
+		}
 	}
-	return nil
+	return addProvisionWatchersReq, nil
 }
 
-func loadProvisionWatchersFromUri(inputUri string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) errors.EdgeX {
-	parsedUrl, err := url.Parse(inputUri)
+func loadProvisionWatchersFromURI(inputURI, displayURI string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
+	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Provision Watcher", err)
-	}
-
-	bytes, err := file.Load(inputUri, secretProvider, lc)
-	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to read uri %s", parsedUrl.Redacted()), err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers List from URI %s", displayURI), err)
 	}
 
 	if len(bytes) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var files []string
 
 	err = json.Unmarshal(bytes, &files)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Provision Watcher contents", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Provision Watcher list contents", err)
 	}
 
 	if len(files) == 0 {
+		return nil, nil
+	}
+
+	baseUrl, _ := path.Split(inputURI)
+	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", displayURI, len(files))
+	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
+	for _, file := range files {
+		fullPath, parsedFullPath := GetFullAndParsedURI(baseUrl, file, "provison watcher", lc)
+		if fullPath == "" || parsedFullPath == nil {
+			continue
+		}
+		processedProvisionWatchersReq = processProvisonWatcherFile(fullPath, parsedFullPath.Redacted(), secretProvider, lc)
+		if len(processedProvisionWatchersReq) > 0 {
+			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
+		}
+	}
+	return addProvisionWatchersReq, nil
+}
+
+func processProvisonWatcherFile(fullPath, displayPath string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) []requests.AddProvisionWatcherRequest {
+	var watcher dtos.ProvisionWatcher
+	var addProvisionWatchersReq []requests.AddProvisionWatcherRequest
+
+	fileType := GetFileType(fullPath)
+
+	// if the file type is not yaml or json, it cannot be parsed - just return to not break the loop for other devices
+	if fileType == OTHER {
 		return nil
 	}
 
-	baseUrl, _ := path.Split(inputUri)
-	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", parsedUrl.Redacted(), len(files))
-
-	for _, file := range files {
-		provisionWatcherUrl, err := url.JoinPath(baseUrl, file)
-		if err != nil {
-			lc.Error("could not join uri path for provision watcher %s: %v", file, err)
-			continue
-		}
-		addProvisionWatchersReq = processProvisonWatcherFile(provisionWatcherUrl, secretProvider, lc, addProvisionWatchersReq)
-	}
-	return nil
-}
-
-func processProvisonWatcherFile(path string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) []requests.AddProvisionWatcherRequest {
-	var watcher dtos.ProvisionWatcher
-	data, err := file.Load(path, secretProvider, lc)
+	content, err := file.Load(fullPath, secretProvider, lc)
 	if err != nil {
-		lc.Errorf("Failed to read Provision Watcher: %v", err)
-		return addProvisionWatchersReq
+		lc.Errorf("Failed to read Provision Watcher from %s: %v", displayPath, err)
+		return nil
 	}
 
-	if strings.HasSuffix(path, yamlExt) || strings.HasSuffix(path, ymlExt) {
-		err = yaml.Unmarshal(data, &watcher)
+	switch fileType {
+	case YAML:
+		err = yaml.Unmarshal(content, &watcher)
 		if err != nil {
-			lc.Errorf("Failed to YAML decode Provision Watcher: %v", err)
-			return addProvisionWatchersReq
+			lc.Errorf("Failed to YAML decode Provision Watcher from %s: %v", displayPath, err)
+			return nil
 		}
-	} else if strings.HasSuffix(path, jsonExt) {
-		err := json.Unmarshal(data, &watcher)
+	case JSON:
+		err = json.Unmarshal(content, &watcher)
 		if err != nil {
-			lc.Errorf("Failed to JSON decode Provision Watcher: %v", err)
-			return addProvisionWatchersReq
+			lc.Errorf("Failed to JSON decode Provision Watcher from %s: %v", displayPath, err)
+			return nil
 		}
-	} else {
-		return addProvisionWatchersReq
 	}
 
 	err = common.Validate(watcher)
 	if err != nil {
 		lc.Errorf("ProvisionWatcher %s validation failed: %v", watcher.Name, err)
-		return addProvisionWatchersReq
+		return nil
 	}
 
 	if _, ok := cache.ProvisionWatchers().ForName(watcher.Name); ok {

@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
@@ -28,9 +29,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
-
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 )
 
 const (
@@ -41,6 +39,7 @@ const (
 
 func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	var addProfilesReq []requests.DeviceProfileRequest
+	var edgexErr errors.EdgeX
 	if path == "" {
 		return nil
 	}
@@ -48,17 +47,17 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse url", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse profile path as a URI", err)
 	}
 
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
-		edgexErr := loadProfilesFromUri(path, dpc, secretProvider, lc, addProfilesReq)
+		addProfilesReq, edgexErr = loadProfilesFromURI(path, parsedUrl.Redacted(), dpc, secretProvider, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
 	} else {
-		edgexErr := loadProfilesFromFile(path, dpc, lc, addProfilesReq)
+		addProfilesReq, edgexErr = loadProfilesFromFile(path, dpc, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -68,101 +67,112 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 		return nil
 	}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	_, edgexErr := dpc.Add(ctx, addProfilesReq)
+	_, edgexErr = dpc.Add(ctx, addProfilesReq)
 	return edgexErr
 }
 
-func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc logger.LoggingClient, addProfilesReq []requests.DeviceProfileRequest) errors.EdgeX {
+func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var edgexErr errors.EdgeX
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for profiles", err)
 	}
 
 	files, err := os.ReadDir(absPath)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for profiles", err)
 	}
 
 	if len(files) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	lc.Infof("Loading pre-defined profiles from %s(%d files found)", absPath, len(files))
-
+	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
-		addProfilesReq, edgexErr = processProfiles(fullPath, nil, lc, dpc, addProfilesReq)
+		processedProfilesReq, edgexErr = processProfiles(fullPath, fullPath, nil, lc, dpc)
 		if edgexErr != nil {
-			return nil
+			lc.Error(edgexErr.Error())
+			return addProfilesReq, nil
+		}
+		if len(processedProfilesReq) > 0 {
+			addProfilesReq = append(addProfilesReq, processedProfilesReq...)
 		}
 	}
-	return nil
+	return addProfilesReq, nil
 }
 
-func loadProfilesFromUri(inputUri string, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient, addProfilesReq []requests.DeviceProfileRequest) errors.EdgeX {
+func loadProfilesFromURI(inputURI, displayURI string, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var edgexErr errors.EdgeX
-	parsedUrl, err := url.Parse(inputUri)
+	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Profile", err)
-	}
-
-	bytes, err := file.Load(inputUri, secretProvider, lc)
-	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Profile list from URI %s", displayURI), err)
 	}
 
 	if len(bytes) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	var files []string
 	err = json.Unmarshal(bytes, &files)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Profile contents", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Profile list contents", err)
 	}
 	if len(files) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	baseUrl, _ := path.Split(inputUri)
-	lc.Infof("Loading pre-defined profiles from %s(%d files found)", parsedUrl.Redacted(), len(files))
-
+	baseUrl, _ := path.Split(inputURI)
+	lc.Infof("Loading pre-defined profiles from %s(%d files found)", displayURI, len(files))
+	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
 	for _, file := range files {
-		fullPath, err := url.JoinPath(baseUrl, file)
-		if err != nil {
-			lc.Error("could not join uri path for profile %s: %v", file, err)
+		fullPath, parsedFullPath := GetFullAndParsedURI(baseUrl, file, "profile", lc)
+		if fullPath == "" || parsedFullPath == nil {
 			continue
 		}
-		addProfilesReq, edgexErr = processProfiles(fullPath, secretProvider, lc, dpc, addProfilesReq)
+
+		processedProfilesReq, edgexErr = processProfiles(fullPath, parsedFullPath.Redacted(), secretProvider, lc, dpc)
 		if edgexErr != nil {
-			return edgexErr
+			return nil, edgexErr
+		}
+		if len(processedProfilesReq) > 0 {
+			addProfilesReq = append(addProfilesReq, processedProfilesReq...)
 		}
 	}
-	return nil
+	return addProfilesReq, nil
 }
 
-func processProfiles(path string, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient, dpc interfaces.DeviceProfileClient, addProfilesReq []requests.DeviceProfileRequest) ([]requests.DeviceProfileRequest, errors.EdgeX) {
+func processProfiles(fullPath, displayPath string, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient, dpc interfaces.DeviceProfileClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var profile dtos.DeviceProfile
-	bytes, err := file.Load(path, secretProvider, lc)
-	if err != nil {
-		lc.Errorf("Failed to read %s: %v", path, err)
-		return addProfilesReq, nil
+	var addProfilesReq []requests.DeviceProfileRequest
+
+	fileType := GetFileType(fullPath)
+
+	// if the file type is not yaml or json, it cannot be parsed - just return to not break the loop for other devices
+	if fileType == OTHER {
+		return nil, nil
 	}
-	if strings.HasSuffix(path, yamlExt) || strings.HasSuffix(path, ymlExt) {
-		err = yaml.Unmarshal(bytes, &profile)
+
+	content, err := file.Load(fullPath, secretProvider, lc)
+	if err != nil {
+		lc.Errorf("Failed to read Profiles from %s: %v", displayPath, err)
+		return nil, nil
+	}
+
+	switch fileType {
+	case YAML:
+		err = yaml.Unmarshal(content, &profile)
 		if err != nil {
-			lc.Errorf("Failed to YAML decode device profile: %v", err)
-			return addProfilesReq, nil
+			lc.Errorf("Failed to YAML decode device profile from %s: %v", displayPath, err)
+			return nil, nil
 		}
-	} else if strings.HasSuffix(path, jsonExt) {
-		err = json.Unmarshal(bytes, &profile)
+	case JSON:
+		err = json.Unmarshal(content, &profile)
 		if err != nil {
-			lc.Errorf("Failed to JSON decode device profile: %v", err)
-			return addProfilesReq, nil
+			lc.Errorf("Failed to JSON decode device profile from %s: %v", displayPath, err)
+			return nil, nil
 		}
-	} else {
-		return addProfilesReq, nil
 	}
 
 	res, err := dpc.DeviceProfileByName(context.Background(), profile.Name)

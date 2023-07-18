@@ -6,6 +6,8 @@
 package provision
 
 import (
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"net/url"
 	"strings"
 )
 
@@ -25,4 +27,18 @@ func GetFileType(fullPath string) FileType {
 	} else {
 		return OTHER
 	}
+}
+
+func GetFullAndParsedURI(baseUrl, file, description string, lc logger.LoggingClient) (string, *url.URL) {
+	fullPath, err := url.JoinPath(baseUrl, file)
+	if err != nil {
+		lc.Error("could not join URI path for %s %s: %v", description, file, err)
+		return "", nil
+	}
+	parsedFullPath, err := url.Parse(fullPath)
+	if err != nil {
+		lc.Error("could not parse URI path for %s %s: %v", description, file, err)
+		return "", nil
+	}
+	return fullPath, parsedFullPath
 }

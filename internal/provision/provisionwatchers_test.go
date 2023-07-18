@@ -35,7 +35,7 @@ func Test_processProvisionWatcherFile(t *testing.T) {
 			lc := logger.MockLogger{}
 			dic, _ := NewMockDIC()
 			cache.InitCache(TestDeviceService, TestDeviceService, dic)
-			addProvisionWatchersReq = processProvisonWatcherFile(tt.path, tt.secretProvider, lc, addProvisionWatchersReq)
+			addProvisionWatchersReq = processProvisonWatcherFile(tt.path, tt.path, tt.secretProvider, lc)
 			assert.Equal(t, tt.expectedNumProvisionWatchers, len(addProvisionWatchersReq))
 		})
 	}

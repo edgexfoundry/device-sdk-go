@@ -181,7 +181,7 @@ func Test_processProfiles(t *testing.T) {
 			dic, dpcMock := NewMockDIC()
 			dpcMock.On("DeviceProfileByName", context.Background(), tt.profileName).Return(tt.dpcMockRes, tt.dpcMockErr)
 			cache.InitCache(TestDeviceService, TestDeviceService, dic)
-			addProfilesReq, edgexErr = processProfiles(tt.path, tt.secretProvider, lc, dpcMock, addProfilesReq)
+			addProfilesReq, edgexErr = processProfiles(tt.path, tt.path, tt.secretProvider, lc, dpcMock)
 			assert.Equal(t, len(addProfilesReq), tt.expectedNumProfiles)
 			if edgexErr != nil {
 				assert.Contains(t, edgexErr.Error(), tt.expectedEdgexErrMsg)
