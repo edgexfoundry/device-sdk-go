@@ -52,12 +52,12 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
-		edgexErr := loadDevicesFromUri(lc, path, serviceName, secretProvider, addDevicesReq)
+		edgexErr := loadDevicesFromUri(path, serviceName, secretProvider, lc, addDevicesReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
 	} else {
-		edgexErr := loadDevicesFromFile(lc, path, serviceName, addDevicesReq)
+		edgexErr := loadDevicesFromFile(path, serviceName, lc, addDevicesReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -92,7 +92,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	return nil
 }
 
-func loadDevicesFromFile(lc logger.LoggingClient, path string, serviceName string, addDevicesReq []requests.AddDeviceRequest) errors.EdgeX {
+func loadDevicesFromFile(path string, serviceName string, lc logger.LoggingClient, addDevicesReq []requests.AddDeviceRequest) errors.EdgeX {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
@@ -111,18 +111,18 @@ func loadDevicesFromFile(lc logger.LoggingClient, path string, serviceName strin
 
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
-		addDevicesReq = processDevices(lc, fullPath, serviceName, nil, addDevicesReq)
+		addDevicesReq = processDevices(fullPath, serviceName, nil, lc, addDevicesReq)
 	}
 	return nil
 }
 
-func loadDevicesFromUri(lc logger.LoggingClient, inputUri string, serviceName string, secretProvider interfaces.SecretProvider, addDevicesReq []requests.AddDeviceRequest) errors.EdgeX {
+func loadDevicesFromUri(inputUri string, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addDevicesReq []requests.AddDeviceRequest) errors.EdgeX {
 	parsedUrl, err := url.Parse(inputUri)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Provision Watcher", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Device", err)
 	}
 
-	bytes, err := file.Load(inputUri, timeout, secretProvider)
+	bytes, err := file.Load(inputUri, secretProvider, lc)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to read uri %s", parsedUrl.Redacted()), err)
 	}
@@ -151,14 +151,14 @@ func loadDevicesFromUri(lc logger.LoggingClient, inputUri string, serviceName st
 			lc.Error("could not join uri path for device %s: %v", file, err)
 			continue
 		}
-		addDevicesReq = processDevices(lc, fullPath, serviceName, nil, addDevicesReq)
+		addDevicesReq = processDevices(fullPath, serviceName, secretProvider, lc, addDevicesReq)
 	}
 	return nil
 }
 
-func processDevices(lc logger.LoggingClient, fullPath string, serviceName string, secretProvider interfaces.SecretProvider, addDevicesReq []requests.AddDeviceRequest) []requests.AddDeviceRequest {
+func processDevices(fullPath string, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addDevicesReq []requests.AddDeviceRequest) []requests.AddDeviceRequest {
 	var devices []dtos.Device
-	content, err := file.Load(fullPath, timeout, secretProvider)
+	content, err := file.Load(fullPath, secretProvider, lc)
 	if err != nil {
 		lc.Errorf("Failed to read %s: %v", fullPath, err)
 		return addDevicesReq

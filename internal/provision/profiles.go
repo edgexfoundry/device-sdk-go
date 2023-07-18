@@ -12,25 +12,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
-
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 )
@@ -55,12 +53,12 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
-		edgexErr := loadProfilesFromUri(lc, path, dpc, secretProvider, addProfilesReq)
+		edgexErr := loadProfilesFromUri(path, dpc, secretProvider, lc, addProfilesReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
 	} else {
-		edgexErr := loadProfilesFromFile(lc, path, dpc, addProfilesReq)
+		edgexErr := loadProfilesFromFile(path, dpc, lc, addProfilesReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -74,7 +72,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	return edgexErr
 }
 
-func loadProfilesFromFile(lc logger.LoggingClient, path string, dpc interfaces.DeviceProfileClient, addProfilesReq []requests.DeviceProfileRequest) errors.EdgeX {
+func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc logger.LoggingClient, addProfilesReq []requests.DeviceProfileRequest) errors.EdgeX {
 	var edgexErr errors.EdgeX
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -94,7 +92,7 @@ func loadProfilesFromFile(lc logger.LoggingClient, path string, dpc interfaces.D
 
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
-		addProfilesReq, edgexErr = processProfiles(lc, fullPath, nil, dpc, addProfilesReq)
+		addProfilesReq, edgexErr = processProfiles(fullPath, nil, lc, dpc, addProfilesReq)
 		if edgexErr != nil {
 			return nil
 		}
@@ -102,9 +100,14 @@ func loadProfilesFromFile(lc logger.LoggingClient, path string, dpc interfaces.D
 	return nil
 }
 
-func loadProfilesFromUri(lc logger.LoggingClient, inputUri string, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, addProfilesReq []requests.DeviceProfileRequest) errors.EdgeX {
+func loadProfilesFromUri(inputUri string, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient, addProfilesReq []requests.DeviceProfileRequest) errors.EdgeX {
 	var edgexErr errors.EdgeX
-	bytes, err := file.Load(inputUri, timeout, secretProvider)
+	parsedUrl, err := url.Parse(inputUri)
+	if err != nil {
+		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Profile", err)
+	}
+
+	bytes, err := file.Load(inputUri, secretProvider, lc)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory", err)
 	}
@@ -116,17 +119,13 @@ func loadProfilesFromUri(lc logger.LoggingClient, inputUri string, dpc interface
 	var files []string
 	err = json.Unmarshal(bytes, &files)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Provision Watcher contents", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Profile contents", err)
 	}
 	if len(files) == 0 {
 		return nil
 	}
 
 	baseUrl, _ := path.Split(inputUri)
-	parsedUrl, err := url.Parse(inputUri)
-	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Provision Watcher", err)
-	}
 	lc.Infof("Loading pre-defined profiles from %s(%d files found)", parsedUrl.Redacted(), len(files))
 
 	for _, file := range files {
@@ -135,7 +134,7 @@ func loadProfilesFromUri(lc logger.LoggingClient, inputUri string, dpc interface
 			lc.Error("could not join uri path for profile %s: %v", file, err)
 			continue
 		}
-		addProfilesReq, edgexErr = processProfiles(lc, fullPath, secretProvider, dpc, addProfilesReq)
+		addProfilesReq, edgexErr = processProfiles(fullPath, secretProvider, lc, dpc, addProfilesReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -143,9 +142,9 @@ func loadProfilesFromUri(lc logger.LoggingClient, inputUri string, dpc interface
 	return nil
 }
 
-func processProfiles(lc logger.LoggingClient, path string, secretProvider bootstrapInterfaces.SecretProvider, dpc interfaces.DeviceProfileClient, addProfilesReq []requests.DeviceProfileRequest) ([]requests.DeviceProfileRequest, errors.EdgeX) {
+func processProfiles(path string, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient, dpc interfaces.DeviceProfileClient, addProfilesReq []requests.DeviceProfileRequest) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var profile dtos.DeviceProfile
-	bytes, err := file.Load(path, 10*time.Second, secretProvider)
+	bytes, err := file.Load(path, secretProvider, lc)
 	if err != nil {
 		lc.Errorf("Failed to read %s: %v", path, err)
 		return addProfilesReq, nil

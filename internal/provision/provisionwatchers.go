@@ -10,29 +10,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
-
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/file"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 )
-
-var timeout = 15 * time.Second
 
 func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	var addProvisionWatchersReq []requests.AddProvisionWatcherRequest
@@ -48,12 +44,12 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := container.SecretProviderFrom(dic.Get)
-		edgexErr := loadProvisionWatchersFromUri(lc, path, secretProvider, addProvisionWatchersReq)
+		edgexErr := loadProvisionWatchersFromUri(path, secretProvider, lc, addProvisionWatchersReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
 	} else {
-		edgexErr := loadProvisionWatchersFromFile(lc, path, addProvisionWatchersReq)
+		edgexErr := loadProvisionWatchersFromFile(path, lc, addProvisionWatchersReq)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -68,7 +64,7 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	return edgexErr
 }
 
-func loadProvisionWatchersFromFile(lc logger.LoggingClient, path string, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) errors.EdgeX {
+func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) errors.EdgeX {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path", err)
@@ -86,18 +82,18 @@ func loadProvisionWatchersFromFile(lc logger.LoggingClient, path string, addProv
 
 	for _, file := range files {
 		filename := filepath.Join(absPath, file.Name())
-		addProvisionWatchersReq = processProvisonWatcherFile(lc, filename, nil, addProvisionWatchersReq)
+		addProvisionWatchersReq = processProvisonWatcherFile(filename, nil, lc, addProvisionWatchersReq)
 	}
 	return nil
 }
 
-func loadProvisionWatchersFromUri(lc logger.LoggingClient, inputUri string, secretProvider interfaces.SecretProvider, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) errors.EdgeX {
+func loadProvisionWatchersFromUri(inputUri string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) errors.EdgeX {
 	parsedUrl, err := url.Parse(inputUri)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, "could not parse uri for Provision Watcher", err)
 	}
 
-	bytes, err := file.Load(inputUri, timeout, secretProvider)
+	bytes, err := file.Load(inputUri, secretProvider, lc)
 	if err != nil {
 		return errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to read uri %s", parsedUrl.Redacted()), err)
 	}
@@ -126,14 +122,14 @@ func loadProvisionWatchersFromUri(lc logger.LoggingClient, inputUri string, secr
 			lc.Error("could not join uri path for provision watcher %s: %v", file, err)
 			continue
 		}
-		addProvisionWatchersReq = processProvisonWatcherFile(lc, provisionWatcherUrl, secretProvider, addProvisionWatchersReq)
+		addProvisionWatchersReq = processProvisonWatcherFile(provisionWatcherUrl, secretProvider, lc, addProvisionWatchersReq)
 	}
 	return nil
 }
 
-func processProvisonWatcherFile(lc logger.LoggingClient, path string, secretProvider interfaces.SecretProvider, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) []requests.AddProvisionWatcherRequest {
+func processProvisonWatcherFile(path string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient, addProvisionWatchersReq []requests.AddProvisionWatcherRequest) []requests.AddProvisionWatcherRequest {
 	var watcher dtos.ProvisionWatcher
-	data, err := file.Load(path, timeout, secretProvider)
+	data, err := file.Load(path, secretProvider, lc)
 	if err != nil {
 		lc.Errorf("Failed to read Provision Watcher: %v", err)
 		return addProvisionWatchersReq
