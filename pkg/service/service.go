@@ -208,6 +208,7 @@ func (s *deviceService) DiscoveredDeviceChannel() chan []sdkModels.DiscoveredDev
 }
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
+// Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
 func (s *deviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
 	return s.AddCustomRoute(route, interfaces.Unauthenticated, handler, methods...)
 }

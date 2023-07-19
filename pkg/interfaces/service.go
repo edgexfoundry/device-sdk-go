@@ -124,6 +124,7 @@ type DeviceServiceSDK interface {
 	DriverConfigs() map[string]string
 
 	// AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
+	// Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
 	AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error
 
 	// AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
