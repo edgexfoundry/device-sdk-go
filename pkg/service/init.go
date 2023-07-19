@@ -51,6 +51,11 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
 	s.controller.InitRestRoutes()
 
+	if bootstrapContainer.DeviceClientFrom(dic.Get) == nil {
+		s.lc.Error("Client configuration for core-metadata not found, missing common config? Use -cp or -cc flags for common config.")
+		return false
+	}
+
 	edgexErr := cache.InitCache(s.serviceKey, s.baseServiceName, dic)
 	if edgexErr != nil {
 		s.lc.Errorf("Failed to init cache: %s", edgexErr.Error())

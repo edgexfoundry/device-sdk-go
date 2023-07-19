@@ -188,6 +188,9 @@ func (s *deviceService) MetricsManager() bootstrapInterfaces.MetricsManager {
 
 // LoggingClient returns the logger.LoggingClient
 func (s *deviceService) LoggingClient() logger.LoggingClient {
+	if s.lc == nil {
+		s.lc = bootstrapContainer.LoggingClientFrom(s.dic.Get)
+	}
 	return s.lc
 }
 

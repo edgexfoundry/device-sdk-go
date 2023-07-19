@@ -1,5 +1,7 @@
 module github.com/edgexfoundry/device-sdk-go/v3
 
+replace github.com/edgexfoundry/go-mod-bootstrap/v3 => ../go-mod-bootstrap
+
 go 1.20
 
 require (
