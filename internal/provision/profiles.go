@@ -27,7 +27,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -52,7 +51,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
-		addProfilesReq, edgexErr = loadProfilesFromURI(path, parsedUrl.Redacted(), dpc, secretProvider, lc)
+		addProfilesReq, edgexErr = loadProfilesFromURI(path, parsedUrl, dpc, secretProvider, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -103,11 +102,15 @@ func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc lo
 	return addProfilesReq, nil
 }
 
-func loadProfilesFromURI(inputURI, displayURI string, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
+func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var edgexErr errors.EdgeX
+	redactedURI, err := url.JoinPath(parsedURI.Host, parsedURI.Path)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create a query-free URI for the profile list", err)
+	}
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Profile list from URI %s", displayURI), err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Profile list from URI %s", redactedURI), err)
 	}
 
 	if len(bytes) == 0 {
@@ -123,16 +126,15 @@ func loadProfilesFromURI(inputURI, displayURI string, dpc interfaces.DeviceProfi
 		return nil, nil
 	}
 
-	baseUrl, _ := path.Split(inputURI)
-	lc.Infof("Loading pre-defined profiles from %s(%d files found)", displayURI, len(files))
+	lc.Infof("Loading pre-defined profiles from %s(%d files found)", redactedURI, len(files))
 	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
 	for _, file := range files {
-		fullPath, parsedFullPath := GetFullAndParsedURI(baseUrl, file, "profile", lc)
-		if fullPath == "" || parsedFullPath == nil {
+		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "profile", lc)
+		if fullPath == "" || redactedPath == "" {
 			continue
 		}
 
-		processedProfilesReq, edgexErr = processProfiles(fullPath, parsedFullPath.Redacted(), secretProvider, lc, dpc)
+		processedProfilesReq, edgexErr = processProfiles(fullPath, redactedPath, secretProvider, lc, dpc)
 		if edgexErr != nil {
 			return nil, edgexErr
 		}

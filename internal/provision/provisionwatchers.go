@@ -24,7 +24,6 @@ import (
 	"gopkg.in/yaml.v3"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 )
 
@@ -43,7 +42,7 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := container.SecretProviderFrom(dic.Get)
-		addProvisionWatchersReq, edgexErr = loadProvisionWatchersFromURI(path, parsedUrl.Redacted(), secretProvider, lc)
+		addProvisionWatchersReq, edgexErr = loadProvisionWatchersFromURI(path, parsedUrl, secretProvider, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -81,7 +80,7 @@ func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requ
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
-		processedProvisionWatchersReq = processProvisonWatcherFile(fullPath, fullPath, nil, lc)
+		processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, fullPath, nil, lc)
 		if len(processedProvisionWatchersReq) > 0 {
 			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
 		}
@@ -89,10 +88,10 @@ func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requ
 	return addProvisionWatchersReq, nil
 }
 
-func loadProvisionWatchersFromURI(inputURI, displayURI string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
+func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers List from URI %s", displayURI), err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers List from URI %s", parsedURI), err)
 	}
 
 	if len(bytes) == 0 {
@@ -110,15 +109,14 @@ func loadProvisionWatchersFromURI(inputURI, displayURI string, secretProvider in
 		return nil, nil
 	}
 
-	baseUrl, _ := path.Split(inputURI)
-	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", displayURI, len(files))
+	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", parsedURI, len(files))
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
 	for _, file := range files {
-		fullPath, parsedFullPath := GetFullAndParsedURI(baseUrl, file, "provison watcher", lc)
-		if fullPath == "" || parsedFullPath == nil {
+		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "provison watcher", lc)
+		if fullPath == "" || redactedPath == "" {
 			continue
 		}
-		processedProvisionWatchersReq = processProvisonWatcherFile(fullPath, parsedFullPath.Redacted(), secretProvider, lc)
+		processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, redactedPath, secretProvider, lc)
 		if len(processedProvisionWatchersReq) > 0 {
 			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
 		}
@@ -126,7 +124,7 @@ func loadProvisionWatchersFromURI(inputURI, displayURI string, secretProvider in
 	return addProvisionWatchersReq, nil
 }
 
-func processProvisonWatcherFile(fullPath, displayPath string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) []requests.AddProvisionWatcherRequest {
+func processProvisionWatcherFile(fullPath, displayPath string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) []requests.AddProvisionWatcherRequest {
 	var watcher dtos.ProvisionWatcher
 	var addProvisionWatchersReq []requests.AddProvisionWatcherRequest
 

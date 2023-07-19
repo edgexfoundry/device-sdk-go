@@ -6,8 +6,10 @@
 package provision
 
 import (
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"net/url"
+	"path"
 	"strings"
 )
 
@@ -29,16 +31,20 @@ func GetFileType(fullPath string) FileType {
 	}
 }
 
-func GetFullAndParsedURI(baseUrl, file, description string, lc logger.LoggingClient) (string, *url.URL) {
-	fullPath, err := url.JoinPath(baseUrl, file)
+func GetFullAndRedactedURI(baseURI *url.URL, file, description string, lc logger.LoggingClient) (string, string) {
+	basePath, _ := path.Split(baseURI.Path)
+	newPath, err := url.JoinPath(basePath, file)
 	if err != nil {
-		lc.Error("could not join URI path for %s %s: %v", description, file, err)
-		return "", nil
+		lc.Error("could not join URI path for %s %s/%s: %v", description, basePath, file, err)
+		return "", ""
 	}
-	parsedFullPath, err := url.Parse(fullPath)
+	var fullURI url.URL
+	err = utils.DeepCopy(baseURI, &fullURI)
 	if err != nil {
-		lc.Error("could not parse URI path for %s %s: %v", description, file, err)
-		return "", nil
+		lc.Error("could not copy URI for %s %s: %v", description, newPath, err)
+		return "", ""
 	}
-	return fullPath, parsedFullPath
+	fullURI.User = baseURI.User
+	fullURI.Path = newPath
+	return fullURI.String(), fullURI.Redacted()
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"path"
 	"testing"
 )
@@ -34,8 +35,9 @@ func Test_processProvisionWatcherFile(t *testing.T) {
 			var addProvisionWatchersReq []requests.AddProvisionWatcherRequest
 			lc := logger.MockLogger{}
 			dic, _ := NewMockDIC()
-			cache.InitCache(TestDeviceService, TestDeviceService, dic)
-			addProvisionWatchersReq = processProvisonWatcherFile(tt.path, tt.path, tt.secretProvider, lc)
+			err := cache.InitCache(TestDeviceService, TestDeviceService, dic)
+			require.NoError(t, err)
+			addProvisionWatchersReq = processProvisionWatcherFile(tt.path, tt.path, tt.secretProvider, lc)
 			assert.Equal(t, tt.expectedNumProvisionWatchers, len(addProvisionWatchersReq))
 		})
 	}

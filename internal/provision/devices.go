@@ -28,7 +28,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
@@ -50,7 +49,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
-		addDevicesReq, edgexErr = loadDevicesFromURI(path, parsedUrl.Redacted(), serviceName, secretProvider, lc)
+		addDevicesReq, edgexErr = loadDevicesFromURI(path, parsedUrl, serviceName, secretProvider, lc)
 		if edgexErr != nil {
 			return edgexErr
 		}
@@ -117,10 +116,15 @@ func loadDevicesFromFile(path, serviceName string, lc logger.LoggingClient) ([]r
 	return addDevicesReq, nil
 }
 
-func loadDevicesFromURI(inputURI, displayURI, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
+func loadDevicesFromURI(inputURI string, parsedURI *url.URL, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
+	redactedURI, err := url.JoinPath(parsedURI.Host, parsedURI.Path)
+	if err != nil {
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create a query-free URI for the profile list", err)
+	}
+
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load devices list from URI %s", displayURI), err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load devices list from URI %s", redactedURI), err)
 	}
 
 	if len(bytes) == 0 {
@@ -137,15 +141,14 @@ func loadDevicesFromURI(inputURI, displayURI, serviceName string, secretProvider
 		return nil, nil
 	}
 
-	baseUrl, _ := path.Split(inputURI)
-	lc.Infof("Loading pre-defined devices from %s(%d files found)", displayURI, len(files))
+	lc.Infof("Loading pre-defined devices from %s(%d files found)", redactedURI, len(files))
 	var addDevicesReq, processedDevicesReq []requests.AddDeviceRequest
 	for _, file := range files {
-		fullPath, parsedFullPath := GetFullAndParsedURI(baseUrl, file, "device", lc)
-		if fullPath == "" || parsedFullPath == nil {
+		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "device", lc)
+		if fullPath == "" || redactedPath == "" {
 			continue
 		}
-		processedDevicesReq = processDevices(fullPath, parsedFullPath.Redacted(), serviceName, secretProvider, lc)
+		processedDevicesReq = processDevices(fullPath, redactedPath, serviceName, secretProvider, lc)
 		if len(processedDevicesReq) > 0 {
 			addDevicesReq = append(addDevicesReq, processedDevicesReq...)
 		}

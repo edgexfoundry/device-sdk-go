@@ -10,6 +10,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"path"
 	"testing"
 )
@@ -31,7 +32,8 @@ func Test_processDevices(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			lc := logger.MockLogger{}
 			dic, _ := NewMockDIC()
-			cache.InitCache(TestDeviceService, TestDeviceService, dic)
+			err := cache.InitCache(TestDeviceService, TestDeviceService, dic)
+			require.NoError(t, err)
 			addDeviceRequests := processDevices(tt.path, tt.path, TestDeviceService, tt.secretProvider, lc)
 			assert.Equal(t, tt.expectedNumDevices, len(addDeviceRequests))
 		})
