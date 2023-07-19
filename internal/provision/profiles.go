@@ -46,7 +46,7 @@ func LoadProfiles(path string, dic *di.Container) errors.EdgeX {
 	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse profile path as a URI", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse Device Profile path as a URI", err)
 	}
 
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
@@ -86,14 +86,13 @@ func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc lo
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined profiles from %s(%d files found)", absPath, len(files))
+	lc.Infof("Loading pre-defined Device Profiles from %s(%d files found)", absPath, len(files))
 	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
 		processedProfilesReq, edgexErr = processProfiles(fullPath, fullPath, nil, lc, dpc)
 		if edgexErr != nil {
-			lc.Error(edgexErr.Error())
-			return addProfilesReq, nil
+			return nil, edgexErr
 		}
 		if len(processedProfilesReq) > 0 {
 			addProfilesReq = append(addProfilesReq, processedProfilesReq...)
@@ -106,11 +105,7 @@ func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.Dev
 	var edgexErr errors.EdgeX
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Profile list from URI %s", parsedURI.Redacted()), err)
-	}
-
-	if len(bytes) == 0 {
-		return nil, nil
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Device Profile list from URI %s", parsedURI.Redacted()), err)
 	}
 
 	var files []string
@@ -119,17 +114,14 @@ func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.Dev
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Profile list contents", err)
 	}
 	if len(files) == 0 {
+		lc.Infof("Index file %s for Device Profiles list is empty", parsedURI.Redacted())
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined profiles from %s(%d files found)", parsedURI.Redacted(), len(files))
+	lc.Infof("Loading pre-defined Device Profiles from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
 	for _, file := range files {
-		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "profile", lc)
-		if fullPath == "" || redactedPath == "" {
-			continue
-		}
-
+		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Device Profile", lc)
 		processedProfilesReq, edgexErr = processProfiles(fullPath, redactedPath, secretProvider, lc, dpc)
 		if edgexErr != nil {
 			return nil, edgexErr
@@ -154,7 +146,7 @@ func processProfiles(fullPath, displayPath string, secretProvider bootstrapInter
 
 	content, err := file.Load(fullPath, secretProvider, lc)
 	if err != nil {
-		lc.Errorf("Failed to read Profiles from %s: %v", displayPath, err)
+		lc.Errorf("Failed to read Device Profile from %s: %v", displayPath, err)
 		return nil, nil
 	}
 
@@ -162,20 +154,20 @@ func processProfiles(fullPath, displayPath string, secretProvider bootstrapInter
 	case YAML:
 		err = yaml.Unmarshal(content, &profile)
 		if err != nil {
-			lc.Errorf("Failed to YAML decode device profile from %s: %v", displayPath, err)
+			lc.Errorf("Failed to YAML decode Device Profile from %s: %v", displayPath, err)
 			return nil, nil
 		}
 	case JSON:
 		err = json.Unmarshal(content, &profile)
 		if err != nil {
-			lc.Errorf("Failed to JSON decode device profile from %s: %v", displayPath, err)
+			lc.Errorf("Failed to JSON decode Device Profile from %s: %v", displayPath, err)
 			return nil, nil
 		}
 	}
 
 	res, err := dpc.DeviceProfileByName(context.Background(), profile.Name)
 	if err == nil {
-		lc.Infof("Profile %s exists, using the existing one", profile.Name)
+		lc.Infof("Device Profile %s exists, using the existing one", profile.Name)
 		_, exist := cache.Profiles().ForName(profile.Name)
 		if !exist {
 			err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
@@ -184,7 +176,7 @@ func processProfiles(fullPath, displayPath string, secretProvider bootstrapInter
 			}
 		}
 	} else {
-		lc.Infof("Profile %s not found in Metadata, adding it ...", profile.Name)
+		lc.Infof("Device Profile %s not found in Metadata, adding it ...", profile.Name)
 		req := requests.NewDeviceProfileRequest(profile)
 		addProfilesReq = append(addProfilesReq, req)
 	}

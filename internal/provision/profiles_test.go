@@ -232,7 +232,7 @@ func Test_loadProfilesFromURI(t *testing.T) {
 			[]string{},
 			[]responses.DeviceProfileResponse{},
 			[]errors.EdgeX{},
-			0, "failed to load Profile list from URI"},
+			0, "failed to load Device Profile list from URI"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -240,7 +240,7 @@ func Test_loadProfilesFromURI(t *testing.T) {
 			var edgexErr errors.EdgeX
 			lc := logger.MockLogger{}
 			dic, dpcMock := NewMockDIC()
-			for index, _ := range tt.profileNames {
+			for index := range tt.profileNames {
 				dpcMock.On("DeviceProfileByName", context.Background(), tt.profileNames[index]).Return(tt.dpcMockRes[index], tt.dpcMockErr[index])
 			}
 			edgexErr = cache.InitCache(TestDeviceService, TestDeviceService, dic)

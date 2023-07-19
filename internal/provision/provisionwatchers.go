@@ -38,7 +38,7 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse provision watcher path as a URI", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse Provision Watcher path as a URI", err)
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := container.SecretProviderFrom(dic.Get)
@@ -65,18 +65,18 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for provision watchers", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for Provision Watchers", err)
 	}
 	files, err := os.ReadDir(path)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for provision watchers", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for Provision Watchers", err)
 	}
 
 	if len(files) == 0 {
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", absPath, len(files))
+	lc.Infof("Loading pre-defined Provision Watchers from %s(%d files found)", absPath, len(files))
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
@@ -91,11 +91,7 @@ func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requ
 func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers List from URI %s", parsedURI), err)
-	}
-
-	if len(bytes) == 0 {
-		return nil, nil
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers list from URI %s", parsedURI.Redacted()), err)
 	}
 
 	var files []string
@@ -106,16 +102,14 @@ func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretPro
 	}
 
 	if len(files) == 0 {
+		lc.Infof("Index file %s for Provision Watchers list is empty", parsedURI.Redacted())
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined provision watchers from %s(%d files found)", parsedURI, len(files))
+	lc.Infof("Loading pre-defined Provision Watchers from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
 	for _, file := range files {
-		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "provison watcher", lc)
-		if fullPath == "" || redactedPath == "" {
-			continue
-		}
+		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Provison Watcher", lc)
 		processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, redactedPath, secretProvider, lc)
 		if len(processedProvisionWatchersReq) > 0 {
 			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)

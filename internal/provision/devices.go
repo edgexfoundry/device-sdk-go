@@ -45,7 +45,7 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
 	parsedUrl, err := url.Parse(path)
 	if err != nil {
-		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse devices path as a URI", err)
+		return errors.NewCommonEdgeX(errors.KindServerError, "failed to parse Devices path as a URI", err)
 	}
 	if parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https" {
 		secretProvider := bootstrapContainer.SecretProviderFrom(dic.Get)
@@ -74,11 +74,11 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 	for _, response := range responses {
 		if response.StatusCode != http.StatusCreated {
 			if response.StatusCode == http.StatusConflict {
-				lc.Warnf("%s. Device may be owned by other device service instance.", response.Message)
+				lc.Warnf("%s. Device may be owned by other Device service instance.", response.Message)
 				continue
 			}
 
-			err = multierror.Append(err, fmt.Errorf("add device failed: %s", response.Message))
+			err = multierror.Append(err, fmt.Errorf("add Device failed: %s", response.Message))
 		}
 	}
 
@@ -92,19 +92,19 @@ func LoadDevices(path string, dic *di.Container) errors.EdgeX {
 func loadDevicesFromFile(path, serviceName string, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for devices", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create absolute path for Devices", err)
 	}
 
 	files, err := os.ReadDir(absPath)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for devices", err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to read directory for Devices", err)
 	}
 
 	if len(files) == 0 {
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined devices from %s(%d files found)", absPath, len(files))
+	lc.Infof("Loading pre-defined Devices from %s(%d files found)", absPath, len(files))
 	var addDevicesReq, processedDevicesReq []requests.AddDeviceRequest
 	for _, file := range files {
 		fullPath := filepath.Join(absPath, file.Name())
@@ -117,18 +117,9 @@ func loadDevicesFromFile(path, serviceName string, lc logger.LoggingClient) ([]r
 }
 
 func loadDevicesFromURI(inputURI string, parsedURI *url.URL, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
-	redactedURI, err := url.JoinPath(parsedURI.Host, parsedURI.Path)
-	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create a query-free URI for the profile list", err)
-	}
-
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load devices list from URI %s", redactedURI), err)
-	}
-
-	if len(bytes) == 0 {
-		return nil, nil
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Devices list from URI %s", parsedURI.Redacted()), err)
 	}
 
 	var files []string
@@ -138,16 +129,14 @@ func loadDevicesFromURI(inputURI string, parsedURI *url.URL, serviceName string,
 	}
 
 	if len(files) == 0 {
+		lc.Infof("Index file %s for Devices list is empty", parsedURI.Redacted())
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined devices from %s(%d files found)", redactedURI, len(files))
+	lc.Infof("Loading pre-defined devices from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addDevicesReq, processedDevicesReq []requests.AddDeviceRequest
 	for _, file := range files {
-		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "device", lc)
-		if fullPath == "" || redactedPath == "" {
-			continue
-		}
+		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Device", lc)
 		processedDevicesReq = processDevices(fullPath, redactedPath, serviceName, secretProvider, lc)
 		if len(processedDevicesReq) > 0 {
 			addDevicesReq = append(addDevicesReq, processedDevicesReq...)
