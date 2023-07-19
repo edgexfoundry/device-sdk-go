@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/controller"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 
@@ -57,6 +58,7 @@ type deviceService struct {
 	lc                 logger.LoggingClient
 	driver             interfaces.ProtocolDriver
 	autoEventManager   interfaces.AutoEventManager
+	commonController   *controller.CommonController
 	controller         *restController.RestController
 	asyncCh            chan *sdkModels.AsyncValues
 	deviceCh           chan []sdkModels.DiscoveredDevice
@@ -225,6 +227,7 @@ func (s *deviceService) LoadCustomConfig(customConfig interfaces.UpdatableConfig
 	}
 
 	s.controller.SetCustomConfigInfo(customConfig)
+	s.commonController.SetCustomConfigInfo(customConfig)
 
 	return nil
 }
