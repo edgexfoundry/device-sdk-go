@@ -25,10 +25,10 @@ func Test_processProvisionWatcherFile(t *testing.T) {
 		expectedNumProvisionWatchers int
 	}{
 		{"valid load provision watcher from file", path.Join("..", "..", "example", "cmd", "device-simple", "res", "provisionwatchers", "Simple-Provision-Watcher.yml"), nil, 1},
-		{"valid load provision watcher invalid uri", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/provisionwatchers/Simple-Provision-Watcher.yml", nil, 1},
+		{"valid load provision watcher from valid uri", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/provisionwatchers/Simple-Provision-Watcher.yml", nil, 1},
 		{"invalid load provision watcher empty path", "", nil, 0},
 		{"invalid load provision watcher from file", path.Join("..", "..", "example", "cmd", "device-simple", "res", "provisionwatchers", "bogus.yml"), nil, 0},
-		{"invalid load provision watcher invalid uri", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/provisionwatchers/bogus.yml", nil, 0},
+		{"invalid load provision watcher from invalid uri", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/provisionwatchers/bogus.yml", nil, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
