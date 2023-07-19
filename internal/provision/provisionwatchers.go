@@ -89,6 +89,7 @@ func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requ
 }
 
 func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddProvisionWatcherRequest, errors.EdgeX) {
+	// the input URI contains the index file containing the Provision Watcher list to be loaded
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers list from URI %s", parsedURI.Redacted()), err)

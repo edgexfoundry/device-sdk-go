@@ -103,6 +103,7 @@ func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc lo
 
 func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var edgexErr errors.EdgeX
+	// the input URI contains the index file containing the Profile list to be loaded
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Device Profile list from URI %s", parsedURI.Redacted()), err)

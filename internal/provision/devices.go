@@ -117,6 +117,7 @@ func loadDevicesFromFile(path, serviceName string, lc logger.LoggingClient) ([]r
 }
 
 func loadDevicesFromURI(inputURI string, parsedURI *url.URL, serviceName string, secretProvider interfaces.SecretProvider, lc logger.LoggingClient) ([]requests.AddDeviceRequest, errors.EdgeX) {
+	// the input URI contains the index file containing the Device list to be loaded
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Devices list from URI %s", parsedURI.Redacted()), err)
