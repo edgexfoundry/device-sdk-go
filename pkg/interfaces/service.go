@@ -7,8 +7,9 @@
 package interfaces
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"net/http"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -26,6 +27,14 @@ import (
 type UpdatableConfig interface {
 	interfaces.UpdatableConfig
 }
+
+// Authentication is a typed boolean for AddRoute calls
+type Authentication bool
+
+const (
+	Unauthenticated Authentication = false
+	Authenticated   Authentication = true
+)
 
 // DeviceServiceSDK defines the interface for an EdgeX Device Service SDK
 type DeviceServiceSDK interface {
@@ -115,7 +124,11 @@ type DeviceServiceSDK interface {
 	DriverConfigs() map[string]string
 
 	// AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
+	// Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
 	AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error
+
+	// AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
+	AddCustomRoute(route string, authentication Authentication, handler func(http.ResponseWriter, *http.Request), methods ...string) error
 
 	// LoadCustomConfig uses the Config Processor from go-mod-bootstrap to attempt to load service's
 	// custom configuration. It uses the same command line flags to process the custom config in the same manner
