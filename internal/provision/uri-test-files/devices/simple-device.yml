@@ -1,0 +1,17 @@
+deviceList:
+  - name: Simple-Device01
+    profileName: Simple-Device
+    description: Example of Simple Device
+    labels:
+      - industrial
+    protocols:
+      other:
+        Address: simple01
+        Port: 300
+    autoEvents:
+      - interval: 10s
+        onChange: false
+        sourceName: Switch
+      - interval: 30s
+        onChange: false
+        sourceName: Image

@@ -1,0 +1,92 @@
+apiVersion: "v2"
+name: "Simple-Device"
+manufacturer: "Simple Corp."
+model: "SP-01"
+labels:
+  - "modbus"
+description: "Example of Simple Device"
+
+deviceResources:
+  -
+    name: "SwitchButton"
+    isHidden: false
+    description: "Switch On/Off."
+    properties:
+        valueType: "Bool"
+        readWrite: "RW"
+        defaultValue: "true"
+  -
+    name: "Image"
+    isHidden: false
+    description: "Visual representation of Switch state."
+    properties:
+        valueType: "Binary"
+        readWrite: "R"
+        mediaType: "image/jpeg"
+  -
+    name: "Xrotation"
+    isHidden: true
+    description: "X axis rotation rate"
+    properties:
+        valueType: "Int32"
+        readWrite: "RW"
+        units: "rpm"
+  -
+    name: "Yrotation"
+    isHidden: true
+    description: "Y axis rotation rate"
+    properties:
+        valueType: "Int32"
+        readWrite: "RW"
+        "units": "rpm"
+  -
+    name: "Zrotation"
+    isHidden: true
+    description: "Z axis rotation rate"
+    properties:
+        valueType: "Int32"
+        readWrite: "RW"
+        "units": "rpm"
+  -
+    name: "StringArray"
+    isHidden: false
+    description: "String array"
+    properties:
+      valueType: "StringArray"
+      readWrite: "RW"
+  -
+    name: "Uint8Array"
+    isHidden: false
+    description: "Unsigned 8bit array"
+    properties:
+        valueType: "Uint8Array"
+        readWrite: "RW"
+  -
+    name: "Counter"
+    isHidden: false
+    description: "Counter data"
+    properties:
+      valueType: "Object"
+      readWrite: "RW"
+
+deviceCommands:
+  -
+    name: "Switch"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "SwitchButton", defaultValue: "false" }
+  -
+    name: "Image"
+    isHidden: false
+    readWrite: "R"
+    resourceOperations:
+      - { deviceResource: "Image" }
+  -
+    name: "Rotation"
+    isHidden: false
+    readWrite: "RW"
+    resourceOperations:
+      - { deviceResource: "Xrotation", defaultValue: "0" }
+      - { deviceResource: "Yrotation", defaultValue: "0" }
+      - { deviceResource: "Zrotation", defaultValue: "0" }

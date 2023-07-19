@@ -1,0 +1,22 @@
+name: Simple-Provision-Watcher
+serviceName: device-simple
+labels:
+  - simple
+identifiers:
+  Address: simple[0-9]+
+  Port: 3[0-9]{2}
+blockingIdentifiers:
+  Port:
+    - 397
+    - 398
+    - 399
+adminState: UNLOCKED
+discoveredDevice:
+  profileName: Simple-Device
+  adminState: UNLOCKED
+  autoEvents:
+    - interval: 15s
+      sourceName: SwitchButton
+  properties:
+    testPropertyA: weather
+    testPropertyB: meter
