@@ -104,13 +104,9 @@ func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc lo
 
 func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var edgexErr errors.EdgeX
-	redactedURI, err := url.JoinPath(parsedURI.Host, parsedURI.Path)
-	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "failed to create a query-free URI for the profile list", err)
-	}
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Profile list from URI %s", redactedURI), err)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Profile list from URI %s", parsedURI.Redacted()), err)
 	}
 
 	if len(bytes) == 0 {
@@ -126,7 +122,7 @@ func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.Dev
 		return nil, nil
 	}
 
-	lc.Infof("Loading pre-defined profiles from %s(%d files found)", redactedURI, len(files))
+	lc.Infof("Loading pre-defined profiles from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
 	for _, file := range files {
 		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "profile", lc)
