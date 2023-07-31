@@ -23,21 +23,20 @@ import (
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
-	"github.com/gorilla/mux"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http/correlation"
+	"github.com/labstack/echo/v4"
 )
 
 type RestController struct {
 	serviceName    string
-	router         *mux.Router
+	router         *echo.Echo
 	reservedRoutes map[string]bool
 	customConfig   interfaces.UpdatableConfig
 	lc             logger.LoggingClient
 	dic            *di.Container
 }
 
-func NewRestController(r *mux.Router, dic *di.Container, serviceName string) *RestController {
+func NewRestController(r *echo.Echo, dic *di.Container, serviceName string) *RestController {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	return &RestController{
 		lc:             lc,
@@ -55,40 +54,35 @@ func (c *RestController) SetCustomConfigInfo(customConfig interfaces.UpdatableCo
 
 func (c *RestController) InitRestRoutes() {
 	c.lc.Info("Registering v2 routes...")
-	// router.UseEncodedPath() tells the router to match the encoded original path to the routes
-	c.router.UseEncodedPath()
 
 	secretProvider := container.SecretProviderExtFrom(c.dic.Get)
 	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, c.lc)
 
 	// discovery
-	c.addReservedRoute(common.ApiDiscoveryRoute, authenticationHook(c.Discovery)).Methods(http.MethodPost)
+	c.addReservedRoute(common.ApiDiscoveryRoute, WrapHandler(c.Discovery), http.MethodPost, authenticationHook)
 	// device command
-	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, authenticationHook(c.GetCommand)).Methods(http.MethodGet)
-	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, authenticationHook(c.SetCommand)).Methods(http.MethodPut)
-
-	c.router.Use(correlation.ManageHeader)
-	c.router.Use(correlation.LoggingMiddleware(c.lc))
-	c.router.Use(correlation.UrlDecodeMiddleware(c.lc))
+	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, WrapHandler(c.GetCommand), http.MethodGet, authenticationHook)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, WrapHandler(c.SetCommand), http.MethodPut, authenticationHook)
 }
 
-func (c *RestController) addReservedRoute(route string, handler func(http.ResponseWriter, *http.Request)) *mux.Route {
+func (c *RestController) addReservedRoute(route string, handler func(e echo.Context) error, method string,
+	middlewareFunc ...echo.MiddlewareFunc) *echo.Route {
 	c.reservedRoutes[route] = true
-	return c.router.HandleFunc(route, handler)
+	return c.router.Add(method, route, handler, middlewareFunc...)
 }
 
-func (c *RestController) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) errors.EdgeX {
+func (c *RestController) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods []string, middlewareFunc ...echo.MiddlewareFunc) errors.EdgeX {
 	if c.reservedRoutes[route] {
 		return errors.NewCommonEdgeX(errors.KindServerError, "route is reserved", nil)
 	}
 
-	c.router.HandleFunc(route, handler).Methods(methods...)
+	c.router.Match(methods, route, WrapHandler(handler), middlewareFunc...)
 	c.lc.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
 
 	return nil
 }
 
-func (c *RestController) Router() *mux.Router {
+func (c *RestController) Router() *echo.Echo {
 	return c.router
 }
 

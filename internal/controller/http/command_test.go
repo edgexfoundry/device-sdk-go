@@ -36,6 +36,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces/mocks"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+
+	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -204,12 +206,13 @@ func mockDic() *di.Container {
 }
 
 func TestRestController_GetCommand(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 
 	err := cache.InitCache(testService, testService, dic)
 	require.NoError(t, err)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	tests := []struct {
@@ -240,8 +243,10 @@ func TestRestController_GetCommand(t *testing.T) {
 
 			// Act
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(controller.GetCommand)
-			handler.ServeHTTP(recorder, req)
+			handler := WrapHandler(controller.GetCommand)
+			c := e.NewContext(req, recorder)
+			err = handler(c)
+			assert.NoError(t, err)
 
 			var res responses.EventResponse
 			err = json.Unmarshal(recorder.Body.Bytes(), &res)
@@ -261,6 +266,7 @@ func TestRestController_GetCommand(t *testing.T) {
 }
 
 func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceServiceName: func(get di.Get) any {
@@ -274,7 +280,7 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
@@ -283,8 +289,10 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(controller.GetCommand)
-	handler.ServeHTTP(recorder, req)
+	handler := WrapHandler(controller.GetCommand)
+	c := e.NewContext(req, recorder)
+	err = handler(c)
+	assert.NoError(t, err)
 
 	var res responses.EventResponse
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
@@ -298,12 +306,13 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 }
 
 func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 
 	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
@@ -315,8 +324,10 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 	req.URL.RawQuery = query.Encode()
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(controller.GetCommand)
-	handler.ServeHTTP(recorder, req)
+	handler := WrapHandler(controller.GetCommand)
+	c := e.NewContext(req, recorder)
+	err = handler(c)
+	assert.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode, "HTTP status code not as expected")
@@ -324,6 +335,7 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 }
 
 func TestRestController_SetCommand(t *testing.T) {
+	e := echo.New()
 	validRequest := map[string]any{testResource: "value", writeOnlyResource: "value"}
 	invalidRequest := map[string]any{"invalid": "test"}
 	emptyValueRequest := map[string]any{objectResource: ""}
@@ -334,7 +346,7 @@ func TestRestController_SetCommand(t *testing.T) {
 	err := cache.InitCache(testService, testService, dic)
 	require.NoError(t, err)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	tests := []struct {
@@ -390,8 +402,10 @@ func TestRestController_SetCommand(t *testing.T) {
 
 			// Act
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(controller.SetCommand)
-			handler.ServeHTTP(recorder, req)
+			handler := WrapHandler(controller.SetCommand)
+			c := e.NewContext(req, recorder)
+			err = handler(c)
+			assert.NoError(t, err)
 
 			var res commonDTO.BaseResponse
 			err = json.Unmarshal(recorder.Body.Bytes(), &res)
@@ -416,6 +430,7 @@ func TestRestController_SetCommand(t *testing.T) {
 }
 
 func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceServiceName: func(get di.Get) any {
@@ -430,7 +445,7 @@ func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
 	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	jsonData, err := json.Marshal(validRequest)
@@ -443,8 +458,10 @@ func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
 
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(controller.SetCommand)
-	handler.ServeHTTP(recorder, req)
+	handler := WrapHandler(controller.SetCommand)
+	c := e.NewContext(req, recorder)
+	err = handler(c)
+	assert.NoError(t, err)
 
 	var res commonDTO.BaseResponse
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)

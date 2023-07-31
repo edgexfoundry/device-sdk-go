@@ -47,7 +47,7 @@ import (
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 )
 
 const EnvInstanceName = "EDGEX_INSTANCE_NAME"
@@ -118,7 +118,7 @@ func (s *deviceService) Run() error {
 		},
 	})
 
-	router := mux.NewRouter()
+	router := echo.New()
 	httpServer := handlers.NewHttpServer(router, true)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -225,9 +225,9 @@ func (s *deviceService) AddCustomRoute(route string, authentication interfaces.A
 		secretProvider := bootstrapContainer.SecretProviderExtFrom(s.dic.Get)
 		authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
 
-		return s.controller.AddRoute(route, authenticationHook(handler), methods...)
+		return s.controller.AddRoute(route, handler, methods, authenticationHook)
 	}
-	return s.controller.AddRoute(route, handler, methods...)
+	return s.controller.AddRoute(route, handler, methods)
 }
 
 // LoadCustomConfig uses the Config Processor from go-mod-bootstrap to attempt to load service's
