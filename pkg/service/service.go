@@ -33,6 +33,7 @@ import (
 	restController "github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+	"github.com/edgexfoundry/device-sdk-go/v3/pkg/utils"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -215,11 +216,11 @@ func (s *deviceService) DiscoveredDeviceChannel() chan []sdkModels.DiscoveredDev
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
 // Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
 func (s *deviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
-	return s.AddCustomRoute(route, interfaces.Unauthenticated, handler, methods...)
+	return s.AddCustomRoute(route, interfaces.Unauthenticated, utils.WrapHandler(handler), methods...)
 }
 
 // AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-func (s *deviceService) AddCustomRoute(route string, authentication interfaces.Authentication, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+func (s *deviceService) AddCustomRoute(route string, authentication interfaces.Authentication, handler func(e echo.Context) error, methods ...string) error {
 	if authentication == interfaces.Authenticated {
 		lc := bootstrapContainer.LoggingClientFrom(s.dic.Get)
 		secretProvider := bootstrapContainer.SecretProviderExtFrom(s.dic.Get)

@@ -59,10 +59,10 @@ func (c *RestController) InitRestRoutes() {
 	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, c.lc)
 
 	// discovery
-	c.addReservedRoute(common.ApiDiscoveryRoute, WrapHandler(c.Discovery), http.MethodPost, authenticationHook)
+	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery, http.MethodPost, authenticationHook)
 	// device command
-	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, WrapHandler(c.GetCommand), http.MethodGet, authenticationHook)
-	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, WrapHandler(c.SetCommand), http.MethodPut, authenticationHook)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.GetCommand, http.MethodGet, authenticationHook)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.SetCommand, http.MethodPut, authenticationHook)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(e echo.Context) error, method string,
@@ -71,12 +71,12 @@ func (c *RestController) addReservedRoute(route string, handler func(e echo.Cont
 	return c.router.Add(method, route, handler, middlewareFunc...)
 }
 
-func (c *RestController) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods []string, middlewareFunc ...echo.MiddlewareFunc) errors.EdgeX {
+func (c *RestController) AddRoute(route string, handler func(e echo.Context) error, methods []string, middlewareFunc ...echo.MiddlewareFunc) errors.EdgeX {
 	if c.reservedRoutes[route] {
 		return errors.NewCommonEdgeX(errors.KindServerError, "route is reserved", nil)
 	}
 
-	c.router.Match(methods, route, WrapHandler(handler), middlewareFunc...)
+	c.router.Match(methods, route, handler, middlewareFunc...)
 	c.lc.Debug("Route added", "route", route, "methods", fmt.Sprintf("%v", methods))
 
 	return nil
@@ -88,11 +88,11 @@ func (c *RestController) Router() *echo.Echo {
 
 // sendResponse puts together the response packet for the V2 API
 func (c *RestController) sendResponse(
-	writer http.ResponseWriter,
+	writer *echo.Response,
 	request *http.Request,
 	api string,
 	response interface{},
-	statusCode int) {
+	statusCode int) error {
 
 	correlationID := request.Header.Get(common.CorrelationHeader)
 
@@ -104,32 +104,36 @@ func (c *RestController) sendResponse(
 		data, err := json.Marshal(response)
 		if err != nil {
 			c.lc.Error(fmt.Sprintf("Unable to marshal %s response", api), "error", err.Error(), common.CorrelationHeader, correlationID)
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
+			// set Response.Committed to true in order to rewrite the status code
+			writer.Committed = false
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 
 		_, err = writer.Write(data)
 		if err != nil {
 			c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), common.CorrelationHeader, correlationID)
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
+			// set Response.Committed to true in order to rewrite the status code
+			writer.Committed = false
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
 	}
+	return nil
 }
 
 // sendEventResponse puts together the EventResponse packet for the V2 API
 func (c *RestController) sendEventResponse(
-	writer http.ResponseWriter,
+	writer *echo.Response,
 	request *http.Request,
 	response responses.EventResponse,
-	statusCode int) {
+	statusCode int) error {
 
 	correlationID := request.Header.Get(common.CorrelationHeader)
 	data, encoding, err := response.Encode()
 	if err != nil {
 		c.lc.Errorf("Unable to marshal EventResponse: %s; %s: %s", err.Error(), common.CorrelationHeader, correlationID)
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
+		// set Response.Committed to true in order to rewrite the status code
+		writer.Committed = false
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	writer.Header().Set(common.CorrelationHeader, correlationID)
@@ -139,19 +143,21 @@ func (c *RestController) sendEventResponse(
 	_, err = writer.Write(data)
 	if err != nil {
 		c.lc.Errorf("Unable to write DeviceCommand response: %s; %s: %s", err.Error(), common.CorrelationHeader, correlationID)
-		http.Error(writer, err.Error(), http.StatusInternalServerError)
-		return
+		// set Response.Committed to true in order to rewrite the status code
+		writer.Committed = false
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
+	return nil
 }
 
 func (c *RestController) sendEdgexError(
-	writer http.ResponseWriter,
+	writer *echo.Response,
 	request *http.Request,
 	err errors.EdgeX,
-	api string) {
+	api string) error {
 	correlationID := request.Header.Get(common.CorrelationHeader)
 	c.lc.Error(err.Error(), common.CorrelationHeader, correlationID)
 	c.lc.Debug(err.DebugMessages(), common.CorrelationHeader, correlationID)
 	response := commonDTO.NewBaseResponse("", err.Error(), err.Code())
-	c.sendResponse(writer, request, api, response, err.Code())
+	return c.sendResponse(writer, request, api, response, err.Code())
 }

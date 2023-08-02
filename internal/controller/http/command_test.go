@@ -25,7 +25,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	messagingMocks "github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -209,8 +208,8 @@ func TestRestController_GetCommand(t *testing.T) {
 	e := echo.New()
 	dic := mockDic()
 
-	err := cache.InitCache(testService, testService, dic)
-	require.NoError(t, err)
+	edgexErr := cache.InitCache(testService, testService, dic)
+	require.NoError(t, edgexErr)
 
 	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
@@ -237,15 +236,15 @@ func TestRestController_GetCommand(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
-			req = mux.SetURLVars(req, map[string]string{common.Name: testCase.deviceName, common.Command: testCase.commandName})
-			require.NoError(t, err)
+			req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
 
 			// Act
 			recorder := httptest.NewRecorder()
-			handler := WrapHandler(controller.GetCommand)
 			c := e.NewContext(req, recorder)
-			err = handler(c)
+			c.SetParamNames(common.Name, common.Command)
+			c.SetParamValues(testCase.deviceName, testCase.commandName)
+
+			err := controller.GetCommand(c)
 			assert.NoError(t, err)
 
 			var res responses.EventResponse
@@ -283,15 +282,14 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
-	req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{common.Name: testDevice, common.Command: testResource})
-	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
 
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := WrapHandler(controller.GetCommand)
 	c := e.NewContext(req, recorder)
-	err = handler(c)
+	c.SetParamNames(common.Name, common.Command)
+	c.SetParamValues(testDevice, testResource)
+	err := controller.GetCommand(c)
 	assert.NoError(t, err)
 
 	var res responses.EventResponse
@@ -315,18 +313,17 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
-	req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{common.Name: testDevice, common.Command: testResource})
-	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
 
 	query := req.URL.Query()
 	query.Add("ds-returnevent", common.ValueFalse)
 	req.URL.RawQuery = query.Encode()
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := WrapHandler(controller.GetCommand)
 	c := e.NewContext(req, recorder)
-	err = handler(c)
+	c.SetParamNames(common.Name, common.Command)
+	c.SetParamValues(testDevice, testResource)
+	err := controller.GetCommand(c)
 	assert.NoError(t, err)
 
 	// Assert
@@ -380,9 +377,7 @@ func TestRestController_SetCommand(t *testing.T) {
 			require.NoError(t, err)
 
 			reader := strings.NewReader(string(jsonData))
-			req, err := http.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
-			req = mux.SetURLVars(req, map[string]string{common.Name: testCase.deviceName, common.Command: testCase.commandName})
-			require.NoError(t, err)
+			req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
 
 			var wg sync.WaitGroup
 			if testCase.commandName != writeOnlyCommand && testCase.commandName != writeOnlyResource {
@@ -402,9 +397,10 @@ func TestRestController_SetCommand(t *testing.T) {
 
 			// Act
 			recorder := httptest.NewRecorder()
-			handler := WrapHandler(controller.SetCommand)
 			c := e.NewContext(req, recorder)
-			err = handler(c)
+			c.SetParamNames(common.Name, common.Command)
+			c.SetParamValues(testCase.deviceName, testCase.commandName)
+			err = controller.SetCommand(c)
 			assert.NoError(t, err)
 
 			var res commonDTO.BaseResponse
@@ -452,15 +448,14 @@ func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
 	require.NoError(t, err)
 
 	reader := strings.NewReader(string(jsonData))
-	req, err := http.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
-	req = mux.SetURLVars(req, map[string]string{common.Name: testDevice, common.Command: testResource})
-	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
 
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := WrapHandler(controller.SetCommand)
 	c := e.NewContext(req, recorder)
-	err = handler(c)
+	c.SetParamNames(common.Name, common.Command)
+	c.SetParamValues(testDevice, testResource)
+	err = controller.SetCommand(c)
 	assert.NoError(t, err)
 
 	var res commonDTO.BaseResponse

@@ -1,8 +1,5 @@
 The following open source projects are referenced by Device Service SDK Go:
 
-gorilla/mux 1.6.2 (BSD-3) https://github.com/gorilla/mux
-https://github.com/gorilla/mux/blob/master/LICENSE
-
 hashicorp/consul 1.1.0 (Mozilla Public License 2.0) https://github.com/hashicorp/consul
 https://github.com/hashicorp/consul/blob/master/LICENSE
 
@@ -225,3 +222,5 @@ https://github.com/klauspost/compress/blob/master/LICENSE
 github.com/gabriel-vasile/mimetype (MIT) https://github.com/gabriel-vasile/mimetype
 https://github.com/gabriel-vasile/mimetype/blob/master/LICENSE
 
+github.com/labstack/echo/v4 (MIT) https://github.com/labstack/echo
+https://github.com/labstack/echo/blob/master/LICENSE
