@@ -236,7 +236,7 @@ func TestRestController_GetCommand(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
+			req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameEchoRoute, http.NoBody)
 
 			// Act
 			recorder := httptest.NewRecorder()
@@ -282,7 +282,7 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
-	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameEchoRoute, http.NoBody)
 
 	// Act
 	recorder := httptest.NewRecorder()
@@ -313,7 +313,7 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
-	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
+	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameEchoRoute, http.NoBody)
 
 	query := req.URL.Query()
 	query.Add("ds-returnevent", common.ValueFalse)
@@ -377,7 +377,7 @@ func TestRestController_SetCommand(t *testing.T) {
 			require.NoError(t, err)
 
 			reader := strings.NewReader(string(jsonData))
-			req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
+			req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameEchoRoute, reader)
 
 			var wg sync.WaitGroup
 			if testCase.commandName != writeOnlyCommand && testCase.commandName != writeOnlyResource {
@@ -448,7 +448,7 @@ func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
 	require.NoError(t, err)
 
 	reader := strings.NewReader(string(jsonData))
-	req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
+	req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameEchoRoute, reader)
 
 	// Act
 	recorder := httptest.NewRecorder()

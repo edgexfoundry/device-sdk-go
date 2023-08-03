@@ -24,6 +24,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/controller"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autoevent"
@@ -33,7 +34,6 @@ import (
 	restController "github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
-	"github.com/edgexfoundry/device-sdk-go/v3/pkg/utils"
 
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/config"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"

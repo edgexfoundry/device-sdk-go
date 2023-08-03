@@ -104,7 +104,7 @@ func (c *RestController) sendResponse(
 		data, err := json.Marshal(response)
 		if err != nil {
 			c.lc.Error(fmt.Sprintf("Unable to marshal %s response", api), "error", err.Error(), common.CorrelationHeader, correlationID)
-			// set Response.Committed to true in order to rewrite the status code
+			// set Response.Committed to false in order to rewrite the status code
 			writer.Committed = false
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -112,7 +112,7 @@ func (c *RestController) sendResponse(
 		_, err = writer.Write(data)
 		if err != nil {
 			c.lc.Error(fmt.Sprintf("Unable to write %s response", api), "error", err.Error(), common.CorrelationHeader, correlationID)
-			// set Response.Committed to true in order to rewrite the status code
+			// set Response.Committed to false in order to rewrite the status code
 			writer.Committed = false
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
@@ -131,7 +131,7 @@ func (c *RestController) sendEventResponse(
 	data, encoding, err := response.Encode()
 	if err != nil {
 		c.lc.Errorf("Unable to marshal EventResponse: %s; %s: %s", err.Error(), common.CorrelationHeader, correlationID)
-		// set Response.Committed to true in order to rewrite the status code
+		// set Response.Committed to false in order to rewrite the status code
 		writer.Committed = false
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -143,7 +143,7 @@ func (c *RestController) sendEventResponse(
 	_, err = writer.Write(data)
 	if err != nil {
 		c.lc.Errorf("Unable to write DeviceCommand response: %s; %s: %s", err.Error(), common.CorrelationHeader, correlationID)
-		// set Response.Committed to true in order to rewrite the status code
+		// set Response.Committed to false in order to rewrite the status code
 		writer.Committed = false
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
