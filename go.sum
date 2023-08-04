@@ -28,8 +28,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/eclipse/paho.mqtt.golang v1.4.3 h1:2kwcUGn8seMUfWndX0hGbvH8r7crgcJguQNCyp70xik=
 github.com/eclipse/paho.mqtt.golang v1.4.3/go.mod h1:CSYvoAlsMkhYOXh/oKyxa8EcBci6dVkLCbo5tTC1RIE=
-github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.16 h1:j3/SRjDhwTx127Csdh8CNLNV8IvTi6gxCjv83emQukc=
-github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.16/go.mod h1:3d3IF3Z0gaVHYLHvOAvJWDuynG2XFMkTYbjKytoM7ig=
+github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.17 h1:bWesSELu54UWZwzgYke8xdBQKciA6RSSRkO7eYCo09g=
+github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.17/go.mod h1:Oz+2kn1kodk15mwqkkftri9Z4u7Nppfs1N26CHy6o6Q=
 github.com/edgexfoundry/go-mod-configuration/v3 v3.1.0-dev.4 h1:RmZVvR9sa3CdRNIiBNtuYG1gkP3Y98jOf69kL2SabGI=
 github.com/edgexfoundry/go-mod-configuration/v3 v3.1.0-dev.4/go.mod h1:hVlzVoVpbgOZKppX+vwYsp7Kf0eBfRmBZP2FsyMwe9I=
 github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.3 h1:NJa87GfnUZw/GvX2aeeZ4ZQoSzwkRotuLQej2ay6XUc=
@@ -38,8 +38,8 @@ github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.12 h1:b0ZNEkF0Xnsjlvdd4Rj
 github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.12/go.mod h1:1f0XKGDQifMd/2D11aHvAOpVJ19BmaPzr1f0T4nVpdw=
 github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.4 h1:qYWqqsXzJie8HBj6103RCuFRi8Ks4VbDT45rdZjJ8Z8=
 github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.4/go.mod h1:ecFYrYBQc7URnMuheSCdDMmnYyqpkLF1SpL50wqLFgE=
-github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.3 h1:bSm3RwsXAUIAZZPldFwpkRs1EJrZHLlOU475xGlsgKY=
-github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.3/go.mod h1:n+z3ugFBidF7K6CTzzJGKtwmlOz3N28Kh0FJtLaD9l0=
+github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.5 h1:dihASzHUsayVwyTUNg7hvRsmjSgmaJ2Fr0QEsRqTX2U=
+github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.5/go.mod h1:+UENm8Q5SEIycfP8R4L78eTkq9HNhFE2dEmRj/ACHGQ=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
