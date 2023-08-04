@@ -16,6 +16,8 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+
+	"github.com/labstack/echo/v4"
 )
 
 // UpdatableConfig interface allows services to have custom configuration populated from configuration stored
@@ -128,7 +130,7 @@ type DeviceServiceSDK interface {
 	AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error
 
 	// AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-	AddCustomRoute(route string, authentication Authentication, handler func(http.ResponseWriter, *http.Request), methods ...string) error
+	AddCustomRoute(route string, authentication Authentication, handler func(e echo.Context) error, methods ...string) error
 
 	// LoadCustomConfig uses the Config Processor from go-mod-bootstrap to attempt to load service's
 	// custom configuration. It uses the same command line flags to process the custom config in the same manner

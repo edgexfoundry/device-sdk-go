@@ -25,7 +25,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	messagingMocks "github.com/edgexfoundry/go-mod-messaging/v3/messaging/mocks"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -36,6 +35,8 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces/mocks"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+
+	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -204,12 +205,13 @@ func mockDic() *di.Container {
 }
 
 func TestRestController_GetCommand(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 
-	err := cache.InitCache(testService, testService, dic)
-	require.NoError(t, err)
+	edgexErr := cache.InitCache(testService, testService, dic)
+	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	tests := []struct {
@@ -234,14 +236,16 @@ func TestRestController_GetCommand(t *testing.T) {
 	}
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
-			req = mux.SetURLVars(req, map[string]string{common.Name: testCase.deviceName, common.Command: testCase.commandName})
-			require.NoError(t, err)
+			req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameEchoRoute, http.NoBody)
 
 			// Act
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(controller.GetCommand)
-			handler.ServeHTTP(recorder, req)
+			c := e.NewContext(req, recorder)
+			c.SetParamNames(common.Name, common.Command)
+			c.SetParamValues(testCase.deviceName, testCase.commandName)
+
+			err := controller.GetCommand(c)
+			assert.NoError(t, err)
 
 			var res responses.EventResponse
 			err = json.Unmarshal(recorder.Body.Bytes(), &res)
@@ -261,6 +265,7 @@ func TestRestController_GetCommand(t *testing.T) {
 }
 
 func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceServiceName: func(get di.Get) any {
@@ -274,17 +279,18 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
-	req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{common.Name: testDevice, common.Command: testResource})
-	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameEchoRoute, http.NoBody)
 
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(controller.GetCommand)
-	handler.ServeHTTP(recorder, req)
+	c := e.NewContext(req, recorder)
+	c.SetParamNames(common.Name, common.Command)
+	c.SetParamValues(testDevice, testResource)
+	err := controller.GetCommand(c)
+	assert.NoError(t, err)
 
 	var res responses.EventResponse
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
@@ -298,25 +304,27 @@ func TestRestController_GetCommand_ServiceLocked(t *testing.T) {
 }
 
 func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 
 	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
-	req, err := http.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute, http.NoBody)
-	req = mux.SetURLVars(req, map[string]string{common.Name: testDevice, common.Command: testResource})
-	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameEchoRoute, http.NoBody)
 
 	query := req.URL.Query()
 	query.Add("ds-returnevent", common.ValueFalse)
 	req.URL.RawQuery = query.Encode()
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(controller.GetCommand)
-	handler.ServeHTTP(recorder, req)
+	c := e.NewContext(req, recorder)
+	c.SetParamNames(common.Name, common.Command)
+	c.SetParamValues(testDevice, testResource)
+	err := controller.GetCommand(c)
+	assert.NoError(t, err)
 
 	// Assert
 	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode, "HTTP status code not as expected")
@@ -324,6 +332,7 @@ func TestRestController_GetCommand_ReturnEvent(t *testing.T) {
 }
 
 func TestRestController_SetCommand(t *testing.T) {
+	e := echo.New()
 	validRequest := map[string]any{testResource: "value", writeOnlyResource: "value"}
 	invalidRequest := map[string]any{"invalid": "test"}
 	emptyValueRequest := map[string]any{objectResource: ""}
@@ -334,7 +343,7 @@ func TestRestController_SetCommand(t *testing.T) {
 	err := cache.InitCache(testService, testService, dic)
 	require.NoError(t, err)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	tests := []struct {
@@ -368,9 +377,7 @@ func TestRestController_SetCommand(t *testing.T) {
 			require.NoError(t, err)
 
 			reader := strings.NewReader(string(jsonData))
-			req, err := http.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
-			req = mux.SetURLVars(req, map[string]string{common.Name: testCase.deviceName, common.Command: testCase.commandName})
-			require.NoError(t, err)
+			req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameEchoRoute, reader)
 
 			var wg sync.WaitGroup
 			if testCase.commandName != writeOnlyCommand && testCase.commandName != writeOnlyResource {
@@ -390,8 +397,11 @@ func TestRestController_SetCommand(t *testing.T) {
 
 			// Act
 			recorder := httptest.NewRecorder()
-			handler := http.HandlerFunc(controller.SetCommand)
-			handler.ServeHTTP(recorder, req)
+			c := e.NewContext(req, recorder)
+			c.SetParamNames(common.Name, common.Command)
+			c.SetParamValues(testCase.deviceName, testCase.commandName)
+			err = controller.SetCommand(c)
+			assert.NoError(t, err)
 
 			var res commonDTO.BaseResponse
 			err = json.Unmarshal(recorder.Body.Bytes(), &res)
@@ -416,6 +426,7 @@ func TestRestController_SetCommand(t *testing.T) {
 }
 
 func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
+	e := echo.New()
 	dic := mockDic()
 	dic.Update(di.ServiceConstructorMap{
 		container.DeviceServiceName: func(get di.Get) any {
@@ -430,21 +441,22 @@ func TestRestController_SetCommand_ServiceLocked(t *testing.T) {
 	edgexErr := cache.InitCache(testService, testService, dic)
 	require.NoError(t, edgexErr)
 
-	controller := NewRestController(mux.NewRouter(), dic, testService)
+	controller := NewRestController(e, dic, testService)
 	assert.NotNil(t, controller)
 
 	jsonData, err := json.Marshal(validRequest)
 	require.NoError(t, err)
 
 	reader := strings.NewReader(string(jsonData))
-	req, err := http.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute, reader)
-	req = mux.SetURLVars(req, map[string]string{common.Name: testDevice, common.Command: testResource})
-	require.NoError(t, err)
+	req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameEchoRoute, reader)
 
 	// Act
 	recorder := httptest.NewRecorder()
-	handler := http.HandlerFunc(controller.SetCommand)
-	handler.ServeHTTP(recorder, req)
+	c := e.NewContext(req, recorder)
+	c.SetParamNames(common.Name, common.Command)
+	c.SetParamValues(testDevice, testResource)
+	err = controller.SetCommand(c)
+	assert.NoError(t, err)
 
 	var res commonDTO.BaseResponse
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)

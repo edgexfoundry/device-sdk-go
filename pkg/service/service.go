@@ -24,6 +24,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/controller"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autoevent"
@@ -47,7 +48,7 @@ import (
 	edgexErr "github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 )
 
 const EnvInstanceName = "EDGEX_INSTANCE_NAME"
@@ -118,7 +119,7 @@ func (s *deviceService) Run() error {
 		},
 	})
 
-	router := mux.NewRouter()
+	router := echo.New()
 	httpServer := handlers.NewHttpServer(router, true)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -215,19 +216,19 @@ func (s *deviceService) DiscoveredDeviceChannel() chan []sdkModels.DiscoveredDev
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
 // Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
 func (s *deviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
-	return s.AddCustomRoute(route, interfaces.Unauthenticated, handler, methods...)
+	return s.AddCustomRoute(route, interfaces.Unauthenticated, utils.WrapHandler(handler), methods...)
 }
 
 // AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-func (s *deviceService) AddCustomRoute(route string, authentication interfaces.Authentication, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
+func (s *deviceService) AddCustomRoute(route string, authentication interfaces.Authentication, handler func(e echo.Context) error, methods ...string) error {
 	if authentication == interfaces.Authenticated {
 		lc := bootstrapContainer.LoggingClientFrom(s.dic.Get)
 		secretProvider := bootstrapContainer.SecretProviderExtFrom(s.dic.Get)
 		authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
 
-		return s.controller.AddRoute(route, authenticationHook(handler), methods...)
+		return s.controller.AddRoute(route, handler, methods, authenticationHook)
 	}
-	return s.controller.AddRoute(route, handler, methods...)
+	return s.controller.AddRoute(route, handler, methods)
 }
 
 // LoadCustomConfig uses the Config Processor from go-mod-bootstrap to attempt to load service's

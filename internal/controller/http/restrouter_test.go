@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2019 Intel Corporation
-// Copyright (C) 2020 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,19 +19,28 @@ package http
 
 import (
 	"fmt"
-	"github.com/google/uuid"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+
+	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
+)
+
+var (
+	handlerFunc = func(c echo.Context) error {
+		return c.String(http.StatusOK, "OK")
+	}
 )
 
 func TestAddRoute(t *testing.T) {
@@ -39,10 +48,11 @@ func TestAddRoute(t *testing.T) {
 	tests := []struct {
 		Name          string
 		Route         string
+		Method        string
 		ErrorExpected bool
 	}{
-		{"Success", "/api/v2/test", false},
-		{"Reserved Route", common.ApiDiscoveryRoute, true},
+		{"Success", "/api/v2/test", http.MethodPost, false},
+		{"Reserved Route", common.ApiDiscoveryRoute, "", true},
 	}
 
 	lc := logger.NewMockClient()
@@ -56,11 +66,11 @@ func TestAddRoute(t *testing.T) {
 	})
 
 	for _, test := range tests {
-		r := mux.NewRouter()
+		r := echo.New()
 		controller := NewRestController(r, dic, uuid.NewString())
 		controller.InitRestRoutes()
 
-		err := controller.AddRoute(test.Route, func(http.ResponseWriter, *http.Request) {}, http.MethodPost)
+		err := controller.AddRoute(test.Route, handlerFunc, []string{test.Method})
 		if test.ErrorExpected {
 			assert.Error(t, err, "Expected an error")
 		} else {
@@ -68,28 +78,28 @@ func TestAddRoute(t *testing.T) {
 				t.Fatal()
 			}
 
-			err := controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-				path, err := route.GetPathTemplate()
-				if err != nil {
-					return err
-				}
+			req := httptest.NewRequest(test.Method, test.Route, nil)
+			rec := httptest.NewRecorder()
+			c := r.NewContext(req, rec)
+			// Find the matched handler function from router with the matching method and url path
+			r.Router().Find(test.Method, test.Route, c)
+			// Apply the handler function to echo.Context
+			handlerErr := c.Handler()(c)
+			assert.NoError(t, handlerErr)
 
-				// Have to skip all the reserved routes that have previously been added.
-				if controller.reservedRoutes[path] {
-					return nil
-				}
+			// Have to skip all the reserved routes that have previously been added.
+			if controller.reservedRoutes[test.Route] {
+				return
+			}
 
-				routeMethods, err := route.GetMethods()
-				if err != nil {
-					return err
-				}
+			assert.Equal(t, test.Route, c.Path())
+			assert.Equal(t, http.StatusOK, c.Response().Status)
 
-				assert.Equal(t, test.Route, path)
-				assert.Equal(t, http.MethodPost, routeMethods[0], "Expected POST Method")
-				return nil
-			})
-
-			assert.NoError(t, err, "Unexpected error examining route")
+			if body, err := io.ReadAll(rec.Body); err == nil {
+				assert.Equal(t, "OK", string(body), "unexpected handler function response")
+			} else {
+				assert.NoError(t, err)
+			}
 		}
 	}
 }
@@ -104,22 +114,17 @@ func TestInitRestRoutes(t *testing.T) {
 			return &config.ConfigurationStruct{}
 		},
 	})
-	r := mux.NewRouter()
+	r := echo.New()
 	controller := NewRestController(r, dic, uuid.NewString())
 	controller.InitRestRoutes()
 
-	err := controller.router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		path, err := route.GetPathTemplate()
-		if err != nil {
-			return err
-		}
+	// Traverse all registered routes for the router
+	for _, route := range r.Routes() {
+		path := route.Path
 
 		// Verify the route is reserved by attempting to add it as 'external' route.
 		// If tests fails then the route was not added to the reserved list
-		err = controller.AddRoute(path, func(http.ResponseWriter, *http.Request) {})
+		err := controller.AddRoute(path, func(c echo.Context) error { return nil }, nil)
 		assert.Error(t, err, path, fmt.Sprintf("Expected error for '%s'", path))
-		return nil
-	})
-
-	assert.NoError(t, err, "Unexpected error examining route")
+	}
 }

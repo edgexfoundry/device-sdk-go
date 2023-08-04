@@ -15,7 +15,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/common"
@@ -24,16 +23,18 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/messaging"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
+
+	"github.com/labstack/echo/v4"
 )
 
 // Bootstrap contains references to dependencies required by the BootstrapHandler.
 type Bootstrap struct {
 	deviceService *deviceService
-	router        *mux.Router
+	router        *echo.Echo
 }
 
 // NewBootstrap is a factory method that returns an initialized Bootstrap receiver struct.
-func NewBootstrap(ds *deviceService, router *mux.Router) *Bootstrap {
+func NewBootstrap(ds *deviceService, router *echo.Echo) *Bootstrap {
 	return &Bootstrap{
 		deviceService: ds,
 		router:        router,

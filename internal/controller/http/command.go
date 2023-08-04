@@ -18,25 +18,25 @@ import (
 	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
-	"github.com/gorilla/mux"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
+
+	"github.com/labstack/echo/v4"
 )
 
-func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	deviceName := vars[common.Name]
-	commandName := vars[common.Command]
-
+func (c *RestController) GetCommand(e echo.Context) error {
+	deviceName := e.Param(common.Name)
+	commandName := e.Param(common.Command)
+	r := e.Request()
+	w := e.Response()
 	ctx := r.Context()
 	correlationId := utils.FromContext(ctx, common.CorrelationHeader)
 
 	// parse query parameter
 	queryParams, reserved, err := filterQueryParams(r.URL.RawQuery)
 	if err != nil {
-		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
-		return
+		return c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 	}
 
 	regexCmd := true
@@ -46,8 +46,7 @@ func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
 
 	event, err := application.GetCommand(ctx, deviceName, commandName, queryParams, regexCmd, c.dic)
 	if err != nil {
-		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
-		return
+		return c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 	}
 
 	// push event to CoreData if specified (default false)
@@ -58,40 +57,38 @@ func (c *RestController) GetCommand(w http.ResponseWriter, r *http.Request) {
 	// return event in http response if specified (default true)
 	if returnEvent := reserved.Get(common.ReturnEvent); returnEvent == "" || returnEvent == common.ValueTrue {
 		res := responses.NewEventResponse("", "", http.StatusOK, *event)
-		c.sendEventResponse(w, r, res, http.StatusOK)
-		return
+		return c.sendEventResponse(w, r, res, http.StatusOK)
 	}
 
 	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
-func (c *RestController) SetCommand(w http.ResponseWriter, r *http.Request) {
+func (c *RestController) SetCommand(e echo.Context) error {
+	r := e.Request()
+	w := e.Response()
 	if r.Body != nil {
 		defer func() { _ = r.Body.Close() }()
 	}
 
 	ctx := r.Context()
-	vars := mux.Vars(r)
-	deviceName := vars[common.Name]
-	commandName := vars[common.Command]
+	deviceName := e.Param(common.Name)
+	commandName := e.Param(common.Command)
 
 	// parse query parameter
 	queryParams, _, err := filterQueryParams(r.URL.RawQuery)
 	if err != nil {
-		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
-		return
+		return c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 	}
 
 	requestParamsMap, err := parseRequestBody(r)
 	if err != nil {
-		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
-		return
+		return c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 	}
 
 	event, err := application.SetCommand(ctx, deviceName, commandName, queryParams, requestParamsMap, c.dic)
 	if err != nil {
-		c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
-		return
+		return c.sendEdgexError(w, r, err, common.ApiDeviceNameCommandNameRoute)
 	}
 
 	if event != nil {
@@ -100,7 +97,7 @@ func (c *RestController) SetCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res := commonDTO.NewBaseResponse("", "", http.StatusOK)
-	c.sendResponse(w, r, common.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
+	return c.sendResponse(w, r, common.ApiDeviceNameCommandNameRoute, res, http.StatusOK)
 }
 
 func parseRequestBody(req *http.Request) (map[string]interface{}, errors.EdgeX) {
