@@ -29,11 +29,12 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	deviceService := container.DeviceServiceFrom(dic.Get)
+	escapedDeviceServiceName := common.URLEncode(deviceService.Name)
 
-	requestSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.CommandRequestSubscribeTopic, deviceService.Name, "#")
+	requestSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.CommandRequestSubscribeTopic, escapedDeviceServiceName, "#")
 	lc.Infof("Subscribing to command requests on topic: %s", requestSubscribeTopic)
 
-	responsePublishTopicPrefix := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.ResponseTopic, deviceService.Name)
+	responsePublishTopicPrefix := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.ResponseTopic, escapedDeviceServiceName)
 	lc.Infof("Responses to command requests will be published on topic: %s/<requestId>", responsePublishTopicPrefix)
 
 	messages := make(chan types.MessageEnvelope, 1)
@@ -71,10 +72,14 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 				}
 
 				// expected command response topic scheme: #/<service-name>/<device-name>/<command-name>/<method>
-				deviceName := topicLevels[length-3]
+				deviceName, err := url.PathUnescape(topicLevels[length-3])
+				if err != nil {
+					lc.Errorf("Failed to unescape device name: %s", err.Error())
+					continue
+				}
 				commandName, err := url.PathUnescape(topicLevels[length-2])
 				if err != nil {
-					lc.Errorf("Failed to unescape command name '%s'", commandName)
+					lc.Errorf("Failed to unescape command name: %s", err.Error())
 					continue
 				}
 				method := topicLevels[length-1]
