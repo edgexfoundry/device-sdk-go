@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.25
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.6
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.15
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.27
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.8
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.16
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.1
@@ -32,7 +32,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.15.0 // indirect
+	github.com/go-playground/validator/v10 v10.15.1 // indirect
 	github.com/go-redis/redis/v7 v7.3.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
