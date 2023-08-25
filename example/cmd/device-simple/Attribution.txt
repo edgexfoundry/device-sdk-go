@@ -224,3 +224,18 @@ https://github.com/gabriel-vasile/mimetype/blob/master/LICENSE
 
 github.com/labstack/echo/v4 (MIT) https://github.com/labstack/echo
 https://github.com/labstack/echo/blob/master/LICENSE
+
+github.com/golang-jwt/jwt (MIT) https://github.com/golang-jwt/jwt
+https://github.com/golang-jwt/jwt/blob/main/LICENSE
+
+github.com/labstack/gommon (MIT) https://github.com/labstack/gommon
+https://github.com/labstack/gommon/blob/master/LICENSE
+
+github.com/valyala/bytebufferpool (MIT) https://github.com/valyala/bytebufferpool
+https://github.com/valyala/bytebufferpool/blob/master/LICENSE
+
+github.com/valyala/fasttemplate (MIT) https://github.com/valyala/fasttemplate
+https://github.com/valyala/fasttemplate/blob/master/LICENSE
+
+golang.org/x/time (BSD-3) https://cs.opensource.google/go/x/time
+https://cs.opensource.google/go/x/time/+/master:LICENSE
