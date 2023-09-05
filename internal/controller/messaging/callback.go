@@ -28,7 +28,7 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	deviceService := container.DeviceServiceFrom(dic.Get)
 	metadataSystemEventTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(),
-		common.MetadataSystemEventSubscribeTopic, deviceService.Name, "#")
+		common.MetadataSystemEventSubscribeTopic, common.URLEncode(deviceService.Name), "#")
 
 	lc.Infof("Subscribing to System Events on topic: %s", metadataSystemEventTopic)
 
@@ -49,7 +49,7 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 		// Must replace the first wildcard with the type for Provision Watchers
 		baseSubscribeTopic := strings.Replace(common.MetadataSystemEventSubscribeTopic, "+", common.ProvisionWatcherSystemEventType, 1)
 		provisionWatcherSystemEventSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(),
-			baseSubscribeTopic, serviceBaseName, "#")
+			baseSubscribeTopic, common.URLEncode(serviceBaseName), "#")
 
 		topics = append(topics, types.TopicChannel{
 			Topic:    provisionWatcherSystemEventSubscribeTopic,

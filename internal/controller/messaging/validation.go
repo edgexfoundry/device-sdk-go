@@ -23,7 +23,7 @@ import (
 func SubscribeDeviceValidation(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
-	serviceName := container.DeviceServiceFrom(dic.Get).Name
+	serviceName := common.URLEncode(container.DeviceServiceFrom(dic.Get).Name)
 
 	requestTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), serviceName, common.ValidateDeviceSubscribeTopic)
 	lc.Infof("Subscribing to device validation requests on topic: %s", requestTopic)
