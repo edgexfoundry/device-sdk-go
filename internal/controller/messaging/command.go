@@ -27,14 +27,16 @@ import (
 
 func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	configuration := container.ConfigurationFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	deviceService := container.DeviceServiceFrom(dic.Get)
-	escapedDeviceServiceName := common.URLEncode(deviceService.Name)
 
-	requestSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.CommandRequestSubscribeTopic, escapedDeviceServiceName, "#")
+	requestSubscribeTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+		SetPath(messageBusInfo.GetBaseTopicPrefix()).SetPath(common.CommandRequestSubscribeTopic).SetNameFieldPath(deviceService.Name).SetPath("#").BuildPath()
 	lc.Infof("Subscribing to command requests on topic: %s", requestSubscribeTopic)
 
-	responsePublishTopicPrefix := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.ResponseTopic, escapedDeviceServiceName)
+	responsePublishTopicPrefix := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+		SetPath(messageBusInfo.GetBaseTopicPrefix()).SetPath(common.ResponseTopic).SetNameFieldPath(deviceService.Name).BuildPath()
 	lc.Infof("Responses to command requests will be published on topic: %s/<requestId>", responsePublishTopicPrefix)
 
 	messages := make(chan types.MessageEnvelope, 1)
