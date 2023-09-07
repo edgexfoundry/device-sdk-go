@@ -22,9 +22,10 @@ const (
 )
 
 func GetFileType(fullPath string) FileType {
-	if strings.HasSuffix(fullPath, yamlExt) || strings.HasSuffix(fullPath, ymlExt) {
+	res := strings.Split(fullPath, "?")
+	if strings.HasSuffix(res[0], yamlExt) || strings.HasSuffix(res[0], ymlExt) {
 		return YAML
-	} else if strings.HasSuffix(fullPath, ".json") {
+	} else if strings.HasSuffix(res[0], ".json") {
 		return JSON
 	} else {
 		return OTHER
@@ -46,5 +47,6 @@ func GetFullAndRedactedURI(baseURI *url.URL, file, description string, lc logger
 	}
 	fullURI.User = baseURI.User
 	fullURI.Path = newPath
+	lc.Debugf("%s URI for %s: %s", description, file, fullURI.String())
 	return fullURI.String(), fullURI.Redacted()
 }

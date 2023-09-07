@@ -137,7 +137,6 @@ func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.Dev
 func processProfiles(fullPath, displayPath string, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient, dpc interfaces.DeviceProfileClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
 	var profile dtos.DeviceProfile
 	var addProfilesReq []requests.DeviceProfileRequest
-
 	fileType := GetFileType(fullPath)
 
 	// if the file type is not yaml or json, it cannot be parsed - just return to not break the loop for other devices
