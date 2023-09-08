@@ -23,6 +23,12 @@ func Test_GetFileType(t *testing.T) {
 		{"valid get Yaml file type", path.Join("..", "..", "example", "cmd", "device-simple", "res", "devices", "simple-device.yml"), YAML},
 		{"valid get Json file type", path.Join("..", "..", "example", "cmd", "device-simple", "res", "devices", "simple-device.json"), JSON},
 		{"valid get other file type", path.Join("..", "..", "example", "cmd", "device-simple", "res", "devices", "simple-device.bogus"), OTHER},
+		{"valid EdgeX Username/Password URI get Yaml file type", "http://edgexuser:edgexpasswd@httpd-auth:80/http_files/simple-device.yaml", YAML},
+		{"valid EdgeX Username/Password URI get Json file type", "http://edgexuser:edgexpasswd@httpd-auth:80/http_files/simple-device.json", JSON},
+		{"valid EdgeX Username/Password URI get other file type", "http://edgexuser:edgexpasswd@httpd-auth:80/http_files/simple-device.bogus", OTHER},
+		{"valid EdgeX Secret URI get Yaml file type", "http://httpd-auth:80/http_files/simple-device.yaml?edgexSecretName=httpserver", YAML},
+		{"valid EdgeX Secret URI get Json file type", "http://httpd-auth:80/http_files/simple-device.json?edgexSecretName=httpserver", JSON},
+		{"valid EdgeX Secret URI get other file type", "http://httpd-auth:80/http_files/simple-device.bogus?edgexSecretName=httpserver", OTHER},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
