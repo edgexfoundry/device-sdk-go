@@ -327,19 +327,19 @@ func TestAddEventTags(t *testing.T) {
 				expectedCommandTags[TestDuplicateTagName] = TestCommandTagValue
 			}
 			if !test.ExpectToHaveDeviceTags && !test.ExpectToHaveCommandTags {
-				require.Empty(t, test.Event.Tags)
+				require.Empty(t, event.Tags)
 			} else {
-				require.NotEmpty(t, test.Event.Tags)
+				require.NotEmpty(t, event.Tags)
 			}
 			if test.ExpectToHaveDeviceTags {
-				assert.Subset(t, test.Event.Tags, expectedDeviceTags)
+				assert.Subset(t, event.Tags, expectedDeviceTags)
 			} else {
-				assert.NotSubset(t, test.Event.Tags, expectedDeviceTags)
+				assert.NotSubset(t, event.Tags, expectedDeviceTags)
 			}
 			if test.ExpectToHaveCommandTags {
-				assert.Subset(t, test.Event.Tags, expectedCommandTags)
+				assert.Subset(t, event.Tags, expectedCommandTags)
 			} else {
-				assert.NotSubset(t, test.Event.Tags, expectedCommandTags)
+				assert.NotSubset(t, event.Tags, expectedCommandTags)
 			}
 		})
 	}
