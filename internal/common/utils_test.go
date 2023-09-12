@@ -276,17 +276,17 @@ func TestAddReadingTags(t *testing.T) {
 
 	tests := []struct {
 		Name         string
-		Reading      dtos.BaseReading
+		Reading      *dtos.BaseReading
 		ExpectedTags dtos.Tags
 	}{
-		{"Happy Path", readingWithTags, dtos.Tags{TestResourceTagName: TestResourceTagValue}},
-		{"No Tags", readingWithoutTags, nil},
-		{"Resource Not Found", readingResourceNotFound, nil},
+		{"Happy Path", &readingWithTags, dtos.Tags{TestResourceTagName: TestResourceTagValue}},
+		{"No Tags", &readingWithoutTags, nil},
+		{"Resource Not Found", &readingResourceNotFound, nil},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			AddReadingTags(&test.Reading)
+			AddReadingTags(test.Reading)
 			if test.ExpectedTags != nil {
 				require.NotEmpty(t, test.Reading.Tags)
 				assert.Equal(t, test.ExpectedTags, test.Reading.Tags)
@@ -319,7 +319,8 @@ func TestAddEventTags(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			AddEventTags(&test.Event)
+			event := test.Event
+			AddEventTags(&event)
 			if test.ExpectToHaveDeviceTags && test.ExpectToHaveCommandTags {
 				expectedCommandTags[TestDuplicateTagName] = TestDeviceTagValue
 			} else {
