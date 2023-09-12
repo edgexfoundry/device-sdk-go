@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-ARG BASE=golang:1.20-alpine3.17
+ARG BASE=golang:1.21-alpine3.18
 FROM ${BASE} AS builder
 
 ARG MAKE=make build
@@ -33,7 +33,7 @@ COPY . .
 RUN ${MAKE}
 
 # Next image - Copy built Go binary into new workspace
-FROM alpine:3.17
+FROM alpine:3.18
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2022: Intel'
 
