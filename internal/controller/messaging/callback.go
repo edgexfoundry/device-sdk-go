@@ -25,10 +25,11 @@ import (
 
 func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	configuration := container.ConfigurationFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
 	deviceService := container.DeviceServiceFrom(dic.Get)
-	metadataSystemEventTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(),
-		common.MetadataSystemEventSubscribeTopic, common.URLEncode(deviceService.Name), "#")
+	metadataSystemEventTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+		SetPath(messageBusInfo.GetBaseTopicPrefix()).SetPath(common.MetadataSystemEventSubscribeTopic).SetNameFieldPath(deviceService.Name).SetPath("#").BuildPath()
 
 	lc.Infof("Subscribing to System Events on topic: %s", metadataSystemEventTopic)
 
@@ -48,8 +49,8 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 	if serviceBaseName != deviceService.Name {
 		// Must replace the first wildcard with the type for Provision Watchers
 		baseSubscribeTopic := strings.Replace(common.MetadataSystemEventSubscribeTopic, "+", common.ProvisionWatcherSystemEventType, 1)
-		provisionWatcherSystemEventSubscribeTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(),
-			baseSubscribeTopic, common.URLEncode(serviceBaseName), "#")
+		provisionWatcherSystemEventSubscribeTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+			SetPath(messageBusInfo.GetBaseTopicPrefix()).SetPath(baseSubscribeTopic).SetNameFieldPath(serviceBaseName).SetPath("#").BuildPath()
 
 		topics = append(topics, types.TopicChannel{
 			Topic:    provisionWatcherSystemEventSubscribeTopic,

@@ -22,13 +22,16 @@ import (
 
 func SubscribeDeviceValidation(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	configuration := container.ConfigurationFrom(dic.Get)
 	messageBusInfo := container.ConfigurationFrom(dic.Get).MessageBus
-	serviceName := common.URLEncode(container.DeviceServiceFrom(dic.Get).Name)
+	serviceName := container.DeviceServiceFrom(dic.Get).Name
 
-	requestTopic := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), serviceName, common.ValidateDeviceSubscribeTopic)
+	requestTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+		SetPath(messageBusInfo.GetBaseTopicPrefix()).SetNameFieldPath(serviceName).SetPath(common.ValidateDeviceSubscribeTopic).BuildPath()
 	lc.Infof("Subscribing to device validation requests on topic: %s", requestTopic)
 
-	responseTopicPrefix := common.BuildTopic(messageBusInfo.GetBaseTopicPrefix(), common.ResponseTopic, serviceName)
+	responseTopicPrefix := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+		SetPath(messageBusInfo.GetBaseTopicPrefix()).SetPath(common.ResponseTopic).SetNameFieldPath(serviceName).BuildPath()
 	lc.Infof("Responses to device validation requests will be published on topic: %s/<requestId>", responseTopicPrefix)
 
 	messages := make(chan types.MessageEnvelope, 1)
