@@ -1,3 +1,4 @@
-[
-  "Simple-Driver.yaml","Simple-Driver2.yml"
-]
+{
+  "Simple-Device": "Simple-Driver.yaml",
+  "Simple-Device2": "Simple-Driver2.yml"
+}

@@ -102,14 +102,13 @@ func loadProfilesFromFile(path string, dpc interfaces.DeviceProfileClient, lc lo
 }
 
 func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.DeviceProfileClient, secretProvider bootstrapInterfaces.SecretProvider, lc logger.LoggingClient) ([]requests.DeviceProfileRequest, errors.EdgeX) {
-	var edgexErr errors.EdgeX
 	// the input URI contains the index file containing the Profile list to be loaded
 	bytes, err := file.Load(inputURI, secretProvider, lc)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Device Profile list from URI %s", parsedURI.Redacted()), err)
 	}
 
-	var files []string
+	var files map[string]string
 	err = json.Unmarshal(bytes, &files)
 	if err != nil {
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, "could not unmarshal Profile list contents", err)
@@ -121,14 +120,21 @@ func loadProfilesFromURI(inputURI string, parsedURI *url.URL, dpc interfaces.Dev
 
 	lc.Infof("Loading pre-defined Device Profiles from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addProfilesReq, processedProfilesReq []requests.DeviceProfileRequest
-	for _, file := range files {
-		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Device Profile", lc)
-		processedProfilesReq, edgexErr = processProfiles(fullPath, redactedPath, secretProvider, lc, dpc)
-		if edgexErr != nil {
-			return nil, edgexErr
-		}
-		if len(processedProfilesReq) > 0 {
-			addProfilesReq = append(addProfilesReq, processedProfilesReq...)
+	for name, file := range files {
+		done, edgexErr := checkDeviceProfile(name, dpc, lc)
+		if done {
+			if edgexErr != nil {
+				return addProfilesReq, edgexErr
+			}
+		} else {
+			fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Device Profile", lc)
+			processedProfilesReq, edgexErr = processProfiles(fullPath, redactedPath, secretProvider, lc, dpc)
+			if edgexErr != nil {
+				return nil, edgexErr
+			}
+			if len(processedProfilesReq) > 0 {
+				addProfilesReq = append(addProfilesReq, processedProfilesReq...)
+			}
 		}
 	}
 	return addProfilesReq, nil
@@ -165,15 +171,10 @@ func processProfiles(fullPath, displayPath string, secretProvider bootstrapInter
 		}
 	}
 
-	res, err := dpc.DeviceProfileByName(context.Background(), profile.Name)
-	if err == nil {
-		lc.Infof("Device Profile %s exists, using the existing one", profile.Name)
-		_, exist := cache.Profiles().ForName(profile.Name)
-		if !exist {
-			err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
-			if err != nil {
-				return addProfilesReq, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
-			}
+	done, edgexErr := checkDeviceProfile(profile.Name, dpc, lc)
+	if done {
+		if edgexErr != nil {
+			return addProfilesReq, edgexErr
 		}
 	} else {
 		lc.Infof("Device Profile %s not found in Metadata, adding it ...", profile.Name)
@@ -181,4 +182,20 @@ func processProfiles(fullPath, displayPath string, secretProvider bootstrapInter
 		addProfilesReq = append(addProfilesReq, req)
 	}
 	return addProfilesReq, nil
+}
+
+func checkDeviceProfile(name string, dpc interfaces.DeviceProfileClient, lc logger.LoggingClient) (bool, errors.EdgeX) {
+	res, err := dpc.DeviceProfileByName(context.Background(), name)
+	if err == nil {
+		lc.Infof("Device Profile %s exists, using the existing one", name)
+		_, exist := cache.Profiles().ForName(name)
+		if !exist {
+			err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
+			if err != nil {
+				return true, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
+			}
+		}
+		return true, nil
+	}
+	return false, nil
 }
