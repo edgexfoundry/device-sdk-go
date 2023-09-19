@@ -54,12 +54,12 @@ func Test_loadProvisionWatchersFromURI(t *testing.T) {
 		expectedEdgexErrMsg          string
 	}{
 		{"valid load from uri",
-			"https://raw.githubusercontent.com/ejlee3/device-sdk-go/provision-index/internal/provision/uri-test-files/provisionwatchers/index.json",
+			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/provisionwatchers/index.json",
 			nil,
 			nil,
 			2, ""},
 		{"valid load from uri with existing provision watcher",
-			"https://raw.githubusercontent.com/ejlee3/device-sdk-go/provision-index/internal/provision/uri-test-files/provisionwatchers/index.json",
+			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/provisionwatchers/index.json",
 			&dtos.ProvisionWatcher{Name: "Simple-Provision-Watcher"},
 			nil,
 			1, ""},
