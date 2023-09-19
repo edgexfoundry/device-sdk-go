@@ -95,7 +95,7 @@ func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretPro
 		return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to load Provision Watchers list from URI %s", parsedURI.Redacted()), err)
 	}
 
-	var files []string
+	var files map[string]string
 
 	err = json.Unmarshal(bytes, &files)
 	if err != nil {
@@ -109,11 +109,15 @@ func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretPro
 
 	lc.Infof("Loading pre-defined Provision Watchers from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
-	for _, file := range files {
-		fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Provison Watcher", lc)
-		processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, redactedPath, secretProvider, lc)
-		if len(processedProvisionWatchersReq) > 0 {
-			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
+	for name, file := range files {
+		if _, ok := cache.ProvisionWatchers().ForName(name); ok {
+			lc.Infof("ProvisionWatcher %s exists, using the existing one", name)
+		} else {
+			fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Provison Watcher", lc)
+			processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, redactedPath, secretProvider, lc)
+			if len(processedProvisionWatchersReq) > 0 {
+				addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
+			}
 		}
 	}
 	return addProvisionWatchersReq, nil

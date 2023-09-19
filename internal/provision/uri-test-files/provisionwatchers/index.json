@@ -1,3 +1,4 @@
-[
-  "Simple-Provision-Watcher.yml","Simple-Provision-Watcher2.yaml"
-]
+{
+  "Simple-Provision-Watcher": "Simple-Provision-Watcher.yml",
+  "Simple-Provision-Watcher2": "Simple-Provision-Watcher2.yaml"
+}

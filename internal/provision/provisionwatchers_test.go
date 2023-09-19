@@ -9,6 +9,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,16 +48,24 @@ func Test_loadProvisionWatchersFromURI(t *testing.T) {
 	tests := []struct {
 		name                         string
 		path                         string
+		cachedWatcher                *dtos.ProvisionWatcher
 		secretProvider               interfaces.SecretProvider
 		expectedNumProvisionWatchers int
 		expectedEdgexErrMsg          string
 	}{
 		{"valid load from uri",
-			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/provisionwatchers/index.json",
+			"https://raw.githubusercontent.com/ejlee3/device-sdk-go/provision-index/internal/provision/uri-test-files/provisionwatchers/index.json",
+			nil,
 			nil,
 			2, ""},
+		{"valid load from uri with existing provision watcher",
+			"https://raw.githubusercontent.com/ejlee3/device-sdk-go/provision-index/internal/provision/uri-test-files/provisionwatchers/index.json",
+			&dtos.ProvisionWatcher{Name: "Simple-Provision-Watcher"},
+			nil,
+			1, ""},
 		{"invalid load from uri",
 			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/provisionwatchers/bogus.json",
+			nil,
 			nil,
 			0, "failed to load Provision Watchers list from URI"},
 	}
@@ -67,6 +76,11 @@ func Test_loadProvisionWatchersFromURI(t *testing.T) {
 			dic, _ := NewMockDIC()
 			edgexErr := cache.InitCache(TestDeviceService, TestDeviceService, dic)
 			require.NoError(t, edgexErr)
+			if tt.cachedWatcher != nil {
+				req := requests.NewAddProvisionWatcherRequest(*tt.cachedWatcher)
+				edgexErr := cache.ProvisionWatchers().Add(dtos.ToProvisionWatcherModel(req.ProvisionWatcher))
+				require.NoError(t, edgexErr)
+			}
 			parsedURI, err := url.Parse(tt.path)
 			require.NoError(t, err)
 			addProvisionWatchersReq, edgexErr = loadProvisionWatchersFromURI(tt.path, parsedURI, tt.secretProvider, lc)
