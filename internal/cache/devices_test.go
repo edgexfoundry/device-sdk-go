@@ -8,8 +8,12 @@ package cache
 import (
 	"testing"
 
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
@@ -41,6 +45,16 @@ func mockDic() *di.Container {
 		},
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return logger.NewMockClient()
+		},
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config.ConfigurationStruct{
+				Writable: config.WritableInfo{
+					LogLevel: "INFO",
+				},
+				Service: bootstrapConfig.ServiceInfo{
+					EnableNameFieldEscape: true,
+				},
+			}
 		},
 	})
 }

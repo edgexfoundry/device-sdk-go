@@ -53,6 +53,9 @@ func (s *deviceService) sendAsyncValues(acv *sdkModels.AsyncValues, working chan
 		<-working
 	}()
 
+	// Update the LastConnected metric in deviceCache
+	cache.Devices().SetLastConnectedByName(acv.DeviceName)
+
 	if len(acv.CommandValues) == 0 {
 		s.lc.Error("Skip sending AsyncValues because the CommandValues is empty.")
 		return
