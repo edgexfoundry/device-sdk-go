@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,10 +8,23 @@ package cache
 
 import (
 	"fmt"
+	"strings"
 	"sync"
+	"time"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+
+	gometrics "github.com/rcrowley/go-metrics"
+)
+
+const (
+	deviceNameText      = "{DeviceName}"
+	lastConnectedPrefix = "LastConnected-" + deviceNameText
 )
 
 var (
@@ -25,14 +38,17 @@ type DeviceCache interface {
 	Update(device models.Device) errors.EdgeX
 	RemoveByName(name string) errors.EdgeX
 	UpdateAdminState(name string, state models.AdminState) errors.EdgeX
+	SetLastConnectedByName(name string)
+	GetLastConnectedByName(name string) int64
 }
 
 type deviceCache struct {
-	deviceMap map[string]*models.Device // key is Device name
-	mutex     sync.RWMutex
+	deviceMap     map[string]*models.Device // key is Device name
+	mutex         sync.RWMutex
+	lastConnected map[string]gometrics.Gauge
 }
 
-func newDeviceCache(devices []models.Device) DeviceCache {
+func newDeviceCache(devices []models.Device, dic *di.Container) DeviceCache {
 	defaultSize := len(devices)
 	dMap := make(map[string]*models.Device, defaultSize)
 	for i, d := range devices {
@@ -40,7 +56,30 @@ func newDeviceCache(devices []models.Device) DeviceCache {
 	}
 
 	dc = &deviceCache{deviceMap: dMap}
+	metricsManager := bootstrapContainer.MetricsManagerFrom(dic.Get)
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	lastConnectedMetrics := registerMetric(metricsManager, devices, lc)
+	dc.lastConnected = lastConnectedMetrics
+
 	return dc
+}
+
+func registerMetric(metricManager bootstrapInterfaces.MetricsManager, devices []models.Device, lc logger.LoggingClient) map[string]gometrics.Gauge {
+	lastConnected := make(map[string]gometrics.Gauge)
+	metricName := lastConnectedPrefix + ""
+	for _, d := range devices {
+		deviceMetric := gometrics.NewGauge()
+		registeredName := strings.Replace(metricName, deviceNameText, d.Name, 1)
+
+		err := metricManager.Register(registeredName, deviceMetric, nil)
+		if err != nil {
+			lc.Warnf("Unable to register %s metric. Metric will not be reported : %s", registeredName, err.Error())
+		} else {
+			lc.Infof("%s metric has been registered and will be reported (if enabled)", registeredName)
+			lastConnected[d.Name] = deviceMetric
+		}
+	}
+	return lastConnected
 }
 
 // ForName returns a Device with the given device name.
@@ -151,4 +190,17 @@ func CheckProfileNotUsed(profileName string) bool {
 
 func Devices() DeviceCache {
 	return dc
+}
+
+func (d *deviceCache) SetLastConnectedByName(name string) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	g := d.lastConnected[name]
+	g.Update(time.Now().UnixNano())
+}
+
+func (d *deviceCache) GetLastConnectedByName(name string) int64 {
+	g := d.lastConnected[name]
+	return g.Value()
 }

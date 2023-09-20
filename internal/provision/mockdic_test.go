@@ -1,6 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // # Copyright (C) 2023 Intel Corporation
+// # Copyright (C) 2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 package provision
@@ -10,12 +11,14 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	bootstrapMocks "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -96,6 +99,10 @@ func NewMockDIC() (*di.Container, *clientMocks.DeviceProfileClient) {
 	pwcMock := &clientMocks.ProvisionWatcherClient{}
 	pwcMock.On("ProvisionWatchersByServiceName", context.Background(), TestDeviceService, 0, -1).Return(responses.MultiProvisionWatchersResponse{}, nil)
 
+	mockMetricsManager := &bootstrapMocks.MetricsManager{}
+	mockMetricsManager.On("Register", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockMetricsManager.On("Unregister", mock.Anything)
+
 	return di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return configuration
@@ -114,6 +121,9 @@ func NewMockDIC() (*di.Container, *clientMocks.DeviceProfileClient) {
 		},
 		bootstrapContainer.ProvisionWatcherClientName: func(get di.Get) interface{} {
 			return pwcMock
+		},
+		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
+			return mockMetricsManager
 		},
 	}), dpcMock
 }

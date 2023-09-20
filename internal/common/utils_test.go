@@ -122,6 +122,10 @@ func NewMockDIC() *di.Container {
 	pwcMock := &clientMocks.ProvisionWatcherClient{}
 	pwcMock.On("ProvisionWatchersByServiceName", context.Background(), TestDeviceService, 0, -1).Return(responses.MultiProvisionWatchersResponse{}, nil)
 
+	mockMetricsManager := &mocks.MetricsManager{}
+	mockMetricsManager.On("Register", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockMetricsManager.On("Unregister", mock.Anything)
+
 	return di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return configuration
@@ -140,6 +144,9 @@ func NewMockDIC() *di.Container {
 		},
 		bootstrapContainer.ProvisionWatcherClientName: func(get di.Get) interface{} {
 			return pwcMock
+		},
+		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
+			return mockMetricsManager
 		},
 	})
 }

@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	bootstrapMocks "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -170,6 +171,11 @@ func mockDic() *di.Container {
 	mockDriver.On("HandleReadCommands", driverErrorDevice, mock.Anything, mock.Anything).Return(nil, errors.New("ProtocolDriver returned error"))
 	mockDriver.On("HandleWriteCommands", testDevice, mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockDriver.On("HandleWriteCommands", driverErrorDevice, mock.Anything, mock.Anything, mock.Anything).Return(errors.New("ProtocolDriver returned error"))
+
+	mockMetricsManager := &bootstrapMocks.MetricsManager{}
+	mockMetricsManager.On("Register", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockMetricsManager.On("Unregister", mock.Anything)
+
 	dic := di.NewContainer(di.ServiceConstructorMap{
 		container.ConfigurationName: func(get di.Get) any {
 			return &config.ConfigurationStruct{
@@ -198,6 +204,9 @@ func mockDic() *di.Container {
 				Name:       testService,
 				AdminState: models.Unlocked,
 			}
+		},
+		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
+			return mockMetricsManager
 		},
 	})
 

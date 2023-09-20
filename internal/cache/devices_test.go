@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2021 IOTech Ltd
+// Copyright (C) 2021-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,8 +8,14 @@ package cache
 import (
 	"testing"
 
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,8 +31,23 @@ var newDevice = models.Device{
 	OperatingState: models.Unlocked,
 }
 
+func mockDic() *di.Container {
+	mockMetricsManager := &mocks.MetricsManager{}
+	mockMetricsManager.On("Register", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockMetricsManager.On("Unregister", mock.Anything)
+	return di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
+			return mockMetricsManager
+		},
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+	})
+}
+
 func Test_deviceCache_ForName(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name       string
@@ -48,14 +69,16 @@ func Test_deviceCache_ForName(t *testing.T) {
 }
 
 func Test_deviceCache_All(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	res := dc.All()
 	require.Equal(t, len(res), len(dc.deviceMap))
 }
 
 func Test_deviceCache_Add(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name          string
@@ -77,7 +100,8 @@ func Test_deviceCache_Add(t *testing.T) {
 }
 
 func Test_deviceCache_RemoveByName(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name          string
@@ -99,7 +123,8 @@ func Test_deviceCache_RemoveByName(t *testing.T) {
 }
 
 func Test_deviceCache_UpdateAdminState(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name          string
