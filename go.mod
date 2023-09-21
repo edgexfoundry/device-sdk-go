@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.40
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.41
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.15
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.21
 	github.com/google/uuid v1.3.1
@@ -23,7 +23,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.1.0-dev.6 // indirect
 	github.com/edgexfoundry/go-mod-registry/v3 v3.1.0-dev.6 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.6 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.1.0-dev.9 // indirect
 	github.com/fatih/color v1.14.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.5.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
