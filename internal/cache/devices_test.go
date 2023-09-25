@@ -7,6 +7,7 @@ package cache
 
 import (
 	"testing"
+	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
@@ -160,4 +161,27 @@ func Test_deviceCache_UpdateAdminState(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_deviceCache_SetLastConnectedByName(t *testing.T) {
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
+
+	// Make currentTimestamp return currentTimeInstant constant in unit test
+	currentTimeInstant := time.Now().UnixNano()
+	currentTimestamp = func() int64 {
+		return currentTimeInstant
+	}
+
+	dc.SetLastConnectedByName(TestDevice)
+	lastConnectedTime := dc.GetLastConnectedByName(TestDevice)
+	require.Equal(t, currentTimeInstant, lastConnectedTime)
+}
+
+func Test_deviceCache_GetLastConnectedByName(t *testing.T) {
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
+
+	lastConnectedTime := dc.GetLastConnectedByName(TestDevice)
+	require.Equal(t, int64(0), lastConnectedTime)
 }

@@ -217,12 +217,17 @@ func Devices() DeviceCache {
 	return dc
 }
 
+// currentTimestamp returns the current timestamp in nanoseconds
+var currentTimestamp = func() int64 {
+	return time.Now().UnixNano()
+}
+
 func (d *deviceCache) SetLastConnectedByName(name string) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	g := d.lastConnected[name]
-	g.Update(time.Now().UnixNano())
+	g.Update(currentTimestamp())
 }
 
 func (d *deviceCache) GetLastConnectedByName(name string) int64 {
