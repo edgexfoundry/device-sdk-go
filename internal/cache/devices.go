@@ -12,11 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 
@@ -72,13 +69,9 @@ func newDeviceCache(devices []models.Device, dic *di.Container) DeviceCache {
 func registerMetric(deviceName string, metric interface{}, dic *di.Container) {
 	metricsManager := bootstrapContainer.MetricsManagerFrom(dic.Get)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	configuration := container.ConfigurationFrom(dic.Get)
-	if configuration.Service.EnableNameFieldEscape {
-		deviceName = common.URLEncode(deviceName)
-	}
 	registeredName := strings.Replace(lastConnectedPrefix, deviceNameText, deviceName, 1)
 
-	err := metricsManager.Register(registeredName, metric, map[string]string{"device": deviceName})
+	err := metricsManager.Register(registeredName, metric, nil)
 	if err != nil {
 		lc.Warnf("Unable to register %s metric. Metric will not be reported : %s", registeredName, err.Error())
 	} else {
@@ -88,10 +81,6 @@ func registerMetric(deviceName string, metric interface{}, dic *di.Container) {
 
 func unregisterMetric(deviceName string, dic *di.Container) {
 	metricsManager := bootstrapContainer.MetricsManagerFrom(dic.Get)
-	configuration := container.ConfigurationFrom(dic.Get)
-	if configuration.Service.EnableNameFieldEscape {
-		deviceName = common.URLEncode(deviceName)
-	}
 	registeredName := strings.Replace(lastConnectedPrefix, deviceNameText, deviceName, 1)
 
 	metricsManager.Unregister(registeredName)
