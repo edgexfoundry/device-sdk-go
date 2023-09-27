@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -32,7 +32,7 @@ func InitCache(instanceName string, baseServiceName string, dic *di.Container) e
 	for i := range deviceRes.Devices {
 		devices[i] = dtos.ToDeviceModel(deviceRes.Devices[i])
 	}
-	newDeviceCache(devices)
+	newDeviceCache(devices, dic)
 
 	// init profile cache
 	profiles := make([]models.DeviceProfile, len(devices))

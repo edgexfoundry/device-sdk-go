@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	bootstrapMocks "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	clientMocks "github.com/edgexfoundry/go-mod-core-contracts/v3/clients/interfaces/mocks"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
@@ -21,6 +22,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/responses"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
@@ -109,6 +111,10 @@ func NewMockDIC() *di.Container {
 		Device: config.DeviceInfo{MaxCmdOps: 1},
 	}
 
+	mockMetricsManager := &bootstrapMocks.MetricsManager{}
+	mockMetricsManager.On("Register", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockMetricsManager.On("Unregister", mock.Anything)
+
 	return di.NewContainer(di.ServiceConstructorMap{
 		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
 			return logger.NewMockClient()
@@ -127,6 +133,9 @@ func NewMockDIC() *di.Container {
 		},
 		container.ConfigurationName: func(get di.Get) interface{} {
 			return configuration
+		},
+		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
+			return mockMetricsManager
 		},
 	})
 }

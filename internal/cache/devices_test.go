@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2021 IOTech Ltd
+// Copyright (C) 2021-2023 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,9 +7,20 @@ package cache
 
 import (
 	"testing"
+	"time"
 
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/interfaces/mocks"
+	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
+	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -25,8 +36,33 @@ var newDevice = models.Device{
 	OperatingState: models.Unlocked,
 }
 
+func mockDic() *di.Container {
+	mockMetricsManager := &mocks.MetricsManager{}
+	mockMetricsManager.On("Register", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	mockMetricsManager.On("Unregister", mock.Anything)
+	return di.NewContainer(di.ServiceConstructorMap{
+		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
+			return mockMetricsManager
+		},
+		bootstrapContainer.LoggingClientInterfaceName: func(get di.Get) interface{} {
+			return logger.NewMockClient()
+		},
+		container.ConfigurationName: func(get di.Get) interface{} {
+			return &config.ConfigurationStruct{
+				Writable: config.WritableInfo{
+					LogLevel: "INFO",
+				},
+				Service: bootstrapConfig.ServiceInfo{
+					EnableNameFieldEscape: true,
+				},
+			}
+		},
+	})
+}
+
 func Test_deviceCache_ForName(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name       string
@@ -48,14 +84,16 @@ func Test_deviceCache_ForName(t *testing.T) {
 }
 
 func Test_deviceCache_All(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	res := dc.All()
 	require.Equal(t, len(res), len(dc.deviceMap))
 }
 
 func Test_deviceCache_Add(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name          string
@@ -77,7 +115,8 @@ func Test_deviceCache_Add(t *testing.T) {
 }
 
 func Test_deviceCache_RemoveByName(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name          string
@@ -99,7 +138,8 @@ func Test_deviceCache_RemoveByName(t *testing.T) {
 }
 
 func Test_deviceCache_UpdateAdminState(t *testing.T) {
-	newDeviceCache([]models.Device{testDevice})
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
 
 	tests := []struct {
 		name          string
@@ -121,4 +161,27 @@ func Test_deviceCache_UpdateAdminState(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_deviceCache_SetLastConnectedByName(t *testing.T) {
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
+
+	// Make currentTimestamp return currentTimeInstant constant in unit test
+	currentTimeInstant := time.Now().UnixNano()
+	currentTimestamp = func() int64 {
+		return currentTimeInstant
+	}
+
+	dc.SetLastConnectedByName(TestDevice)
+	lastConnectedTime := dc.GetLastConnectedByName(TestDevice)
+	require.Equal(t, currentTimeInstant, lastConnectedTime)
+}
+
+func Test_deviceCache_GetLastConnectedByName(t *testing.T) {
+	dic := mockDic()
+	newDeviceCache([]models.Device{testDevice}, dic)
+
+	lastConnectedTime := dc.GetLastConnectedByName(TestDevice)
+	require.Equal(t, int64(0), lastConnectedTime)
 }
