@@ -71,7 +71,7 @@ func registerMetric(deviceName string, metric interface{}, dic *di.Container) {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	registeredName := strings.Replace(lastConnectedPrefix, deviceNameText, deviceName, 1)
 
-	err := metricsManager.Register(registeredName, metric, nil)
+	err := metricsManager.Register(registeredName, metric, map[string]string{"device": deviceName})
 	if err != nil {
 		lc.Warnf("Unable to register %s metric. Metric will not be reported : %s", registeredName, err.Error())
 	} else {
