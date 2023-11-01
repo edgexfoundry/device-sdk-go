@@ -12,6 +12,41 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+## [v3.1.0] Napa - 2023-11-15 (Only compatible with the 3.x releases)
+
+### ✨  Features
+
+- *(security)* Add new AddCustomRoute method with authentication parameter ([#1475](https://github.com/edgexfoundry/device-sdk-go/issues/1475)) ([5a7d052…](https://github.com/edgexfoundry/device-sdk-go/commit/5a7d05295c20c4306666c126d05bdc304538796c))
+- Add device last connected metrics ([#1515](https://github.com/edgexfoundry/device-sdk-go/issues/1515)) ([1f88585…](https://github.com/edgexfoundry/device-sdk-go/commit/1f885853b7afeee748945214d1e34d19c3162505))
+- Update index files to include names for preloading check ([10694e6…](https://github.com/edgexfoundry/device-sdk-go/commit/10694e6a91a67f5fde8debfd675953a530180938))
+- Allow NameFieldPath configurable ([f16fc3d…](https://github.com/edgexfoundry/device-sdk-go/commit/f16fc3d171215af7a3e26199bf520421d1739968))
+- Accept Url escape in API path ([fdbdbc1…](https://github.com/edgexfoundry/device-sdk-go/commit/fdbdbc112457214c0e1c2a8eec7425427dc3eb50))
+- Replace gorilla/mux router with echo ([72d350f…](https://github.com/edgexfoundry/device-sdk-go/commit/72d350f2483b97042997e4d5de4bcf3345622430))
+- Add better error handling when running in hybrid mode but common config is missing ([#1480](https://github.com/edgexfoundry/device-sdk-go/issues/1480)) ([7433feb…](https://github.com/edgexfoundry/device-sdk-go/commit/7433febb356a2a6123d42b5c48f02468c3a1d213))
+- Implement loading from URI for Profile, Device, & Provision Watcher files ([#1471](https://github.com/edgexfoundry/device-sdk-go/issues/1471)) ([0776c05…](https://github.com/edgexfoundry/device-sdk-go/commit/0776c05133aecd05e9cca04d73874dfbd24934b0))
+- Move all the common APIs into go-mod-bootstrap ([9983415…](https://github.com/edgexfoundry/device-sdk-go/commit/9983415449d789263673552186519e6709848005))
+- Adjust GetFileType() function for new secret URI format ([#1507](https://github.com/edgexfoundry/device-sdk-go/issues/1507)) ([88f0350…](https://github.com/edgexfoundry/device-sdk-go/commit/88f03503c07c02c451459ab8c2d5aba4061d83b0))
+- Use WrapHandler func from go-mod-bootstrap ([ca6e439…](https://github.com/edgexfoundry/device-sdk-go/commit/ca6e439590fd3e0d96364bc20f1a7957a2569ef1))
+- Update handler funcs to use Echo signatures ([93fdda3…](https://github.com/edgexfoundry/device-sdk-go/commit/93fdda3beb2e14b4e733fb76d164ead49978cb57))
+
+### 📖 Documentation
+
+- Replace Slack chat with GitHub discussion ([3e8c91c…](https://github.com/edgexfoundry/device-sdk-go/commit/3e8c91cf201308cb239f41d8f9ace2bd21fe3f70))
+
+
+### 👷 Build
+
+- Upgrade to go-1.21, Linter1.54.2 and Alpine 3.18 ([#1511](https://github.com/edgexfoundry/device-sdk-go/issues/1511)) ([10d83f9…](https://github.com/edgexfoundry/device-sdk-go/commit/10d83f9598abba3559abd072fcd7553d77fa119a))
+
+### 🤖 Continuous Integration
+
+- Add automated release workflow on tag creation ([526596b…](https://github.com/edgexfoundry/device-sdk-go/commit/526596b2a1c7dd5155db82aafa89415c2e504d1d))
+
+
+### 🧪 Testing
+
+- Add URI test files ([#1481](https://github.com/edgexfoundry/device-sdk-go/issues/1481)) ([d74039b…](https://github.com/edgexfoundry/device-sdk-go/commit/d74039b1e75348ec690936aee1c1bcbaac678fee))
+
 ## [v3.0.0] Minnesota - 2023-05-31 (Only compatible with the 3.x releases)
 
 ### Features ✨
