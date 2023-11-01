@@ -4,9 +4,9 @@ go 1.21
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.52
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.53
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.17
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.30
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.31
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.2
@@ -56,7 +56,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/nats-io/nats.go v1.31.0 // indirect
-	github.com/nats-io/nkeys v0.4.5 // indirect
+	github.com/nats-io/nkeys v0.4.6 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.1.6 // indirect
