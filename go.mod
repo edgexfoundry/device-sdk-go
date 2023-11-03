@@ -4,9 +4,9 @@ go 1.21
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.53
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.1.0-dev.55
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.1.0-dev.17
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.31
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0-dev.32
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.2
