@@ -9,7 +9,7 @@ require (
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.1.0
 	github.com/google/uuid v1.3.1
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/labstack/echo/v4 v4.11.2
+	github.com/labstack/echo/v4 v4.11.3
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v3 v3.0.1
