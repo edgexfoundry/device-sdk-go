@@ -53,7 +53,7 @@ func (c *RestController) SetCustomConfigInfo(customConfig interfaces.UpdatableCo
 }
 
 func (c *RestController) InitRestRoutes() {
-	c.lc.Info("Registering v2 routes...")
+	c.lc.Info("Registering routes...")
 
 	secretProvider := container.SecretProviderExtFrom(c.dic.Get)
 	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, c.lc)
