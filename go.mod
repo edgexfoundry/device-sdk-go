@@ -7,7 +7,7 @@ require (
 	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.10
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.4
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.5
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
