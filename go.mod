@@ -4,9 +4,9 @@ go 1.21
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.17
-	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.7
-	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.10
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.18
+	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.8
+	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.12
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.11.4
@@ -25,7 +25,7 @@ require (
 	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.2 // indirect
 	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.5 // indirect
 	github.com/fatih/color v1.14.1 // indirect
-	github.com/fxamacker/cbor/v2 v2.5.0 // indirect
+	github.com/fxamacker/cbor/v2 v2.6.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
@@ -55,7 +55,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/nats-io/nats.go v1.33.0 // indirect
+	github.com/nats-io/nats.go v1.33.1 // indirect
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
