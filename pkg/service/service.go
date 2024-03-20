@@ -120,7 +120,7 @@ func (s *deviceService) Run() error {
 	})
 
 	router := echo.New()
-	httpServer := handlers.NewHttpServer(router, true)
+	httpServer := handlers.NewHttpServer(router, true, s.serviceKey)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	wg, deferred, successful := bootstrap.RunAndReturnWaitGroup(
