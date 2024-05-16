@@ -321,7 +321,7 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 
 	// Updated resource value will be published to MessageBus as long as it's not write-only
 	if dr.Properties.ReadWrite != common.ReadWrite_W {
-		return transformer.CommandValuesToEventDTO([]*sdkModels.CommandValue{cv}, device.Name, resourceName, false, dic)
+		return transformer.CommandValuesToEventDTO([]*sdkModels.CommandValue{cv}, device.Name, resourceName, configuration.Device.DataTransform, dic)
 	}
 
 	return nil, nil
@@ -423,7 +423,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 
 	// Updated resource(s) value will be published to MessageBus as long as they're not write-only
 	if dc.ReadWrite != common.ReadWrite_W {
-		return transformer.CommandValuesToEventDTO(cvs, device.Name, commandName, false, dic)
+		return transformer.CommandValuesToEventDTO(cvs, device.Name, commandName, configuration.Device.DataTransform, dic)
 	}
 
 	return nil, nil
