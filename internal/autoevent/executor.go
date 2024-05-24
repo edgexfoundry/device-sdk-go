@@ -69,13 +69,15 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				// When the concurrent auto event amount becomes large, core-data might be hard to handle so many HTTP requests at the same time.
 				// The device service will get some network errors like EOF or Connection reset by peer.
 				// By adding a buffer here, the user can use the Service.AsyncBufferSize configuration to control the goroutine for sending events.
-				e.pool.Submit(func() {
+				if err := e.pool.Submit(func() {
 					buffer <- true
 					correlationId := uuid.NewString()
 					sdkCommon.SendEvent(evt, correlationId, dic)
 					lc.Tracef("AutoEvent - Sent new Event/Reading for '%s' source with Correlation Id '%s'", evt.SourceName, correlationId)
 					<-buffer
-				})
+				}); err != nil {
+					lc.Errorf("AutoEvent - error occurs when send new event/reading for %s source: %v", e.sourceName, err)
+				}
 			} else {
 				lc.Debugf("AutoEvent - no event generated when reading resource %s", e.sourceName)
 			}

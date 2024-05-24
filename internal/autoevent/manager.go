@@ -87,7 +87,9 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEv
 			continue
 		}
 		executors = append(executors, executor)
-		m.pool.Submit(func() { executor.Run(m.ctx, m.wg, m.autoeventBuffer, dic) })
+		if err := m.pool.Submit(func() { executor.Run(m.ctx, m.wg, m.autoeventBuffer, dic) }); err != nil {
+			lc.Errorf("failed to submit executor task of AutoEvent %s for Device %s: %v", autoEvent.SourceName, deviceName, err)
+		}
 	}
 	return executors
 }
