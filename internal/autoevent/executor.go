@@ -20,7 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
-	"github.com/panjf2000/ants"
+	"github.com/panjf2000/ants/v2"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"

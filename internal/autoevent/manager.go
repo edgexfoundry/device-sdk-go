@@ -14,7 +14,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
-	"github.com/panjf2000/ants"
+	"github.com/panjf2000/ants/v2"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"

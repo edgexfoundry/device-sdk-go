@@ -26,7 +26,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
-	"github.com/panjf2000/ants"
+	"github.com/panjf2000/ants/v2"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autoevent"
@@ -122,10 +122,12 @@ func (s *deviceService) Run() error {
 		},
 	})
 
-	// When the number of runtime.GOMAXPROCS is less than 20, the pool concurrency is configured to 20 to increase performance
-	poolSize := runtime.GOMAXPROCS(0)
-	if poolSize < 20 {
-		poolSize = 20
+	// When the number of config.Device.AsyncBufferSize is less than runtime.GOMAXPROCS,
+	//  the pool concurrency is configured to runtime.GOMAXPROCS to increase performance
+	config := container.ConfigurationFrom(s.dic.Get)
+	poolSize := config.Device.AsyncBufferSize
+	if poolSize < runtime.GOMAXPROCS(0) {
+		poolSize = runtime.GOMAXPROCS(0)
 	}
 	pool, err := ants.NewPool(poolSize, ants.WithNonblocking(true))
 	if err != nil {
