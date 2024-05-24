@@ -20,6 +20,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	"github.com/google/uuid"
+	"github.com/panjf2000/ants"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
@@ -33,6 +34,7 @@ type Executor struct {
 	duration     time.Duration
 	stop         bool
 	mutex        *sync.Mutex
+	pool         *ants.Pool
 }
 
 // Run triggers this Executor executes the handler for the event source periodically
@@ -67,13 +69,13 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				// When the concurrent auto event amount becomes large, core-data might be hard to handle so many HTTP requests at the same time.
 				// The device service will get some network errors like EOF or Connection reset by peer.
 				// By adding a buffer here, the user can use the Service.AsyncBufferSize configuration to control the goroutine for sending events.
-				go func() {
+				e.pool.Submit(func() {
 					buffer <- true
 					correlationId := uuid.NewString()
 					sdkCommon.SendEvent(evt, correlationId, dic)
 					lc.Tracef("AutoEvent - Sent new Event/Reading for '%s' source with Correlation Id '%s'", evt.SourceName, correlationId)
 					<-buffer
-				}()
+				})
 			} else {
 				lc.Debugf("AutoEvent - no event generated when reading resource %s", e.sourceName)
 			}
@@ -143,7 +145,7 @@ func (e *Executor) Stop() {
 }
 
 // NewExecutor creates an Executor for an AutoEvent
-func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, errors.EdgeX) {
+func NewExecutor(deviceName string, ae models.AutoEvent, pool *ants.Pool) (*Executor, errors.EdgeX) {
 	// check Frequency
 	duration, err := time.ParseDuration(ae.Interval)
 	if err != nil {
@@ -156,5 +158,7 @@ func NewExecutor(deviceName string, ae models.AutoEvent) (*Executor, errors.Edge
 		onChange:   ae.OnChange,
 		duration:   duration,
 		stop:       false,
-		mutex:      &sync.Mutex{}}, nil
+		mutex:      &sync.Mutex{},
+		pool:       pool,
+	}, nil
 }

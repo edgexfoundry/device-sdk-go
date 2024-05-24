@@ -14,6 +14,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	"github.com/panjf2000/ants"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
@@ -26,9 +27,20 @@ type manager struct {
 	mutex           sync.Mutex
 	autoeventBuffer chan bool
 	dic             *di.Container
+	pool            *ants.Pool
 }
 
-func BootstrapHandler(
+type Bootstrap struct {
+	pool *ants.Pool
+}
+
+func NewBootstrap(p *ants.Pool) *Bootstrap {
+	return &Bootstrap{
+		pool: p,
+	}
+}
+
+func (b *Bootstrap) BootstrapHandler(
 	ctx context.Context,
 	wg *sync.WaitGroup,
 	_ startup.Timer,
@@ -68,14 +80,14 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEv
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
 	for _, autoEvent := range autoEvents {
-		executor, err := NewExecutor(deviceName, autoEvent)
+		executor, err := NewExecutor(deviceName, autoEvent, m.pool)
 		if err != nil {
 			lc.Errorf("failed to create executor of AutoEvent %s for Device %s: %v", autoEvent.SourceName, deviceName, err)
 			// skip this AutoEvent if it causes error during creation
 			continue
 		}
 		executors = append(executors, executor)
-		go executor.Run(m.ctx, m.wg, m.autoeventBuffer, dic)
+		m.pool.Submit(func() { executor.Run(m.ctx, m.wg, m.autoeventBuffer, dic) })
 	}
 	return executors
 }

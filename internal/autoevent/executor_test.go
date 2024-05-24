@@ -8,18 +8,22 @@ package autoevent
 
 import (
 	"crypto/rand"
+	"runtime"
 	"testing"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	"github.com/panjf2000/ants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCompareReadings(t *testing.T) {
 	autoEvent := models.AutoEvent{SourceName: "sourceName", OnChange: true, Interval: "500ms"}
-	e, err := NewExecutor("device-test", autoEvent)
+	pool, err := ants.NewPool(runtime.GOMAXPROCS(0), ants.WithNonblocking(true))
+	require.NoError(t, err)
+	e, err := NewExecutor("device-test", autoEvent, pool)
 	require.NoError(t, err)
 
 	testReadings := []dtos.BaseReading{{ResourceName: "r1"}, {ResourceName: "r2"}}
