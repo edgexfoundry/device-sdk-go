@@ -52,6 +52,7 @@ func (b *Bootstrap) BootstrapHandler(
 		executorMap:     make(map[string][]*Executor),
 		dic:             dic,
 		autoeventBuffer: make(chan bool, config.Device.AsyncBufferSize),
+		pool:            b.pool,
 	}
 
 	dic.Update(di.ServiceConstructorMap{
@@ -79,10 +80,6 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEv
 	var executors []*Executor
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
-	// Adjust the pool size to the sum of autoevents and AsyncBufferSize.
-	// This is to avoid the situation that the pool is full and new autoevents cannot be executed.
-	config := container.ConfigurationFrom(m.dic.Get)
-	m.pool.Tune(len(autoEvents) + config.Device.AsyncBufferSize)
 	for _, autoEvent := range autoEvents {
 		executor, err := NewExecutor(deviceName, autoEvent, m.pool)
 		if err != nil {
@@ -91,9 +88,7 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEv
 			continue
 		}
 		executors = append(executors, executor)
-		if err := m.pool.Submit(func() { executor.Run(m.ctx, m.wg, m.autoeventBuffer, dic) }); err != nil {
-			lc.Errorf("failed to submit executor task of AutoEvent %s for Device %s: %v", autoEvent.SourceName, deviceName, err)
-		}
+		go executor.Run(m.ctx, m.wg, m.autoeventBuffer, dic)
 	}
 	return executors
 }

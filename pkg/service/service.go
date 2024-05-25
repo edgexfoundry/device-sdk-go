@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"sync"
 
@@ -122,8 +121,9 @@ func (s *deviceService) Run() error {
 		},
 	})
 
-	// Default pool capacity is GOMAXPROCS, later adjusted for autoevents size.
-	pool, err := ants.NewPool(runtime.GOMAXPROCS(0), ants.WithNonblocking(true))
+	// set poolSize to config.Device.AsyncBufferSize
+	config := container.ConfigurationFrom(s.dic.Get)
+	pool, err := ants.NewPool(config.Device.AsyncBufferSize)
 	if err != nil {
 		return err
 	}
