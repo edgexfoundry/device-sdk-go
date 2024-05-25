@@ -79,6 +79,10 @@ func (m *manager) triggerExecutors(deviceName string, autoEvents []models.AutoEv
 	var executors []*Executor
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 
+	// Adjust the pool size to the sum of autoevents and AsyncBufferSize.
+	// This is to avoid the situation that the pool is full and new autoevents cannot be executed.
+	config := container.ConfigurationFrom(m.dic.Get)
+	m.pool.Tune(len(autoEvents) + config.Device.AsyncBufferSize)
 	for _, autoEvent := range autoEvents {
 		executor, err := NewExecutor(deviceName, autoEvent, m.pool)
 		if err != nil {

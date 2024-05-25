@@ -122,14 +122,8 @@ func (s *deviceService) Run() error {
 		},
 	})
 
-	// When the number of config.Device.AsyncBufferSize is less than runtime.GOMAXPROCS,
-	//  the pool concurrency is configured to runtime.GOMAXPROCS to increase performance
-	config := container.ConfigurationFrom(s.dic.Get)
-	poolSize := config.Device.AsyncBufferSize
-	if poolSize < runtime.GOMAXPROCS(0) {
-		poolSize = runtime.GOMAXPROCS(0)
-	}
-	pool, err := ants.NewPool(poolSize, ants.WithNonblocking(true))
+	// Default pool capacity is GOMAXPROCS, later adjusted for autoevents size.
+	pool, err := ants.NewPool(runtime.GOMAXPROCS(0), ants.WithNonblocking(true))
 	if err != nil {
 		return err
 	}
