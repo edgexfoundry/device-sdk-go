@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2022 IOTech Ltd
+// Copyright (C) 2020-2024 IOTech Ltd
 // Copyright (C) 2023 Intel Corp.
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -8,6 +8,8 @@
 package config
 
 import (
+	"strings"
+
 	bootstrapConfig "github.com/edgexfoundry/go-mod-bootstrap/v3/config"
 )
 
@@ -37,6 +39,16 @@ func (c *ConfigurationStruct) UpdateFromRaw(rawConfig interface{}) bool {
 	configuration, ok := rawConfig.(*ConfigurationStruct)
 	if ok {
 		*c = *configuration
+	}
+	// Device labels are stored as a single string, so we need to convert it to a string slice.
+	// The decision to do the conversion in sdk is based on the fact that we can only modify the logic inside the
+	// decoding function of the Keeper client. Unless we opt to develop a new decoder for Consul ourselves.
+	// See:
+	// Keeper client https://github.com/edgexfoundry/go-mod-configuration/blob/2c3512b731558a2be3f8460c3f0fed9361b5dcd4/internal/pkg/keeper/client.go#L163
+	// Consul client https://github.com/edgexfoundry/go-mod-configuration/blob/2c3512b731558a2be3f8460c3f0fed9361b5dcd4/internal/pkg/consul/client.go#L206
+	if len(c.Device.Labels) == 1 && strings.HasPrefix(c.Device.Labels[0], "[") &&
+		strings.HasSuffix(c.Device.Labels[0], "]") {
+		c.Device.Labels = strings.Fields(strings.Trim(c.Device.Labels[0], "[]"))
 	}
 	return ok
 }
