@@ -188,12 +188,9 @@ func checkDeviceProfile(name string, dpc interfaces.DeviceProfileClient, lc logg
 	res, err := dpc.DeviceProfileByName(context.Background(), name)
 	if err == nil {
 		lc.Infof("Device Profile %s exists, using the existing one", name)
-		_, exist := cache.Profiles().ForName(name)
-		if !exist {
-			err = cache.Profiles().Add(dtos.ToDeviceProfileModel(res.Profile))
-			if err != nil {
-				return true, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
-			}
+		err = cache.Profiles().CheckAndAdd(dtos.ToDeviceProfileModel(res.Profile))
+		if err != nil {
+			return true, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to cache the profile %s", res.Profile.Name), err)
 		}
 		return true, nil
 	}
