@@ -29,6 +29,7 @@ type ProfileCache interface {
 	DeviceResourcesByRegex(profileName string, regex *regexp.Regexp) ([]models.DeviceResource, bool)
 	DeviceCommand(profileName string, commandName string) (models.DeviceCommand, bool)
 	ResourceOperation(profileName string, deviceResource string) (models.ResourceOperation, errors.EdgeX)
+	CheckAndAdd(profile models.DeviceProfile) errors.EdgeX
 }
 
 type profileCache struct {
@@ -90,6 +91,17 @@ func (p *profileCache) Add(profile models.DeviceProfile) errors.EdgeX {
 	defer p.mutex.Unlock()
 
 	return p.add(profile)
+}
+
+func (p *profileCache) CheckAndAdd(profile models.DeviceProfile) errors.EdgeX {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if _, ok := p.deviceProfileMap[profile.Name]; ok {
+		return nil
+	} else {
+		return p.add(profile)
+	}
 }
 
 func (p *profileCache) add(profile models.DeviceProfile) errors.EdgeX {
