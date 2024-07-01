@@ -56,10 +56,12 @@ func UpdateProfile(profileRequest requests.DeviceProfileRequest, dic *di.Contain
 func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) errors.EdgeX {
 	device := dtos.ToDeviceModel(addDeviceRequest.Device)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-
-	edgexErr := updateAssociatedProfile(device.ProfileName, dic)
-	if edgexErr != nil {
-		return errors.NewCommonEdgeXWrapper(edgexErr)
+	var edgexErr errors.EdgeX
+	if addDeviceRequest.Device.ProfileName != "" {
+		edgexErr = updateAssociatedProfile(device.ProfileName, dic)
+		if edgexErr != nil {
+			return errors.NewCommonEdgeXWrapper(edgexErr)
+		}
 	}
 
 	edgexErr = cache.Devices().Add(device)
@@ -108,9 +110,12 @@ func UpdateDevice(updateDeviceRequest requests.UpdateDeviceRequest, dic *di.Cont
 	}
 
 	requests.ReplaceDeviceModelFieldsWithDTO(&device, updateDeviceRequest.Device)
-	edgexErr := updateAssociatedProfile(device.ProfileName, dic)
-	if edgexErr != nil {
-		return errors.NewCommonEdgeXWrapper(edgexErr)
+	var edgexErr errors.EdgeX
+	if device.ProfileName != "" {
+		edgexErr = updateAssociatedProfile(device.ProfileName, dic)
+		if edgexErr != nil {
+			return errors.NewCommonEdgeXWrapper(edgexErr)
+		}
 	}
 
 	edgexErr = cache.Devices().Update(device)
@@ -174,7 +179,7 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	// does not know which device service callback it needs to call. Remove the unused
 	// device profile in cache so that if it is updated in metadata, next time the
 	// device using it is added/updated, the cache can receive the updated one as well.
-	if cache.CheckProfileNotUsed(device.ProfileName) {
+	if device.ProfileName != "" && cache.CheckProfileNotUsed(device.ProfileName) {
 		edgexErr = cache.Profiles().RemoveByName(device.ProfileName)
 		if edgexErr != nil {
 			lc.Warn("failed to remove unused profile", edgexErr.DebugMessages())

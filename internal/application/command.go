@@ -451,6 +451,11 @@ func validateServiceAndDeviceState(deviceName string, dic *di.Container) (models
 		return models.Device{}, errors.NewCommonEdgeX(errors.KindServiceLocked, fmt.Sprintf("device %s OperatingState is DOWN", device.Name), nil)
 	}
 
+	// check device's ProfileName
+	if device.ProfileName == "" {
+		return models.Device{}, errors.NewCommonEdgeX(errors.KindServiceLocked, "no associated device profile", nil)
+	}
+
 	return device, nil
 }
 
