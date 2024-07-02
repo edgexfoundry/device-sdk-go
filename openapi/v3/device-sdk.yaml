@@ -426,7 +426,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '423':
-          description: If the device or service is locked (admin state) or disabled (operating state).
+          description: If the device or service is locked (admin state), disabled (operating state), or lacks associated profile.
           headers:
             X-Correlation-ID:
               $ref: '#/components/headers/correlatedResponseHeader'
