@@ -25,6 +25,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/startup"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/utils"
+	"github.com/panjf2000/ants/v2"
 
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autoevent"
@@ -70,6 +71,7 @@ type deviceService struct {
 	wg                 *sync.WaitGroup
 	ctx                context.Context
 	dic                *di.Container
+	pool               *ants.Pool
 }
 
 // NewDeviceService returns an implementation of interfaces.DeviceServiceSDKExt for the specified key, version, and driver.
@@ -119,6 +121,14 @@ func (s *deviceService) Run() error {
 		},
 	})
 
+	// set poolSize to config.Device.AsyncBufferSize
+	config := container.ConfigurationFrom(s.dic.Get)
+	pool, err := ants.NewPool(config.Device.AsyncBufferSize)
+	if err != nil {
+		return err
+	}
+	s.pool = pool
+
 	router := echo.New()
 	httpServer := handlers.NewHttpServer(router, true, s.serviceKey)
 
@@ -140,7 +150,7 @@ func (s *deviceService) Run() error {
 			newMessageBusBootstrap(s.baseServiceName).messageBusBootstrapHandler,
 			handlers.NewServiceMetrics(s.serviceKey).BootstrapHandler, // Must be after Messaging
 			handlers.NewClientsBootstrap().BootstrapHandler,
-			autoevent.BootstrapHandler,
+			autoevent.NewBootstrap(s.pool).BootstrapHandler,
 			NewBootstrap(s, router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
 			handlers.NewStartMessage(s.serviceKey, sdkCommon.ServiceVersion).BootstrapHandler,
@@ -149,6 +159,7 @@ func (s *deviceService) Run() error {
 	defer func() {
 		deferred()
 		s.Stop(false)
+		s.pool.Release()
 	}()
 
 	if !successful {
@@ -156,7 +167,7 @@ func (s *deviceService) Run() error {
 		return errors.New("bootstrapping failed")
 	}
 
-	err := s.driver.Start()
+	err = s.driver.Start()
 	if err != nil {
 		cancel()
 		return fmt.Errorf("failed to Start ProtocolDriver: %v", err)

@@ -239,3 +239,6 @@ https://github.com/valyala/fasttemplate/blob/master/LICENSE
 
 golang.org/x/time (BSD-3) https://cs.opensource.google/go/x/time
 https://cs.opensource.google/go/x/time/+/master:LICENSE
+
+github.com/panjf2000/ants/v2 (MIT) https://github.com/panjf2000/ants
+https://github.com/panjf2000/ants/blob/dev/LICENSE
