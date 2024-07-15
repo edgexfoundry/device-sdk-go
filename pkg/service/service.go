@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2024 IOTech Ltd
 // Copyright (C) 2019,2023 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -59,6 +59,7 @@ type deviceService struct {
 	baseServiceName    string
 	lc                 logger.LoggingClient
 	driver             interfaces.ProtocolDriver
+	profileScan        interfaces.ProfileScan
 	autoEventManager   interfaces.AutoEventManager
 	commonController   *controller.CommonController
 	controller         *restController.RestController
@@ -89,6 +90,12 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver interface
 
 	service.driver = driver
 
+	if ps, ok := driver.(interfaces.ProfileScan); ok {
+		service.profileScan = ps
+	} else {
+		service.profileScan = nil
+	}
+
 	service.config = &config.ConfigurationStruct{}
 	return interfaces.DeviceServiceSDK(&service), nil
 }
@@ -110,15 +117,16 @@ func (s *deviceService) Run() error {
 	s.deviceServiceModel = &models.DeviceService{Name: s.serviceKey}
 
 	s.dic = di.NewContainer(di.ServiceConstructorMap{
-		container.ConfigurationName: func(get di.Get) interface{} {
+		container.ConfigurationName: func(get di.Get) any {
 			return s.config
 		},
-		container.DeviceServiceName: func(get di.Get) interface{} {
+		container.DeviceServiceName: func(get di.Get) any {
 			return s.deviceServiceModel
 		},
-		container.ProtocolDriverName: func(get di.Get) interface{} {
+		container.ProtocolDriverName: func(get di.Get) any {
 			return s.driver
 		},
+		container.ProfileScanName: func(get di.Get) any { return s.profileScan },
 	})
 
 	// set poolSize to config.Device.AsyncBufferSize

@@ -60,6 +60,7 @@ func (c *RestController) InitRestRoutes() {
 
 	// discovery
 	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery, http.MethodPost, authenticationHook)
+	c.addReservedRoute(common.ApiProfileScan, c.ProfileScan, http.MethodPost, authenticationHook)
 	// device command
 	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.GetCommand, http.MethodGet, authenticationHook)
 	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.SetCommand, http.MethodPut, authenticationHook)

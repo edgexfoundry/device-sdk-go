@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2024 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -348,4 +348,8 @@ func (s *SimpleDriver) ValidateDevice(device models.Device) error {
 	}
 
 	return nil
+}
+
+func (s *SimpleDriver) ProfileScan(payload sdkModels.ProfileScanRequest) (models.DeviceProfile, error) {
+	return models.DeviceProfile{Name: payload.ProfileName}, nil
 }

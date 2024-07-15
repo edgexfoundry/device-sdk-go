@@ -23,6 +23,9 @@ Device:
   DevicesDir: ./res/devices
   # Only needed if device service implements auto provisioning
   ProvisionWatchersDir: ./res/provisionwatchers
+  Discovery:
+    Enabled: false
+    Interval: "30s"
 # Example structured custom configuration
 SimpleCustom:
   OnImageLocation: ./res/on.png

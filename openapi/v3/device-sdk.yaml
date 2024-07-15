@@ -40,6 +40,8 @@ components:
           description: "A version number shows the API version in DTOs."
           type: string
           example: "v3"
+      required:
+        - apiVersion
     BaseResponse:
       description: "Defines basic properties which all use-case specific response DTO instances should support"
       type: object
@@ -325,6 +327,30 @@ components:
         serviceName:
           description: "Outputs the name of the service the response is from"
           type: string
+    ProfileScanRequest:
+      allOf:
+        - $ref: '#/components/schemas/BaseRequest'
+      description: Defines the information for the profile scan
+      type: object
+      properties:
+        deviceName:
+          description: Specifies the device to generate the profile
+          type: string
+          example: "Test-Device"
+        profileName:
+          description: Specifies the unique profile name. Default format is {deviceName}_profile_{timestamp}
+          type: string
+          example: "Test-Device_profile_1720169510"
+        options:
+          type: object
+          example: {
+            "DiscoverMode": "All",
+            "DiscoverProperties": [ 103, 117 ],
+            "DiscoverObjects": [ 1, 2, 3, 4, 5]
+          }
+      required:
+        - deviceName
+        - options
 
   parameters:
     correlatedRequestHeader:
@@ -577,6 +603,114 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /profilescan:
+    parameters:
+      - $ref: '#/components/parameters/correlatedRequestHeader'
+    post:
+      description: Run the discovery request to generate a associated device profile for a specified device.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ProfileScanRequest'
+        required: true
+      responses:
+        '202':
+          description: "Request has been accepted"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 202
+        '400':
+          description: "Request is in an invalid state"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                value:
+                  apiVersion: "v3"
+                  requestId: "73f0932c-0148-11eb-adc1-0242ac120002"
+                  statusCode: 400
+                  message: "Bad Request"
+        '404':
+          description: "The requested resource does not exist."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                value:
+                  apiVersion: "v3"
+                  requestId: "84c9489c-0148-11eb-adc1-0242ac120002"
+                  statusCode: 404
+                  message: "Not Found"
+        '409':
+          description: "Conflict detected. Profile name must be universally unique or previous request is still processing."
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                value:
+                  apiVersion: "v3"
+                  requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
+                  statusCode: 409
+                  message: "Data Duplicate"
+        '423':
+          description: The device service is locked (admin state).
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                value:
+                  apiVersion: "v3"
+                  requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
+                  statusCode: 423
+                  message: "Locked"
+        '500':
+          description: An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                value:
+                  apiVersion: "v3"
+                  requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                  statusCode: 500
+                  message: "Internal Server Error"
+        '501':
+          description: Request is not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                value:
+                  apiVersion: "v3"
+                  requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                  statusCode: 501
+                  message: "Not implemented"
 
   /config:
     get:

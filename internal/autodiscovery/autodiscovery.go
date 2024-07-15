@@ -33,8 +33,11 @@ func BootstrapHandler(
 		runDiscovery = false
 	}
 	duration, err := time.ParseDuration(configuration.Device.Discovery.Interval)
-	if err != nil || duration <= 0 {
-		lc.Info("AutoDiscovery stopped: interval error in configuration")
+	if err != nil {
+		lc.Errorf("AutoDiscovery stopped: interval %s error in configuration: %v", configuration.Device.Discovery.Interval, err)
+		runDiscovery = false
+	} else if duration <= 0 {
+		lc.Info("AutoDiscovery schedule is not started: interval <= 0")
 		runDiscovery = false
 	}
 
