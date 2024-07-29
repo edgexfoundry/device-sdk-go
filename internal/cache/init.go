@@ -35,13 +35,16 @@ func InitCache(instanceName string, baseServiceName string, dic *di.Container) e
 	newDeviceCache(devices, dic)
 
 	// init profile cache
-	profiles := make([]models.DeviceProfile, len(devices))
-	for i, d := range devices {
+	profiles := make([]models.DeviceProfile, 0, len(devices))
+	for _, d := range devices {
+		if len(d.ProfileName) == 0 {
+			continue
+		}
 		res, err := dpc.DeviceProfileByName(context.Background(), d.ProfileName)
 		if err != nil {
 			return err
 		}
-		profiles[i] = dtos.ToDeviceProfileModel(res.Profile)
+		profiles = append(profiles, dtos.ToDeviceProfileModel(res.Profile))
 	}
 	newProfileCache(profiles)
 
