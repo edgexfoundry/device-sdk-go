@@ -18,9 +18,11 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/autodiscovery"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http/correlation"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	commonDTO "github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
@@ -43,8 +45,14 @@ func (c *RestController) Discovery(e echo.Context) error {
 
 	driver := container.ProtocolDriverFrom(c.dic.Get)
 
-	go autodiscovery.DiscoveryWrapper(driver, c.lc)
-	return c.sendResponse(writer, request, common.ApiDiscoveryRoute, nil, http.StatusAccepted)
+	correlationId := correlation.IdFromContext(request.Context())
+	go func() {
+		c.lc.Info("Discovery triggered.", common.CorrelationHeader, correlationId)
+		go autodiscovery.DiscoveryWrapper(driver, c.lc)
+		c.lc.Info("Discovery done.", common.CorrelationHeader, correlationId)
+	}()
+	response := commonDTO.NewBaseResponse("", "Trigger discovery with correlationId "+correlationId, http.StatusAccepted)
+	return c.sendResponse(writer, request, common.ApiDiscoveryRoute, response, http.StatusAccepted)
 }
 
 func (c *RestController) ProfileScan(e echo.Context) error {
@@ -71,14 +79,21 @@ func (c *RestController) ProfileScan(e echo.Context) error {
 		return c.sendEdgexError(writer, request, edgexErr, common.ApiProfileScan)
 	}
 
+	correlationId := correlation.IdFromContext(request.Context())
 	busy := make(chan bool)
-	go application.ProfileScanWrapper(busy, ps, req, c.dic)
+	go func() {
+		c.lc.Info("Profile scanning is triggered.", common.CorrelationHeader, correlationId)
+		application.ProfileScanWrapper(busy, ps, req, c.dic)
+		c.lc.Info("Profile scanning is done.", common.CorrelationHeader, correlationId)
+	}()
 	b := <-busy
 	if b {
 		edgexErr := errors.NewCommonEdgeX(errors.KindStatusConflict, fmt.Sprintf("Another profile scan process for %s is currently running", req.DeviceName), nil)
 		return c.sendEdgexError(writer, request, edgexErr, common.ApiProfileScan)
 	}
-	return c.sendResponse(writer, request, common.ApiProfileScan, nil, http.StatusAccepted)
+
+	response := commonDTO.NewBaseResponse("", "Trigger profile scan with correlationId "+correlationId, http.StatusAccepted)
+	return c.sendResponse(writer, request, common.ApiProfileScan, response, http.StatusAccepted)
 }
 
 func profileScanValidation(request []byte, dic *di.Container) (sdkModels.ProfileScanRequest, errors.EdgeX) {
