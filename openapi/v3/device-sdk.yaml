@@ -585,6 +585,10 @@ paths:
       responses:
         '202':
           description: The service is running the discovery request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
         '423':
           description: The service is disabled or administratively locked.
           content:
@@ -640,11 +644,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                value:
-                  apiVersion: "v3"
-                  requestId: "73f0932c-0148-11eb-adc1-0242ac120002"
-                  statusCode: 400
-                  message: "Bad Request"
+                apiVersion: "v3"
+                requestId: "73f0932c-0148-11eb-adc1-0242ac120002"
+                statusCode: 400
+                message: "Bad Request"
         '404':
           description: "The requested resource does not exist."
           content:
@@ -652,11 +655,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                value:
-                  apiVersion: "v3"
-                  requestId: "84c9489c-0148-11eb-adc1-0242ac120002"
-                  statusCode: 404
-                  message: "Not Found"
+                apiVersion: "v3"
+                requestId: "84c9489c-0148-11eb-adc1-0242ac120002"
+                statusCode: 404
+                message: "Not Found"
         '409':
           description: "Conflict detected. Profile name must be universally unique or previous request is still processing."
           headers:
@@ -667,11 +669,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                value:
-                  apiVersion: "v3"
-                  requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
-                  statusCode: 409
-                  message: "Data Duplicate"
+                apiVersion: "v3"
+                requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
+                statusCode: 409
+                message: "Data Duplicate"
         '423':
           description: The device service is locked (admin state).
           headers:
@@ -682,11 +683,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                value:
-                  apiVersion: "v3"
-                  requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
-                  statusCode: 423
-                  message: "Locked"
+                apiVersion: "v3"
+                requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
+                statusCode: 423
+                message: "Locked"
         '500':
           description: An unexpected error occurred on the server
           content:
@@ -694,11 +694,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                value:
-                  apiVersion: "v3"
-                  requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
-                  statusCode: 500
-                  message: "Internal Server Error"
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 500
+                message: "Internal Server Error"
         '501':
           description: Request is not supported
           content:
@@ -706,11 +705,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
-                value:
-                  apiVersion: "v3"
-                  requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
-                  statusCode: 501
-                  message: "Not implemented"
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 501
+                message: "Not implemented"
 
   /config:
     get:

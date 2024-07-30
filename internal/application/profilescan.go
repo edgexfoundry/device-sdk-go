@@ -47,12 +47,16 @@ func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels
 	profile, err := ps.ProfileScan(req)
 	if err != nil {
 		lc.Errorf("failed to trigger profile scan: %v", err.Error())
+		releaseLock(req.DeviceName)
+		return
 	}
 	// Add profile to metadata
 	profileReq := requests.NewDeviceProfileRequest(dtos.FromDeviceProfileModelToDTO(profile))
 	_, err = dpc.Add(ctx, []requests.DeviceProfileRequest{profileReq})
 	if err != nil {
 		lc.Errorf("failed to add device profile '%s': %v", profile.Name, err)
+		releaseLock(req.DeviceName)
+		return
 	}
 	// Update device
 	deviceReq := requests.NewUpdateDeviceRequest(dtos.UpdateDevice{Name: &req.DeviceName, ProfileName: &profile.Name})
@@ -62,7 +66,11 @@ func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels
 	}
 
 	// ReleaseLock
+	releaseLock(req.DeviceName)
+}
+
+func releaseLock(deviceName string) {
 	locker.mux.Lock()
-	locker.busyMap[req.DeviceName] = false
+	locker.busyMap[deviceName] = false
 	locker.mux.Unlock()
 }
