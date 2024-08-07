@@ -49,7 +49,7 @@ func (c *RestController) Discovery(e echo.Context) error {
 	go func() {
 		c.lc.Info("Discovery triggered.", common.CorrelationHeader, correlationId)
 		go autodiscovery.DiscoveryWrapper(driver, c.lc)
-		c.lc.Info("Discovery done.", common.CorrelationHeader, correlationId)
+		c.lc.Info("Discovery end.", common.CorrelationHeader, correlationId)
 	}()
 	response := commonDTO.NewBaseResponse("", "Trigger discovery with correlationId "+correlationId, http.StatusAccepted)
 	return c.sendResponse(writer, request, common.ApiDiscoveryRoute, response, http.StatusAccepted)
@@ -83,8 +83,8 @@ func (c *RestController) ProfileScan(e echo.Context) error {
 	busy := make(chan bool)
 	go func() {
 		c.lc.Info("Profile scanning is triggered.", common.CorrelationHeader, correlationId)
-		application.ProfileScanWrapper(busy, ps, req, c.dic)
-		c.lc.Info("Profile scanning is done.", common.CorrelationHeader, correlationId)
+		application.ProfileScanWrapper(busy, ps, req, correlationId, c.dic)
+		c.lc.Info("Profile scanning is end.", common.CorrelationHeader, correlationId)
 	}()
 	b := <-busy
 	if b {
@@ -123,7 +123,7 @@ func profileScanValidation(request []byte, dic *di.Container) (sdkModels.Profile
 			return r, errors.NewCommonEdgeX(errors.KindStatusConflict, fmt.Sprintf("profile name %s is duplicated", req.ProfileName), nil)
 		}
 	} else {
-		req.ProfileName = fmt.Sprintf("%s_profile_%d", req.DeviceName, time.Now().UnixNano())
+		req.ProfileName = fmt.Sprintf("%s_profile_%d", req.DeviceName, time.Now().UnixMilli())
 	}
 
 	r = sdkModels.ProfileScanRequest{

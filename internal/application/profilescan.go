@@ -9,8 +9,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/google/uuid"
-
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -27,7 +25,7 @@ type profileScanLocker struct {
 
 var locker = profileScanLocker{busyMap: make(map[string]bool)}
 
-func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels.ProfileScanRequest, dic *di.Container) {
+func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels.ProfileScanRequest, correlationId string, dic *di.Container) {
 	locker.mux.Lock()
 	b := locker.busyMap[req.DeviceName]
 	busy <- b
@@ -41,12 +39,12 @@ func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	dpc := bootstrapContainer.DeviceProfileClientFrom(dic.Get)
 	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
+	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlationId) //nolint: staticcheck
 
-	lc.Debugf("profile scan triggered with device name '%s' and profile name '%s'", req.DeviceName, req.ProfileName)
+	lc.Debugf("profile scan triggered with device name '%s' and profile name '%s', with Correlation Id '%s'", req.DeviceName, req.ProfileName, correlationId)
 	profile, err := ps.ProfileScan(req)
 	if err != nil {
-		lc.Errorf("failed to trigger profile scan: %v", err.Error())
+		lc.Errorf("failed to trigger profile scan: %v, with Correlation Id '%s'", err.Error(), correlationId)
 		releaseLock(req.DeviceName)
 		return
 	}
@@ -54,7 +52,7 @@ func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels
 	profileReq := requests.NewDeviceProfileRequest(dtos.FromDeviceProfileModelToDTO(profile))
 	_, err = dpc.Add(ctx, []requests.DeviceProfileRequest{profileReq})
 	if err != nil {
-		lc.Errorf("failed to add device profile '%s': %v", profile.Name, err)
+		lc.Errorf("failed to add device profile '%s': %v, with Correlation Id '%s'", profile.Name, err, correlationId)
 		releaseLock(req.DeviceName)
 		return
 	}
@@ -62,7 +60,7 @@ func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels
 	deviceReq := requests.NewUpdateDeviceRequest(dtos.UpdateDevice{Name: &req.DeviceName, ProfileName: &profile.Name})
 	_, err = dc.Update(ctx, []requests.UpdateDeviceRequest{deviceReq})
 	if err != nil {
-		lc.Errorf("failed to update device '%s' with profile '%s': %v", req.DeviceName, profile.Name, err)
+		lc.Errorf("failed to update device '%s' with profile '%s': %v, with Correlation Id '%s'", req.DeviceName, profile.Name, err, correlationId)
 	}
 
 	// ReleaseLock
