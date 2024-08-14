@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2020 IOTech Ltd
+// Copyright (C) 2019-2024 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -69,6 +69,10 @@ func (m *manager) StartAutoEvents() {
 	defer m.mutex.Unlock()
 
 	for _, d := range cache.Devices().All() {
+		if len(d.ProfileName) == 0 || d.AdminState == models.Locked {
+			// don't run the auto event if the device doesn't define the profile, or it is locked
+			continue
+		}
 		if _, ok := m.executorMap[d.Name]; !ok {
 			executors := m.triggerExecutors(d.Name, d.AutoEvents, m.dic)
 			m.executorMap[d.Name] = executors
@@ -100,6 +104,11 @@ func (m *manager) RestartForDevice(deviceName string) {
 	d, ok := cache.Devices().ForName(deviceName)
 	if !ok {
 		lc.Errorf("failed to find device %s in cache to start AutoEvent", deviceName)
+	}
+
+	if len(d.ProfileName) == 0 || d.AdminState == models.Locked {
+		// don't run the auto event if the device doesn't define the profile, or it is locked
+		return
 	}
 
 	m.mutex.Lock()
