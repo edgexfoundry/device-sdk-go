@@ -232,11 +232,12 @@ components:
       description: "A response type for returning a generic error to the caller."
       type: object
     ConfigResponse:
-      allOf:
-        - $ref: '#/components/schemas/BaseResponse'
       description: "Provides a response containing the configuration for the targeted service."
       type: object
       properties:
+        apiVersion:
+          description: "A version number shows the API version in DTOs."
+          type: string
         serviceName:
           description: "Outputs the name of the service the response is from"
           type: string
@@ -255,10 +256,11 @@ components:
         - device
     PingResponse:
       description: "A response from the /ping endpoint indicating that the service is functioning."
-      allOf:
-      - $ref: '#/components/schemas/BaseResponse'
       type: object
       properties:
+        apiVersion:
+          description: "A version number shows the API version in DTOs."
+          type: string
         timestamp:
           description: "Outputs the current server timestamp in RFC1123 format"
           example: "Mon, 02 Jan 2006 15:04:05 MST"
@@ -314,10 +316,11 @@ components:
       example: {"AHU-TargetTemperature": "28.5", "AHU-TargetBand": "4.0"}
     VersionResponse:
       description: "A response returned from the /version endpoint whose purpose is to report out the latest version supported by the service."
-      allOf:
-      - $ref: '#/components/schemas/BaseResponse'
       type: object
       properties:
+        apiVersion:
+          description: "A version number shows the API version in DTOs."
+          type: string
         version:
           description: "The latest version supported by the service."
           type: string
@@ -350,7 +353,6 @@ components:
           }
       required:
         - deviceName
-        - options
 
   parameters:
     correlatedRequestHeader:
@@ -372,6 +374,37 @@ components:
       required: true
       example: "14a42ea6-c394-41c3-8bcd-a29b9f5e6835"
 
+  examples:
+    400Example:
+      value:
+        apiVersion: "v3"
+        requestId: "4c57bd0b-1cee-4056-8a8a-98eea8d999c6"
+        statusCode: 400
+        message: "Bad Request"
+    404Example:
+      value:
+        apiVersion: "v3"
+        requestId: "afe9a1f4-bc45-434c-6eb2-105440912368"
+        statusCode: 404
+        message: "Not Found"
+    405Example:
+      value:
+        apiVersion: "v3"
+        requestId: "e6e8a2f9-eb14-4649-9e2b-175247911369"
+        statusCode: 405
+        message: "Method Not Allowed"
+    423Example:
+      value:
+        apiVersion: "v3"
+        requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
+        statusCode: 423
+        message: "Locked"
+    500Example:
+      value:
+        apiVersion: "v3"
+        requestId: "cd319159-928c-4a6f-9d3d-a821c524ac35"
+        statusCode: 500
+        message: "Internal Server Error"
 
 paths:
   /device/name/{name}/{command}:
@@ -442,6 +475,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                404Example:
+                  $ref: '#/components/examples/404Example'
         '405':
           description: If the requested command exists but not for GET, or the resource is marked as write-only.
           headers:
@@ -451,6 +487,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                405Example:
+                  $ref: '#/components/examples/405Example'
         '423':
           description: If the device or service is locked (admin state), disabled (operating state), or lacks associated profile.
           headers:
@@ -460,6 +499,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                423Example:
+                  $ref: '#/components/examples/423Example'
         '500':
           description: The device driver is unable to process the request, or too many values were returned.
           headers:
@@ -469,6 +511,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
     put:
       description: Request the actuator by its name to trigger a action or set a current value for the command or device resource specified.
       parameters:
@@ -495,6 +540,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "48395596-9f75-4556-97b4-8a834d26c1c7"
+                statusCode: 200
         '404':
           description: If no device exists for the name provided or the command is unknown.
           headers:
@@ -504,6 +553,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                404Example:
+                  $ref: '#/components/examples/404Example'
         '405':
           description: If the requested command exists but not for PUT, or the resource is marked as read-only.
           headers:
@@ -513,6 +565,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                405Example:
+                  $ref: '#/components/examples/405Example'
         '423':
           description: If the device or service is locked (admin state) or disabled (operating state).
           headers:
@@ -522,6 +577,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                423Example:
+                  $ref: '#/components/examples/423Example'
         '500':
           description: The device driver is unable to process the request.
           headers:
@@ -531,6 +589,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
       requestBody:
         content:
           application/json:
@@ -560,6 +621,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "9dab3997-b399-4630-972c-d4ffa571f1f2"
+                statusCode: 201
         '400':
           description: "Invalid request."
           headers:
@@ -569,6 +634,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                400Example:
+                  $ref: '#/components/examples/400Example'
         '500':
           description: "An unexpected error happened on the server."
           headers:
@@ -578,6 +646,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
 
   /discovery:
     post:
@@ -589,24 +660,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 202
+                message: "Device Discovery is triggered"
         '423':
           description: The service is disabled or administratively locked.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                423Example:
+                  $ref: '#/components/examples/423Example'
         '500':
           description: An unexpected error occurred on the server
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
         '503':
           description: Discovery is disabled by configuration.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "e1abba6d-7263-4046-9fe0-ef5b42e24bf2"
+                statusCode: 503
+                message: "HTTP request timeout"
 
   /profilescan:
     parameters:
@@ -634,6 +721,7 @@ paths:
                 apiVersion: "v3"
                 requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
                 statusCode: 202
+                message: "Device ProfileScan is triggered"
         '400':
           description: "Request is in an invalid state"
           headers:
@@ -654,11 +742,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                apiVersion: "v3"
-                requestId: "84c9489c-0148-11eb-adc1-0242ac120002"
-                statusCode: 404
-                message: "Not Found"
+              examples:
+                400Example:
+                  $ref: '#/components/examples/404Example'
         '409':
           description: "Conflict detected. Profile name must be universally unique or previous request is still processing."
           headers:
@@ -682,22 +768,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                apiVersion: "v3"
-                requestId: "8a41b3f4-0148-11eb-adc1-0242ac120002"
-                statusCode: 423
-                message: "Locked"
+              examples:
+                423Example:
+                  $ref: '#/components/examples/423Example'
         '500':
           description: An unexpected error occurred on the server
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                apiVersion: "v3"
-                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
-                statusCode: 500
-                message: "Internal Server Error"
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
         '501':
           description: Request is not supported
           content:
@@ -732,6 +814,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
+
   /ping:
     get:
       summary: "A simple 'ping' endpoint that can be used as a service healthcheck"
@@ -745,6 +831,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PingResponse'
+              example:
+                apiVersion: "v3"
+                timestamp: "Mon, 02 Jan 2006 15:04:05 MST"
+                serviceName: "device-simple"
         '500':
           description: Interval Server Error
           headers:
@@ -754,6 +844,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
+
   /version:
     get:
       summary: "A simple 'version' endpoint that will return the current version of the service"
@@ -767,6 +861,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VersionResponse'
+              example:
+                apiVersion: "v3"
+                version: "3.1.0"
+                "sdk_version": "3.1.0"
+                serviceName: "device-simple"
         '500':
           description: Interval Server Error
           headers:
@@ -776,3 +875,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'

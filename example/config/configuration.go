@@ -68,8 +68,8 @@ func (scc *SimpleCustomConfig) Validate() error {
 		return errors.New("SimpleCustom.OffImageLocation configuration setting can not be blank")
 	}
 
-	if scc.Writable.DiscoverSleepDurationSecs < 10 {
-		return errors.New("SimpleCustom.Writable.DiscoverSleepDurationSecs configuration setting must be 10 or greater")
+	if scc.Writable.DiscoverSleepDurationSecs <= 0 {
+		return errors.New("SimpleCustom.Writable.DiscoverSleepDurationSecs configuration setting must be greater than 0")
 	}
 
 	return nil

@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2024 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -47,13 +47,13 @@ func BootstrapHandler(
 			defer wg.Done()
 
 			lc.Infof("Starting auto-discovery with duration %v", duration)
-			DiscoveryWrapper(driver, lc)
+			DiscoveryWrapper(driver, ctx, dic)
 			for {
 				select {
 				case <-ctx.Done():
 					return
 				case <-time.After(duration):
-					DiscoveryWrapper(driver, lc)
+					DiscoveryWrapper(driver, ctx, dic)
 				}
 			}
 		}()

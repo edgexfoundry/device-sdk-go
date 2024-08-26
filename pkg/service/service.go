@@ -33,6 +33,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	restController "github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http"
+	sdkUtils "github.com/edgexfoundry/device-sdk-go/v3/internal/utils"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 
@@ -354,4 +355,22 @@ func (s *deviceService) setServiceName(instanceName string) {
 	if len(instanceName) > 0 {
 		s.serviceKey = s.serviceKey + "_" + instanceName
 	}
+}
+
+// PublishDeviceDiscoveryProgressSystemEvent sends a system event to the EdgeX Message Bus
+// indicating the progress of the device discovery process.
+func (s *deviceService) PublishDeviceDiscoveryProgressSystemEvent(progress, discoveredDeviceCount int, message string) {
+	reqId := container.DiscoveryRequestIdFrom(s.dic.Get)
+	sdkUtils.PublishDeviceDiscoveryProgressSystemEvent(reqId, progress, discoveredDeviceCount, message, s.ctx, s.dic)
+}
+
+// PublishProfileScanProgressSystemEvent sends a system event to the EdgeX Message Bus
+// indicating the progress of the profile scan process.
+func (s *deviceService) PublishProfileScanProgressSystemEvent(reqId string, progress int, message string) {
+	sdkUtils.PublishProfileScanProgressSystemEvent(reqId, progress, message, s.ctx, s.dic)
+}
+
+// PublishGenericSystemEvent sends a system event to the EdgeX Message Bus
+func (s *deviceService) PublishGenericSystemEvent(eventType, action string, details any) {
+	sdkUtils.PublishGenericSystemEvent(eventType, action, details, s.ctx, s.dic)
 }

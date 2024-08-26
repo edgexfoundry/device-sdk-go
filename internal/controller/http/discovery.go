@@ -7,6 +7,7 @@
 package http
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,13 +46,15 @@ func (c *RestController) Discovery(e echo.Context) error {
 
 	driver := container.ProtocolDriverFrom(c.dic.Get)
 
-	correlationId := correlation.IdFromContext(request.Context())
+	// Use correlation id as request id since there is no request body
+	requestId := correlation.IdFromContext(request.Context())
 	go func() {
-		c.lc.Info("Discovery triggered.", common.CorrelationHeader, correlationId)
-		go autodiscovery.DiscoveryWrapper(driver, c.lc)
-		c.lc.Info("Discovery end.", common.CorrelationHeader, correlationId)
+		c.lc.Infof("Discovery triggered. Correlation Id: %s", requestId)
+		autodiscovery.DiscoveryWrapper(driver, request.Context(), c.dic)
+		c.lc.Infof("Discovery end. Correlation Id: %s", requestId)
 	}()
-	response := commonDTO.NewBaseResponse("", "Trigger discovery with correlationId "+correlationId, http.StatusAccepted)
+
+	response := commonDTO.NewBaseResponse(requestId, "Device Discovery is triggered.", http.StatusAccepted)
 	return c.sendResponse(writer, request, common.ApiDiscoveryRoute, response, http.StatusAccepted)
 }
 
@@ -74,17 +77,16 @@ func (c *RestController) ProfileScan(e echo.Context) error {
 		return c.sendEdgexError(writer, request, edgexErr, common.ApiProfileScan)
 	}
 
-	req, edgexErr := profileScanValidation(body, c.dic)
+	req, edgexErr := profileScanValidation(body, request.Context(), c.dic)
 	if edgexErr != nil {
 		return c.sendEdgexError(writer, request, edgexErr, common.ApiProfileScan)
 	}
 
-	correlationId := correlation.IdFromContext(request.Context())
 	busy := make(chan bool)
 	go func() {
-		c.lc.Info("Profile scanning is triggered.", common.CorrelationHeader, correlationId)
-		application.ProfileScanWrapper(busy, ps, req, correlationId, c.dic)
-		c.lc.Info("Profile scanning is end.", common.CorrelationHeader, correlationId)
+		c.lc.Infof("Profile scanning is triggered. Correlation Id: %s", req.RequestId)
+		application.ProfileScanWrapper(busy, ps, req, request.Context(), c.dic)
+		c.lc.Infof("Profile scanning is end. Correlation Id: %s", req.RequestId)
 	}()
 	b := <-busy
 	if b {
@@ -92,11 +94,11 @@ func (c *RestController) ProfileScan(e echo.Context) error {
 		return c.sendEdgexError(writer, request, edgexErr, common.ApiProfileScan)
 	}
 
-	response := commonDTO.NewBaseResponse("", "Trigger profile scan with correlationId "+correlationId, http.StatusAccepted)
+	response := commonDTO.NewBaseResponse(req.RequestId, "Device ProfileScan is triggered.", http.StatusAccepted)
 	return c.sendResponse(writer, request, common.ApiProfileScan, response, http.StatusAccepted)
 }
 
-func profileScanValidation(request []byte, dic *di.Container) (sdkModels.ProfileScanRequest, errors.EdgeX) {
+func profileScanValidation(request []byte, ctx context.Context, dic *di.Container) (sdkModels.ProfileScanRequest, errors.EdgeX) {
 	var r sdkModels.ProfileScanRequest
 	// check device service AdminState
 	ds := container.DeviceServiceFrom(dic.Get)
@@ -118,7 +120,7 @@ func profileScanValidation(request []byte, dic *di.Container) (sdkModels.Profile
 	}
 
 	// check profile should not exist
-	if req.ProfileName != "" {
+	if len(req.ProfileName) > 0 {
 		if _, exist := cache.Profiles().ForName(req.ProfileName); exist {
 			return r, errors.NewCommonEdgeX(errors.KindStatusConflict, fmt.Sprintf("profile name %s is duplicated", req.ProfileName), nil)
 		}
@@ -126,7 +128,17 @@ func profileScanValidation(request []byte, dic *di.Container) (sdkModels.Profile
 		req.ProfileName = fmt.Sprintf("%s_profile_%d", req.DeviceName, time.Now().UnixMilli())
 	}
 
+	requestId := req.RequestId
+	if len(requestId) == 0 {
+		// Use correlation id as request id if request id is not provided
+		requestId = correlation.IdFromContext(ctx)
+	}
+
 	r = sdkModels.ProfileScanRequest{
+		BaseRequest: commonDTO.BaseRequest{
+			Versionable: commonDTO.NewVersionable(),
+			RequestId:   requestId,
+		},
 		DeviceName:  req.DeviceName,
 		ProfileName: req.ProfileName,
 		Options:     req.Options,
