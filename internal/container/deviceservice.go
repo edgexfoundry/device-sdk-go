@@ -48,3 +48,11 @@ func ProfileScanFrom(get di.Get) interfaces.ProfileScan {
 	}
 	return nil
 }
+
+// DiscoveryRequestIdName contains the name of discovery request id implementation in the DIC.
+var DiscoveryRequestIdName = di.TypeInstanceToName(new(string))
+
+// DiscoveryRequestIdFrom helper function queries the DIC and returns discovery request id.
+func DiscoveryRequestIdFrom(get di.Get) string {
+	return get(DiscoveryRequestIdName).(string)
+}

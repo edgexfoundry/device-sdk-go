@@ -316,9 +316,12 @@ func (s *SimpleDriver) Discover() error {
 		Labels:      []string{"auto-discovery"},
 	}
 
-	res := []sdkModels.DiscoveredDevice{device2, device3}
+	res := []sdkModels.DiscoveredDevice{device2}
+	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
+	s.sdk.PublishDeviceDiscoveryProgressSystemEvent(50, len(res), "")
 
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
+	res = append(res, device3)
 	s.deviceCh <- res
 	return nil
 }
@@ -351,5 +354,8 @@ func (s *SimpleDriver) ValidateDevice(device models.Device) error {
 }
 
 func (s *SimpleDriver) ProfileScan(payload sdkModels.ProfileScanRequest) (models.DeviceProfile, error) {
+	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
+	s.sdk.PublishProfileScanProgressSystemEvent(payload.RequestId, 50, "")
+	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	return models.DeviceProfile{Name: payload.ProfileName}, nil
 }

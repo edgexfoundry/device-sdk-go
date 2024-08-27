@@ -31,4 +31,4 @@ SimpleCustom:
   OnImageLocation: ./res/on.png
   OffImageLocation: ./res/off.jpg
   Writable:
-    DiscoverSleepDurationSecs: 10
+    DiscoverSleepDurationSecs: 3

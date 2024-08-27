@@ -1,6 +1,6 @@
 //
 // Copyright (C) 2022-2023 Intel Corporation
-// Copyright (C) 2023 IOTech Ltd
+// Copyright (C) 2023-2024 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -151,4 +151,13 @@ type DeviceServiceSDK interface {
 	// MetricsManager returns the Metrics Manager used to register counter, gauge, gaugeFloat64 or timer metric types from
 	// github.com/rcrowley/go-metrics
 	MetricsManager() interfaces.MetricsManager
+
+	// PublishDeviceDiscoveryProgressSystemEvent publishes a device discovery progress system event through the EdgeX message bus
+	PublishDeviceDiscoveryProgressSystemEvent(progress, discoveredDeviceCount int, message string)
+
+	// PublishProfileScanProgressSystemEvent publishes a profile scan progress system event through the EdgeX message bus.
+	PublishProfileScanProgressSystemEvent(reqId string, progress int, message string)
+
+	// PublishGenericSystemEvent publishes a generic system event through the EdgeX message bus
+	PublishGenericSystemEvent(eventType, action string, details any)
 }
