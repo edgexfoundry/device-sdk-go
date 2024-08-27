@@ -60,7 +60,10 @@ func (c *RestController) InitRestRoutes() {
 
 	// discovery
 	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery, http.MethodPost, authenticationHook)
-	c.addReservedRoute(common.ApiProfileScan, c.ProfileScan, http.MethodPost, authenticationHook)
+	c.addReservedRoute(common.ApiProfileScanRoute, c.ProfileScan, http.MethodPost, authenticationHook)
+	c.addReservedRoute(common.ApiDiscoveryRoute, c.StopDeviceDiscovery, http.MethodDelete, authenticationHook)
+	c.addReservedRoute(common.ApiDiscoveryByIdEchoRoute, c.StopDeviceDiscovery, http.MethodDelete, authenticationHook)
+	c.addReservedRoute(common.ApiProfileScanByDeviceNameEchoRoute, c.StopProfileScan, http.MethodDelete, authenticationHook)
 	// device command
 	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.GetCommand, http.MethodGet, authenticationHook)
 	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.SetCommand, http.MethodPut, authenticationHook)
@@ -156,9 +159,18 @@ func (c *RestController) sendEdgexError(
 	request *http.Request,
 	err errors.EdgeX,
 	api string) error {
+	return c.sendEdgexErrorWithRequestId(writer, request, err, api, "")
+}
+
+func (c *RestController) sendEdgexErrorWithRequestId(
+	writer *echo.Response,
+	request *http.Request,
+	err errors.EdgeX,
+	api string,
+	requestId string) error {
 	correlationID := request.Header.Get(common.CorrelationHeader)
 	c.lc.Error(err.Error(), common.CorrelationHeader, correlationID)
 	c.lc.Debug(err.DebugMessages(), common.CorrelationHeader, correlationID)
-	response := commonDTO.NewBaseResponse("", err.Error(), err.Code())
+	response := commonDTO.NewBaseResponse(requestId, err.Error(), err.Code())
 	return c.sendResponse(writer, request, api, response, err.Code())
 }

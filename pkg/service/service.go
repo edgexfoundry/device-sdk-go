@@ -60,7 +60,7 @@ type deviceService struct {
 	baseServiceName    string
 	lc                 logger.LoggingClient
 	driver             interfaces.ProtocolDriver
-	profileScan        interfaces.ProfileScan
+	extdriver          interfaces.ExtendedProtocolDriver
 	autoEventManager   interfaces.AutoEventManager
 	commonController   *controller.CommonController
 	controller         *restController.RestController
@@ -91,10 +91,10 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver interface
 
 	service.driver = driver
 
-	if ps, ok := driver.(interfaces.ProfileScan); ok {
-		service.profileScan = ps
+	if extdriver, ok := driver.(interfaces.ExtendedProtocolDriver); ok {
+		service.extdriver = extdriver
 	} else {
-		service.profileScan = nil
+		service.extdriver = nil
 	}
 
 	service.config = &config.ConfigurationStruct{}
@@ -127,7 +127,9 @@ func (s *deviceService) Run() error {
 		container.ProtocolDriverName: func(get di.Get) any {
 			return s.driver
 		},
-		container.ProfileScanName: func(get di.Get) any { return s.profileScan },
+		container.ExtendedProtocolDriverName: func(get di.Get) any {
+			return s.extdriver
+		},
 	})
 
 	// set poolSize to config.Device.AsyncBufferSize

@@ -21,7 +21,7 @@ The SDK will then filter these devices against pre-defined acceptance criteria (
 A Provision Watcher contains the following fields:
 
 `Identifiers`: A set of name-value pairs against which a new device's ProtocolProperties are matched  
-`BlockingIdentifiers`: An additional set of name-value pairs which if matched, will block the addition of a newly discovered device  
+`BlockingIdentifiers`: An additional set of name-value pairs that, if matched, will block the addition of a newly discovered device  
 `ProfileName`: The name of a DeviceProfile which should be assigned to new devices which meet the given criteria  
 `ServiceName`: The name of a DeviceService which the ProvisionWatcher should be applied on  
 `AdminState`: The initial Administrative State for new devices which meet the given criteria  
@@ -36,14 +36,15 @@ Dynamic Device Discovery is triggered either by internal timer(see `Device/Disco
 The following steps show how to trigger discovery on device-simple:
 1. Set `Device/Discovery/Enabled` to true in [configuration file](cmd/device-simple/res/configuration.yaml)
 2. Trigger discovery by sending POST request to DS endpoint: http://edgex-device-simple:59999/api/v3/discovery
-3. `Simple-Device02` will be discovered and added to EdgeX.
+3. `Simple-Device02` will be discovered and added to EdgeX, while `Simple-Device03` will be blocked by the [Provision Watcher `BlockingIdentifiers`](cmd/device-simple/res/provisionwatchers/Simple-Provision-Watcher.yml)
 
-## ProfileScan
+## Extended Protocol Driver
+### ProfileScan
 Some device protocols allow for devices to discover profiles automatically.
 A Device Service may include a capability for discovering device profiles and creating the associated Device Profile objects for devices within EdgeX.
 
 To enable profile scan, developers need to implement the [ProfileScan](../pkg/interfaces/protocolprofile.go) interface.
-The `ProfileScan` interface defines a single `ProfileScan` method which is used to trigger device-specific profile scan.
+The `ExtendedProtocolDriver` interface defines a `ProfileScan` method which is used to trigger device-specific profile scan.
 The device profile found as a result of profile scan is returned to the SDK, and the SDK will then create the device profile and update the device to use the profile.
 
 The following steps show how to trigger profile scan on device-simple:
@@ -56,3 +57,6 @@ The following steps show how to trigger profile scan on device-simple:
    }
    ```
 3. Device Profile `ProfileScan-Test-Profile` will be added to EdgeX and `ProfileScan-Simple-Device` will be updated to use the device profile.
+
+### StopDeviceDiscovery and StopProfileScan
+The `ExtendedProtocolDriver` interface defines a `StopDeviceDiscovery` to stop the device discovery and `StopProfileScan` to stop the profile scanning.

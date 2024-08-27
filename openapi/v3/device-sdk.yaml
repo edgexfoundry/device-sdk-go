@@ -207,11 +207,10 @@ components:
           description: "List of zero or more Tags attached to the Event which give more context to the Event"
           title: tags
           type: object
-          example: {
-            "Gateway-id": "HoustonStore-000123",
-            "Latitude": "29.630771",
-            "Longitude": "-95.377603",
-          }
+          example:
+            Gateway-id: "HoustonStore-000123"
+            Latitude: "29.630771"
+            Longitude: "-95.377603"
       required:
         - id
         - deviceName
@@ -346,11 +345,10 @@ components:
           example: "Test-Device_profile_1720169510"
         options:
           type: object
-          example: {
-            "DiscoverMode": "All",
-            "DiscoverProperties": [ 103, 117 ],
-            "DiscoverObjects": [ 1, 2, 3, 4, 5]
-          }
+          example:
+            DiscoverMode: "All"
+            DiscoverProperties: [ 103, 117 ]
+            DiscoverObjects: [ 1, 2, 3, 4, 5]
       required:
         - deviceName
 
@@ -362,7 +360,6 @@ components:
       schema:
         type: string
         format: uuid
-      required: true
       example: "14a42ea6-c394-41c3-8bcd-a29b9f5e6835"
 
   headers:
@@ -694,6 +691,103 @@ paths:
                 requestId: "e1abba6d-7263-4046-9fe0-ef5b42e24bf2"
                 statusCode: 503
                 message: "HTTP request timeout"
+    delete:
+      summary: "Stop the ongoing device discovery process"
+      parameters:
+        - $ref: '#/components/parameters/correlatedRequestHeader'
+      responses:
+        '200':
+          description: "OK"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "9dae40d3-902f-49e5-b532-1b20d36d1f05"
+                statusCode: 200
+        '500':
+          description: An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
+        '501':
+          description: Request is not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 501
+                message: "Not implemented"
+
+  /discovery/requestId/{requestId}:
+    parameters:
+      - $ref: '#/components/parameters/correlatedRequestHeader'
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: "An ID of datatype string, by default a GUID."
+    delete:
+      summary: "Stop the ongoing device discovery process with the specified request id"
+      responses:
+        '200':
+          description: "OK"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "9dae40d3-902f-49e5-b532-1b20d36d1f05"
+                statusCode: 200
+        '404':
+          description: If the specified request id does not match the current working request id.
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                404Example:
+                  $ref: '#/components/examples/404Example'
+        '500':
+          description: An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
+        '501':
+          description: Request is not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 501
+                message: "Not implemented"
 
   /profilescan:
     parameters:
@@ -792,6 +886,72 @@ paths:
                 statusCode: 501
                 message: "Not implemented"
 
+  /profilescan/device/name/{name}:
+    parameters:
+      - $ref: '#/components/parameters/correlatedRequestHeader'
+      - name: name
+        in: path
+        required: true
+        schema:
+          type: string
+        description: "Uniquely identifies a given device"
+    delete:
+      summary: "Stop the ongoing device profile scanning process for a specific device"
+      responses:
+        '200':
+          description: "OK"
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BaseResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "51e41bac-e405-4ee8-ad66-7741eb1e7b6d"
+                statusCode: 200
+        '404':
+          description: "The requested resource does not exist."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                400Example:
+                  $ref: '#/components/examples/404Example'
+        '423':
+          description: The device service is locked (admin state).
+          headers:
+            X-Correlation-ID:
+              $ref: '#/components/headers/correlatedResponseHeader'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                423Example:
+                  $ref: '#/components/examples/423Example'
+        '500':
+          description: An unexpected error occurred on the server
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                500Example:
+                  $ref: '#/components/examples/500Example'
+        '501':
+          description: Request is not supported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                apiVersion: "v3"
+                requestId: "e6e8a2f4-eb14-4649-9e2b-175247911369"
+                statusCode: 501
+                message: "Not implemented"
   /config:
     get:
       summary: "Returns the current configuration of the service."

@@ -22,8 +22,8 @@ var ProtocolDriverName = di.TypeInstanceToName((*interfaces.ProtocolDriver)(nil)
 // AutoEventManagerName contains the name of autoevent manager implementation in the DIC
 var AutoEventManagerName = di.TypeInstanceToName((*interfaces.AutoEventManager)(nil))
 
-// ProfileScanName contains the name of profile scan implementation in the DIC.
-var ProfileScanName = di.TypeInstanceToName((*interfaces.ProfileScan)(nil))
+// ExtendedProtocolDriverName contains the name of extended protocol driver implementation in the DIC.
+var ExtendedProtocolDriverName = di.TypeInstanceToName((*interfaces.ExtendedProtocolDriver)(nil))
 
 // DeviceServiceFrom helper function queries the DIC and returns device service struct.
 func DeviceServiceFrom(get di.Get) *models.DeviceService {
@@ -40,9 +40,9 @@ func AutoEventManagerFrom(get di.Get) interfaces.AutoEventManager {
 	return get(AutoEventManagerName).(interfaces.AutoEventManager)
 }
 
-// ProfileScanFrom helper function queries the DIC and returns profile scan implementation.
-func ProfileScanFrom(get di.Get) interfaces.ProfileScan {
-	casted, ok := get(ProfileScanName).(interfaces.ProfileScan)
+// ExtendedProtocolDriverFrom helper function queries the DIC and returns extended protocol driver implementation.
+func ExtendedProtocolDriverFrom(get di.Get) interfaces.ExtendedProtocolDriver {
+	casted, ok := get(ExtendedProtocolDriverName).(interfaces.ExtendedProtocolDriver)
 	if ok {
 		return casted
 	}
@@ -54,5 +54,9 @@ var DiscoveryRequestIdName = di.TypeInstanceToName(new(string))
 
 // DiscoveryRequestIdFrom helper function queries the DIC and returns discovery request id.
 func DiscoveryRequestIdFrom(get di.Get) string {
-	return get(DiscoveryRequestIdName).(string)
+	id, ok := get(DiscoveryRequestIdName).(string)
+	if !ok {
+		return ""
+	}
+	return id
 }

@@ -9,7 +9,6 @@ import (
 	"context"
 	"encoding/json"
 
-	sdkCommon "github.com/edgexfoundry/device-sdk-go/v3/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
@@ -23,14 +22,14 @@ func PublishDeviceDiscoveryProgressSystemEvent(id string, progress, discoveredDe
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	lc.Debugf("Publishing device discovery progress system event. Correlation Id: %s", id)
 	details := sdkModels.DeviceDiscoveryProgress{Progress: sdkModels.Progress{RequestId: id, Progress: progress, Message: message}, DiscoveredDeviceCount: discoveredDeviceCount}
-	PublishGenericSystemEvent(common.DeviceSystemEventType, sdkCommon.SystemEventActionDiscovery, details, ctx, dic)
+	PublishGenericSystemEvent(common.DeviceSystemEventType, common.SystemEventActionDiscovery, details, ctx, dic)
 }
 
 func PublishProfileScanProgressSystemEvent(id string, progress int, message string, ctx context.Context, dic *di.Container) {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	lc.Debugf("Publishing device profile scan progress system event. Correlation Id: %s", id)
 	details := sdkModels.Progress{RequestId: id, Progress: progress, Message: message}
-	PublishGenericSystemEvent(common.DeviceSystemEventType, sdkCommon.SystemEventActionProfileScan, details, ctx, dic)
+	PublishGenericSystemEvent(common.DeviceSystemEventType, common.SystemEventActionProfileScan, details, ctx, dic)
 }
 
 func PublishGenericSystemEvent(eventType, action string, details any, ctx context.Context, dic *di.Container) {

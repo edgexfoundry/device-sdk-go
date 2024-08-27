@@ -19,10 +19,12 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 	gometrics "github.com/rcrowley/go-metrics"
 
@@ -36,6 +38,8 @@ const readCommandsExecutedName = "ReadCommandsExecuted"
 type SimpleDriver struct {
 	sdk                  interfaces.DeviceServiceSDK
 	lc                   logger.LoggingClient
+	stopDiscovery        stopDiscoveryState
+	stopProfileScan      stopProfileScanState
 	asyncCh              chan<- *sdkModels.AsyncValues
 	deviceCh             chan<- []sdkModels.DiscoveredDevice
 	switchButton         bool
@@ -46,6 +50,16 @@ type SimpleDriver struct {
 	stringArray          []string
 	readCommandsExecuted gometrics.Counter
 	serviceConfig        *config.ServiceConfig
+}
+
+type stopDiscoveryState struct {
+	stop   bool
+	locker sync.RWMutex
+}
+
+type stopProfileScanState struct {
+	stop   map[string]bool
+	locker sync.RWMutex
 }
 
 func getImageBytes(imgFile string, buf *bytes.Buffer) error {
@@ -96,6 +110,7 @@ func (s *SimpleDriver) Initialize(sdk interfaces.DeviceServiceSDK) error {
 		"f2": 123,
 	}
 	s.stringArray = []string{"foo", "bar"}
+	s.stopProfileScan = stopProfileScanState{stop: make(map[string]bool)}
 
 	if err := sdk.LoadCustomConfig(s.serviceConfig, "SimpleCustom"); err != nil {
 		return fmt.Errorf("unable to load 'SimpleCustom' custom configuration: %s", err.Error())
@@ -319,9 +334,11 @@ func (s *SimpleDriver) Discover() error {
 	res := []sdkModels.DiscoveredDevice{device2}
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	s.sdk.PublishDeviceDiscoveryProgressSystemEvent(50, len(res), "")
-
-	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
-	res = append(res, device3)
+	defer s.setStopDeviceDiscovery(false)
+	if !s.getStopDeviceDiscovery() {
+		time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
+		res = append(res, device3)
+	}
 	s.deviceCh <- res
 	return nil
 }
@@ -353,9 +370,48 @@ func (s *SimpleDriver) ValidateDevice(device models.Device) error {
 	return nil
 }
 
-func (s *SimpleDriver) ProfileScan(payload sdkModels.ProfileScanRequest) (models.DeviceProfile, error) {
+func (s *SimpleDriver) ProfileScan(payload requests.ProfileScanRequest) (models.DeviceProfile, error) {
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	s.sdk.PublishProfileScanProgressSystemEvent(payload.RequestId, 50, "")
+	if s.getStopProfileScan(payload.DeviceName) {
+		return models.DeviceProfile{}, fmt.Errorf("profile scanning is stopped")
+	}
 	time.Sleep(time.Duration(s.serviceConfig.SimpleCustom.Writable.DiscoverSleepDurationSecs) * time.Second)
 	return models.DeviceProfile{Name: payload.ProfileName}, nil
+}
+
+func (s *SimpleDriver) StopDeviceDiscovery(options map[string]any) {
+	s.lc.Debugf("StopDeviceDiscovery called: options=%v", options)
+	s.setStopDeviceDiscovery(true)
+}
+
+func (s *SimpleDriver) StopProfileScan(device string, options map[string]any) {
+	s.lc.Debugf("StopProfileScan called: options=%v", options)
+	s.setStopProfileScan(device, true)
+}
+
+func (s *SimpleDriver) getStopDeviceDiscovery() bool {
+	s.stopDiscovery.locker.RLock()
+	defer s.stopDiscovery.locker.RUnlock()
+	return s.stopDiscovery.stop
+}
+
+func (s *SimpleDriver) setStopDeviceDiscovery(stop bool) {
+	s.stopDiscovery.locker.Lock()
+	defer s.stopDiscovery.locker.Unlock()
+	s.stopDiscovery.stop = stop
+	s.lc.Debugf("set stopDeviceDiscovery to %v", stop)
+}
+
+func (s *SimpleDriver) getStopProfileScan(device string) bool {
+	s.stopProfileScan.locker.RLock()
+	defer s.stopProfileScan.locker.RUnlock()
+	return s.stopProfileScan.stop[device]
+}
+
+func (s *SimpleDriver) setStopProfileScan(device string, stop bool) {
+	s.stopProfileScan.locker.Lock()
+	defer s.stopProfileScan.locker.Unlock()
+	s.stopProfileScan.stop[device] = stop
+	s.lc.Debugf("set stopProfileScan to %v", stop)
 }

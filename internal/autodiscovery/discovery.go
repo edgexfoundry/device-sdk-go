@@ -20,6 +20,7 @@ import (
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
 )
 
 type discoveryLocker struct {
@@ -72,4 +73,28 @@ func DiscoveryWrapper(driver interfaces.ProtocolDriver, ctx context.Context, dic
 		},
 	})
 	locker.mux.Unlock()
+}
+
+func StopDeviceDiscovery(dic *di.Container, requestId string, options map[string]any) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	extdriver := container.ExtendedProtocolDriverFrom(dic.Get)
+	if extdriver == nil {
+		return errors.NewCommonEdgeX(errors.KindNotImplemented, "Stop device discovery is not implemented", nil)
+	}
+
+	workingId := container.DiscoveryRequestIdFrom(dic.Get)
+	if len(workingId) == 0 {
+		lc.Debugf("no active discovery process was found")
+		return nil
+	}
+	if len(requestId) != 0 && requestId != workingId {
+		lc.Debugf("failed to stop device discovery with request id %s: current working request id is %s", requestId, workingId)
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, "There is no auto discovery process running with the requestId", nil)
+	}
+
+	lc.Debugf("Stopping device discovery – %s", workingId)
+	extdriver.StopDeviceDiscovery(options)
+	lc.Debugf("Device discovery – %s stop signal is sent", workingId)
+
+	return nil
 }
