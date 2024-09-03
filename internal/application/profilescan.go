@@ -10,15 +10,18 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http/correlation"
 	"github.com/edgexfoundry/device-sdk-go/v3/internal/utils"
 	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v3/models"
 )
 
 type profileScanLocker struct {
@@ -28,7 +31,7 @@ type profileScanLocker struct {
 
 var locker = profileScanLocker{busyMap: make(map[string]bool)}
 
-func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels.ProfileScanRequest, ctx context.Context, dic *di.Container) {
+func ProfileScanWrapper(busy chan bool, extdriver interfaces.ExtendedProtocolDriver, req requests.ProfileScanRequest, ctx context.Context, dic *di.Container) {
 	locker.mux.Lock()
 	b := locker.busyMap[req.DeviceName]
 	busy <- b
@@ -49,7 +52,7 @@ func ProfileScanWrapper(busy chan bool, ps interfaces.ProfileScan, req sdkModels
 
 	utils.PublishProfileScanProgressSystemEvent(req.RequestId, 0, "", ctx, dic)
 	lc.Debugf("profile scan triggered with device name '%s' and profile name '%s', Correlation Id: %s", req.DeviceName, req.ProfileName, req.RequestId)
-	profile, err := ps.ProfileScan(req)
+	profile, err := extdriver.ProfileScan(req)
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to trigger profile scan: %v, Correlation Id: %s", err.Error(), req.RequestId)
 		utils.PublishProfileScanProgressSystemEvent(req.RequestId, -1, errMsg, ctx, dic)
@@ -86,4 +89,38 @@ func releaseLock(deviceName string) {
 	locker.mux.Lock()
 	locker.busyMap[deviceName] = false
 	locker.mux.Unlock()
+}
+
+func StopProfileScan(dic *di.Container, deviceName string, options map[string]any) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	extdriver := container.ExtendedProtocolDriverFrom(dic.Get)
+	if extdriver == nil {
+		return errors.NewCommonEdgeX(errors.KindNotImplemented, "Stop profile scan is not implemented", nil)
+	}
+
+	// check device service AdminState
+	ds := container.DeviceServiceFrom(dic.Get)
+	if ds.AdminState == models.Locked {
+		return errors.NewCommonEdgeX(errors.KindServiceLocked, "service locked", nil)
+	}
+
+	// check requested device exists
+	_, exist := cache.Devices().ForName(deviceName)
+	if !exist {
+		return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, fmt.Sprintf("device %s not found", deviceName), nil)
+	}
+
+	locker.mux.Lock()
+	busy := locker.busyMap[deviceName]
+	locker.mux.Unlock()
+	if !busy {
+		lc.Debugf("no active profile scan process was found")
+		return nil
+	}
+
+	lc.Debugf("Stopping profile scan for device – %s", deviceName)
+	extdriver.StopProfileScan(deviceName, options)
+	lc.Debugf("Profile scan for device – %s stop signal is sent", deviceName)
+
+	return nil
 }

@@ -13,11 +13,6 @@ const (
 	SDKReservedPrefix = "ds-"
 )
 
-const (
-	SystemEventActionDiscovery   = "discovery"
-	SystemEventActionProfileScan = "profilescan"
-)
-
 // SDKVersion indicates the version of the SDK - will be overwritten by build
 var SDKVersion string = "0.0.0"
 
