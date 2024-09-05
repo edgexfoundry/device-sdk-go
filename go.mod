@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.52
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.56
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.43
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.31
 	github.com/google/uuid v1.6.0
@@ -26,8 +26,8 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.12 // indirect
-	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.13 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.9 // indirect
+	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.16 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.12 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
-	github.com/hashicorp/consul/api v1.29.2 // indirect
+	github.com/hashicorp/consul/api v1.29.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
@@ -94,11 +94,11 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openziti/channel/v2 v2.0.136 // indirect
-	github.com/openziti/edge-api v0.26.21 // indirect
+	github.com/openziti/edge-api v0.26.23 // indirect
 	github.com/openziti/foundation/v2 v2.0.47 // indirect
 	github.com/openziti/identity v1.0.81 // indirect
 	github.com/openziti/metrics v1.2.56 // indirect
-	github.com/openziti/sdk-golang v0.23.39 // indirect
+	github.com/openziti/sdk-golang v0.23.40 // indirect
 	github.com/openziti/secretstream v0.1.21 // indirect
 	github.com/openziti/transport/v2 v2.0.138 // indirect
 	github.com/orcaman/concurrent-map/v2 v2.0.1 // indirect
