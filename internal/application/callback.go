@@ -53,6 +53,22 @@ func UpdateProfile(profileRequest requests.DeviceProfileRequest, dic *di.Contain
 	return nil
 }
 
+func DeleteProfile(profileName string, dic *di.Container) errors.EdgeX {
+	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	if cache.CheckProfileNotUsed(profileName) {
+		err := cache.Profiles().RemoveByName(profileName)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to remove device profile %s", profileName)
+			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		lc.Debugf("profile %s is removed from cache", profileName)
+	} else {
+		lc.Warnf("received Profile Deletion System Event for %s, but the profile is still used by some devices", profileName)
+	}
+
+	return nil
+}
+
 func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) errors.EdgeX {
 	device := dtos.ToDeviceModel(addDeviceRequest.Device)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
@@ -172,18 +188,6 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 	} else {
 		errMsg := fmt.Sprintf("driver.RemoveDevice callback failed for %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
-	}
-
-	// a special case in which user updates the device profile after deleting all
-	// devices in metadata, the profile won't be correctly updated because metadata
-	// does not know which device service callback it needs to call. Remove the unused
-	// device profile in cache so that if it is updated in metadata, next time the
-	// device using it is added/updated, the cache can receive the updated one as well.
-	if device.ProfileName != "" && cache.CheckProfileNotUsed(device.ProfileName) {
-		edgexErr = cache.Profiles().RemoveByName(device.ProfileName)
-		if edgexErr != nil {
-			lc.Warn("failed to remove unused profile", edgexErr.DebugMessages())
-		}
 	}
 
 	return nil
