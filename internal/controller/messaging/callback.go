@@ -30,14 +30,21 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 	deviceService := container.DeviceServiceFrom(dic.Get)
 	metadataSystemEventTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
 		SetPath(messageBusInfo.GetBaseTopicPrefix()).SetPath(common.MetadataSystemEventSubscribeTopic).SetNameFieldPath(deviceService.Name).SetPath("#").BuildPath()
-
-	lc.Infof("Subscribing to System Events on topic: %s", metadataSystemEventTopic)
+	profileDeleteSystemEventTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+		SetPath(messageBusInfo.GetBaseTopicPrefix()).
+		SetPath(strings.Replace(common.MetadataSystemEventSubscribeTopic, "+/+", common.DeviceProfileSystemEventType+"/"+common.SystemEventActionDelete, 1)).
+		SetPath("#").BuildPath()
+	lc.Infof("Subscribing to System Events on topics: %s and %s", metadataSystemEventTopic, profileDeleteSystemEventTopic)
 
 	messages := make(chan types.MessageEnvelope, 1)
 	messageErrors := make(chan error, 1)
 	topics := []types.TopicChannel{
 		{
 			Topic:    metadataSystemEventTopic,
+			Messages: messages,
+		},
+		{
+			Topic:    profileDeleteSystemEventTopic,
 			Messages: messages,
 		},
 	}
@@ -85,7 +92,11 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 				}
 
 				serviceName := container.DeviceServiceFrom(dic.Get).Name
-				if systemEvent.Owner != serviceName && systemEvent.Owner != serviceBaseName {
+				if systemEvent.Owner == common.CoreMetaDataServiceKey {
+					if systemEvent.Type != common.DeviceProfileSystemEventType && systemEvent.Action != common.SystemEventActionDelete {
+						lc.Errorf("only support device profile delete system events from owner %s", systemEvent.Owner)
+					}
+				} else if systemEvent.Owner != serviceName && systemEvent.Owner != serviceBaseName {
 					lc.Errorf("unmatched system event owner %s with service name %s", systemEvent.Owner, serviceName)
 					continue
 				}
@@ -155,8 +166,10 @@ func deviceProfileSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Contai
 	switch systemEvent.Action {
 	case common.SystemEventActionUpdate:
 		err = application.UpdateProfile(requests.NewDeviceProfileRequest(deviceProfile), dic)
-	// there is no action needed for Device Profile Add and Delete in Device Service
-	case common.SystemEventActionAdd, common.SystemEventActionDelete:
+	case common.SystemEventActionDelete:
+		err = application.DeleteProfile(deviceProfile.Name, dic)
+	// there is no action needed for Device Profile Add in Device Service
+	case common.SystemEventActionAdd:
 		break
 	default:
 		return fmt.Errorf("unknown %s system event action %s", systemEvent.Type, systemEvent.Action)

@@ -52,6 +52,7 @@ The following steps show how to trigger profile scan on device-simple:
 2. Trigger profile scan by sending POST request to DS endpoint: http://edgex-device-simple:59999/api/v3/profilescan with payload:
    ```json
    {
+     "apiVersion": "v3",
      "deviceName": "ProfileScan-Simple-Device",
      "profileName": "ProfileScan-Test-Profile"
    }
