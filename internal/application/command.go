@@ -287,7 +287,7 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 	// create CommandValue
 	cv, edgexErr := createCommandValueFromDeviceResource(dr, v)
 	if edgexErr != nil {
-		return nil, errors.NewCommonEdgeX(errors.Kind(edgexErr), "failed to create CommandValue", edgexErr)
+		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to create CommandValue", edgexErr)
 	}
 
 	// prepare CommandRequest
@@ -385,7 +385,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 		if err == nil {
 			cvs = append(cvs, cv)
 		} else {
-			return nil, errors.NewCommonEdgeX(errors.Kind(err), "failed to create CommandValue", err)
+			return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "failed to create CommandValue", err)
 		}
 	}
 
