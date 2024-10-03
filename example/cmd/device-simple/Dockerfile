@@ -1,5 +1,6 @@
 #
 # Copyright (c) 2023 Intel
+# Copyright (c) 2024 IOTech Ltd
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +15,7 @@
 # limitations under the License.
 #
 
-ARG BASE=golang:1.21-alpine3.18
+ARG BASE=golang:1.23-alpine3.20
 FROM ${BASE} AS builder
 
 ARG MAKE=make build
@@ -33,7 +34,7 @@ COPY . .
 RUN ${MAKE}
 
 # Next image - Copy built Go binary into new workspace
-FROM alpine:3.18
+FROM alpine:3.20
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2022: Intel'
 
