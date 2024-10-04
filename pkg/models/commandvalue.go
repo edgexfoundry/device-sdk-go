@@ -442,6 +442,9 @@ func (cv *CommandValue) Float64ArrayValue() ([]float64, error) {
 
 // BinaryValue returns the value in []byte data type, and returns error if the Type is not Binary.
 func (cv *CommandValue) BinaryValue() ([]byte, error) {
+	if cv.Value == nil {
+		return nil, nil
+	}
 	var value []byte
 	if cv.Type != common.ValueTypeBinary {
 		errMsg := fmt.Sprintf("cannot convert %s to %s", cv.Type, common.ValueTypeBinary)
@@ -467,6 +470,9 @@ func (cv *CommandValue) ObjectValue() (interface{}, error) {
 // validate checks if the given value can be converted to specified valueType by
 // performing type assertion
 func validate(valueType string, value interface{}) error {
+	if value == nil {
+		return nil // value can be nil, skip validation
+	}
 	var ok bool
 	switch valueType {
 	case common.ValueTypeString:

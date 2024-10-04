@@ -154,6 +154,8 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 		reading = dtos.NewBinaryReading(profileName, deviceName, cv.DeviceResourceName, binary, mediaType)
 	} else if cv.Type == common.ValueTypeObject {
 		reading = dtos.NewObjectReading(profileName, deviceName, cv.DeviceResourceName, cv.Value)
+	} else if cv.Type == common.ValueTypeObjectArray {
+		reading = dtos.NewObjectReadingWithArray(profileName, deviceName, cv.DeviceResourceName, cv.Value)
 	} else {
 		reading, err = dtos.NewSimpleReading(profileName, deviceName, cv.DeviceResourceName, cv.Type, cv.Value)
 		if err != nil {

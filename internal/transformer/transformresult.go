@@ -398,6 +398,9 @@ func transformReadShift(value any, shift int64) (any, errors.EdgeX) {
 }
 
 func commandValueForTransform(cv *sdkModels.CommandValue) (interface{}, errors.EdgeX) {
+	if cv.Value == nil {
+		return nil, nil
+	}
 	var v interface{}
 	var err error
 	switch cv.Type {
