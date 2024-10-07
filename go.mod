@@ -4,12 +4,12 @@ go 1.23
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.60
+	github.com/edgexfoundry/go-mod-bootstrap/v3 v3.2.0-dev.64
 	github.com/edgexfoundry/go-mod-core-contracts/v3 v3.2.0-dev.49
 	github.com/edgexfoundry/go-mod-messaging/v3 v3.2.0-dev.37
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/labstack/echo/v4 v4.11.4
+	github.com/labstack/echo/v4 v4.12.0
 	github.com/panjf2000/ants/v2 v2.10.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.9.0
@@ -26,8 +26,8 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v3 v3.2.0-dev.17 // indirect
-	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.16 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.13 // indirect
+	github.com/edgexfoundry/go-mod-registry/v3 v3.2.0-dev.18 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v3 v3.2.0-dev.14 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
