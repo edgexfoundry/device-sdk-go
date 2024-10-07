@@ -26,17 +26,20 @@ func TestCompareReadings(t *testing.T) {
 	e, err := NewExecutor("device-test", autoEvent, pool)
 	require.NoError(t, err)
 
+	value1 := "1"
+	value2 := "2"
+	value3 := "3"
 	testReadings := []dtos.BaseReading{{ResourceName: "r1"}, {ResourceName: "r2"}}
 	testReadings[0].ValueType = common.ValueTypeInt8
-	testReadings[0].Value = "1"
+	testReadings[0].Value = &value1
 	testReadings[0].ValueType = common.ValueTypeInt8
-	testReadings[1].Value = "2"
+	testReadings[1].Value = &value2
 
 	firstReadings := testReadings
 
 	readingsValueChanged := make([]dtos.BaseReading, len(firstReadings))
 	copy(readingsValueChanged, firstReadings)
-	readingsValueChanged[1].Value = "3"
+	readingsValueChanged[1].Value = &value3
 
 	readingsResourceChanged := make([]dtos.BaseReading, len(readingsValueChanged))
 	copy(readingsResourceChanged, readingsValueChanged)
