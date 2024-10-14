@@ -1,5 +1,10 @@
 .PHONY: build test clean docker unittest lint
 
+# change the following boolean flag to enable or disable the Full RELRO (RELocation Read Only) for linux ELF (Executable and Linkable Format) binaries
+ENABLE_FULL_RELRO:="true"
+# change the following boolean flag to enable or disable PIE for linux binaries which is needed for ASLR (Address Space Layout Randomization) on Linux, the ASLR support on Windows is enabled by default
+ENABLE_PIE:="true"
+
 ARCH=$(shell uname -m)
 
 MICROSERVICES=example/cmd/device-simple/device-simple
@@ -15,6 +20,14 @@ GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v3.Version=$(VERSION)
 GOTESTFLAGS?=-race
 
 GIT_SHA=$(shell git rev-parse HEAD)
+
+ifeq ($(ENABLE_FULL_RELRO), "true")
+	GOFLAGS += -ldflags "-bindnow"
+endif
+
+ifeq ($(ENABLE_PIE), "true")
+	GOFLAGS += -buildmode=pie
+endif
 
 build: $(MICROSERVICES)
 
