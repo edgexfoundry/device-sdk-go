@@ -15,6 +15,9 @@ import (
 )
 
 func TransformWriteParameter(cv *dsModels.CommandValue, pv models.ResourceProperties) errors.EdgeX {
+	if cv.Value == nil {
+		return nil
+	}
 	if !isNumericValueType(cv) {
 		return nil
 	}
