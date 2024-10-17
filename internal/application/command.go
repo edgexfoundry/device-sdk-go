@@ -460,6 +460,14 @@ func validateServiceAndDeviceState(deviceName string, dic *di.Container) (models
 }
 
 func createCommandValueFromDeviceResource(dr models.DeviceResource, value interface{}) (*sdkModels.CommandValue, errors.EdgeX) {
+	if value == nil {
+		return &sdkModels.CommandValue{
+			DeviceResourceName: dr.Name,
+			Type:               dr.Properties.ValueType,
+			Value:              value,
+			Tags:               make(map[string]string)}, nil
+	}
+
 	var err error
 	var result *sdkModels.CommandValue
 

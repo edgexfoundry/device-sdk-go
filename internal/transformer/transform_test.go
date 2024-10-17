@@ -193,3 +193,55 @@ func TestCommandValuesToEventDTO_ReadingUnits(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandValuesToEventDTO_ReadingNilValue(t *testing.T) {
+	dic := NewMockDIC()
+	err := cache.InitCache(TestDeviceService, TestDeviceService, dic)
+	require.NoError(t, err)
+	cvs := []*sdkModels.CommandValue{
+		testCommandNilValue(t, common.ValueTypeBool),
+		testCommandNilValue(t, common.ValueTypeString),
+		testCommandNilValue(t, common.ValueTypeUint8),
+		testCommandNilValue(t, common.ValueTypeUint16),
+		testCommandNilValue(t, common.ValueTypeUint32),
+		testCommandNilValue(t, common.ValueTypeUint64),
+		testCommandNilValue(t, common.ValueTypeInt8),
+		testCommandNilValue(t, common.ValueTypeInt16),
+		testCommandNilValue(t, common.ValueTypeInt32),
+		testCommandNilValue(t, common.ValueTypeInt64),
+		testCommandNilValue(t, common.ValueTypeFloat32),
+		testCommandNilValue(t, common.ValueTypeFloat64),
+		testCommandNilValue(t, common.ValueTypeBinary),
+		testCommandNilValue(t, common.ValueTypeBoolArray),
+		testCommandNilValue(t, common.ValueTypeStringArray),
+		testCommandNilValue(t, common.ValueTypeUint8Array),
+		testCommandNilValue(t, common.ValueTypeUint16Array),
+		testCommandNilValue(t, common.ValueTypeUint32Array),
+		testCommandNilValue(t, common.ValueTypeUint64Array),
+		testCommandNilValue(t, common.ValueTypeInt8Array),
+		testCommandNilValue(t, common.ValueTypeInt16Array),
+		testCommandNilValue(t, common.ValueTypeInt32Array),
+		testCommandNilValue(t, common.ValueTypeInt64Array),
+		testCommandNilValue(t, common.ValueTypeFloat32Array),
+		testCommandNilValue(t, common.ValueTypeFloat64Array),
+		testCommandNilValue(t, common.ValueTypeObject),
+		testCommandNilValue(t, common.ValueTypeObjectArray),
+	}
+	event, err := CommandValuesToEventDTO(cvs, TestDevice, TestDeviceCommand, true, dic)
+	require.NoError(t, err)
+
+	for _, r := range event.Readings {
+		assert.Empty(t, r.Value)
+		assert.Empty(t, r.BinaryValue)
+		assert.Empty(t, r.ObjectValue)
+		expectedNullReading := dtos.NewNullReading(TestProfile, TestDevice, TestDeviceResource, r.ValueType)
+		expectedNullReading.Id = r.Id
+		expectedNullReading.Origin = r.Origin
+		assert.Equal(t, expectedNullReading, r)
+	}
+}
+func testCommandNilValue(t *testing.T, valueType string) *sdkModels.CommandValue {
+	cv, e := sdkModels.NewCommandValue(TestDeviceResource, valueType, nil)
+	require.NoError(t, e)
+	return cv
+}

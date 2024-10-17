@@ -60,7 +60,7 @@ func CommandValuesToEventDTO(cvs []*models.CommandValue, deviceName string, sour
 		}
 
 		// perform data transformation
-		if dataTransform {
+		if dataTransform && cv.Value != nil {
 			edgexErr := TransformReadResult(cv, dr.Properties)
 			if edgexErr != nil {
 				lc.Errorf("failed to transform CommandValue (%s): %v", cv.String(), edgexErr)
@@ -145,7 +145,9 @@ func commandValueToReading(cv *models.CommandValue, deviceName, profileName, med
 	var err error
 	var reading dtos.BaseReading
 
-	if cv.Type == common.ValueTypeBinary {
+	if cv.Value == nil {
+		reading = dtos.NewNullReading(profileName, deviceName, cv.DeviceResourceName, cv.Type)
+	} else if cv.Type == common.ValueTypeBinary {
 		var binary []byte
 		binary, err = cv.BinaryValue()
 		if err != nil {
