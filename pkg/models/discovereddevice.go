@@ -5,7 +5,7 @@
 
 package models
 
-import "github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+import "github.com/edgexfoundry/go-mod-core-contracts/v4/models"
 
 // DiscoveredDevice defines the required information for a found device.
 type DiscoveredDevice struct {

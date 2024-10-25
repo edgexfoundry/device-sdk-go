@@ -9,13 +9,13 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-	sdkModels "github.com/edgexfoundry/device-sdk-go/v3/pkg/models"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos"
-	"github.com/edgexfoundry/go-mod-messaging/v3/pkg/types"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
+	sdkModels "github.com/edgexfoundry/device-sdk-go/v4/pkg/models"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
+	"github.com/edgexfoundry/go-mod-messaging/v4/pkg/types"
 )
 
 func PublishDeviceDiscoveryProgressSystemEvent(id string, progress, discoveredDeviceCount int, message string, ctx context.Context, dic *di.Container) {

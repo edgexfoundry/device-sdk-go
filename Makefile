@@ -14,8 +14,8 @@ VERSION=$(shell cat ./VERSION 2>/dev/null || echo 0.0.0)
 SDKVERSION=$(VERSION)
 DOCKER_TAG=$(VERSION)-dev
 
-GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v3.Version=$(VERSION) \
-                  -X github.com/edgexfoundry/device-sdk-go/v3/internal/common.SDKVersion=$(SDKVERSION)" -trimpath -mod=readonly
+GOFLAGS=-ldflags "-X github.com/edgexfoundry/device-sdk-go/v4.Version=$(VERSION) \
+                  -X github.com/edgexfoundry/device-sdk-go/v4/internal/common.SDKVersion=$(SDKVERSION)" -trimpath -mod=readonly
 
 GOTESTFLAGS?=-race
 
