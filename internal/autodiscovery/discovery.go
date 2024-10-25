@@ -13,14 +13,14 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/net/context"
 
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/controller/http/correlation"
-	"github.com/edgexfoundry/device-sdk-go/v3/internal/utils"
-	"github.com/edgexfoundry/device-sdk-go/v3/pkg/interfaces"
-	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v3/bootstrap/container"
-	"github.com/edgexfoundry/go-mod-bootstrap/v3/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/common"
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/errors"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/controller/http/correlation"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/utils"
+	"github.com/edgexfoundry/device-sdk-go/v4/pkg/interfaces"
+	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
+	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
 )
 
 type discoveryLocker struct {

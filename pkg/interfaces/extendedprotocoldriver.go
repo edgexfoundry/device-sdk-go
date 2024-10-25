@@ -3,8 +3,8 @@
 package interfaces
 
 import (
-	"github.com/edgexfoundry/go-mod-core-contracts/v3/dtos/requests"
-	model "github.com/edgexfoundry/go-mod-core-contracts/v3/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
+	model "github.com/edgexfoundry/go-mod-core-contracts/v4/models"
 )
 
 // ExtendedProtocolDriver is a low-level device-specific interface implemented
