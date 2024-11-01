@@ -9,6 +9,7 @@ package autoevent
 import (
 	"context"
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -24,17 +25,20 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v4/internal/common"
+
+	"github.com/spf13/cast"
 )
 
 type Executor struct {
-	deviceName   string
-	sourceName   string
-	onChange     bool
-	lastReadings map[string]interface{}
-	duration     time.Duration
-	stop         bool
-	mutex        *sync.Mutex
-	pool         *ants.Pool
+	deviceName        string
+	sourceName        string
+	onChange          bool
+	onChangeThreshold float64
+	lastReadings      map[string]interface{}
+	duration          time.Duration
+	stop              bool
+	mutex             *sync.Mutex
+	pool              *ants.Pool
 }
 
 // Run triggers this Executor executes the handler for the event source periodically
@@ -61,7 +65,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 			if evt != nil {
 				if e.onChange {
 					if e.compareReadings(evt.Readings) {
-						lc.Debugf("AutoEvent - readings are the same as previous one")
+						lc.Debugf("AutoEvent - source '%s' readings are the same as previous one", e.sourceName)
 						continue
 					}
 				}
@@ -109,13 +113,22 @@ func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 	var result = true
 	for _, reading := range readings {
 		if lastReading, ok := e.lastReadings[reading.ResourceName]; ok {
-			if reading.ValueType == common.ValueTypeBinary {
+			switch reading.ValueType {
+			case common.ValueTypeBinary:
 				checksum := xxhash.Checksum64(reading.BinaryValue)
 				if lastReading != checksum {
 					e.lastReadings[reading.ResourceName] = checksum
 					result = false
 				}
-			} else {
+			case common.ValueTypeUint8, common.ValueTypeUint16, common.ValueTypeUint32, common.ValueTypeUint64,
+				common.ValueTypeInt8, common.ValueTypeInt16, common.ValueTypeInt32, common.ValueTypeInt64,
+				common.ValueTypeFloat32, common.ValueTypeFloat64:
+				t := cast.ToFloat64(lastReading) - cast.ToFloat64(reading.Value)
+				if math.Abs(t) > e.onChangeThreshold {
+					e.lastReadings[reading.ResourceName] = reading.Value
+					result = false
+				}
+			default:
 				if lastReading != reading.Value {
 					e.lastReadings[reading.ResourceName] = reading.Value
 					result = false
@@ -155,12 +168,13 @@ func NewExecutor(deviceName string, ae models.AutoEvent, pool *ants.Pool) (*Exec
 	}
 
 	return &Executor{
-		deviceName: deviceName,
-		sourceName: ae.SourceName,
-		onChange:   ae.OnChange,
-		duration:   duration,
-		stop:       false,
-		mutex:      &sync.Mutex{},
-		pool:       pool,
+		deviceName:        deviceName,
+		sourceName:        ae.SourceName,
+		onChange:          ae.OnChange,
+		onChangeThreshold: ae.OnChangeThreshold,
+		duration:          duration,
+		stop:              false,
+		mutex:             &sync.Mutex{},
+		pool:              pool,
 	}, nil
 }
