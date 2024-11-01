@@ -79,3 +79,59 @@ func TestCompareReadings(t *testing.T) {
 		})
 	}
 }
+
+func TestOnChangeThreshold(t *testing.T) {
+	deviceName := "testDevice"
+	resourceName := "testResource"
+	profileName := "testProfile"
+	autoEvent := models.AutoEvent{SourceName: resourceName, OnChange: true, Interval: "500ms"}
+	pool, err := ants.NewPool(runtime.GOMAXPROCS(0), ants.WithNonblocking(true))
+	require.NoError(t, err)
+	e, err := NewExecutor(deviceName, autoEvent, pool)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name                string
+		valueType           string
+		lastReadingValue    any
+		currentReadingValue any
+		onChangeThreshold   float64
+		expectUnchanged     bool
+	}{
+		{"float32 unchanged is true", common.ValueTypeFloat32, float32(0), float32(0.01), 0.01, true},
+		{"float32 unchanged is false", common.ValueTypeFloat32, float32(0), float32(0.02), 0.01, false},
+		{"float64 unchanged is true", common.ValueTypeFloat64, float64(0), float64(0.01), 0.01, true},
+		{"float64 unchanged is false", common.ValueTypeFloat64, float64(0), float64(0.02), 0.01, false},
+		{"uint8 unchanged is true", common.ValueTypeUint8, uint8(0), uint8(1), 1, true},
+		{"uint8 unchanged is false", common.ValueTypeUint8, uint8(0), uint8(2), 1, false},
+		{"uint16 unchanged is true", common.ValueTypeUint16, uint16(0), uint16(1), 1, true},
+		{"uint16 unchanged is false", common.ValueTypeUint16, uint16(0), uint16(2), 1, false},
+		{"uint32 unchanged is true", common.ValueTypeUint32, uint32(0), uint32(1), 1, true},
+		{"uint32 unchanged is false", common.ValueTypeUint32, uint32(0), uint32(2), 1, false},
+		{"uint64 unchanged is true", common.ValueTypeUint64, uint64(0), uint64(1), 1, true},
+		{"uint64 unchanged is false", common.ValueTypeUint64, uint64(0), uint64(2), 1, false},
+		{"int8 unchanged is true", common.ValueTypeInt8, int8(0), int8(1), 1, true},
+		{"int8 unchanged is false", common.ValueTypeInt8, int8(0), int8(2), 1, false},
+		{"int16 unchanged is true", common.ValueTypeInt16, int16(0), int16(1), 1, true},
+		{"int16 unchanged is false", common.ValueTypeInt16, int16(0), int16(2), 1, false},
+		{"int32 unchanged is true", common.ValueTypeInt32, int32(0), int32(1), 1, true},
+		{"int32 unchanged is false", common.ValueTypeInt32, int32(0), int32(2), 1, false},
+		{"int64 unchanged is true", common.ValueTypeInt64, int64(0), int64(1), 1, true},
+		{"int64 unchanged is false", common.ValueTypeInt64, int64(0), int64(2), 1, false},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			lastReading, err := dtos.NewSimpleReading(profileName, deviceName, resourceName, testCase.valueType, testCase.lastReadingValue)
+			require.NoError(t, err)
+			currentReading, err := dtos.NewSimpleReading(profileName, deviceName, resourceName, testCase.valueType, testCase.currentReadingValue)
+			require.NoError(t, err)
+			e.lastReadings = map[string]any{lastReading.ResourceName: lastReading.Value}
+			e.onChangeThreshold = testCase.onChangeThreshold
+
+			res := e.compareReadings([]dtos.BaseReading{currentReading})
+
+			assert.Equal(t, testCase.expectUnchanged, res, "compareReading result not as expected")
+		})
+	}
+}
