@@ -295,6 +295,7 @@ func (s *deviceService) selfRegister() edgexErr.EdgeX {
 		Labels:      s.config.Device.Labels,
 		BaseAddress: bootstrapTypes.DefaultHttpProtocol + "://" + s.config.Service.Host + ":" + strconv.FormatInt(int64(s.config.Service.Port), 10),
 		AdminState:  models.Unlocked,
+		Properties:  make(map[string]any),
 	}
 	*s.deviceServiceModel = localDeviceService
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
