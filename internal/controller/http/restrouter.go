@@ -62,11 +62,11 @@ func (c *RestController) InitRestRoutes() {
 	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery, http.MethodPost, authenticationHook)
 	c.addReservedRoute(common.ApiProfileScanRoute, c.ProfileScan, http.MethodPost, authenticationHook)
 	c.addReservedRoute(common.ApiDiscoveryRoute, c.StopDeviceDiscovery, http.MethodDelete, authenticationHook)
-	c.addReservedRoute(common.ApiDiscoveryByIdEchoRoute, c.StopDeviceDiscovery, http.MethodDelete, authenticationHook)
-	c.addReservedRoute(common.ApiProfileScanByDeviceNameEchoRoute, c.StopProfileScan, http.MethodDelete, authenticationHook)
+	c.addReservedRoute(common.ApiDiscoveryByIdRoute, c.StopDeviceDiscovery, http.MethodDelete, authenticationHook)
+	c.addReservedRoute(common.ApiProfileScanByDeviceNameRoute, c.StopProfileScan, http.MethodDelete, authenticationHook)
 	// device command
-	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.GetCommand, http.MethodGet, authenticationHook)
-	c.addReservedRoute(common.ApiDeviceNameCommandNameEchoRoute, c.SetCommand, http.MethodPut, authenticationHook)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.GetCommand, http.MethodGet, authenticationHook)
+	c.addReservedRoute(common.ApiDeviceNameCommandNameRoute, c.SetCommand, http.MethodPut, authenticationHook)
 }
 
 func (c *RestController) addReservedRoute(route string, handler func(e echo.Context) error, method string,
