@@ -4,17 +4,17 @@ go 1.23
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.0.0-dev.12
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.14
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.8
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.0.0-dev.15
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.16
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.10
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/labstack/echo/v4 v4.13.2
+	github.com/labstack/echo/v4 v4.13.3
 	github.com/panjf2000/ants/v2 v2.10.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/spf13/cast v1.7.0
+	github.com/spf13/cast v1.7.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/net v0.32.0
+	golang.org/x/net v0.33.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -24,9 +24,9 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.7 // indirect
-	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.2 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.4 // indirect
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.10 // indirect
+	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.3 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.5 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kataras/go-events v0.0.3 // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -75,8 +75,8 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/muhlemmer/gu v0.3.1 // indirect
-	github.com/nats-io/nats.go v1.37.0 // indirect
-	github.com/nats-io/nkeys v0.4.7 // indirect
+	github.com/nats-io/nats.go v1.38.0 // indirect
+	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
