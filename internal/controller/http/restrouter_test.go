@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2019 Intel Corporation
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ func TestAddRoute(t *testing.T) {
 	for _, test := range tests {
 		r := echo.New()
 		controller := NewRestController(r, dic, uuid.NewString())
-		controller.InitRestRoutes()
+		controller.InitRestRoutes(dic)
 
 		err := controller.AddRoute(test.Route, handlerFunc, []string{test.Method})
 		if test.ErrorExpected {
@@ -116,7 +116,7 @@ func TestInitRestRoutes(t *testing.T) {
 	})
 	r := echo.New()
 	controller := NewRestController(r, dic, uuid.NewString())
-	controller.InitRestRoutes()
+	controller.InitRestRoutes(dic)
 
 	// Traverse all registered routes for the router
 	for _, route := range r.Routes() {
