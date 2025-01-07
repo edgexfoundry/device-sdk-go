@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -96,6 +96,10 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
 
+	config := container.ConfigurationFrom(dic.Get)
+	reqFailsTracker := container.AllowedRequestFailuresTrackerFrom(dic.Get)
+	reqFailsTracker.Set(device.Name, int(config.Device.AllowedFails))
+
 	lc.Debugf("starting AutoEvents for device %s", device.Name)
 	container.AutoEventManagerFrom(dic.Get).RestartForDevice(device.Name)
 	return nil
@@ -189,6 +193,9 @@ func DeleteDevice(name string, dic *di.Container) errors.EdgeX {
 		errMsg := fmt.Sprintf("driver.RemoveDevice callback failed for %s", device.Name)
 		return errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
 	}
+
+	reqFailsTracker := container.AllowedRequestFailuresTrackerFrom(dic.Get)
+	reqFailsTracker.Remove(device.Name)
 
 	return nil
 }

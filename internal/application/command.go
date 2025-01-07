@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -34,20 +34,27 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/models"
 )
 
-func GetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, regexCmd bool, dic *di.Container) (*dtos.Event, errors.EdgeX) {
+func GetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, regexCmd bool, dic *di.Container) (res *dtos.Event, err errors.EdgeX) {
 	if deviceName == "" {
 		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "device name is empty", nil)
 	}
 	if commandName == "" {
 		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "command is empty", nil)
 	}
+	var device models.Device
+	defer func() {
+		if err != nil {
+			DeviceRequestFailed(deviceName, dic)
+		} else {
+			DeviceRequestSucceeded(device, dic)
+		}
+	}()
 
-	device, err := validateServiceAndDeviceState(deviceName, dic)
+	device, err = validateServiceAndDeviceState(deviceName, dic)
 	if err != nil {
 		return nil, errors.NewCommonEdgeXWrapper(err)
 	}
 
-	var res *dtos.Event
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if cmdExist {
 		res, err = readDeviceCommand(device, commandName, queryParams, dic)
@@ -68,20 +75,27 @@ func GetCommand(ctx context.Context, deviceName string, commandName string, quer
 	return res, nil
 }
 
-func SetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, requests map[string]any, dic *di.Container) (*dtos.Event, errors.EdgeX) {
+func SetCommand(ctx context.Context, deviceName string, commandName string, queryParams string, requests map[string]any, dic *di.Container) (event *dtos.Event, err errors.EdgeX) {
 	if deviceName == "" {
 		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "device name is empty", nil)
 	}
 	if commandName == "" {
 		return nil, errors.NewCommonEdgeX(errors.KindContractInvalid, "command is empty", nil)
 	}
+	var device models.Device
+	defer func() {
+		if err != nil {
+			DeviceRequestFailed(deviceName, dic)
+		} else {
+			DeviceRequestSucceeded(device, dic)
+		}
+	}()
 
-	device, err := validateServiceAndDeviceState(deviceName, dic)
+	device, err = validateServiceAndDeviceState(deviceName, dic)
 	if err != nil {
 		return nil, errors.NewCommonEdgeXWrapper(err)
 	}
 
-	var event *dtos.Event
 	_, cmdExist := cache.Profiles().DeviceCommand(device.ProfileName, commandName)
 	if cmdExist {
 		event, err = writeDeviceCommand(device, commandName, queryParams, requests, dic)
@@ -447,8 +461,17 @@ func validateServiceAndDeviceState(deviceName string, dic *di.Container) (models
 		return models.Device{}, errors.NewCommonEdgeX(errors.KindServiceLocked, fmt.Sprintf("device %s locked", device.Name), nil)
 	}
 	// check device's OperatingState
+	// if it's a device return attempt, operating state is allowed to be DOWN
 	if device.OperatingState == models.Down {
-		return models.Device{}, errors.NewCommonEdgeX(errors.KindServiceLocked, fmt.Sprintf("device %s OperatingState is DOWN", device.Name), nil)
+		err := errors.NewCommonEdgeX(errors.KindServiceLocked, fmt.Sprintf("device %s OperatingState is DOWN", device.Name), nil)
+		config := container.ConfigurationFrom(dic.Get)
+		if config.Device.AllowedFails == 0 || config.Device.DeviceDownTimeout == 0 {
+			return models.Device{}, err
+		}
+		reqFailsTracker := container.AllowedRequestFailuresTrackerFrom(dic.Get)
+		if reqFailsTracker.Value(deviceName) > 0 {
+			return models.Device{}, err
+		}
 	}
 
 	// check device's ProfileName

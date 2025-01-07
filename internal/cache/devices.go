@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -50,13 +50,10 @@ type deviceCache struct {
 func newDeviceCache(devices []models.Device, dic *di.Container) DeviceCache {
 	defaultSize := len(devices)
 	dMap := make(map[string]*models.Device, defaultSize)
-	for i, d := range devices {
-		dMap[d.Name] = &devices[i]
-	}
-
 	dc = &deviceCache{deviceMap: dMap, dic: dic}
 	lastConnectedMetrics := make(map[string]gometrics.Gauge)
 	for _, d := range devices {
+		dMap[d.Name] = &d
 		deviceMetric := gometrics.NewGauge()
 		registerMetric(d.Name, deviceMetric, dic)
 		lastConnectedMetrics[d.Name] = deviceMetric
