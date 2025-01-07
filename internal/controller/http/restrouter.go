@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2025 IOTech Ltd
 // Copyright (c) 2019 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -13,7 +13,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
@@ -52,11 +51,10 @@ func (c *RestController) SetCustomConfigInfo(customConfig interfaces.UpdatableCo
 	c.customConfig = customConfig
 }
 
-func (c *RestController) InitRestRoutes() {
+func (c *RestController) InitRestRoutes(dic *di.Container) {
 	c.lc.Info("Registering routes...")
 
-	secretProvider := container.SecretProviderExtFrom(c.dic.Get)
-	authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, c.lc)
+	authenticationHook := handlers.AutoConfigAuthenticationFunc(dic)
 
 	// discovery
 	c.addReservedRoute(common.ApiDiscoveryRoute, c.Discovery, http.MethodPost, authenticationHook)

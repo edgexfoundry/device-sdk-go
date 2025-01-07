@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -50,7 +50,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 	s.commonController = controller.NewCommonController(dic, b.router, s.serviceKey, common.ServiceVersion)
 	s.commonController.SetSDKVersion(common.SDKVersion)
 	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
-	s.controller.InitRestRoutes()
+	s.controller.InitRestRoutes(dic)
 
 	if bootstrapContainer.DeviceClientFrom(dic.Get) == nil {
 		s.lc.Error("Client configuration for core-metadata not found, missing common config? Use -cp or -cc flags for common config.")

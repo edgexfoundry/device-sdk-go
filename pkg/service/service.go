@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2024 IOTech Ltd
+// Copyright (C) 2018-2025 IOTech Ltd
 // Copyright (C) 2019,2023 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -244,9 +244,7 @@ func (s *deviceService) AddRoute(route string, handler func(http.ResponseWriter,
 // AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
 func (s *deviceService) AddCustomRoute(route string, authentication interfaces.Authentication, handler func(e echo.Context) error, methods ...string) error {
 	if authentication == interfaces.Authenticated {
-		lc := bootstrapContainer.LoggingClientFrom(s.dic.Get)
-		secretProvider := bootstrapContainer.SecretProviderExtFrom(s.dic.Get)
-		authenticationHook := handlers.AutoConfigAuthenticationFunc(secretProvider, lc)
+		authenticationHook := handlers.AutoConfigAuthenticationFunc(s.dic)
 
 		return s.controller.AddRoute(route, handler, methods, authenticationHook)
 	}
