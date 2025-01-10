@@ -63,6 +63,18 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 		return false
 	}
 
+	devices := cache.Devices().All()
+	config := container.ConfigurationFrom(dic.Get)
+	reqFailsTracker := container.NewAllowedFailuresTracker()
+	for _, d := range devices {
+		reqFailsTracker.Set(d.Name, int(config.Device.AllowedFails))
+	}
+	dic.Update(di.ServiceConstructorMap{
+		container.AllowedRequestFailuresTrackerName: func(get di.Get) any {
+			return reqFailsTracker
+		},
+	})
+
 	if s.AsyncReadingsEnabled() {
 		s.asyncCh = make(chan *models.AsyncValues, s.config.Device.AsyncBufferSize)
 		wg.Add(1)

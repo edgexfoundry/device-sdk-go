@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2023 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -59,4 +59,12 @@ func DiscoveryRequestIdFrom(get di.Get) string {
 		return ""
 	}
 	return id
+}
+
+// AllowedRequestFailuresTrackerName contains the name of allowed request failures tracker in the DIC.
+var AllowedRequestFailuresTrackerName = di.TypeInstanceToName(AllowedFailuresTracker{})
+
+// AllowedRequestFailuresTrackerFrom helper function queries the DIC and returns a device request failures tracker.
+func AllowedRequestFailuresTrackerFrom(get di.Get) AllowedFailuresTracker {
+	return get(AllowedRequestFailuresTrackerName).(AllowedFailuresTracker)
 }

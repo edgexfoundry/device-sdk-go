@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2025 IOTech Ltd
 // Copyright (c) 2021 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -53,6 +53,10 @@ type DeviceInfo struct {
 	EnableAsyncReadings bool
 	// Labels are properties applied to the device service to help with searching
 	Labels []string
+	// AllowedFails specifies the number of failed requests allowed before a device is marked as down.
+	AllowedFails uint
+	// DeviceDownTimeout specifies the duration in seconds that the Device Service will try to contact a device if it is marked as down.
+	DeviceDownTimeout uint
 }
 
 // DiscoveryInfo is a struct which contains configuration of device auto discovery.

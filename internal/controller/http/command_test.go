@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022-2023 IOTech Ltd
+// Copyright (C) 2022-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -207,6 +207,9 @@ func mockDic() *di.Container {
 		},
 		bootstrapContainer.MetricsManagerInterfaceName: func(get di.Get) interface{} {
 			return mockMetricsManager
+		},
+		container.AllowedRequestFailuresTrackerName: func(get di.Get) any {
+			return container.NewAllowedFailuresTracker()
 		},
 	})
 

@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2019-2023 IOTech Ltd
+// Copyright (C) 2019-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
