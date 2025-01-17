@@ -8,7 +8,10 @@ package service
 
 import (
 	"context"
+	"net/http"
 	"sync"
+
+	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/controller"
@@ -17,9 +20,9 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
-	"github.com/edgexfoundry/device-sdk-go/v4/internal/common"
+	sdkCommon "github.com/edgexfoundry/device-sdk-go/v4/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
-	"github.com/edgexfoundry/device-sdk-go/v4/internal/controller/http"
+	restController "github.com/edgexfoundry/device-sdk-go/v4/internal/controller/http"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/controller/messaging"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/provision"
 	"github.com/edgexfoundry/device-sdk-go/v4/pkg/models"
@@ -41,19 +44,18 @@ func NewBootstrap(ds *deviceService, router *echo.Echo) *Bootstrap {
 	}
 }
 
-func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ startup.Timer, dic *di.Container) (success bool) {
+func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, startupTimer startup.Timer, dic *di.Container) (success bool) {
 	s := b.deviceService
 	s.wg = wg
 	s.ctx = ctx
 	s.lc = bootstrapContainer.LoggingClientFrom(dic.Get)
 	s.autoEventManager = container.AutoEventManagerFrom(dic.Get)
-	s.commonController = controller.NewCommonController(dic, b.router, s.serviceKey, common.ServiceVersion)
-	s.commonController.SetSDKVersion(common.SDKVersion)
-	s.controller = http.NewRestController(b.router, dic, s.serviceKey)
+	s.commonController = controller.NewCommonController(dic, b.router, s.serviceKey, sdkCommon.ServiceVersion)
+	s.commonController.SetSDKVersion(sdkCommon.SDKVersion)
+	s.controller = restController.NewRestController(b.router, dic, s.serviceKey)
 	s.controller.InitRestRoutes(dic)
 
-	if bootstrapContainer.DeviceClientFrom(dic.Get) == nil {
-		s.lc.Error("Client configuration for core-metadata not found, missing common config? Use -cp or -cc flags for common config.")
+	if !b.checkDependencyServiceAvailable(common.CoreMetaDataServiceKey, startupTimer) {
 		return false
 	}
 
@@ -127,7 +129,46 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, _ 
 
 	// Very important that this bootstrap handler is called after the NewServiceMetrics handler so
 	// MetricsManager dependency has been created.
-	common.InitializeSentMetrics(s.lc, dic)
+	sdkCommon.InitializeSentMetrics(s.lc, dic)
+	return true
+}
+
+func (b *Bootstrap) checkDependencyServiceAvailable(serviceKey string, startupTimer startup.Timer) bool {
+	lc := b.deviceService.lc
+	registry := bootstrapContainer.RegistryFrom(b.deviceService.dic.Get)
+	mode := bootstrapContainer.DevRemoteModeFrom(b.deviceService.dic.Get)
+	clients := bootstrapContainer.ConfigurationFrom(b.deviceService.dic.Get).GetBootstrap().Clients
+	clientInfo, ok := (*clients)[serviceKey]
+	if !ok {
+		lc.Errorf("Client configuration for '%s' not found, missing common config? Use -cp or -cc flags for common config.", serviceKey)
+		return false
+	}
+	pingUrl := clientInfo.Url() + common.ApiPingRoute
+
+	var err error
+	for startupTimer.HasNotElapsed() {
+		if registry == nil || mode.InDevMode || mode.InRemoteMode {
+			lc.Debugf("Check service '%s' availability by Ping", serviceKey)
+			client := &http.Client{}
+			_, err = client.Get(pingUrl)
+		} else {
+			lc.Debugf("Check service '%s' availability via Registry", serviceKey)
+			_, err = registry.IsServiceAvailable(serviceKey)
+		}
+		if err == nil {
+			break
+		}
+		lc.Warnf("Check service '%s' availability failed: %s. retrying...", serviceKey, err.Error())
+		startupTimer.SleepForInterval()
+	}
+
+	if err != nil {
+		lc.Errorf("Check service '%s' availability time out: %s", serviceKey, err.Error())
+		return false
+	}
+
+	lc.Infof("Check service '%s' availability succeeded", serviceKey)
+
 	return true
 }
 
