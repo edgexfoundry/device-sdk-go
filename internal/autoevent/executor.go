@@ -47,14 +47,17 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 	defer wg.Done()
 
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+	deadline := time.Now().Add(e.duration)
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(e.duration):
+		case <-time.After(time.Until(deadline)):
 			if e.stop {
 				return
 			}
+			deadline = deadline.Add(e.duration)
 			lc.Debugf("AutoEvent - reading %s", e.sourceName)
 			evt, err := readResource(e, dic)
 			if err != nil {
