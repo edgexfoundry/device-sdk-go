@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2023 IOTech Ltd
+// Copyright (C) 2023-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,6 @@ package messaging
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -85,7 +84,7 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 				lc.Debugf("System event received on message queue. Topic: %s, Correlation-id: %s", msgEnvelope.ReceivedTopic, msgEnvelope.CorrelationID)
 
 				var systemEvent dtos.SystemEvent
-				err := json.Unmarshal(msgEnvelope.Payload, &systemEvent)
+				systemEvent, err := types.GetMsgPayload[dtos.SystemEvent](msgEnvelope)
 				if err != nil {
 					lc.Errorf("failed to JSON decoding system event: %s", err.Error())
 					continue
