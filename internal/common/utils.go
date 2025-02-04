@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -54,27 +54,17 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	configuration := container.ConfigurationFrom(dic.Get)
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, correlationID) // nolint: staticcheck
 	req := requests.NewAddEventRequest(*event)
-
-	bytes, encoding, err := req.Encode()
-	if err != nil {
-		lc.Error(err.Error())
-	}
-
-	// Check event size in kilobytes
-	if configuration.MaxEventSize > 0 && int64(len(bytes)) > configuration.MaxEventSize*1024 {
-		lc.Errorf("event size exceed MaxEventSize(%d KB)", configuration.MaxEventSize)
-		return
-	}
+	encoding := req.GetEncodingContentType()
+	ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
+	envelope := types.NewMessageEnvelope(req, ctx)
 
 	sent := false
 	mc := bootstrapContainer.MessagingClientFrom(dic.Get)
-	ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
-	envelope := types.NewMessageEnvelope(bytes, ctx)
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
 	publishTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
 		SetPath(configuration.MessageBus.GetBaseTopicPrefix()).SetPath(common.EventsPublishTopic).SetPath(DeviceServiceEventPrefix).
 		SetNameFieldPath(serviceName).SetNameFieldPath(event.ProfileName).SetNameFieldPath(event.DeviceName).SetNameFieldPath(event.SourceName).BuildPath()
-	err = mc.Publish(envelope, publishTopic)
+	err := mc.PublishWithSizeLimit(envelope, publishTopic, configuration.MaxEventSize)
 	if err != nil {
 		lc.Errorf("Failed to publish event to MessageBus: %s", err)
 		return
@@ -83,7 +73,7 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 		event.ProfileName, event.DeviceName, event.SourceName, event.Id, publishTopic)
 	sent = true
 
-	if sent {
+	if sent && eventsSent != nil && readingsSent != nil {
 		eventsSent.Inc(1)
 		readingsSent.Inc(int64(len(event.Readings)))
 	}

@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2024 IOTech Ltd
+// Copyright (C) 2024-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,6 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 	sdkModels "github.com/edgexfoundry/device-sdk-go/v4/pkg/models"
@@ -46,8 +45,7 @@ func PublishGenericSystemEvent(eventType, action string, details any, ctx contex
 	topicPathBuilder := common.NewPathBuilder().EnableNameFieldEscape(config.Service.EnableNameFieldEscape)
 	publishTopic := topicPathBuilder.SetPath(config.MessageBus.GetBaseTopicPrefix()).SetPath(common.SystemEventPublishTopic).
 		SetPath(systemEvent.Source).SetPath(systemEvent.Type).SetPath(systemEvent.Action).SetNameFieldPath(systemEvent.Owner).BuildPath()
-	payload, _ := json.Marshal(systemEvent)
-	envelope := types.NewMessageEnvelope(payload, ctx)
+	envelope := types.NewMessageEnvelope(systemEvent, ctx)
 	// Correlation ID and Content type are set by the above factory function from the context of the request that
 	// triggered this System Event. We'll keep that Correlation ID, but need to make sure the Content Type is set appropriate
 	// for how the payload was encoded above.

@@ -396,7 +396,7 @@ func TestRestController_SetCommand(t *testing.T) {
 				wg.Add(1)
 			}
 			messagingClientMock := &messagingMocks.MessageClient{}
-			messagingClientMock.On("Publish", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+			messagingClientMock.On("PublishWithSizeLimit", mock.Anything, mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 				go func() {
 					defer wg.Done()
 				}()
@@ -428,7 +428,7 @@ func TestRestController_SetCommand(t *testing.T) {
 
 				wg.Wait()
 				if testCase.commandName != writeOnlyCommand && testCase.commandName != writeOnlyResource {
-					messagingClientMock.AssertNumberOfCalls(t, "Publish", 1)
+					messagingClientMock.AssertNumberOfCalls(t, "PublishWithSizeLimit", 1)
 				}
 			} else {
 				assert.NotEmpty(t, res.Message, "Response message doesn't contain the error message")

@@ -173,7 +173,9 @@ func TestSendEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dic := NewMockDIC()
 			mcMock := &msgMocks.MessageClient{}
-			mcMock.On("Publish", mock.Anything, mock.Anything).Return(nil)
+			mcMock.On("PublishWithSizeLimit", mock.Anything, mock.Anything, int64(0)).Return(nil)
+			mcMock.On("PublishWithSizeLimit", mock.Anything, mock.Anything, int64(eventSize+1)).Return(nil)
+			mcMock.On("PublishWithSizeLimit", mock.Anything, mock.Anything, int64(eventSize-1)).Return(errors.New("message size exceed limit"))
 
 			dic.Update(di.ServiceConstructorMap{
 				container.ConfigurationName: func(get di.Get) interface{} {
@@ -189,12 +191,11 @@ func TestSendEvent(t *testing.T) {
 			InitializeSentMetrics(logger.NewMockClient(), dic)
 
 			SendEvent(tt.event, testUUIDString, dic)
+			mcMock.AssertNumberOfCalls(t, "PublishWithSizeLimit", 1)
 			if tt.eventTooLarge {
-				mcMock.AssertNumberOfCalls(t, "Publish", 0)
 				assert.Equal(t, int64(0), eventsSent.Count())
 				assert.Equal(t, int64(0), readingsSent.Count())
 			} else {
-				mcMock.AssertNumberOfCalls(t, "Publish", 1)
 				assert.Equal(t, int64(1), eventsSent.Count())
 				assert.Equal(t, int64(1), readingsSent.Count())
 			}
