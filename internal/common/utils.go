@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -68,8 +68,14 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 
 	sent := false
 	mc := bootstrapContainer.MessagingClientFrom(dic.Get)
-	ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
-	envelope := types.NewMessageEnvelope(bytes, ctx)
+	var envelope types.MessageEnvelope
+	if types.IsMsgBase64Payload() {
+		ctx = context.WithValue(ctx, common.ContentType, encoding) // nolint: staticcheck
+		envelope = types.NewMessageEnvelope(bytes, ctx)
+	} else {
+		ctx = context.WithValue(ctx, common.ContentType, common.ContentTypeJSON) // nolint: staticcheck
+		envelope = types.NewMessageEnvelope(req, ctx)
+	}
 	serviceName := container.DeviceServiceFrom(dic.Get).Name
 	publishTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
 		SetPath(configuration.MessageBus.GetBaseTopicPrefix()).SetPath(common.EventsPublishTopic).SetPath(DeviceServiceEventPrefix).

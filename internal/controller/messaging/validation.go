@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2023 IOTech Ltd
+// Copyright (C) 2023-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,6 @@ package messaging
 
 import (
 	"context"
-	"encoding/json"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
@@ -65,7 +64,7 @@ func SubscribeDeviceValidation(ctx context.Context, dic *di.Container) errors.Ed
 				driver := container.ProtocolDriverFrom(dic.Get)
 
 				var deviceRequest requests.AddDeviceRequest
-				err = json.Unmarshal(msgEnvelope.Payload, &deviceRequest)
+				deviceRequest, err = types.GetMsgPayload[requests.AddDeviceRequest](msgEnvelope)
 				if err != nil {
 					lc.Errorf("Failed to JSON decoding AddDeviceRequest: %s", err.Error())
 					res := types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
