@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2023 IOTech Ltd
+// Copyright (C) 2023-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -55,11 +56,13 @@ func TestDeviceValidation(t *testing.T) {
 			testProtocolName: {"key": "value"},
 		},
 	}
+	expectedAddDeviceRequest := requests.NewAddDeviceRequest(expectedDevice)
+	expectedAddDeviceRequestBytes, err := json.Marshal(expectedAddDeviceRequest)
+	require.NoError(t, err)
 	validationFailedDevice := expectedDevice
 	validationFailedDevice.Name = "validationFailedDevice"
-	expectedAddDeviceRequestBytes, err := json.Marshal(requests.NewAddDeviceRequest(expectedDevice))
-	require.NoError(t, err)
-	validationFailedDeviceBytes, err := json.Marshal(requests.NewAddDeviceRequest(validationFailedDevice))
+	validationFailedDeviceRequest := requests.NewAddDeviceRequest(validationFailedDevice)
+	validationFailedDeviceRequestBytes, err := json.Marshal(validationFailedDeviceRequest)
 	require.NoError(t, err)
 
 	mockLogger := &loggerMocks.LoggingClient{}
@@ -88,15 +91,23 @@ func TestDeviceValidation(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		requestBytes  []byte
+		request       any
 		expectedError bool
+		withEnv       bool
 	}{
-		{"valid - device validation succeed", expectedAddDeviceRequestBytes, false},
-		{"valid - device validation failed", validationFailedDeviceBytes, true},
-		{"invalid - message payload is not AddDeviceRequest", []byte("invalid"), true},
+		{"valid with env - device validation succeed", expectedAddDeviceRequestBytes, false, true},
+		{"valid with env - device validation failed", validationFailedDeviceRequestBytes, true, true},
+		{"invalid with env - message payload is not AddDeviceRequest", []byte("invalid"), true, true},
+		{"valid - device validation succeed", expectedAddDeviceRequest, false, false},
+		{"valid - device validation failed", validationFailedDeviceRequest, true, false},
+		{"invalid - message payload is not AddDeviceRequest", []byte("invalid"), true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.withEnv {
+				_ = os.Setenv("EDGEX_MSG_BASE64_PAYLOAD", common.ValueTrue)
+				defer os.Setenv("EDGEX_MSG_BASE64_PAYLOAD", common.ValueFalse)
+			}
 			mockMessaging := &messagingMocks.MessageClient{}
 			mockMessaging.On("Subscribe", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
 				topics := args.Get(0).([]types.TopicChannel)
@@ -109,7 +120,8 @@ func TestDeviceValidation(t *testing.T) {
 						RequestID:     expectedRequestId,
 						CorrelationID: expectedCorrelationId,
 						ReceivedTopic: expectedRequestTopic,
-						Payload:       tt.requestBytes,
+						ContentType:   common.ContentTypeJSON,
+						Payload:       tt.request,
 					}
 					time.Sleep(time.Second * 1)
 				}()
@@ -118,14 +130,14 @@ func TestDeviceValidation(t *testing.T) {
 				response := args.Get(0).(types.MessageEnvelope)
 				assert.Equal(t, expectedRequestId, response.RequestID)
 				if tt.expectedError {
-					assert.Equal(t, response.ErrorCode, 1)
+					assert.Equal(t, 1, response.ErrorCode)
 					assert.NotEmpty(t, response.Payload)
-					assert.Equal(t, response.ContentType, common.ContentTypeText)
+					assert.Equal(t, common.ContentTypeText, response.ContentType)
 				} else {
 					assert.Equal(t, expectedCorrelationId, response.CorrelationID)
-					assert.Equal(t, response.ErrorCode, 0)
+					assert.Equal(t, 0, response.ErrorCode)
 					assert.Empty(t, response.Payload)
-					assert.Equal(t, response.ContentType, common.ContentTypeJSON)
+					assert.Equal(t, common.ContentTypeJSON, response.ContentType)
 				}
 			}).Return(nil)
 

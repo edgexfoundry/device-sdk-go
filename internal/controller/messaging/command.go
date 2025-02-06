@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022-2023 IOTech Ltd
+// Copyright (C) 2022-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -7,7 +7,6 @@ package messaging
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -128,25 +127,16 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 
 	var err error
 	var encoding string
-	var eventResponseBytes []byte
+	var eventResponse any
 	if reserved[common.ReturnEvent] {
-		eventResponse := responses.NewEventResponse(msgEnvelope.RequestID, "", http.StatusOK, *event)
-		eventResponseBytes, encoding, err = eventResponse.Encode()
-		if err != nil {
-			lc.Errorf("Failed to encode event response: %s", err.Error())
-			responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
-			err = messageBus.Publish(responseEnvelope, responseTopic)
-			if err != nil {
-				lc.Errorf("Failed to publish command error response: %s", err.Error())
-			}
-			return
-		}
+		resp := responses.NewEventResponse(msgEnvelope.RequestID, "", http.StatusOK, *event)
+		encoding = resp.GetEncodingContentType()
+		eventResponse = resp
 	} else {
-		eventResponseBytes = nil
 		encoding = common.ContentTypeJSON
 	}
 
-	responseEnvelope, err = types.NewMessageEnvelopeForResponse(eventResponseBytes, msgEnvelope.RequestID, msgEnvelope.CorrelationID, encoding)
+	responseEnvelope, err = types.NewMessageEnvelopeForResponse(eventResponse, msgEnvelope.RequestID, msgEnvelope.CorrelationID, encoding)
 	if err != nil {
 		lc.Errorf("Failed to create response message envelope: %s", err.Error())
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
@@ -157,9 +147,15 @@ func getCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 		return
 	}
 
-	err = messageBus.Publish(responseEnvelope, responseTopic)
+	configuration := container.ConfigurationFrom(dic.Get)
+	err = messageBus.PublishWithSizeLimit(responseEnvelope, responseTopic, configuration.MaxEventSize)
 	if err != nil {
 		lc.Errorf("Failed to publish command response: %s", err.Error())
+		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
+		err = messageBus.Publish(responseEnvelope, responseTopic)
+		if err != nil {
+			lc.Errorf("Failed to publish command error response: %s", err.Error())
+		}
 		return
 	}
 
@@ -175,9 +171,7 @@ func setCommand(ctx context.Context, msgEnvelope types.MessageEnvelope, response
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	messageBus := bootstrapContainer.MessagingClientFrom(dic.Get)
 	rawQuery, _ := filterQueryParams(msgEnvelope.QueryParams)
-
-	requestPayload := make(map[string]any)
-	err := json.Unmarshal(msgEnvelope.Payload, &requestPayload)
+	requestPayload, err := types.GetMsgPayload[map[string]any](msgEnvelope)
 	if err != nil {
 		lc.Errorf("Failed to decode set command request payload: %s", err.Error())
 		responseEnvelope = types.NewMessageEnvelopeWithError(msgEnvelope.RequestID, err.Error())
