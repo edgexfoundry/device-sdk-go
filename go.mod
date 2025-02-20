@@ -4,8 +4,8 @@ go 1.23
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.0.0-dev.27
-	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.26
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.0.0-dev.28
+	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.0-dev.28
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.0.0-dev.18
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
@@ -26,7 +26,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.0.0-dev.14 // indirect
 	github.com/edgexfoundry/go-mod-registry/v4 v4.0.0-dev.4 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.9 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.0.0-dev.10 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
