@@ -16,7 +16,7 @@
 
 ### ✨  Features
 
-- Update to the new message envelope in go-mod-messaging ([77f7962…](https://github.com/edgexfoundry/device-sdk-go/commit/77f7962edb3356bbdb68222c2d3d6cabc66f655b))
+- Update to use the new message envelope in go-mod-messaging ([77f7962…](https://github.com/edgexfoundry/device-sdk-go/commit/77f7962edb3356bbdb68222c2d3d6cabc66f655b))
 ```text
 
 BREAKING CHANGE: Change MessageEnvelope payload from a byte array to a generic type
