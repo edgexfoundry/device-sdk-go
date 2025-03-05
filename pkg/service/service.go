@@ -15,7 +15,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -24,7 +23,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/controller"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/handlers"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/startup"
-	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/utils"
 	"github.com/panjf2000/ants/v2"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/autodiscovery"
@@ -233,12 +231,6 @@ func (s *deviceService) DeviceDiscoveryEnabled() bool {
 
 func (s *deviceService) DiscoveredDeviceChannel() chan []sdkModels.DiscoveredDevice {
 	return s.deviceCh
-}
-
-// AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-// Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
-func (s *deviceService) AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error {
-	return s.AddCustomRoute(route, interfaces.Unauthenticated, utils.WrapHandler(handler), methods...)
 }
 
 // AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.

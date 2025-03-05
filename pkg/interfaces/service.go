@@ -1,14 +1,12 @@
 //
 // Copyright (C) 2022-2023 Intel Corporation
-// Copyright (C) 2023-2024 IOTech Ltd
+// Copyright (C) 2023-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
 package interfaces
 
 import (
-	"net/http"
-
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
@@ -124,10 +122,6 @@ type DeviceServiceSDK interface {
 
 	// DriverConfigs retrieves the driver specific configuration
 	DriverConfigs() map[string]string
-
-	// AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
-	// Deprecated: It is recommended to use AddCustomRoute() instead and enable authentication for custom routes
-	AddRoute(route string, handler func(http.ResponseWriter, *http.Request), methods ...string) error
 
 	// AddCustomRoute allows leveraging the existing internal web server to add routes specific to Device Service.
 	AddCustomRoute(route string, authentication Authentication, handler func(e echo.Context) error, methods ...string) error
