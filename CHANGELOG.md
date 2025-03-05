@@ -12,6 +12,62 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+## [4.0.0] Odessa - 2025-03-12 (Only compatible with the 4.x releases)
+
+### ✨  Features
+
+- Update to use the new message envelope in go-mod-messaging ([77f7962…](https://github.com/edgexfoundry/device-sdk-go/commit/77f7962edb3356bbdb68222c2d3d6cabc66f655b))
+```text
+
+BREAKING CHANGE: Change MessageEnvelope payload from a byte array to a generic type
+
+```
+- Ensure AutoEvent execution happens at the configured interval ([#1680](https://github.com/edgexfoundry/device-sdk-go/issues/1680)) ([9af0642…](https://github.com/edgexfoundry/device-sdk-go/commit/9af0642e0454afe5e7d0bd4928537ff3f2da2e70))
+- Add device up/down detection ([4e68cb5…](https://github.com/edgexfoundry/device-sdk-go/commit/4e68cb59f209a13292d5305933a0070493bfeed9))
+- Implement AutoEvent onChangeThreshold ([44a1270…](https://github.com/edgexfoundry/device-sdk-go/commit/44a1270054e23efbb0c017a84b6120f6b6fc29cb))
+- Support null value in reading instead of nil reading value ([#1639](https://github.com/edgexfoundry/device-sdk-go/issues/1639)) ([791e380…](https://github.com/edgexfoundry/device-sdk-go/commit/791e3808a6f22236528886c5f30bc95897a4d2de))
+- Enable PIE support for ASLR and full RELRO ([4175f78…](https://github.com/edgexfoundry/device-sdk-go/commit/4175f787d4d7dfbfc0240ea4dfcfa8e563a46958))
+- Allow reading value to be null ([888d014…](https://github.com/edgexfoundry/device-sdk-go/commit/888d0147f37d1b0cb5e12db1661dbf13e1e18e03))
+- Add new APIs to stop the device discovery/profile scan ([bbccac4…](https://github.com/edgexfoundry/device-sdk-go/commit/bbccac45e796a95e0126349a1e5980b980a572b6))
+- Publish System Events for device discovery and profile scan progress ([6d5cd89…](https://github.com/edgexfoundry/device-sdk-go/commit/6d5cd8995dc981926f14347bf033eca9bc1eeb5e))
+- Add /profilescan API ([e6ed876…](https://github.com/edgexfoundry/device-sdk-go/commit/e6ed876124f4173f783b12bcf038a65d9eaf4a49))
+- Update auto discovery interval parsing error logs ([3f018f6…](https://github.com/edgexfoundry/device-sdk-go/commit/3f018f60d3c906f8579fab7dd580bd58f7339674))
+- Reduce numbers of inactive goroutine to optimize performance ([#1580](https://github.com/edgexfoundry/device-sdk-go/issues/1580)) ([50e812d…](https://github.com/edgexfoundry/device-sdk-go/commit/50e812dd0fc65b097297637d35e073c818e89983))
+- Allow empty profileName in Device ([b7a2f1e…](https://github.com/edgexfoundry/device-sdk-go/commit/b7a2f1edf3de431b6849887a9fcc8db68db620bc))
+- Add openziti support ([#1569](https://github.com/edgexfoundry/device-sdk-go/issues/1569)) ([decf7a4…](https://github.com/edgexfoundry/device-sdk-go/commit/decf7a4867f03271291a6465384c5ba130c9fec8))
+
+### ♻ Code Refactoring
+
+- Update module to v4 ([6bfdd3f…](https://github.com/edgexfoundry/device-rest-go/commit/6bfdd3ff5f3e792eafad2b4c95b01495d5837e2e))
+```text
+BREAKING CHANGE: update go module to v4
+```
+- Refine the discovery and scan logs ([c1d0121…](https://github.com/edgexfoundry/device-sdk-go/commit/c1d0121d89c9148a4827eb1b9062e4b7ffaa6073))
+- Remove the version number in Init logs ([#1541](https://github.com/edgexfoundry/device-sdk-go/issues/1541)) ([50dd63d…](https://github.com/edgexfoundry/device-sdk-go/commit/50dd63d392f370c86a33393d79501a04f0565adc))
+
+### 🐛 Bug Fixes
+
+- Add core-metadata dependency check ([f602b1d…](https://github.com/edgexfoundry/device-sdk-go/commit/f602b1d3b279f1300250a834fc65f11994324a69))
+- Initialize DeviceService.Properties with an empty map ([89b0421…](https://github.com/edgexfoundry/device-sdk-go/commit/89b0421df83343ee133e8ef4f4d4a7ca251848a0))
+- Only one ldflags flag is allowed ([2b424e5…](https://github.com/edgexfoundry/device-sdk-go/commit/2b424e540a2c3b8f091c6d5734c04c5071b69322))
+- Update the status code to 400 for write commands that contain invalid values([44ddd41…](https://github.com/edgexfoundry/device-sdk-go/commit/44ddd41cb5e6b40211c543a30b3ec4dbb1ba819f))
+- Remove device profile from the cache properly ([7eb1c14…](https://github.com/edgexfoundry/device-sdk-go/commit/7eb1c14b0483b0ae235a397d5607dc5eaf6f1543))
+- Avoid running auto events for empty profile ([f35974c…](https://github.com/edgexfoundry/device-sdk-go/commit/f35974ce7fdb486d71758995b1726d45ec7c2ad0))
+- Improve error handling and response for ProfileScan ([2c0f4ed…](https://github.com/edgexfoundry/device-sdk-go/commit/2c0f4ed6bb705a30f5bf719c67df6f419fc12bf2))
+- Use atomic operation to provision profile ([36fb107…](https://github.com/edgexfoundry/device-sdk-go/commit/36fb1076ec3d34dc2fd4e33abbddf84d4499d5aa))
+- Convert the Device Labels value from string to string slice ([0d5b88d…](https://github.com/edgexfoundry/device-sdk-go/commit/0d5b88dd80a75ef9b43031f4cf9724640386a6a6))
+- Address CVE in Alpine base image ([bb3b780…](https://github.com/edgexfoundry/device-sdk-go/commit/bb3b780b49bdb40d95a497fa6cff623f428380a1))
+- Set proper transform flag for Set command ([#1578](https://github.com/edgexfoundry/device-sdk-go/issues/1578)) ([97b36af…](https://github.com/edgexfoundry/device-sdk-go/commit/97b36af7baff2da76e29dc2359062fa76ab64ed3))
+
+### 📖 Documentation
+
+- Correct the ProtocolDriver links in README ([581c97a…](https://github.com/edgexfoundry/device-sdk-go/commit/581c97a92a3a8adbad42633b4d460162c03abb0f))
+- Move API document files from openapi/v3 to openapi ([8f827bd…](https://github.com/edgexfoundry/device-sdk-go/commit/8f827bd74a4c847a61608dcbc9d76980c13265ba))
+
+### 👷 Build
+
+- Upgrade to go-1.23, Linter1.61.0 and Alpine 3.20 ([21d3830…](https://github.com/edgexfoundry/device-rest-go/commit/21d3830f1720a37f1895b62ff4ca15d755f1aed1))
+
 ## [v3.1.0] Napa - 2023-11-15 (Only compatible with the 3.x releases)
 
 ### ✨  Features
