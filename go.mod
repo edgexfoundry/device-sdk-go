@@ -2,9 +2,11 @@ module github.com/edgexfoundry/device-sdk-go/v4
 
 go 1.23.0
 
+toolchain go1.24.1
+
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.3
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.4
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.3
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.3
 	github.com/google/uuid v1.6.0
