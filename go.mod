@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.3
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.6
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.3
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.3
 	github.com/google/uuid v1.6.0
@@ -14,7 +14,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/spf13/cast v1.7.1
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.0 // indirect
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.1 // indirect
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.2 // indirect
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.1 // indirect
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.1 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
