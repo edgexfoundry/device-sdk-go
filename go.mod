@@ -12,7 +12,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/spf13/cast v1.7.1
+	github.com/spf13/cast v1.8.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/net v0.38.0
 	gopkg.in/yaml.v3 v3.0.1
