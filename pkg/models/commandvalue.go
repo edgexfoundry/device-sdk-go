@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2021 IOTech Ltd
+// Copyright (C) 2018-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -467,6 +467,19 @@ func (cv *CommandValue) ObjectValue() (interface{}, error) {
 	return cv.Value, nil
 }
 
+func (cv *CommandValue) ObjectArrayValue() ([]map[string]any, error) {
+	if cv.Type != common.ValueTypeObjectArray {
+		errMsg := fmt.Sprintf("cannot convert CommandValue of %s to %s", cv.Type, common.ValueTypeObjectArray)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	value, ok := cv.Value.([]map[string]any)
+	if !ok {
+		errMsg := fmt.Sprintf("failed to transfrom %v to %T", cv.Value, value)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
+	}
+	return value, nil
+}
+
 // validate checks if the given value can be converted to specified valueType by
 // performing type assertion
 func validate(valueType string, value interface{}) error {
@@ -531,6 +544,8 @@ func validate(valueType string, value interface{}) error {
 		}
 	case common.ValueTypeObject:
 		_, ok = value.(interface{}) // nolint: gosimple
+	case common.ValueTypeObjectArray:
+		_, ok = value.([]map[string]any) // nolint: gosimple
 	default:
 		return errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}

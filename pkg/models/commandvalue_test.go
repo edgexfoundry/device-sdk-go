@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2020-2021 IOTech Ltd
+// Copyright (C) 2020-2025 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -793,6 +793,37 @@ func TestCommandValue_ObjectValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.cv.ObjectValue()
+			if tt.expectedErr {
+				require.Error(t, err)
+			} else {
+				require.Equal(t, res, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCommandValue_ObjectArrayValue(t *testing.T) {
+	value := []map[string]any{
+		{"key1": "abc", "key2": 123},
+		{"key1": "def", "key2": 456},
+	}
+	valid := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeObjectArray, Value: value}
+	invalidType := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeBinary, Value: value}
+	invalidValue := &CommandValue{DeviceResourceName: "test-resource", Type: common.ValueTypeObjectArray, Value: "not-an-array"}
+
+	tests := []struct {
+		name        string
+		cv          *CommandValue
+		expected    []map[string]any
+		expectedErr bool
+	}{
+		{"valid - CommandValue with []map[string]any Value", valid, value, false},
+		{"invalid - ValueType is not ObjectArray", invalidType, nil, true},
+		{"invalid - Value is not []map[string]any", invalidValue, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.cv.ObjectArrayValue()
 			if tt.expectedErr {
 				require.Error(t, err)
 			} else {
