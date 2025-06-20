@@ -739,7 +739,21 @@ func createCommandValueFromDeviceResource(dr models.DeviceResource, value interf
 		}
 		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeFloat64Array, arr)
 	case common.ValueTypeObject:
-		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeObject, value)
+		var obj map[string]any
+		obj, err = normalizeToObject(value)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, common.ValueTypeObject)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeObject, obj)
+	case common.ValueTypeObjectArray:
+		var objArr []map[string]any
+		objArr, err = normalizeToObjectArray(value)
+		if err != nil {
+			errMsg := fmt.Sprintf("failed to convert set parameter %s to ValueType %s", v, common.ValueTypeObjectArray)
+			return result, errors.NewCommonEdgeX(errors.KindServerError, errMsg, err)
+		}
+		result, err = sdkModels.NewCommandValue(dr.Name, common.ValueTypeObjectArray, objArr)
 	default:
 		err = errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}
@@ -760,4 +774,52 @@ func float64FromBytes(numericValue []byte) (res float64, err error) {
 	reader := bytes.NewReader(numericValue)
 	err = binary.Read(reader, binary.BigEndian, &res)
 	return
+}
+
+func normalizeToObject(value any) (map[string]any, error) {
+	if value == nil {
+		return nil, nil
+	}
+
+	var m map[string]any
+	switch v := value.(type) {
+	case string: // Support string defaultValue in device profiles
+		if err := json.Unmarshal([]byte(v), &m); err != nil {
+			return nil, fmt.Errorf("failed to convert set parameter %s to ValueType %s", v, common.ValueTypeObject)
+		}
+	case map[string]any:
+		m = v
+	default:
+		return nil, fmt.Errorf("unsupported type for Object: %T", value)
+	}
+
+	return m, nil
+}
+
+func normalizeToObjectArray(value any) ([]map[string]any, error) {
+	if value == nil {
+		return nil, nil
+	}
+
+	var arr []map[string]any
+	switch v := value.(type) {
+	case string: // Support string defaultValue in device profiles
+		if err := json.Unmarshal([]byte(v), &arr); err != nil {
+			return nil, fmt.Errorf("failed to convert set parameter %s to ValueType %s", v, common.ValueTypeObjectArray)
+		}
+	case []any:
+		for _, elem := range v {
+			if m, ok := elem.(map[string]any); ok {
+				arr = append(arr, m)
+			} else {
+				return nil, fmt.Errorf("element is not map[string]any: %v", elem)
+			}
+		}
+	case []map[string]any:
+		arr = v
+	default:
+		return nil, fmt.Errorf("unsupported type for ObjectArray: %T", value)
+	}
+
+	return arr, nil
 }
