@@ -142,58 +142,58 @@ func Test_transformReadOffset(t *testing.T) {
 	}
 }
 
-func Test_transformReadMask(t *testing.T) {
+func Test_transformMask(t *testing.T) {
 	tests := []struct {
-		name        string
-		value       interface{}
-		mask        uint64
-		expected    interface{}
-		expectedErr bool
+		name     string
+		value    interface{}
+		mask     uint64
+		expected interface{}
 	}{
-		{"valid - uint8 mask transformation", uint8(math.MaxUint8), 15, uint8(15), false},
-		{"valid - uint16 mask transformation", uint16(math.MaxUint16), 256, uint16(256), false},
-		{"valid - uint32 mask transformation", uint32(math.MaxUint32), 256, uint32(256), false},
-		{"valid - uint64 mask transformation", uint64(math.MaxUint64), 256, uint64(256), false},
+		{"valid - uint8 mask transformation", uint8(math.MaxUint8), 15, uint8(15)},
+		{"valid - uint16 mask transformation", uint16(math.MaxUint16), 256, uint16(256)},
+		{"valid - uint32 mask transformation", uint32(math.MaxUint32), 256, uint32(256)},
+		{"valid - uint64 mask transformation", uint64(math.MaxUint64), 256, uint64(256)},
+		{"valid - int8 mask transformation", int8(math.MaxInt8), 15, int8(15)},
+		{"valid - int16 mask transformation", int16(math.MaxInt16), 127, int16(127)},
+		{"valid - int32 mask transformation", int32(math.MaxInt32), 32767, int32(32767)},
+		{"valid - int64 mask transformation", int64(math.MaxInt64), 2147483647, int64(2147483647)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := transformReadMask(tt.value, tt.mask)
-			if !tt.expectedErr {
-				require.NoError(t, err)
-				assert.Equal(t, tt.expected, res)
-			} else {
-				require.Error(t, err)
-			}
+			res := transformMask(tt.value, tt.mask)
+			assert.Equal(t, tt.expected, res)
 		})
 	}
 }
 
-func Test_transformReadShift(t *testing.T) {
+func Test_transformShift(t *testing.T) {
 	tests := []struct {
-		name        string
-		value       interface{}
-		shift       int64
-		expected    interface{}
-		expectedErr bool
+		name     string
+		value    interface{}
+		shift    int64
+		expected interface{}
 	}{
-		{"valid - uint8 shift transformation with positive shift value", uint8(0b1), 4, uint8(0b10000), false},
-		{"valid - uint8 shift transformation with negative shift value", uint8(0b11111111), -4, uint8(0b00001111), false},
-		{"valid - uint16 shift transformation with positive shift value", uint16(0b1), 8, uint16(0b100000000), false},
-		{"valid - uint16 shift transformation with negative shift value", uint16(0b1111111100000000), -8, uint16(0b0000000011111111), false},
-		{"valid - uint32 shift transformation with positive shift value", uint32(0b1), 16, uint32(0b10000000000000000), false},
-		{"valid - uint32 shift transformation with negative shift value", uint32(0b11111111111111110000000000000000), -16, uint32(0b00000000000000001111111111111111), false},
-		{"valid - uint64 shift transformation with positive shift value", uint64(0b1), 32, uint64(0b100000000000000000000000000000000), false},
-		{"valid - uint64 shift transformation with negative shift value", uint64(0b1111111111111111111111111111111100000000000000000000000000000000), -32, uint64(0b0000000000000000000000000000000011111111111111111111111111111111), false},
+		{"valid - uint8 shift transformation with negative shift value", uint8(0b1), -4, uint8(0b10000)},
+		{"valid - uint8 shift transformation with positive shift value", uint8(0b11111111), 4, uint8(0b00001111)},
+		{"valid - uint16 shift transformation with negative shift value", uint16(0b1), -8, uint16(0b100000000)},
+		{"valid - uint16 shift transformation with positive shift value", uint16(0b1111111100000000), 8, uint16(0b0000000011111111)},
+		{"valid - uint32 shift transformation with negative shift value", uint32(0b1), -16, uint32(0b10000000000000000)},
+		{"valid - uint32 shift transformation with positive shift value", uint32(0b11111111111111110000000000000000), 16, uint32(0b00000000000000001111111111111111)},
+		{"valid - uint64 shift transformation with negative shift value", uint64(0b1), -32, uint64(0b100000000000000000000000000000000)},
+		{"valid - uint64 shift transformation with positive shift value", uint64(0b1111111111111111111111111111111100000000000000000000000000000000), 32, uint64(0b0000000000000000000000000000000011111111111111111111111111111111)},
+		{"valid - int8 shift transformation with negative shift value", int8(0b1), -4, int8(0b10000)},
+		{"valid - int8 shift transformation with positive shift value", int8(0b1111111), 4, int8(0b0000111)},
+		{"valid - int16 shift transformation with negative shift value", int16(0b1), -8, int16(0b100000000)},
+		{"valid - int16 shift transformation with positive shift value", int16(0b111111100000000), 8, int16(0b000000001111111)},
+		{"valid - int32 shift transformation with negative shift value", int32(0b1), -16, int32(0b10000000000000000)},
+		{"valid - int32 shift transformation with positive shift value", int32(0b1111111111111110000000000000000), 16, int32(0b0000000000000000111111111111111)},
+		{"valid - int64 shift transformation with negative shift value", int64(0b1), -32, int64(0b100000000000000000000000000000000)},
+		{"valid - int64 shift transformation with positive shift value", int64(0b111111111111111111111111111111100000000000000000000000000000000), 32, int64(0b000000000000000000000000000000001111111111111111111111111111111)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := transformReadShift(tt.value, tt.shift)
-			if !tt.expectedErr {
-				require.NoError(t, err)
-				assert.Equal(t, tt.expected, res)
-			} else {
-				require.Error(t, err)
-			}
+			res := transformShift(tt.value, tt.shift)
+			assert.Equal(t, tt.expected, res)
 		})
 	}
 }
