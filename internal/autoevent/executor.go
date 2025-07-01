@@ -83,10 +83,13 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 					buffer <- true
 					correlationId := uuid.NewString()
 
+					// Protect e.onChangeReadings with mutex to avoid concurrent access
+					e.mutex.Lock()
 					if e.onChange && config.Device.AutoEvents.SendChangedReadingsOnly && len(e.onChangeReadings) != 0 {
 						// Update the auto event to include only the readings that have changed.
 						evt.Readings = e.onChangeReadings
 					}
+					e.mutex.Unlock()
 
 					sdkCommon.SendEvent(evt, correlationId, dic)
 					lc.Tracef("AutoEvent - Sent new Event/Reading for '%s' source with Correlation Id '%s'", evt.SourceName, correlationId)
