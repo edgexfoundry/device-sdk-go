@@ -26,6 +26,10 @@ Device:
   Discovery:
     Enabled: false
     Interval: "30s"
+  AutoEvents:
+    # If set to true, only updated readings compared to the previous event are included in the generated auto event
+    SendChangedReadingsOnly: false
+
 # Example structured custom configuration
 SimpleCustom:
   OnImageLocation: ./res/on.png

@@ -57,6 +57,8 @@ type DeviceInfo struct {
 	AllowedFails uint
 	// DeviceDownTimeout specifies the duration in seconds that the Device Service will try to contact a device if it is marked as down.
 	DeviceDownTimeout uint
+	// AutoEvents defines the configuration related to the generated auto events for the device service
+	AutoEvents AutoEventInfo
 }
 
 // DiscoveryInfo is a struct which contains configuration of device auto discovery.
@@ -76,4 +78,9 @@ type Telemetry struct {
 	Mallocs,
 	Frees,
 	LiveObjects uint64
+}
+
+type AutoEventInfo struct {
+	// If true, only updated readings compared to the previous event are included in the generated auto event
+	SendChangedReadingsOnly bool
 }

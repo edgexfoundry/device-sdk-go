@@ -25,6 +25,7 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/application"
 	sdkCommon "github.com/edgexfoundry/device-sdk-go/v4/internal/common"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 
 	"github.com/spf13/cast"
 )
@@ -34,7 +35,8 @@ type Executor struct {
 	sourceName        string
 	onChange          bool
 	onChangeThreshold float64
-	lastReadings      map[string]interface{}
+	lastReadings      map[string]any
+	onChangeReadings  []dtos.BaseReading
 	duration          time.Duration
 	stop              bool
 	mutex             *sync.Mutex
@@ -48,6 +50,7 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	deadline := time.Now().Add(e.duration)
+	config := container.ConfigurationFrom(dic.Get)
 
 	for {
 		select {
@@ -79,6 +82,15 @@ func (e *Executor) Run(ctx context.Context, wg *sync.WaitGroup, buffer chan bool
 				if err := e.pool.Submit(func() {
 					buffer <- true
 					correlationId := uuid.NewString()
+
+					// Protect e.onChangeReadings with mutex to avoid concurrent access
+					e.mutex.Lock()
+					if e.onChange && config.Device.AutoEvents.SendChangedReadingsOnly && len(e.onChangeReadings) != 0 {
+						// Update the auto event to include only the readings that have changed.
+						evt.Readings = e.onChangeReadings
+					}
+					e.mutex.Unlock()
+
 					sdkCommon.SendEvent(evt, correlationId, dic)
 					lc.Tracef("AutoEvent - Sent new Event/Reading for '%s' source with Correlation Id '%s'", evt.SourceName, correlationId)
 					<-buffer
@@ -114,6 +126,9 @@ func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 	}
 
 	var result = true
+	// Reset the onChangeReadings for each auto event
+	e.onChangeReadings = nil
+
 	for _, reading := range readings {
 		if lastReading, ok := e.lastReadings[reading.ResourceName]; ok {
 			switch reading.ValueType {
@@ -122,6 +137,7 @@ func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 				if lastReading != checksum {
 					e.lastReadings[reading.ResourceName] = checksum
 					result = false
+					e.onChangeReadings = append(e.onChangeReadings, reading)
 				}
 			case common.ValueTypeUint8, common.ValueTypeUint16, common.ValueTypeUint32, common.ValueTypeUint64,
 				common.ValueTypeInt8, common.ValueTypeInt16, common.ValueTypeInt32, common.ValueTypeInt64,
@@ -130,11 +146,13 @@ func (e *Executor) compareReadings(readings []dtos.BaseReading) bool {
 				if math.Abs(t) > e.onChangeThreshold {
 					e.lastReadings[reading.ResourceName] = reading.Value
 					result = false
+					e.onChangeReadings = append(e.onChangeReadings, reading)
 				}
 			default:
 				if lastReading != reading.Value {
 					e.lastReadings[reading.ResourceName] = reading.Value
 					result = false
+					e.onChangeReadings = append(e.onChangeReadings, reading)
 				}
 			}
 		} else {
