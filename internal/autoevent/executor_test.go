@@ -59,23 +59,25 @@ func TestCompareReadings(t *testing.T) {
 	readingBinaryValueUnchanged := readingsBinaryValueChanged
 
 	tests := []struct {
-		name     string
-		reading  []dtos.BaseReading
-		expected bool
+		name                   string
+		reading                []dtos.BaseReading
+		expected               bool
+		expOnChangeReadingsLen int
 	}{
-		{"false - lastReadings are nil", firstReadings, false},
-		{"false - reading's value changed", readingsValueChanged, false},
-		{"false - reading's resource name changed", readingsResourceChanged, false},
-		{"true - readings unchanged", readingsValueUnchanged, true},
-		{"false - readings length changed", readingsLengthChanged, false},
-		{"false - reading's binary value changed", readingsBinaryValueChanged, false},
-		{"true - readings unchanged", readingBinaryValueUnchanged, true},
+		{"false - lastReadings are nil", firstReadings, false, 0},
+		{"false - reading's value changed", readingsValueChanged, false, 1},
+		{"false - reading's resource name changed", readingsResourceChanged, false, 0},
+		{"true - readings unchanged", readingsValueUnchanged, true, 0},
+		{"false - readings length changed", readingsLengthChanged, false, 0},
+		{"false - reading's binary value changed", readingsBinaryValueChanged, false, 1},
+		{"true - readings unchanged", readingBinaryValueUnchanged, true, 0},
 	}
 
 	for _, testCase := range tests {
 		t.Run(testCase.name, func(t *testing.T) {
 			res := e.compareReadings(testCase.reading)
 			assert.Equal(t, testCase.expected, res, "compareReading result not as expected")
+			assert.Equal(t, testCase.expOnChangeReadingsLen, len(e.onChangeReadings), "OnChangeReadings length not as expected")
 		})
 	}
 }
