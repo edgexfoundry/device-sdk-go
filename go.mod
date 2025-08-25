@@ -13,7 +13,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/spf13/cast v1.9.2
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	golang.org/x/net v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
 )
