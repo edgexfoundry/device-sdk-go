@@ -42,9 +42,10 @@ func Test_processDevices(t *testing.T) {
 			dic, _ := NewMockDIC()
 			err := cache.InitCache(TestDeviceService, TestDeviceService, dic)
 			if tt.update {
-				cache.Devices().Add(models.Device{
+				err := cache.Devices().Add(models.Device{
 					Name: "Simple-Device01",
 				})
+				require.NoError(t, err)
 			}
 
 			require.NoError(t, err)
