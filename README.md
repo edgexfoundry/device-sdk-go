@@ -33,6 +33,16 @@ The following command line options are available
   -o
   --overwrite
         Overwrite configuration in the Registry with local values.
+  -op 
+  --overwriteProfiles
+        Overwrite core-metadata with the versions of the associated device profile files.  
+        *** Use with cation *** Use will clobber existing profiles in core-metadata, problematic 
+        if those profiles were edited by hand intentionally or used by other services.
+  -od
+  --overwriteDevices
+        Overwrite core-metadata with the versions of the associated device files.  
+        *** Use with cation *** Use will clobber existing devices in core-metadata, problematic 
+        if those devices were edited by hand intentionally.
   -r
   --registry
         Indicates the service should use the registry.
