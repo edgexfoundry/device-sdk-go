@@ -197,6 +197,15 @@ func processProfiles(fullPath, displayPath string, overwrite bool, secretProvide
 		req := requests.NewDeviceProfileRequest(profile)
 		addProfilesReq = append(addProfilesReq, req)
 	} else if update {
+		res, err := dpc.DeviceProfileByName(context.Background(), profile.Name)
+
+		if err != nil {
+			lc.Errorf("Failed to overwrite Device Profile %s: %v", profile.Name, err)
+			return nil, nil, err
+		}
+
+		profile.Id = res.Profile.Id
+		profile.DBTimestamp = res.Profile.DBTimestamp
 		req := requests.NewDeviceProfileRequest(profile)
 		updateProfilesReq = append(updateProfilesReq, req)
 	} else {
