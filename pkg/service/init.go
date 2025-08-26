@@ -107,13 +107,13 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 		return false
 	}
 
-	edgexErr = provision.LoadProfiles(s.config.Device.ProfilesDir, dic)
+	edgexErr = provision.LoadProfiles(s.config.Device.ProfilesDir, s.overwriteProfiles, dic)
 	if edgexErr != nil {
 		s.lc.Errorf("Failed to load device profiles: %s", edgexErr.Error())
 		return false
 	}
 
-	edgexErr = provision.LoadDevices(s.config.Device.DevicesDir, dic)
+	edgexErr = provision.LoadDevices(s.config.Device.DevicesDir, s.overwriteDevices, dic)
 	if edgexErr != nil {
 		s.lc.Errorf("Failed to load devices: %s", edgexErr.Error())
 		return false
