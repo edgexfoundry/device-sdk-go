@@ -4,7 +4,7 @@ go 1.23.7
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.31
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.32
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.12
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.13
 	github.com/google/uuid v1.6.0
@@ -13,7 +13,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.11.3
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/spf13/cast v1.9.2
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	golang.org/x/net v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
 )
