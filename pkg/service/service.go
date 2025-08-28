@@ -65,6 +65,8 @@ type deviceService struct {
 	asyncCh            chan *sdkModels.AsyncValues
 	deviceCh           chan []sdkModels.DiscoveredDevice
 	flags              *flags.Default
+	overwriteDevices   bool
+	overwriteProfiles  bool
 	deviceServiceModel *models.DeviceService
 	config             *config.ConfigurationStruct
 	configProcessor    *bootstrapConfig.Processor
@@ -101,16 +103,30 @@ func NewDeviceService(serviceKey string, serviceVersion string, driver interface
 
 func (s *deviceService) Run() error {
 	var instanceName string
+	var overwriteDevices bool
+	var overwriteProfiles bool
 	startupTimer := startup.NewStartUpTimer(s.serviceKey)
 
 	additionalUsage :=
-		"    -i, --instance                  Provides a service name suffix which allows unique instance to be created\n" +
+		"    -op, --overwriteProfiles     Overwrite core-metadata with the versions of the associated device profile files.\n" +
+			"                                 *** Use with cation *** Use will clobber existing profiles in core-metadata,\n" +
+			"                                 problematic if those profiles were edited by hand intentionally or used by other services.\n" +
+			"    -od, --overwriteDevices      Overwrite core-metadata with the versions of the associated device files.\n" +
+			"                                 *** Use with cation *** Use will clobber existing devices in core-metadata,\n" +
+			"                                 problematic if those devices were edited by hand intentionally.\n" +
+			"    -i, --instance                  Provides a service name suffix which allows unique instance to be created\n" +
 			"                                    If the option is provided, service name will be replaced with \"<name>_<instance>\"\n"
 	s.flags = flags.NewWithUsage(additionalUsage)
 	s.flags.FlagSet.StringVar(&instanceName, "instance", "", "")
 	s.flags.FlagSet.StringVar(&instanceName, "i", "", "")
+	s.flags.FlagSet.BoolVar(&overwriteProfiles, "op", false, "")
+	s.flags.FlagSet.BoolVar(&overwriteProfiles, "overwriteProfiles", false, "")
+	s.flags.FlagSet.BoolVar(&overwriteDevices, "od", false, "")
+	s.flags.FlagSet.BoolVar(&overwriteDevices, "overwriteDevices", false, "")
 	s.flags.Parse(os.Args[1:])
 	s.setServiceName(instanceName)
+	s.overwriteDevices = overwriteDevices
+	s.overwriteProfiles = overwriteProfiles
 
 	s.config = &config.ConfigurationStruct{}
 	s.deviceServiceModel = &models.DeviceService{Name: s.serviceKey}
