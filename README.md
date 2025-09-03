@@ -41,7 +41,7 @@ The following command line options are available
   -od
   --overwriteDevices
         Overwrite core-metadata with the versions of the associated device files.  
-        *** Use with cation *** Use will clobber existing devices in core-metadata, problematic 
+        *** Use with caution *** Use will clobber existing devices in core-metadata, problematic 
         if those devices were edited by hand intentionally.
   -r
   --registry
