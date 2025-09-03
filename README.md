@@ -36,7 +36,7 @@ The following command line options are available
   -op 
   --overwriteProfiles
         Overwrite core-metadata with the versions of the associated device profile files.  
-        *** Use with cation *** Use will clobber existing profiles in core-metadata, problematic 
+        *** Use with caution *** Use will clobber existing profiles in core-metadata, problematic 
         if those profiles were edited by hand intentionally or used by other services.
   -od
   --overwriteDevices
