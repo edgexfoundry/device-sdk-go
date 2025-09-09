@@ -8,6 +8,10 @@ package provision
 import (
 	"context"
 	goErrors "errors"
+	"net/url"
+	"path"
+	"testing"
+
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
@@ -17,9 +21,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/url"
-	"path"
-	"testing"
 )
 
 var simpleProfile = responses.DeviceProfileResponse{
@@ -161,32 +162,42 @@ func Test_processProfiles(t *testing.T) {
 		path                string
 		secretProvider      interfaces.SecretProvider
 		profileName         string
+		overwrite           bool
 		dpcMockRes          responses.DeviceProfileResponse
 		dpcMockErr          errors.EdgeX
 		expectedNumProfiles int
 		expectedEdgexErrMsg string
 	}{
-		{"valid load profile from file, profile exists", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", simpleProfile, nil, 0, ""},
-		{"valid load profile from file, profile does not exist in metadata", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", responses.DeviceProfileResponse{}, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), 1, ""},
-		{"valid load profile from uri, profile exists", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", simpleProfile, nil, 0, ""},
-		{"valid load profile from uri, profile does not exist in metadata", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", responses.DeviceProfileResponse{}, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), 1, ""},
-		{"invalid load empty profile from file", "", nil, "Simple-Device", responses.DeviceProfileResponse{}, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), 0, ""},
-		{"invalid load profile from bogus file", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "bogus.yaml"), nil, "Simple-Device", responses.DeviceProfileResponse{}, nil, 0, ""},
-		{"invalid load profile from bogus uri", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/bogus.yaml", nil, "Simple-Device", responses.DeviceProfileResponse{}, nil, 0, ""},
-		{"invalid load profile from file, duplicate profile", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", profile, nil, 0, "Profile testProfile has already existed in cache"},
-		{"invalid load profile from uri, duplicate profile", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", profile, nil, 0, "Profile testProfile has already existed in cache"},
+		{"valid load profile from file, profile exists", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", false, simpleProfile, nil, 0, ""},
+		{"valid load profile from file, profile exists and want to overwrite", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", true, simpleProfile, nil, 1, ""},
+		{"valid load profile from file, profile does not exist in metadata", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", false, responses.DeviceProfileResponse{}, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), 1, ""},
+		{"valid load profile from uri, profile exists", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", false, simpleProfile, nil, 0, ""},
+		{"valid load profile from uri, profile exists and want to overwrite", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", true, simpleProfile, nil, 1, ""},
+		{"valid load profile from uri, profile does not exist in metadata", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", false, responses.DeviceProfileResponse{}, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), 1, ""},
+		{"invalid load empty profile from file", "", nil, "Simple-Device", false, responses.DeviceProfileResponse{}, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), 0, ""},
+		{"invalid load profile from bogus file", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "bogus.yaml"), nil, "Simple-Device", false, responses.DeviceProfileResponse{}, nil, 0, ""},
+		{"invalid load profile from bogus uri", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/bogus.yaml", nil, "Simple-Device", false, responses.DeviceProfileResponse{}, nil, 0, ""},
+		{"invalid load profile from file, duplicate profile", path.Join("..", "..", "example", "cmd", "device-simple", "res", "profiles", "Simple-Driver.yaml"), nil, "Simple-Device", false, profile, nil, 0, "Profile testProfile has already existed in cache"},
+		{"invalid load profile from uri, duplicate profile", "https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/example/cmd/device-simple/res/profiles/Simple-Driver.yaml", nil, "Simple-Device", false, profile, nil, 0, "Profile testProfile has already existed in cache"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var addProfilesReq []requests.DeviceProfileRequest
+			var updateProfilesReq []requests.DeviceProfileRequest
 			var edgexErr errors.EdgeX
 			lc := logger.MockLogger{}
 			dic, dpcMock := NewMockDIC()
 			dpcMock.On("DeviceProfileByName", context.Background(), tt.profileName).Return(tt.dpcMockRes, tt.dpcMockErr)
 			err := cache.InitCache(TestDeviceService, TestDeviceService, dic)
 			require.NoError(t, err)
-			addProfilesReq, edgexErr = processProfiles(tt.path, tt.path, tt.secretProvider, lc, dpcMock)
-			assert.Equal(t, len(addProfilesReq), tt.expectedNumProfiles)
+			addProfilesReq, updateProfilesReq, edgexErr = processProfiles(tt.path, tt.path, tt.overwrite, tt.secretProvider, lc, dpcMock)
+
+			if tt.overwrite {
+				assert.Equal(t, tt.expectedNumProfiles, len(updateProfilesReq))
+			} else {
+				assert.Equal(t, tt.expectedNumProfiles, len(addProfilesReq))
+			}
+
 			if edgexErr != nil {
 				assert.Contains(t, edgexErr.Error(), tt.expectedEdgexErrMsg)
 			}
@@ -200,6 +211,7 @@ func Test_loadProfilesFromURI(t *testing.T) {
 		path                string
 		secretProvider      interfaces.SecretProvider
 		profileNames        []string
+		overwrite           bool
 		dpcMockRes          []responses.DeviceProfileResponse
 		dpcMockErr          []errors.EdgeX
 		expectedNumProfiles int
@@ -209,13 +221,23 @@ func Test_loadProfilesFromURI(t *testing.T) {
 			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/profiles/index.json",
 			nil,
 			[]string{"Simple-Device", "Simple-Device2"},
+			false,
 			[]responses.DeviceProfileResponse{simpleProfile, simpleProfile},
 			[]errors.EdgeX{nil, nil},
 			0, ""},
+		{"valid load from uri, profile exists and want to overwrite",
+			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/profiles/index.json",
+			nil,
+			[]string{"Simple-Device", "Simple-Device2"},
+			true,
+			[]responses.DeviceProfileResponse{simpleProfile, simpleProfile},
+			[]errors.EdgeX{nil, nil},
+			1, ""},
 		{"valid load from uri, profile does not exist in metadata",
 			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/profiles/index.json",
 			nil,
 			[]string{"Simple-Device", "Simple-Device2"},
+			false,
 			[]responses.DeviceProfileResponse{responses.DeviceProfileResponse{}, responses.DeviceProfileResponse{}},
 			[]errors.EdgeX{errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile")), errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile"))},
 			2, ""},
@@ -223,6 +245,7 @@ func Test_loadProfilesFromURI(t *testing.T) {
 			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/profiles/index.json",
 			nil,
 			[]string{"Simple-Device", "Simple-Device2"},
+			false,
 			[]responses.DeviceProfileResponse{simpleProfile, responses.DeviceProfileResponse{}},
 			[]errors.EdgeX{nil, errors.NewCommonEdgeXWrapper(goErrors.New("could not find profile"))},
 			1, ""},
@@ -230,6 +253,7 @@ func Test_loadProfilesFromURI(t *testing.T) {
 			"https://raw.githubusercontent.com/edgexfoundry/device-sdk-go/main/internal/provision/uri-test-files/profiles/bogus.json",
 			nil,
 			[]string{},
+			false,
 			[]responses.DeviceProfileResponse{},
 			[]errors.EdgeX{},
 			0, "failed to load Device Profile list from URI"},
@@ -237,6 +261,7 @@ func Test_loadProfilesFromURI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var addProfilesReq []requests.DeviceProfileRequest
+			var updateProfilesReq []requests.DeviceProfileRequest
 			var edgexErr errors.EdgeX
 			lc := logger.MockLogger{}
 			dic, dpcMock := NewMockDIC()
@@ -247,8 +272,12 @@ func Test_loadProfilesFromURI(t *testing.T) {
 			require.NoError(t, edgexErr)
 			parsedURI, err := url.Parse(tt.path)
 			require.NoError(t, err)
-			addProfilesReq, edgexErr = loadProfilesFromURI(tt.path, parsedURI, dpcMock, tt.secretProvider, lc)
-			assert.Equal(t, len(addProfilesReq), tt.expectedNumProfiles)
+			addProfilesReq, updateProfilesReq, edgexErr = loadProfilesFromURI(tt.path, parsedURI, tt.overwrite, dpcMock, tt.secretProvider, lc)
+			if tt.overwrite {
+				assert.Equal(t, len(updateProfilesReq), tt.expectedNumProfiles)
+			} else {
+				assert.Equal(t, len(addProfilesReq), tt.expectedNumProfiles)
+			}
 			if edgexErr != nil {
 				assert.Contains(t, edgexErr.Error(), tt.expectedEdgexErrMsg)
 			}
