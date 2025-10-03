@@ -34,7 +34,7 @@ COPY . .
 RUN ${MAKE}
 
 # Next image - Copy built Go binary into new workspace
-FROM alpine:3.20
+FROM alpine:3.22.1
 LABEL license='SPDX-License-Identifier: Apache-2.0' \
   copyright='Copyright (c) 2022: Intel'
 
