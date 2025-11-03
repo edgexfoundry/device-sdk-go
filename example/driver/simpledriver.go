@@ -83,12 +83,13 @@ func getImageBytes(imgFile string, buf *bytes.Buffer) error {
 	if err != nil {
 		return err
 	}
-	if imageType == "jpeg" {
+	switch imageType {
+	case "jpeg":
 		err = jpeg.Encode(buf, imageData, nil)
 		if err != nil {
 			return err
 		}
-	} else if imageType == "png" {
+	case "png":
 		err = png.Encode(buf, imageData)
 		if err != nil {
 			return err

@@ -22,5 +22,5 @@ edgeXBuildGoApp (
     pushImage: false,
     publishSwaggerDocs: true,
     swaggerApiFolders: ['openapi'],
-    goVersion: '1.23'
+    goVersion: '1.25'
 )

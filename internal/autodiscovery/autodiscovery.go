@@ -26,7 +26,7 @@ func BootstrapHandler(
 	driver := container.ProtocolDriverFrom(dic.Get)
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
-	var runDiscovery bool = true
+	var runDiscovery = true
 
 	if !configuration.Device.Discovery.Enabled {
 		lc.Info("AutoDiscovery stopped: disabled by configuration")

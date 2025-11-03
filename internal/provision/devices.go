@@ -22,7 +22,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
@@ -32,6 +31,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 )
 
@@ -66,7 +66,7 @@ func LoadDevices(path string, overwrite bool, dic *di.Container) errors.EdgeX {
 		return nil
 	}
 	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
+	ctx := context.WithValue(context.Background(), common.CorrelationHeaderKey, uuid.NewString())
 	responses, edgexErr := dc.Add(ctx, addDevicesReq)
 	if edgexErr != nil {
 		return edgexErr

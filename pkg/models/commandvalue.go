@@ -543,9 +543,9 @@ func validate(valueType string, value interface{}) error {
 			return errors.NewCommonEdgeX(errors.KindServerError, errMsg, nil)
 		}
 	case common.ValueTypeObject:
-		_, ok = value.(interface{}) // nolint: gosimple
+		_, ok = value.(interface{}) // nolint: staticcheck
 	case common.ValueTypeObjectArray:
-		_, ok = value.([]map[string]any) // nolint: gosimple
+		_, ok = value.([]map[string]any)
 	default:
 		return errors.NewCommonEdgeX(errors.KindServerError, "unrecognized value type", nil)
 	}
