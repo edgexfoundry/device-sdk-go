@@ -10,21 +10,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
+
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/common"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/file"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
+	contractsCommon "github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
-	"net/url"
-	"os"
-	"path/filepath"
 )
 
 func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
@@ -57,7 +59,7 @@ func LoadProvisionWatchers(path string, dic *di.Container) errors.EdgeX {
 	}
 
 	pwc := container.ProvisionWatcherClientFrom(dic.Get)
-	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) //nolint: staticcheck
+	ctx := context.WithValue(context.Background(), common.CorrelationHeaderKey, uuid.NewString())
 	_, edgexErr = pwc.Add(ctx, addProvisionWatchersReq)
 	return edgexErr
 }
@@ -78,8 +80,8 @@ func loadProvisionWatchersFromFile(path string, lc logger.LoggingClient) ([]requ
 
 	lc.Infof("Loading pre-defined Provision Watchers from %s(%d files found)", absPath, len(files))
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
-	for _, file := range files {
-		fullPath := filepath.Join(absPath, file.Name())
+	for _, f := range files {
+		fullPath := filepath.Join(absPath, f.Name())
 		processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, fullPath, nil, lc)
 		if len(processedProvisionWatchersReq) > 0 {
 			addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
@@ -109,11 +111,11 @@ func loadProvisionWatchersFromURI(inputURI string, parsedURI *url.URL, secretPro
 
 	lc.Infof("Loading pre-defined Provision Watchers from %s(%d files found)", parsedURI.Redacted(), len(files))
 	var addProvisionWatchersReq, processedProvisionWatchersReq []requests.AddProvisionWatcherRequest
-	for name, file := range files {
+	for name, f := range files {
 		if _, ok := cache.ProvisionWatchers().ForName(name); ok {
 			lc.Infof("ProvisionWatcher %s exists, using the existing one", name)
 		} else {
-			fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, file, "Provison Watcher", lc)
+			fullPath, redactedPath := GetFullAndRedactedURI(parsedURI, f, "Provison Watcher", lc)
 			processedProvisionWatchersReq = processProvisionWatcherFile(fullPath, redactedPath, secretProvider, lc)
 			if len(processedProvisionWatchersReq) > 0 {
 				addProvisionWatchersReq = append(addProvisionWatchersReq, processedProvisionWatchersReq...)
@@ -155,7 +157,7 @@ func processProvisionWatcherFile(fullPath, displayPath string, secretProvider in
 		}
 	}
 
-	err = common.Validate(watcher)
+	err = contractsCommon.Validate(watcher)
 	if err != nil {
 		lc.Errorf("ProvisionWatcher %s validation failed: %v", watcher.Name, err)
 		return nil

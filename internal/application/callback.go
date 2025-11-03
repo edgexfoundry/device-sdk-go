@@ -98,7 +98,7 @@ func AddDevice(addDeviceRequest requests.AddDeviceRequest, dic *di.Container) er
 
 	config := container.ConfigurationFrom(dic.Get)
 	reqFailsTracker := container.AllowedRequestFailuresTrackerFrom(dic.Get)
-	reqFailsTracker.Set(device.Name, int(config.Device.AllowedFails))
+	reqFailsTracker.Set(device.Name, int(config.Device.AllowedFails)) // #nosec G115
 
 	lc.Debugf("starting AutoEvents for device %s", device.Name)
 	container.AutoEventManagerFrom(dic.Get).RestartForDevice(device.Name)

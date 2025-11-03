@@ -28,7 +28,7 @@ func deviceReturn(deviceName string, dic *di.Container) {
 
 	for {
 	LOOP:
-		time.Sleep(time.Duration(config.Device.DeviceDownTimeout) * time.Second)
+		time.Sleep(time.Duration(config.Device.DeviceDownTimeout) * time.Second) // #nosec G115
 		lc.Infof("Checking operational state for device: %s", deviceName)
 
 		d, found := cache.Devices().ForName(deviceName)
@@ -97,8 +97,9 @@ func DeviceRequestFailed(deviceName string, dic *di.Container) {
 func DeviceRequestSucceeded(d models.Device, dic *di.Container) {
 	config := container.ConfigurationFrom(dic.Get)
 	reqFailsTracker := container.AllowedRequestFailuresTrackerFrom(dic.Get)
-	if config.Device.AllowedFails > 0 && reqFailsTracker.Value(d.Name) < int(config.Device.AllowedFails) {
-		reqFailsTracker.Set(d.Name, int(config.Device.AllowedFails))
+	allowFailsNum := int(config.Device.AllowedFails) // #nosec G115
+	if config.Device.AllowedFails > 0 && reqFailsTracker.Value(d.Name) < allowFailsNum {
+		reqFailsTracker.Set(d.Name, allowFailsNum)
 		if d.OperatingState == models.Down {
 			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 			dc := bootstrapContainer.DeviceClientFrom(dic.Get)

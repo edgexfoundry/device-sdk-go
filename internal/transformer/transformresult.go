@@ -352,21 +352,21 @@ func transformOffset(value any, offset float64, read bool) (any, errors.EdgeX) {
 func transformMask(value any, mask uint64) any {
 	switch v := value.(type) {
 	case uint8:
-		value = v & uint8(mask)
+		value = v & uint8(mask) // #nosec G115
 	case uint16:
-		value = v & uint16(mask)
+		value = v & uint16(mask) // #nosec G115
 	case uint32:
-		value = v & uint32(mask)
+		value = v & uint32(mask) // #nosec G115
 	case uint64:
 		value = v & mask
 	case int8:
-		value = v & int8(mask)
+		value = v & int8(mask) // #nosec G115
 	case int16:
-		value = v & int16(mask)
+		value = v & int16(mask) // #nosec G115
 	case int32:
-		value = v & int32(mask)
+		value = v & int32(mask) // #nosec G115
 	case int64:
-		value = v & int64(mask)
+		value = v & int64(mask) // #nosec G115
 	}
 	return value
 }

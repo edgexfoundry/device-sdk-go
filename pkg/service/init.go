@@ -69,7 +69,7 @@ func (b *Bootstrap) BootstrapHandler(ctx context.Context, wg *sync.WaitGroup, st
 	config := container.ConfigurationFrom(dic.Get)
 	reqFailsTracker := container.NewAllowedFailuresTracker()
 	for _, d := range devices {
-		reqFailsTracker.Set(d.Name, int(config.Device.AllowedFails))
+		reqFailsTracker.Set(d.Name, int(config.Device.AllowedFails)) // #nosec G115
 	}
 	dic.Update(di.ServiceConstructorMap{
 		container.AllowedRequestFailuresTrackerName: func(get di.Get) any {

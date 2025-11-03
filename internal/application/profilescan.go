@@ -11,13 +11,13 @@ import (
 	"sync"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/common"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/controller/http/correlation"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/utils"
 	"github.com/edgexfoundry/device-sdk-go/v4/pkg/interfaces"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
-	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
@@ -47,7 +47,7 @@ func ProfileScanWrapper(busy chan bool, extdriver interfaces.ExtendedProtocolDri
 	dc := bootstrapContainer.DeviceClientFrom(dic.Get)
 	if correlation.IdFromContext(ctx) != req.RequestId {
 		// ensure the correlation id matches the request id.
-		ctx = context.WithValue(ctx, common.CorrelationHeader, req.RequestId) //nolint: staticcheck
+		ctx = context.WithValue(ctx, common.CorrelationHeaderKey, req.RequestId)
 	}
 
 	utils.PublishProfileScanProgressSystemEvent(req.RequestId, 0, "", ctx, dic)
