@@ -7,11 +7,9 @@
 package autodiscovery
 
 import (
+	"context"
 	"fmt"
 	"sync"
-
-	"github.com/google/uuid"
-	"golang.org/x/net/context"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/controller/http/correlation"
@@ -21,6 +19,7 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
+	"github.com/google/uuid"
 )
 
 type discoveryLocker struct {
