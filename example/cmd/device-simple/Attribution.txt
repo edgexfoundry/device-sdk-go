@@ -428,3 +428,9 @@ https://github.com/nhooyr/websocket/blob/master/LICENSE.txt
 
 gopkg.in/go-jose/go-jose.v2 (Apache 2.0) - https://github.com/go-jose/go-jose
 https://github.com/go-jose/go-jose/blob/v2.6.3/LICENSE
+
+github.com/emirpasic/gods (Unspecified) https://github.com/emirpasic/gods
+https://github.com/emirpasic/gods/blob/master/LICENSE
+
+github.com/openziti/channel/v4 (Apache 2.0) - https://github.com/openziti/channel
+https://github.com/openziti/channel/blob/main/LICENSE
