@@ -12,21 +12,11 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+
 ## [4.0.1] 
-### ✨ Features 
-- Support Modbus register bit decomposition in Odessa 4.0.0 ([#662](https://github.com/edgexfoundry/device-modbus-go/issues/662)) ([#f5d7f7d](https://github.com/edgexfoundry/device-modbus-go/commits/f5d7f7d))
-- Enable PIE for ASLR and full RELRO ([#3ed6416](https://github.com/edgexfoundry/device-uart/commits/3ed6416))
 
 ### 🐛 Bug Fixes 
-- Fix nil pointer error when sending command ([#0f29a34](https://github.com/edgexfoundry/device-modbus-go/commits/0f29a34))
 - Pick fixes from main branch ([#1773](https://github.com/edgexfoundry/device-sdk-go/issues/1773)) ([#bea3c83a](https://github.com/edgexfoundry/device-sdk-go/commits/bea3c83a))
-- Ensure that only one `ldflags` flag can be specified([#d3f616b](https://github.com/edgexfoundry/device-uart/commits/d3f616b))
-
-### Code Refactoring ♻
-- Replace the `goburrow` Modbus library with the `grid-x` fork([#640](https://github.com/edgexfoundry/device-modbus-go/issues/640)) ([#d275e17](https://github.com/edgexfoundry/device-modbus-go/commits/d275e17))
-
-### 📖 Documentation 
-- Update changelog for 4.0 release ([#e7aa529](https://github.com/edgexfoundry/device-uart/commits/e7aa529))
 
 
 ## [4.0.0] Odessa - 2025-03-12 (Only compatible with the 4.x releases)
