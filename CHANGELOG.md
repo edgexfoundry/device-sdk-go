@@ -12,6 +12,13 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+
+## [4.0.1] 
+
+### 🐛 Bug Fixes 
+- Pick fixes from main branch ([#1773](https://github.com/edgexfoundry/device-sdk-go/issues/1773)) ([#bea3c83a](https://github.com/edgexfoundry/device-sdk-go/commits/bea3c83a))
+
+
 ## [4.0.0] Odessa - 2025-03-12 (Only compatible with the 4.x releases)
 
 ### ✨  Features
