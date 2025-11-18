@@ -31,6 +31,22 @@ type ConfigurationStruct struct {
 	MessageBus bootstrapConfig.MessageBusInfo
 	// MaxEventSize is the maximum event size that can be sent to MessageBus or CoreData
 	MaxEventSize int64
+	// LocalQueue contains configuration for optional local durable queue used to persist events when offline
+	LocalQueue LocalQueueInfo
+}
+
+// LocalQueueInfo provides basic configuration for an optional local persistent queue
+type LocalQueueInfo struct {
+	// Enabled toggles the local queue feature (default: false)
+	Enabled bool
+	// DBPath is the file path for persistent queue DB (default: ./localqueue.db)
+	DBPath string
+	// MaxItems limits number of pending items stored locally (default: 10000)
+	MaxItems int
+	// RetryIntervalSeconds controls how often the background worker tries to resend pending items
+	RetryIntervalSeconds int
+	// ItemTTLSeconds is the time-to-live for queue items in seconds (default: 604800 = 7 days)
+	ItemTTLSeconds int
 }
 
 // UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is
