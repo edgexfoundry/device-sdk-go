@@ -14,6 +14,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/spf13/cast v1.10.0
 	github.com/stretchr/testify v1.11.1
+	go.etcd.io/bbolt v1.3.10
 	gopkg.in/yaml.v3 v3.0.1
 )
 

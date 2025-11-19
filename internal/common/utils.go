@@ -9,9 +9,14 @@ package common
 
 import (
 	"context"
+	"encoding/json"
+	"sync"
+	"time"
 
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/config"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
+	"github.com/edgexfoundry/device-sdk-go/v4/pkg/localqueue"
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	bootstrapInterfaces "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/interfaces"
@@ -67,6 +72,24 @@ func SendEvent(event *dtos.Event, correlationID string, dic *di.Container) {
 	err := mc.PublishWithSizeLimit(envelope, publishTopic, configuration.MaxEventSize)
 	if err != nil {
 		lc.Errorf("Failed to publish event to MessageBus: %s", err)
+		// If local queue is enabled, persist the event for retry
+		if configuration.LocalQueue.Enabled {
+			// marshal the AddEventRequest so we can restore it later
+			data, mErr := json.Marshal(req)
+			if mErr != nil {
+				lc.Errorf("Failed to marshal event for local queue: %v", mErr)
+				return
+			}
+			// initialize queue singleton and worker
+			ensureLocalQueueAndWorker(configuration, dic)
+			if localQ != nil {
+				if _, qErr := localQ.Enqueue(data); qErr != nil {
+					lc.Errorf("Failed to enqueue event to local queue: %v", qErr)
+				} else {
+					lc.Infof("Event enqueued to local queue for later delivery. Event id: %s", event.Id)
+				}
+			}
+		}
 		return
 	}
 	lc.Debugf("Event(profileName: %s, deviceName: %s, sourceName: %s, id: %s) published to MessageBus on topic: %s",
@@ -129,4 +152,78 @@ func AddReadingTags(reading *dtos.BaseReading) {
 			reading.Tags[k] = v
 		}
 	}
+}
+
+// local queue singleton and worker
+var (
+	localQ     *localqueue.LocalQueue
+	localQOnce sync.Once
+)
+
+func ensureLocalQueueAndWorker(configuration *config.ConfigurationStruct, dic *di.Container) {
+	localQOnce.Do(func() {
+		dbPath := configuration.LocalQueue.DBPath
+		if dbPath == "" {
+			dbPath = "localqueue.db"
+		}
+		maxItems := configuration.LocalQueue.MaxItems
+		if maxItems <= 0 {
+			maxItems = 10000
+		}
+		itemTTL := time.Duration(configuration.LocalQueue.ItemTTLSeconds) * time.Second
+		if itemTTL <= 0 {
+			itemTTL = 7 * 24 * time.Hour // Default 7 days
+		}
+		q, err := localqueue.NewLocalQueue(dbPath, maxItems, itemTTL)
+		if err != nil {
+			bootstrapContainer.LoggingClientFrom(dic.Get).Errorf("failed to open local queue DB: %v", err)
+			return
+		}
+		localQ = q
+
+		// start background worker
+		retrySec := configuration.LocalQueue.RetryIntervalSeconds
+		if retrySec <= 0 {
+			retrySec = 5
+		}
+		go func() {
+			lc := bootstrapContainer.LoggingClientFrom(dic.Get)
+			mc := bootstrapContainer.MessagingClientFrom(dic.Get)
+			for {
+				items, err := localQ.DequeuePending(10)
+				if err != nil {
+					lc.Errorf("local queue dequeue error: %v", err)
+					time.Sleep(time.Duration(retrySec) * time.Second)
+					continue
+				}
+				if len(items) == 0 {
+					time.Sleep(time.Duration(retrySec) * time.Second)
+					continue
+				}
+				for _, it := range items {
+					var req requests.AddEventRequest
+					if err := json.Unmarshal(it.Payload, &req); err != nil {
+						lc.Errorf("failed to unmarshal queued event: %v", err)
+						// mark sent to avoid tight loop on bad payload
+						_ = localQ.MarkSent(it.ID)
+						continue
+					}
+					// rebuild envelope and try publish
+					// use the stored ctx ContentType if available
+					enc := req.GetEncodingContentType()
+					ctx := context.WithValue(context.Background(), common.ContentType, enc)
+					envelope := types.NewMessageEnvelope(req, ctx)
+					publishTopic := common.NewPathBuilder().EnableNameFieldEscape(configuration.Service.EnableNameFieldEscape).
+						SetPath(configuration.MessageBus.GetBaseTopicPrefix()).SetPath(common.EventsPublishTopic).SetPath(DeviceServiceEventPrefix).
+						SetNameFieldPath(container.DeviceServiceFrom(dic.Get).Name).SetNameFieldPath(req.Event.ProfileName).SetNameFieldPath(req.Event.DeviceName).SetNameFieldPath(req.Event.SourceName).BuildPath()
+					if err := mc.PublishWithSizeLimit(envelope, publishTopic, configuration.MaxEventSize); err != nil {
+						lc.Errorf("retry publish failed for queued event %s: %v", it.ID, err)
+						continue
+					}
+					lc.Infof("queued event %s published to MessageBus", it.ID)
+					_ = localQ.MarkSent(it.ID)
+				}
+			}
+		}()
+	})
 }
