@@ -21,8 +21,8 @@ github.com/davecgh/go-spew/spew
 ## explicit; go 1.20
 github.com/eclipse/paho.mqtt.golang
 github.com/eclipse/paho.mqtt.golang/packets
-# github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.3
-## explicit; go 1.23.0
+# github.com/edgexfoundry/go-mod-bootstrap/v4 v4.0.4
+## explicit; go 1.23
 github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap
 github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/config
 github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container
@@ -43,13 +43,13 @@ github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/utils
 github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/zerotrust
 github.com/edgexfoundry/go-mod-bootstrap/v4/config
 github.com/edgexfoundry/go-mod-bootstrap/v4/di
-# github.com/edgexfoundry/go-mod-configuration/v4 v4.0.1
+# github.com/edgexfoundry/go-mod-configuration/v4 v4.0.2
 ## explicit; go 1.23
 github.com/edgexfoundry/go-mod-configuration/v4/configuration
 github.com/edgexfoundry/go-mod-configuration/v4/internal/pkg/keeper
 github.com/edgexfoundry/go-mod-configuration/v4/pkg/types
-# github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.3
-## explicit; go 1.23.0
+# github.com/edgexfoundry/go-mod-core-contracts/v4 v4.0.2
+## explicit; go 1.23
 github.com/edgexfoundry/go-mod-core-contracts/v4/clients
 github.com/edgexfoundry/go-mod-core-contracts/v4/clients/http
 github.com/edgexfoundry/go-mod-core-contracts/v4/clients/http/utils
@@ -64,8 +64,8 @@ github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests
 github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/responses
 github.com/edgexfoundry/go-mod-core-contracts/v4/errors
 github.com/edgexfoundry/go-mod-core-contracts/v4/models
-# github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.3
-## explicit; go 1.23.0
+# github.com/edgexfoundry/go-mod-messaging/v4 v4.0.2
+## explicit; go 1.23
 github.com/edgexfoundry/go-mod-messaging/v4/clients
 github.com/edgexfoundry/go-mod-messaging/v4/internal/pkg
 github.com/edgexfoundry/go-mod-messaging/v4/internal/pkg/mqtt
