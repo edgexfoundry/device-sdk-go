@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/controller/http/correlation"
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/utils"
@@ -19,7 +21,6 @@ import (
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
-	"github.com/google/uuid"
 )
 
 type discoveryLocker struct {

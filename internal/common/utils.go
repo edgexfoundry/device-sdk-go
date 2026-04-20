@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2025 IOTech Ltd
+// Copyright (C) 2018-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -27,9 +27,10 @@ import (
 )
 
 const (
-	eventsSentName           = "EventsSent"
-	readingsSentName         = "ReadingsSent"
-	DeviceServiceEventPrefix = "device"
+	eventsSentName             = "EventsSent"
+	readingsSentName           = "ReadingsSent"
+	DeviceServiceEventPrefix   = "device"
+	BypassValidationQueryParam = "bypassValidation"
 )
 
 // TODO: Refactor code in 3.0 to encapsulate this in a struct, factory func and
@@ -43,7 +44,7 @@ func UpdateOperatingState(name string, state string, lc logger.LoggingClient, dc
 	}
 
 	req := requests.NewUpdateDeviceRequest(device)
-	_, err := dc.Update(context.Background(), []requests.UpdateDeviceRequest{req})
+	_, err := dc.UpdateWithQueryParams(context.Background(), []requests.UpdateDeviceRequest{req}, map[string]string{BypassValidationQueryParam: common.ValueTrue})
 	if err != nil {
 		lc.Errorf("failed to update OperatingState for Device %s in Core Metadata: %v", name, err)
 	}
