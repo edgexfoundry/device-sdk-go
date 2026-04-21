@@ -36,6 +36,9 @@ https://github.com/google/uuid/blob/master/LICENSE
 OneOfOne/xxhash (Apache 2.0) https://github.com/OneOfOne/xxhash
 https://github.com/OneOfOne/xxhash/blob/master/LICENSE
 
+github.com/cespare/xxhash/v2 (MIT) https://github.com/cespare/xxhash
+https://github.com/cespare/xxhash/blob/main/LICENSE.txt
+
 cenkalti/backoff (MIT) https://github.com/cenkalti/backoff
 https://github.com/cenkalti/backoff/blob/v3/LICENSE
 
@@ -330,7 +333,7 @@ https://github.com/mitchellh/go-ps/blob/master/LICENSE.md
 github.com/muhlemmer/gu  (Unspecified) https://github.com/muhlemmer/gu
 https://github.com/muhlemmer/gu/blob/main/LICENSE
 
-github.com/oklog/ulid (Apache-2.0) https://github.com/oklog/ulid
+github.com/oklog/ulid/v2 (Apache-2.0) https://github.com/oklog/ulid/v2
 https://github.com/oklog/ulid/blob/main/LICENSE
 
 github.com/opentracing/opentracing-go (Apache-2.0) https://github.com/opentracing/opentracing-go

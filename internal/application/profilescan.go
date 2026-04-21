@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2024 IOTech Ltd
+// Copyright (C) 2024-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -18,6 +18,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v4/pkg/interfaces"
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	contractsCommon "github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
@@ -72,7 +73,7 @@ func ProfileScanWrapper(busy chan bool, extdriver interfaces.ExtendedProtocolDri
 	}
 	// Update device
 	deviceReq := requests.NewUpdateDeviceRequest(dtos.UpdateDevice{Name: &req.DeviceName, ProfileName: &profile.Name})
-	_, err = dc.Update(ctx, []requests.UpdateDeviceRequest{deviceReq})
+	_, err = dc.UpdateWithQueryParams(ctx, []requests.UpdateDeviceRequest{deviceReq}, map[string]string{common.BypassValidationQueryParam: contractsCommon.ValueTrue})
 	if err != nil {
 		errMsg := fmt.Sprintf("failed to update device '%s' with profile '%s': %v, Correlation Id: %s", req.DeviceName, profile.Name, err, req.RequestId)
 		utils.PublishProfileScanProgressSystemEvent(req.RequestId, -1, errMsg, ctx, dic)
