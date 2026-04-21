@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.63
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.64
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.32
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.23
 	github.com/google/uuid v1.6.0
@@ -128,7 +128,6 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
