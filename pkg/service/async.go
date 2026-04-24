@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -14,6 +14,7 @@ import (
 
 	bootstrapContainer "github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/di"
+	contractsCommon "github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/models"
@@ -117,7 +118,8 @@ func (s *deviceService) processAsyncFilterAndAdd(ctx context.Context) {
 						}
 
 						req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))
-						_, err := bootstrapContainer.DeviceClientFrom(s.dic.Get).Add(ctx, []requests.AddDeviceRequest{req})
+						_, err := bootstrapContainer.DeviceClientFrom(s.dic.Get).AddWithQueryParams(ctx, []requests.AddDeviceRequest{req},
+							map[string]string{common.BypassValidationQueryParam: contractsCommon.ValueTrue})
 						if err != nil {
 							s.lc.Errorf("failed to create discovered device %s: %v", device.Name, err)
 						} else {

@@ -1,7 +1,7 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2023 IOTech Ltd
+// Copyright (C) 2018-2026 IOTech Ltd
 // Copyright (C) 2023 Intel
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -11,6 +11,9 @@ package service
 import (
 	"context"
 	"fmt"
+
+	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
+	internalCommon "github.com/edgexfoundry/device-sdk-go/v4/internal/common"
 	"github.com/edgexfoundry/go-mod-bootstrap/v4/bootstrap/container"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos"
@@ -18,24 +21,47 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/dtos/requests"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v4/models"
-	"github.com/google/uuid"
 
-	"github.com/edgexfoundry/device-sdk-go/v4/internal/cache"
+	"github.com/google/uuid"
 )
 
 // AddDevice adds a new Device to the Device Service and Core Metadata
 // Returns new Device id or non-nil error.
 func (s *deviceService) AddDevice(device models.Device) (string, error) {
+	return s.addDevice(device, false)
+}
+
+// AddDeviceWithoutValidation adds a new Device to the Device Service and Core Metadata
+// with bypassValidation=true to skip device validation.
+// Returns new Device id or non-nil error.
+func (s *deviceService) AddDeviceWithoutValidation(device models.Device) (string, error) {
+	return s.addDevice(device, true)
+}
+
+func (s *deviceService) addDevice(device models.Device, bypassValidation bool) (string, error) {
 	if d, ok := cache.Devices().ForName(device.Name); ok {
 		return d.Id, errors.NewCommonEdgeX(errors.KindDuplicateName, fmt.Sprintf("name conflicted, Device %s exists", device.Name), nil)
 	}
 
 	device.ServiceName = s.serviceKey
 
-	s.lc.Debugf("Adding managed Device %s", device.Name)
+	if bypassValidation {
+		s.lc.Debugf("Adding managed Device %s without validation", device.Name)
+	} else {
+		s.lc.Debugf("Adding managed Device %s", device.Name)
+	}
 	req := requests.NewAddDeviceRequest(dtos.FromDeviceModelToDTO(device))
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	res, err := container.DeviceClientFrom(s.dic.Get).Add(ctx, []requests.AddDeviceRequest{req})
+	var (
+		res []commonDTO.BaseWithIdResponse
+		err error
+	)
+	if bypassValidation {
+		res, err = container.DeviceClientFrom(s.dic.Get).AddWithQueryParams(ctx, []requests.AddDeviceRequest{req},
+			map[string]string{internalCommon.BypassValidationQueryParam: common.ValueTrue})
+	} else {
+		res, err = container.DeviceClientFrom(s.dic.Get).Add(ctx, []requests.AddDeviceRequest{req})
+	}
 	if err != nil {
 		s.lc.Errorf("failed to add Device %s to Core Metadata: %v", device.Name, err)
 		return "", err
@@ -88,11 +114,17 @@ func (s *deviceService) UpdateDevice(device models.Device) error {
 	return s.PatchDevice(dtos.FromDeviceModelToUpdateDTO(device))
 }
 
+// UpdateDeviceWithoutValidation updates the Device in Core Metadata with bypassValidation=true
+// to skip device validation.
+func (s *deviceService) UpdateDeviceWithoutValidation(device models.Device) error {
+	return s.PatchDeviceWithoutValidation(dtos.FromDeviceModelToUpdateDTO(device))
+}
+
 // UpdateDeviceOperatingState updates the OperatingState for the Device with given name
 // in Core Metadata
 func (s *deviceService) UpdateDeviceOperatingState(name string, state models.OperatingState) error {
 	stateString := string(state)
-	return s.PatchDevice(dtos.UpdateDevice{
+	return s.PatchDeviceWithoutValidation(dtos.UpdateDevice{
 		Name:           &name,
 		OperatingState: &stateString,
 	})
@@ -103,6 +135,18 @@ func (s *deviceService) UpdateDeviceOperatingState(name string, state models.Ope
 // and anything that is nil will not modify the device. In the case of Arrays and Maps, the whole new value
 // must be sent, as it is applied as an overwrite operation.
 func (s *deviceService) PatchDevice(updateDevice dtos.UpdateDevice) error {
+	return s.patchDevice(updateDevice, false)
+}
+
+// PatchDeviceWithoutValidation patches the specified device properties in Core Metadata with bypassValidation=true
+// to skip device validation. Device name is required to be provided in the UpdateDevice. Note that all properties
+// of UpdateDevice are pointers and anything that is nil will not modify the device. In the case of Arrays and Maps,
+// the whole new value must be sent, as it is applied as an overwrite operation.
+func (s *deviceService) PatchDeviceWithoutValidation(updateDevice dtos.UpdateDevice) error {
+	return s.patchDevice(updateDevice, true)
+}
+
+func (s *deviceService) patchDevice(updateDevice dtos.UpdateDevice, bypassValidation bool) error {
 	if updateDevice.Name == nil {
 		msg := "missing device name for patch device call"
 		s.lc.Error(msg)
@@ -113,13 +157,23 @@ func (s *deviceService) PatchDevice(updateDevice dtos.UpdateDevice) error {
 		return err
 	}
 
-	s.lc.Debugf("Patching managed Device %s", *updateDevice.Name)
+	if bypassValidation {
+		s.lc.Debugf("Patching managed Device %s without validation", *updateDevice.Name)
+	} else {
+		s.lc.Debugf("Patching managed Device %s", *updateDevice.Name)
+	}
 	req := requests.UpdateDeviceRequest{
 		BaseRequest: commonDTO.NewBaseRequest(),
 		Device:      updateDevice,
 	}
 	ctx := context.WithValue(context.Background(), common.CorrelationHeader, uuid.NewString()) // nolint:staticcheck
-	_, err := container.DeviceClientFrom(s.dic.Get).Update(ctx, []requests.UpdateDeviceRequest{req})
+	var err error
+	if bypassValidation {
+		_, err = container.DeviceClientFrom(s.dic.Get).UpdateWithQueryParams(ctx, []requests.UpdateDeviceRequest{req},
+			map[string]string{internalCommon.BypassValidationQueryParam: common.ValueTrue})
+	} else {
+		_, err = container.DeviceClientFrom(s.dic.Get).Update(ctx, []requests.UpdateDeviceRequest{req})
+	}
 	if err != nil {
 		s.lc.Errorf("failed to update Device %s in Core Metadata: %v", *updateDevice.Name, err)
 	}
