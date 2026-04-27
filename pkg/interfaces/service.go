@@ -1,6 +1,6 @@
 //
 // Copyright (C) 2022-2023 Intel Corporation
-// Copyright (C) 2023-2025 IOTech Ltd
+// Copyright (C) 2023-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -154,4 +154,21 @@ type DeviceServiceSDK interface {
 
 	// PublishGenericSystemEvent publishes a generic system event through the EdgeX message bus
 	PublishGenericSystemEvent(eventType, action string, details any)
+}
+
+// DeviceServiceSDKExt extends DeviceServiceSDK with additional methods that bypass device validation.
+type DeviceServiceSDKExt interface {
+	DeviceServiceSDK
+	// AddDeviceWithoutValidation adds a new Device to the Device Service and Core Metadata
+	// with bypassValidation=true to skip device validation.
+	// Returns new Device id or non-nil error.
+	AddDeviceWithoutValidation(device models.Device) (string, error)
+	// UpdateDeviceWithoutValidation updates the Device in Core Metadata with bypassValidation=true
+	// to skip device validation.
+	UpdateDeviceWithoutValidation(device models.Device) error
+	// PatchDeviceWithoutValidation patches the specified device properties in Core Metadata with bypassValidation=true
+	// to skip device validation. Device name is required to be provided in the UpdateDevice. Note that all properties
+	// of UpdateDevice are pointers and anything that is nil will not modify the device. In the case of Arrays and Maps,
+	// the whole new value must be sent, as it is applied as an overwrite operation.
+	PatchDeviceWithoutValidation(updateDevice dtos.UpdateDevice) error
 }
