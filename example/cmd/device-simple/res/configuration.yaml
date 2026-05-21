@@ -15,6 +15,9 @@ MessageBus:
   Optional:
     ClientId: device-simple
 
+# Cap on in-flight MQTT command requests; <= 0 uses built-in default (32).
+MaxConcurrentCommands: 32
+
 # Example overriding of Common Config settings
 Device:
   AsyncBufferSize: 1

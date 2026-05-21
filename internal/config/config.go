@@ -31,6 +31,9 @@ type ConfigurationStruct struct {
 	MessageBus bootstrapConfig.MessageBusInfo
 	// MaxEventSize is the maximum event size that can be sent to MessageBus or CoreData
 	MaxEventSize int64
+	// MaxConcurrentCommands caps in-flight MQTT command requests so a slow/offline device
+	// cannot starve the consumer. Values <= 0 fall back to the built-in default (32).
+	MaxConcurrentCommands int
 }
 
 // UpdateFromRaw converts configuration received from the registry to a service-specific configuration struct which is
