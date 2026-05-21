@@ -134,7 +134,7 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 					}
 				}(msgEnvelope, responsePublishTopic, deviceName, commandName, upperMethod == "GET")
 
-				lc.Debugf("Command request dispatched. Topic: %s, Correlation-id: %s", responsePublishTopic, msgEnvelope.CorrelationID)
+				lc.Debugf("Command request dispatched. Response will be published on topic: %s, Correlation-id: %s", responsePublishTopic, msgEnvelope.CorrelationID)
 			}
 		}
 	}()
