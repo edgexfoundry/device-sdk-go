@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2022-2025 IOTech Ltd
+// Copyright (C) 2022-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -24,6 +24,16 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v4/internal/container"
 )
 
+// defaultMaxConcurrentCommands caps in-flight MQTT command requests so a single slow or
+// offline device cannot block the consumer goroutine and starve commands to every other
+// device served by this device service. At capacity, new requests are rejected inline with
+// a "service busy" envelope; queuing further would only defer the same failure and risks
+// unbounded growth.
+//
+// Drivers that require per-device serialization must enforce it themselves — the HTTP and
+// AutoEvent paths already invoke application.GetCommand / SetCommand concurrently today.
+const defaultMaxConcurrentCommands = 32
+
 func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
 	configuration := container.ConfigurationFrom(dic.Get)
@@ -46,6 +56,12 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 			Messages: messages,
 		},
 	}
+
+	maxInFlight := configuration.MaxConcurrentCommands
+	if maxInFlight <= 0 {
+		maxInFlight = defaultMaxConcurrentCommands
+	}
+	sem := make(chan struct{}, maxInFlight)
 
 	messageBus := bootstrapContainer.MessagingClientFrom(dic.Get)
 	err := messageBus.Subscribe(topics, messageErrors)
@@ -87,17 +103,38 @@ func SubscribeCommands(ctx context.Context, dic *di.Container) errors.EdgeX {
 
 				responsePublishTopic := common.BuildTopic(responsePublishTopicPrefix, msgEnvelope.RequestID)
 
-				switch strings.ToUpper(method) {
-				case "GET":
-					getCommand(ctx, msgEnvelope, responsePublishTopic, deviceName, commandName, dic)
-				case "SET":
-					setCommand(ctx, msgEnvelope, responsePublishTopic, deviceName, commandName, dic)
-				default:
+				upperMethod := strings.ToUpper(method)
+				if upperMethod != "GET" && upperMethod != "SET" {
 					lc.Errorf("unknown command method '%s', only 'get' or 'set' is allowed", method)
 					continue
 				}
 
-				lc.Debugf("Command response published on message queue. Topic: %s, Correlation-id: %s", responsePublishTopic, msgEnvelope.CorrelationID)
+				// Non-blocking acquire — never block the consumer goroutine. At capacity we
+				// reject inline rather than queue, so a stuck device cannot cause head-of-line
+				// blocking on subsequent commands to other devices.
+				select {
+				case sem <- struct{}{}:
+				default:
+					lc.Warnf("device command in-flight limit (%d) reached; rejecting %s request for device '%s'/'%s'",
+						cap(sem), method, deviceName, commandName)
+					busy := types.NewMessageEnvelopeWithError(msgEnvelope.RequestID,
+						"device service busy: too many concurrent commands")
+					if pubErr := messageBus.Publish(busy, responsePublishTopic); pubErr != nil {
+						lc.Errorf("Failed to publish busy response: %s", pubErr.Error())
+					}
+					continue
+				}
+
+				go func(env types.MessageEnvelope, topic, dev, cmd string, isGet bool) {
+					defer func() { <-sem }()
+					if isGet {
+						getCommand(ctx, env, topic, dev, cmd, dic)
+					} else {
+						setCommand(ctx, env, topic, dev, cmd, dic)
+					}
+				}(msgEnvelope, responsePublishTopic, deviceName, commandName, upperMethod == "GET")
+
+				lc.Debugf("Command request dispatched. Response will be published on topic: %s, Correlation-id: %s", responsePublishTopic, msgEnvelope.CorrelationID)
 			}
 		}
 	}()
