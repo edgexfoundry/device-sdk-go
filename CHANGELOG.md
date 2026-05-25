@@ -12,6 +12,31 @@
 - [go-mod-secrets](https://github.com/edgexfoundry/go-mod-secrets/blob/main/CHANGELOG.md) (indirect dependency)
 - [go-mod-configuration](https://github.com/edgexfoundry/go-mod-configuration/blob/main/CHANGELOG.md) (indirect dependency)
 
+## [4.0.2] - 2026-05-31 
+
+### ✨ Features 
+- Add `WithoutValidation` variants for device add, update, and patch APIs.([#b23efbc6](https://github.com/edgexfoundry/device-sdk-go/commits/b23efbc6))
+- Add support for skipping device validation during device updates by using `bypassValidation=true` ([#93cb70a3](https://github.com/edgexfoundry/device-sdk-go/commits/93cb70a3))
+- Add `SendChangedReadingsOnly` configuration to send only updated values ([#1738](https://github.com/edgexfoundry/device-sdk-go/issues/1738)) ([#77212380](https://github.com/edgexfoundry/device-sdk-go/commits/77212380))
+- Add support for `ValueTypeObjectArray` in command value handling ([#1734](https://github.com/edgexfoundry/device-sdk-go/issues/1734)) ([#0e0babda](https://github.com/edgexfoundry/device-sdk-go/commits/0e0babda))
+
+### 🐛 Bug Fixes 
+- Apply mask and shift transformations to incoming data ([#1736](https://github.com/edgexfoundry/device-sdk-go/issues/1736)) ([#3fa13119](https://github.com/edgexfoundry/device-sdk-go/commits/3fa13119))
+- Update expected device count in unit test ([#1735](https://github.com/edgexfoundry/device-sdk-go/issues/1735)) ([#24cf2aff](https://github.com/edgexfoundry/device-sdk-go/commits/24cf2aff))
+- Fix concurrent cache read and write errors ([#1711](https://github.com/edgexfoundry/device-sdk-go/issues/1711)) ([#e95677e0](https://github.com/edgexfoundry/device-sdk-go/commits/e95677e0))
+
+### ♻ Code Refactoring 
+- Use standard library context package ([#2fec12a0](https://github.com/edgexfoundry/device-sdk-go/commits/2fec12a0))
+
+### 📖 Documentation 
+- Add missing `jsonObject` parameter in `GET /device/name/{name}/{command}` ([#78234ea4](https://github.com/edgexfoundry/device-sdk-go/commits/78234ea4))
+- Add missing `ObjectReading` in Event Readings schema ([#e62c638e](https://github.com/edgexfoundry/device-sdk-go/commits/e62c638e))
+
+### Build 👷
+- Update goVersion to 1.25 and golangci-lint to 2.5.0([#72fb5907](https://github.com/edgexfoundry/device-sdk-go/commits/72fb5907))
+
+
+
 ## [4.0.0] Odessa - 2025-03-12 (Only compatible with the 4.x releases)
 
 ### ✨  Features
