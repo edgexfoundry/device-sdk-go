@@ -171,7 +171,6 @@ func (s *deviceService) Run() error {
 		true,
 		bootstrapTypes.ServiceTypeDevice,
 		[]bootstrapInterfaces.BootstrapHandler{
-			httpServer.BootstrapHandler,
 			newMessageBusBootstrap(s.baseServiceName).messageBusBootstrapHandler,
 			handlers.NewServiceMetrics(s.serviceKey).BootstrapHandler, // Must be after Messaging
 			handlers.NewClientsBootstrap().BootstrapHandler,
@@ -179,6 +178,7 @@ func (s *deviceService) Run() error {
 			NewBootstrap(s, router).BootstrapHandler,
 			autodiscovery.BootstrapHandler,
 			handlers.NewStartMessage(s.serviceKey, sdkCommon.ServiceVersion).BootstrapHandler,
+			httpServer.BootstrapHandler,
 		})
 
 	defer func() {
