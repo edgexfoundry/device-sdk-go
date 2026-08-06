@@ -1,7 +1,7 @@
 // -*- mode: Go; indent-tabs-mode: t -*-
 //
 // Copyright (C) 2017-2018 Canonical Ltd
-// Copyright (C) 2018-2025 IOTech Ltd
+// Copyright (C) 2018-2026 IOTech Ltd
 // Copyright (c) 2021 Intel Corporation
 //
 // SPDX-License-Identifier: Apache-2.0
@@ -35,10 +35,6 @@ type DeviceInfo struct {
 	// MaxCmdOps defines the maximum number of resource operations that
 	// can be sent to a Driver in a single command.
 	MaxCmdOps int
-	// MaxCmdValueLen is the maximum string length of a command parameter or
-	// result (including the value descriptor name) that can be returned
-	// by a Driver.
-	MaxCmdValueLen int
 	// ProfilesDir specifies a directory which contains device profiles
 	// files which should be imported on startup.
 	ProfilesDir string
