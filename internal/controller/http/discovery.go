@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2024 IOTech Ltd
+// Copyright (C) 2020-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -84,10 +84,13 @@ func (c *RestController) ProfileScan(e echo.Context) error {
 		return c.sendEdgexError(writer, request, edgexErr, common.ApiProfileScanRoute)
 	}
 
+	// Detach from the request context so the background scan is not cancelled
+	// when the handler returns.
+	scanCtx := context.WithoutCancel(ctx)
 	busy := make(chan bool)
 	go func() {
 		c.lc.Infof("Profile scanning is triggered. Correlation Id: %s", req.RequestId)
-		application.ProfileScanWrapper(busy, extdriver, req, ctx, c.dic)
+		application.ProfileScanWrapper(busy, extdriver, req, scanCtx, c.dic)
 		c.lc.Infof("Profile scanning is end. Correlation Id: %s", req.RequestId)
 	}()
 	b := <-busy
