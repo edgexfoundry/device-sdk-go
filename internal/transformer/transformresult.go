@@ -377,21 +377,21 @@ func transformShift(value any, shift int64) any {
 	switch v := value.(type) {
 	case uint8:
 		if shift > 0 {
-			value = v >> int8(shift)
+			value = v >> shift
 		} else {
-			value = v << int8(-shift)
+			value = v << (-shift)
 		}
 	case uint16:
 		if shift > 0 {
-			value = v >> int16(shift)
+			value = v >> shift
 		} else {
-			value = v << int16(-shift)
+			value = v << (-shift)
 		}
 	case uint32:
 		if shift > 0 {
-			value = v >> int32(shift)
+			value = v >> shift
 		} else {
-			value = v << int32(-shift)
+			value = v << (-shift)
 		}
 	case uint64:
 		if shift > 0 {
@@ -401,21 +401,21 @@ func transformShift(value any, shift int64) any {
 		}
 	case int8:
 		if shift > 0 {
-			value = v >> int8(shift)
+			value = v >> shift
 		} else {
-			value = v << int8(-shift)
+			value = v << (-shift)
 		}
 	case int16:
 		if shift > 0 {
-			value = v >> int16(shift)
+			value = v >> shift
 		} else {
-			value = v << int16(-shift)
+			value = v << (-shift)
 		}
 	case int32:
 		if shift > 0 {
-			value = v >> int32(shift)
+			value = v >> shift
 		} else {
-			value = v << int32(-shift)
+			value = v << (-shift)
 		}
 	case int64:
 		if shift > 0 {
