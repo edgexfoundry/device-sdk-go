@@ -189,6 +189,10 @@ func Test_transformShift(t *testing.T) {
 		{"valid - int32 shift transformation with positive shift value", int32(0b1111111111111110000000000000000), 16, int32(0b0000000000000000111111111111111)},
 		{"valid - int64 shift transformation with negative shift value", int64(0b1), -32, int64(0b100000000000000000000000000000000)},
 		{"valid - int64 shift transformation with positive shift value", int64(0b111111111111111111111111111111100000000000000000000000000000000), 32, int64(0b000000000000000000000000000000001111111111111111111111111111111)},
+		// shift values that used to panic or wrap when narrowed to the value's width
+		{"valid - uint8 shift transformation with shift value 128", uint8(0b11111111), 128, uint8(0)},
+		{"valid - uint8 shift transformation with shift value 257", uint8(0b11111111), 257, uint8(0)},
+		{"valid - int16 shift transformation with shift value -65537", int16(0b1), -65537, int16(0)},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
