@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.79
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.81
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.52
 	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.39
 	github.com/google/uuid v1.6.0
@@ -18,14 +18,14 @@ require (
 )
 
 require (
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/Microsoft/go-winio v0.6.3 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
-	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.28 // indirect
+	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.29 // indirect
 	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.19 // indirect
-	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.33 // indirect
+	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.34 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
-	github.com/go-logfmt/logfmt v0.5.1 // indirect
+	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
@@ -102,7 +102,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.5 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible // indirect
-	github.com/spiffe/go-spiffe/v2 v2.8.2 // indirect
+	github.com/spiffe/go-spiffe/v2 v2.9.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
@@ -126,8 +126,8 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
-	google.golang.org/grpc v1.83.2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20261005182115-fad411399dd8 // indirect
+	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 	nhooyr.io/websocket v1.8.17 // indirect
 )
