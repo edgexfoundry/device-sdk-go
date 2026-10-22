@@ -100,7 +100,8 @@ func mockDic() *di.Container {
 		},
 		DeviceResources: []dtos.DeviceResource{
 			dtos.DeviceResource{
-				Name: testResource,
+				Name:       testResource,
+				Attributes: map[string]any{"register": "1"},
 				Properties: dtos.ResourceProperties{
 					ValueType:    common.ValueTypeString,
 					ReadWrite:    common.ReadWrite_RW,
@@ -274,6 +275,84 @@ func TestRestController_GetCommand(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestRestController_Command_QueryNotStored checks that the query parameters of a GET or PUT reach the
+// driver as urlRawQuery without being stored in the profile cache, whose attribute maps are shared by every
+// request of a device resource.
+func TestRestController_Command_QueryNotStored(t *testing.T) {
+	e := echo.New()
+	dic := mockDic()
+	sdkCommon.InitializeSentMetrics(logger.NewMockClient(), dic)
+	require.NoError(t, cache.InitCache(testService, testService, dic))
+	messagingClientMock := &messagingMocks.MessageClient{}
+	messagingClientMock.On("PublishWithSizeLimit", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	dic.Update(di.ServiceConstructorMap{
+		bootstrapContainer.MessagingClientName: func(get di.Get) any {
+			return messagingClientMock
+		},
+	})
+	controller := NewRestController(e, dic, testService)
+	driver := container.ProtocolDriverFrom(dic.Get).(*mocks.ProtocolDriver)
+
+	// lastAttributes returns the attributes the driver got in its last call of method.
+	lastAttributes := func(method string) map[string]any {
+		for i := len(driver.Calls) - 1; i >= 0; i-- {
+			if driver.Calls[i].Method == method {
+				return driver.Calls[i].Arguments.Get(2).([]sdkModels.CommandRequest)[0].Attributes
+			}
+		}
+		t.Fatalf("%s not called", method)
+		return nil
+	}
+	get := func(command, query string) map[string]any {
+		req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute+query, http.NoBody)
+		recorder := httptest.NewRecorder()
+		c := e.NewContext(req, recorder)
+		c.SetParamNames(common.Name, common.Command)
+		c.SetParamValues(testDevice, command)
+		require.NoError(t, controller.GetCommand(c))
+		require.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		return lastAttributes("HandleReadCommands")
+	}
+	put := func(command, query string) map[string]any {
+		body := strings.NewReader(`{"` + testResource + `":"value"}`)
+		req := httptest.NewRequest(http.MethodPut, common.ApiDeviceNameCommandNameRoute+query, body)
+		recorder := httptest.NewRecorder()
+		c := e.NewContext(req, recorder)
+		c.SetParamNames(common.Name, common.Command)
+		c.SetParamValues(testDevice, command)
+		require.NoError(t, controller.SetCommand(c))
+		require.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+		return lastAttributes("HandleWriteCommands")
+	}
+
+	for _, command := range []string{testResource, testCommand} {
+		for name, request := range map[string]func(string, string) map[string]any{"GET": get, "PUT": put} {
+			attrs := request(command, "?foo=bar")
+			assert.Equal(t, "foo=bar", attrs[sdkCommon.URLRawQuery], "%s %s", name, command)
+			assert.Equal(t, "1", attrs["register"], "%s %s: the resource attributes are passed on", name, command)
+
+			attrs = request(command, "")
+			assert.NotContains(t, attrs, sdkCommon.URLRawQuery, "%s %s: the query of an earlier request was kept", name, command)
+		}
+	}
+	dr, ok := cache.Profiles().DeviceResource(testProfile, testResource)
+	require.True(t, ok)
+	assert.Equal(t, map[string]any{"register": "1"}, dr.Attributes, "the profile cache was modified")
+
+	// Concurrent requests with a query must not write a shared map (detected with -race).
+	var wg sync.WaitGroup
+	for range 20 {
+		wg.Go(func() {
+			req := httptest.NewRequest(http.MethodGet, common.ApiDeviceNameCommandNameRoute+"?foo=bar", http.NoBody)
+			c := e.NewContext(req, httptest.NewRecorder())
+			c.SetParamNames(common.Name, common.Command)
+			c.SetParamValues(testDevice, testCommand)
+			_ = controller.GetCommand(c)
+		})
+	}
+	wg.Wait()
 }
 
 func TestRestController_GetCommand_ServiceLocked(t *testing.T) {

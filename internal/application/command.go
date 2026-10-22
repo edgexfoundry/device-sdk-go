@@ -13,6 +13,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math"
 	"regexp"
 	"strconv"
@@ -131,13 +132,7 @@ func readDeviceResource(device models.Device, resourceName string, attributes st
 
 	// prepare CommandRequest
 	req.DeviceResourceName = dr.Name
-	req.Attributes = dr.Attributes
-	if attributes != "" {
-		if len(req.Attributes) <= 0 {
-			req.Attributes = make(map[string]interface{})
-		}
-		req.Attributes[sdkCommon.URLRawQuery] = attributes
-	}
+	req.Attributes = withQuery(dr.Attributes, attributes)
 	req.Type = dr.Properties.ValueType
 	reqs = append(reqs, req)
 
@@ -183,13 +178,7 @@ func readDeviceResourcesRegex(device models.Device, regexResourceName string, at
 		// prepare CommandRequest
 		var req sdkModels.CommandRequest
 		req.DeviceResourceName = dr.Name
-		req.Attributes = dr.Attributes
-		if attributes != "" {
-			if len(req.Attributes) <= 0 {
-				req.Attributes = make(map[string]any)
-			}
-			req.Attributes[sdkCommon.URLRawQuery] = attributes
-		}
+		req.Attributes = withQuery(dr.Attributes, attributes)
 		req.Type = dr.Properties.ValueType
 
 		reqs = append(reqs, req)
@@ -248,13 +237,7 @@ func readDeviceCommand(device models.Device, commandName string, attributes stri
 		}
 
 		reqs[i].DeviceResourceName = dr.Name
-		reqs[i].Attributes = dr.Attributes
-		if attributes != "" {
-			if len(reqs[i].Attributes) <= 0 {
-				reqs[i].Attributes = make(map[string]interface{})
-			}
-			reqs[i].Attributes[sdkCommon.URLRawQuery] = attributes
-		}
+		reqs[i].Attributes = withQuery(dr.Attributes, attributes)
 		reqs[i].Type = dr.Properties.ValueType
 	}
 
@@ -307,13 +290,7 @@ func writeDeviceResource(device models.Device, resourceName string, attributes s
 	// prepare CommandRequest
 	reqs := make([]sdkModels.CommandRequest, 1)
 	reqs[0].DeviceResourceName = cv.DeviceResourceName
-	reqs[0].Attributes = dr.Attributes
-	if attributes != "" {
-		if len(reqs[0].Attributes) <= 0 {
-			reqs[0].Attributes = make(map[string]any)
-		}
-		reqs[0].Attributes[sdkCommon.URLRawQuery] = attributes
-	}
+	reqs[0].Attributes = withQuery(dr.Attributes, attributes)
 	reqs[0].Type = cv.Type
 
 	// transform write value
@@ -409,13 +386,7 @@ func writeDeviceCommand(device models.Device, commandName string, attributes str
 		dr, _ := cache.Profiles().DeviceResource(device.ProfileName, cv.DeviceResourceName)
 
 		reqs[i].DeviceResourceName = cv.DeviceResourceName
-		reqs[i].Attributes = dr.Attributes
-		if attributes != "" {
-			if len(reqs[i].Attributes) <= 0 {
-				reqs[i].Attributes = make(map[string]interface{})
-			}
-			reqs[i].Attributes[sdkCommon.URLRawQuery] = attributes
-		}
+		reqs[i].Attributes = withQuery(dr.Attributes, attributes)
 		reqs[i].Type = cv.Type
 
 		// transform write value
@@ -822,4 +793,18 @@ func normalizeToObjectArray(value any) ([]map[string]any, error) {
 	}
 
 	return arr, nil
+}
+
+// withQuery returns attrs with the request's query parameters added as urlRawQuery.
+// attrs is the attribute map of the device resource in the profile cache, shared by every request of
+// that resource, so it is copied and never written: writing it left the query in the cache for later
+// requests and made concurrent requests with a query write the same map.
+func withQuery(attrs map[string]any, query string) map[string]any {
+	if query == "" {
+		return attrs
+	}
+	out := make(map[string]any, len(attrs)+1)
+	maps.Copy(out, attrs)
+	out[sdkCommon.URLRawQuery] = query
+	return out
 }
