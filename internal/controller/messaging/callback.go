@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2023-2025 IOTech Ltd
+// Copyright (C) 2023-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -112,7 +112,7 @@ func MetadataSystemEventsCallback(ctx context.Context, serviceBaseName string, d
 						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
 					}
 				case common.ProvisionWatcherSystemEventType:
-					err = provisionWatcherSystemEventAction(systemEvent, dic)
+					err = provisionWatcherSystemEventAction(systemEvent, serviceBaseName, dic)
 					if err != nil {
 						lc.Error(err.Error(), common.CorrelationHeader, msgEnvelope.CorrelationID)
 					}
@@ -177,7 +177,7 @@ func deviceProfileSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Contai
 	return err
 }
 
-func provisionWatcherSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Container) error {
+func provisionWatcherSystemEventAction(systemEvent dtos.SystemEvent, serviceBaseName string, dic *di.Container) error {
 	var pw dtos.ProvisionWatcher
 	err := systemEvent.DecodeDetails(&pw)
 	if err != nil {
@@ -190,7 +190,7 @@ func provisionWatcherSystemEventAction(systemEvent dtos.SystemEvent, dic *di.Con
 	case common.SystemEventActionUpdate:
 		pwModel := dtos.ToProvisionWatcherModel(pw)
 		pwDTO := dtos.FromProvisionWatcherModelToUpdateDTO(pwModel)
-		err = application.UpdateProvisionWatcher(requests.NewUpdateProvisionWatcherRequest(pwDTO), dic)
+		err = application.UpdateProvisionWatcher(requests.NewUpdateProvisionWatcherRequest(pwDTO), serviceBaseName, dic)
 	case common.SystemEventActionDelete:
 		err = application.DeleteProvisionWatcher(pw.Name, dic)
 	default:

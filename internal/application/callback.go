@@ -1,6 +1,6 @@
 // -*- Mode: Go; indent-tabs-mode: t -*-
 //
-// Copyright (C) 2020-2025 IOTech Ltd
+// Copyright (C) 2020-2026 IOTech Ltd
 //
 // SPDX-License-Identifier: Apache-2.0
 
@@ -219,23 +219,26 @@ func AddProvisionWatcher(addProvisionWatcherRequest requests.AddProvisionWatcher
 	return nil
 }
 
-func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest, dic *di.Container) errors.EdgeX {
+// UpdateProvisionWatcher matches watchers against serviceBaseName, the name without the -i/--instance suffix (see cache.InitCache).
+func UpdateProvisionWatcher(updateProvisionWatcherRequest requests.UpdateProvisionWatcherRequest, serviceBaseName string, dic *di.Container) errors.EdgeX {
 	lc := bootstrapContainer.LoggingClientFrom(dic.Get)
-	ds := container.DeviceServiceFrom(dic.Get)
+	ownedByThisService := *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName == serviceBaseName
 
 	provisionWatcher, exist := cache.ProvisionWatchers().ForName(*updateProvisionWatcherRequest.ProvisionWatcher.Name)
 	if !exist {
-		if ds.Name == *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
+		if ownedByThisService {
 			var newProvisionWatcher models.ProvisionWatcher
 			requests.ReplaceProvisionWatcherModelFieldsWithDTO(&newProvisionWatcher, updateProvisionWatcherRequest.ProvisionWatcher)
+			newProvisionWatcher.Name = *updateProvisionWatcherRequest.ProvisionWatcher.Name
+			newProvisionWatcher.Id = *updateProvisionWatcherRequest.ProvisionWatcher.Id
 			req := requests.NewAddProvisionWatcherRequest(dtos.FromProvisionWatcherModelToDTO(newProvisionWatcher))
 			return AddProvisionWatcher(req, dic)
 		} else {
-			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName)
+			errMsg := fmt.Sprintf("failed to find provision watcher %s", *updateProvisionWatcherRequest.ProvisionWatcher.Name)
 			return errors.NewCommonEdgeX(errors.KindEntityDoesNotExist, errMsg, nil)
 		}
 	}
-	if ds.Name != *updateProvisionWatcherRequest.ProvisionWatcher.ServiceName {
+	if !ownedByThisService {
 		return DeleteProvisionWatcher(*updateProvisionWatcherRequest.ProvisionWatcher.Name, dic)
 	}
 
