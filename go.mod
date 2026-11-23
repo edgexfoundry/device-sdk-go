@@ -4,12 +4,12 @@ go 1.27
 
 require (
 	github.com/OneOfOne/xxhash v1.2.8
-	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.87
+	github.com/edgexfoundry/go-mod-bootstrap/v4 v4.1.0-dev.90
 	github.com/edgexfoundry/go-mod-core-contracts/v4 v4.1.0-dev.54
-	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.39
+	github.com/edgexfoundry/go-mod-messaging/v4 v4.1.0-dev.41
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/labstack/echo/v4 v4.16.4
+	github.com/labstack/echo/v4 v4.16.5
 	github.com/panjf2000/ants/v2 v2.12.1
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 	github.com/spf13/cast v1.10.0
@@ -24,7 +24,7 @@ require (
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.5.1 // indirect
 	github.com/edgexfoundry/go-mod-configuration/v4 v4.1.0-dev.29 // indirect
-	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.19 // indirect
+	github.com/edgexfoundry/go-mod-registry/v4 v4.1.0-dev.21 // indirect
 	github.com/edgexfoundry/go-mod-secrets/v4 v4.1.0-dev.36 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
